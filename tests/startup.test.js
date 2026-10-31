@@ -69,6 +69,12 @@ async function run(){
       await page.waitForFunction(()=>getComputedStyle(document.getElementById('previewLoading')).display==='none'||PREVIEW.loaded,null,{timeout:15000})
         .catch(()=>{throw new Error('preview bloquée sur "Chargement du personnage…"')});
 
+      // Humain + Mage : personnage CC0 assemblé (characters.js), chargé depuis assets/characters/*.js en file://
+      await page.click('#raceChoices button[data-r="human"]');
+      await page.waitForFunction(()=>{let robe=false;PREVIEW.group?.traverse(o=>{if(o.name==='Robe')robe=true});return PREVIEW.loaded&&robe},null,{timeout:30000})
+        .catch(()=>{throw new Error('preview Humain Mage : personnage assemblé non chargé')});
+      await page.click('#raceChoices button[data-r="orc"]');
+
       await page.click('#playBtn');
       await page.waitForTimeout(1500);
       const s=await page.evaluate(()=>({round:state.round,units:state.units.length,pcls:state.pcls,prace:state.prace,elapsed:state.elapsed,overlay:getComputedStyle(document.getElementById('overlay')).display}));
@@ -94,6 +100,20 @@ async function run(){
         assert.deepEqual(errors,[],`${cls}: erreurs JS`);
         await page.close();
       }
+      await ctx.close();
+    }
+
+    // 2b. En arène, le joueur Humain Mage utilise le personnage assemblé et ses animations
+    {
+      const ctx=await browser.newContext({viewport:{width:1280,height:720}});
+      const page=await ctx.newPage();const errors=watchErrors(page);
+      await page.goto(url('index.html','?autoplay=arcanist&race=human'));
+      await page.waitForFunction(()=>{const r=HF.records.get(state.player.id);let robe=false;r?.model?.traverse(o=>{if(o.name==='Robe')robe=true});return r?.loaded&&robe},null,{timeout:30000})
+        .catch(()=>{throw new Error('arène Humain Mage : personnage assemblé non chargé')});
+      await page.waitForTimeout(500);
+      const anim=await page.evaluate(()=>HF.records.get(state.player.id).action?.getClip().name);
+      assert.equal(anim,'Idle_Loop','animation de repos Quaternius attendue');
+      assert.deepEqual(errors,[],'erreurs JS arène Humain Mage');
       await ctx.close();
     }
 

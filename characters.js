@@ -8,13 +8,9 @@
   // tête du corps de base + tenue + coiffure + pièces procédurales (robe, bâton), recoloration par classe/race.
   // La CLASSE choisit la tenue/silhouette, la RACE ne fait que la morphologie/peau/détails.
 
-  const SRC={
-    base:'assets_src/Universal Base Characters[Standard]/Universal Base Characters[Standard]/Base Characters/Godot - UE/',
-    hair:'assets_src/Universal Base Characters[Standard]/Universal Base Characters[Standard]/Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/',
-    outfit:'assets_src/Modular Character Outfits - Fantasy[Standard]/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Outfits/',
-    parts:'assets_src/Modular Character Outfits - Fantasy[Standard]/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Modular Parts/',
-    anims:'assets_src/Universal Animation Library[Standard]/Universal Animation Library[Standard]/Unreal-Godot/UAL1_Standard.glb'
-  };
+  // Clips de la bibliothèque d'animations conservés au build (le reste est retiré pour alléger).
+  const ANIMS=['Idle_Loop','Jog_Fwd_Loop','Sprint_Loop','Walk_Loop','Spell_Simple_Shoot','Spell_Simple_Idle_Loop',
+    'Sword_Attack','Punch_Jab','Punch_Cross','Death01','Hit_Chest','Hit_Head','Jump_Start','Jump_Loop','Jump_Land','Roll'];
 
   const KITS={
     // Sorcière de bataille humaine : robe violet profond / or, manches crème, capuche, cheveux blonds longs.
@@ -150,22 +146,50 @@
     return g;
   }
 
-  function makeLoader(THREE){
-    // Le pack référence parfois "X_png.png" alors que le fichier s'appelle "X.png".
-    const manager=new THREE.LoadingManager();manager.setURLModifier(u=>u.replace(/_png\.png$/,'.png'));
-    return new THREE.GLTFLoader(manager);
+  // Les modèles sont emballés en .js (tools/build_characters.js) : window.CHAR_ASSETS[nom]=GLB en base64.
+  // Un <script> se charge en double-clic (file://), contrairement à un fetch de .glb.
+  const assetName=f=>f.replace(/\.(gltf|glb)$/i,'');
+  const scriptLoads=new Map();
+  function loadAssetScript(name,baseUrl){
+    const store=globalThis.CHAR_ASSETS||{};
+    if(store[name])return Promise.resolve(store[name]);
+    if(!scriptLoads.has(name))scriptLoads.set(name,new Promise((res,rej)=>{
+      const sc=document.createElement('script');sc.src=baseUrl+'assets/characters/'+name+'.js';sc.async=true;
+      sc.onload=()=>globalThis.CHAR_ASSETS?.[name]?res(globalThis.CHAR_ASSETS[name]):rej(new Error('Asset vide : '+name));
+      sc.onerror=()=>{scriptLoads.delete(name);rej(new Error('Asset introuvable : '+name))};
+      document.head.appendChild(sc);
+    }));
+    return scriptLoads.get(name);
+  }
+  function b64ToBuffer(b64){const bin=atob(b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer}
+  const parsed=new Map();
+  // Les GLB parsés sont mis en cache ; chaque personnage reçoit une copie indépendante (SkeletonUtils-like).
+  async function loadAsset(THREE,loader,name,baseUrl){
+    if(!parsed.has(name))parsed.set(name,loadAssetScript(name,baseUrl).then(b64=>new Promise((res,rej)=>loader.parse(b64ToBuffer(b64),'',res,rej))));
+    return parsed.get(name);
+  }
+
+  // Clone profond d'une scène skinnée (équivalent de SkeletonUtils.clone, absent du build global r128).
+  function cloneSkinned(source){
+    const map=new Map(),clone=source.clone(true);
+    const walk=(a,b)=>{map.set(a,b);for(let i=0;i<a.children.length;i++)walk(a.children[i],b.children[i])};walk(source,clone);
+    clone.traverse(o=>{if(!o.isSkinnedMesh)return;
+      const src=[...map].find(([k,v])=>v===o)[0];
+      o.geometry=src.geometry.clone();
+      o.bind(new o.skeleton.constructor(src.skeleton.bones.map(b=>map.get(b)),src.skeleton.boneInverses),src.bindMatrix)});
+    return clone;
   }
 
   // Construit un personnage. Résout { root, height, clips }.
-  async function build(THREE,kitId,{baseUrl='',loader=makeLoader(THREE),withAnims=true}={}){
+  async function build(THREE,kitId,{baseUrl='',loader=new THREE.GLTFLoader(),withAnims=true}={}){
     const kit=KITS[kitId];if(!kit)throw new Error('Kit inconnu : '+kitId);
-    const load=u=>new Promise((res,rej)=>loader.load(baseUrl+u,res,undefined,rej));
+    const load=f=>loadAsset(THREE,loader,assetName(f),baseUrl).then(g=>({scene:cloneSkinned(g.scene),animations:g.animations}));
     const parts=kit.parts||[];
     const [bodyG,outfitG,...rest]=await Promise.all([
-      load(SRC.base+kit.body),load(SRC.outfit+kit.outfit),
-      ...kit.hair.map(h=>load(SRC.hair+h)),
-      ...parts.map(p=>load(SRC.parts+p)),
-      ...(withAnims?[load(SRC.anims)]:[])
+      load(kit.body),load(kit.outfit),
+      ...kit.hair.map(load),
+      ...parts.map(load),
+      ...(withAnims?[load('anims')]:[])
     ]);
     const nh=kit.hair.length,hairGs=rest.slice(0,nh),partGs=rest.slice(nh,nh+parts.length),animG=withAnims?rest[nh+parts.length]:null;
     const root=bodyG.scene,bones={};
@@ -201,5 +225,7 @@
     return {root,height,clips:animG?animG.animations:[]};
   }
 
-  return {KITS,SRC,build,makeLoader,keepOnlyBones,recolorTexture};
+  const kitFor=(race,cls)=>KITS[race+'_'+cls]?race+'_'+cls:null;
+
+  return {KITS,ANIMS,build,kitFor,assetName,keepOnlyBones,recolorTexture};
 });

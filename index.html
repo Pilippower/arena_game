@@ -199,6 +199,8 @@ body.mobile-mode #playBtn{font-size:14px!important;padding:9px 14px!important}
 <!-- High-fidelity character renderer. The game remains playable with the built-in fallback if these fail to load. -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js" crossorigin="anonymous"></script>
+<!-- Personnages CC0 assemblés (assets emballés en .js dans assets/characters/ : fonctionne en double-clic). -->
+<script src="characters.js"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id), canvas=$('c');
@@ -328,7 +330,16 @@ function updateSelectPreview3D(rk,ck){
    previewClearGroup();PREVIEW.group=group;PREVIEW.scene.add(group);previewFallbackModel(fake,group);if(load){load.textContent='';load.style.display='none'}
   });
  };
- tryCandidate(0);
+ const kit=hfKitFor(fake);
+ if(kit)hfLoadKit(kit,loader,(model,clips)=>{
+  if(requestId!==PREVIEW.requestId||PREVIEW.group!==group)return;
+  group.add(model);const rs=hfRaceScale(fake.race);group.scale.set(rs[0],rs[1],rs[2]);
+  PREVIEW.clips=clips;PREVIEW.mixer=new THREE.AnimationMixer(model);previewSetAnim();
+  group.position.set(0,0,0);group.rotation.y=.20;PREVIEW.loaded=true;
+  if(PREVIEW.loadTimer){clearTimeout(PREVIEW.loadTimer);PREVIEW.loadTimer=null}
+  if(load){load.textContent='';load.style.display='none'}
+ },()=>{if(requestId===PREVIEW.requestId)tryCandidate(0)});
+ else tryCandidate(0);
 }
 function hfInit(){
   if(!window.THREE||!THREE.GLTFLoader||!characterCanvas)return false;
@@ -424,8 +435,18 @@ function hfRaceDecor(rec,u,model=null){
     }
   }
   hfClassDecor(rec,u,g);
+  hfAddAura(rec,u,g);
+}
+function hfAddAura(rec,u,g){
   const c=CLASS[u.cls].accent,col=new THREE.Color(c[0],c[1],c[2]);
   const ring=new THREE.Mesh(new THREE.TorusGeometry(.56,.025,8,32),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.55}));ring.rotation.x=Math.PI/2;ring.position.y=.035;g.add(ring);rec.aura=ring;
+}
+// Personnages CC0 assemblés (characters.js) : prioritaires quand un kit existe pour la race+classe,
+// sinon (ou en cas d'échec de chargement) on garde les modèles historiques.
+function hfKitFor(u){return window.CharacterKit?CharacterKit.kitFor(u.race,u.cls):null}
+function hfLoadKit(kitId,loader,onModel,onFail){
+  CharacterKit.build(THREE,kitId,{loader}).then(k=>{k.root.scale.setScalar(2.18/k.height);onModel(k.root,k.clips)})
+    .catch(e=>{console.warn('Personnage indisponible, modèle de secours :',kitId,e);onFail()});
 }
 function hfNormalizeModel(root,u){
   const maxAniso=HF.renderer?.capabilities?.getMaxAnisotropy?Math.min(8,HF.renderer.capabilities.getMaxAnisotropy()):4;
@@ -443,13 +464,13 @@ function hfFindClip(rec,names){
 }
 function hfSetAnim(rec,u){
   if(!rec.mixer||!rec.clips?.length)return;
-  let key='idle',names=['Idle'];
-  if(!u.alive){key='death';names=['Death_A','Death','Die']}
-  else if(u.stun>0){key='cc';names=['Hit_A','Hit','Idle']}
-  else if(u.fear>0){key='run';names=['Running_A','Run','Walking_A','Walk']}
-  else if(u.action>0&&u.actionType==='melee'){key='attack';names=['1H_Melee_Attack_Chop','Unarmed_Melee_Attack_Punch_A','Attack']}
-  else if(u.cast||(u.action>0&&u.actionType==='cast')){key='cast';names=['Spellcast_Long','Spellcast','Cast','Interact','Spell']}
-  else if(u.moving){key='run';names=['Running_A','Run','Walking_A','Walk']}
+  let key='idle',names=['Idle_Loop','Idle'];
+  if(!u.alive){key='death';names=['Death01','Death_A','Death','Die']}
+  else if(u.stun>0){key='cc';names=['Hit_Chest','Hit_A','Hit','Idle']}
+  else if(u.fear>0){key='run';names=['Jog_Fwd_Loop','Running_A','Run','Walking_A','Walk']}
+  else if(u.action>0&&u.actionType==='melee'){key='attack';names=['Sword_Attack','1H_Melee_Attack_Chop','Unarmed_Melee_Attack_Punch_A','Attack']}
+  else if(u.cast||(u.action>0&&u.actionType==='cast')){key='cast';names=['Spell_Simple_Shoot','Spellcast_Long','Spellcast','Cast','Interact','Spell']}
+  else if(u.moving){key='run';names=['Jog_Fwd_Loop','Running_A','Run','Walking_A','Walk']}
   if(rec.animKey===key)return;
   const clip=hfFindClip(rec,names);if(!clip)return;
   const next=rec.mixer.clipAction(clip);next.reset();
@@ -471,7 +492,13 @@ function hfCreateRecord(u){
       }catch(e){console.warn('Modèle chargé mais invalide:',url,e);if(index+1<candidates.length)tryCandidate(index+1);else rec.failed=true}
     },undefined,err=>{console.warn('Modèle 3D non chargé:',url,err);HF.loadErrors.add(url);if(index+1<candidates.length)tryCandidate(index+1);else rec.failed=true});
   };
-  tryCandidate(0);
+  const kit=hfKitFor(u);
+  if(kit)hfLoadKit(kit,HF.loader,(model,clips)=>{
+    if(!HF.records.has(u.id))return;
+    rec.model=model;rec.group.add(model);rec.clips=clips;rec.mixer=new THREE.AnimationMixer(model);
+    rec.decor=new THREE.Group();rec.group.add(rec.decor);hfAddAura(rec,u,rec.decor);rec.loaded=true;rec.failed=false;
+  },()=>tryCandidate(0));
+  else tryCandidate(0);
 }
 function hfSyncUnits(){
   if(!HF.enabled||!state?.units)return;
