@@ -21,7 +21,8 @@
       palette:{dark:[.10,.10,.12],mid:[.36,.37,.40],trim:[.74,.56,.28],cloth:[.48,.50,.54]},
       weapon:'swordShield',
       armor:{mat:{kind:'metal',style:{base:[.64,.66,.70],trim:[.80,.60,.26],lames:3,ridge:true,rivets:true}},trim:[.80,.60,.26],
-        shells:['cuirass','belt','rerebrace','vambrace','cuisse','greave'],pauldron:{layers:3,size:.135}}},
+        shells:['cuirass','belt','rerebrace','vambrace','cuisse','greave'],pauldron:{layers:3,size:.135},
+        helmet:{mat:{kind:'metal',style:{base:[.66,.68,.72],trim:[.80,.60,.26],rivets:true}}}}},
     arcanist:{ // Sorcière de bataille : robe violet profond / or, capuche, bâton à cristal arcane
       sex:'F',outfit:['Peasant_Body','Peasant_Arms','Peasant_Legs','Peasant_Feet','Ranger_Head_Hood'],
       hair:{F:'Hair_Long',M:'Hair_SimpleParted'},hairColor:[.92,.72,.38],
@@ -79,7 +80,7 @@
     orc:{sex:'M',skin:[.58,.98,.42],hairColor:[.07,.05,.04],noHair:true,tusks:true,ears:{len:.055,up:.25},
       bones:{spine_02:1.1,spine_03:1.1,neck_01:.86}},
     dwarf:{sex:'M',skin:[1.08,.92,.84],hairColor:[.55,.24,.09],beard:true,hair:'Hair_Buzzed',
-      bones:{spine_01:1.15,neck_01:.92,thigh_l:.8,thigh_r:.8}},
+      bigBeard:true,bones:{spine_01:1.2,spine_02:1.05,neck_01:.9,upperarm_l:1.06,upperarm_r:1.06,thigh_l:.78,thigh_r:.78}},
     elf:{skin:[1.06,1.0,.98],hairColor:[.93,.90,.80],ears:{len:.13,up:.6},eyeGlow:[.35,.85,1.0],
       bones:{spine_03:.96}},
     undead:{skin:[.84,.80,.68],hairColor:[.17,.17,.16],noHair:true,skull:true,eyeGlow:[1.0,.75,.25],bones:{spine_03:.95,neck_01:.97}}
@@ -92,10 +93,10 @@
   function resolveKit(kitId){
     const [race,cls]=kitId.split('_'),R=RACES[race],C=CLASSES[cls];
     if(!R||!C)throw new Error('Kit inconnu : '+kitId);
-    const sex=sexFor(race,cls),hair=R.noHair?[]:[R.hair&&sex==='M'?R.hair:C.hair[sex]];if(R.beard)hair.push('Hair_Beard.gltf');
+    const sex=sexFor(race,cls),hair=R.noHair||C.armor?.helmet?[]:[R.hair&&sex==='M'?R.hair:C.hair[sex]];if(R.beard)hair.push('Hair_Beard.gltf');
     return {...C,race,cls,sex,body:'Superhero_'+SEXNAME[sex]+'_FullBody.gltf',outfit:'outfit_'+cls+'_'+sex,
       hair:hair.map(h=>/\.gltf$/.test(h)?h:h+'.gltf'),hairColor:R.hairColor||C.hairColor,skin:R.skin||[1,1,1],
-      eyeGlow:R.eyeGlow||C.eyeGlow,ears:R.ears,tusks:R.tusks,skull:R.skull,bones:R.bones||{}};
+      eyeGlow:R.eyeGlow||C.eyeGlow,ears:R.ears,tusks:R.tusks,skull:R.skull,bigBeard:R.bigBeard,bones:R.bones||{}};
   }
   const KITS={};for(const r in RACES)for(const c in CLASSES)KITS[r+'_'+c]={race:r,cls:c};
   // Pour le build : bundles de tenue (pièces fusionnées) et fichiers simples nécessaires.
@@ -622,11 +623,66 @@
     if(L.eyes)L.eyes.visible=false;                                  // seules les lueurs restent au fond des orbites
   }
 
+  // Casque ouvert ajusté à la tête : calotte, protège-joues, couvre-nuque et nasal.
+  function buildHelmet(THREE,bones,L,h,mat,trim){
+    const above=L.pts.filter(p=>p.y>L.eye.y-.02),cz=(Math.min(...above.map(p=>p.z))+Math.max(...above.map(p=>p.z)))/2,cx=L.cx;
+    const y0=L.eye.y-.085,y1=L.top+.018,RINGS=14,SEG=32,M=h.margin||.016,brow=L.eye.y+.012;
+    const rings=[];
+    for(let j=0;j<=RINGS;j++){
+      const t=j/RINGS,y=y0+(y1-y0)*(1-Math.pow(1-t,1.6)),r=new Array(SEG).fill(0);
+      for(const p of L.pts)if(Math.abs(p.y-y)<.014){const a=Math.atan2(p.x-cx,p.z-cz),k=Math.floor((a+Math.PI)/(Math.PI*2)*SEG)%SEG;r[k]=Math.max(r[k],Math.hypot(p.x-cx,p.z-cz))}
+      for(let pass=0;pass<SEG;pass++)for(let k=0;k<SEG;k++)if(!r[k])r[k]=Math.max(r[(k+SEG-1)%SEG],r[(k+1)%SEG]);
+      for(let pass=0;pass<3;pass++){const c=r.slice();for(let k=0;k<SEG;k++)r[k]=(c[(k+SEG-1)%SEG]+2*c[k]+c[(k+1)%SEG])/4}
+      if(j>0)for(let k=0;k<SEG;k++)r[k]=Math.min(r[k]+M,rings[j-1].r[k]+.02);else for(let k=0;k<SEG;k++)r[k]+=M;
+      if(j===RINGS)r.fill(0);                                     // sommet fermé
+      rings.push({y,r});
+    }
+    const pos=[],uv=[],idx=[];
+    for(let j=0;j<=RINGS;j++)for(let k=0;k<=SEG;k++){
+      const a=(k%SEG+.5)/SEG*Math.PI*2-Math.PI,rr=rings[j].r[k%SEG];
+      pos.push(cx+Math.sin(a)*rr,rings[j].y,cz+Math.cos(a)*rr);uv.push(k/SEG,j/RINGS);
+    }
+    for(let j=0;j<RINGS;j++)for(let k=0;k<SEG;k++){
+      const a=(k+.5)/SEG*Math.PI*2-Math.PI,y=rings[j].y;
+      // ouverture du visage : sous le front, l'avant reste dégagé ; les joues sont couvertes sur les côtés
+      if(y<brow&&Math.abs(a)<(y<L.eye.y-.035?1.05:.85))continue;
+      const i0=j*(SEG+1)+k,i1=i0+SEG+1;idx.push(i0,i1,i0+1,i1,i1+1,i0+1);
+    }
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+    geo.setIndex(idx);geo.computeVertexNormals();
+    const g=new THREE.Group();g.name='Helmet';g.add(new THREE.Mesh(geo,mat));
+    const frontR=rings[Math.round(RINGS*.3)].r[SEG/2|0];
+    const nasal=new THREE.Mesh(new THREE.BoxGeometry(.014,.06,.01),trim||mat);nasal.position.set(cx,L.eye.y-.012,cz+frontR-.004);g.add(nasal);
+    bones.Head.attach(g);return g;
+  }
+
+  // Barbe de nain : la barbe du pack est allongée et élargie, puis deux tresses cerclées d'or.
+  function dwarfBeard(THREE,root,bones,L,color){
+    let beard=null;root.traverse(o=>{if(o.isMesh&&/Beard/i.test(o.name))beard=o});if(!beard)return;
+    const geo=beard.geometry=beard.geometry.clone(),pos=geo.attributes.position,v=new THREE.Vector3();
+    beard.updateMatrixWorld(true);const toW=beard.matrixWorld,toL=toW.clone().invert(),anchor=L.mouthY+.01;
+    let bottom=Infinity;
+    for(let i=0;i<pos.count;i++){
+      v.fromBufferAttribute(pos,i).applyMatrix4(toW);const dy=anchor-v.y;
+      if(dy>0){v.y=anchor-dy*2.4;v.x=L.cx+(v.x-L.cx)*(1+Math.min(dy,.08)*5);v.z+=dy*.7}
+      bottom=Math.min(bottom,v.y);v.applyMatrix4(toL);pos.setXYZ(i,v.x,v.y,v.z);
+    }
+    pos.needsUpdate=true;geo.computeVertexNormals();
+    const hair=new THREE.MeshStandardMaterial({color,roughness:.85}),gold=new THREE.MeshStandardMaterial({color:0xd4a64a,metalness:.85,roughness:.3});
+    for(const side of [-1,1]){
+      const b=new THREE.Group();b.name='Braid';
+      for(let k=0;k<7;k++){const s=new THREE.Mesh(new THREE.SphereGeometry(.02-k*.0013,10,8),hair);s.scale.set(1,1.4,.9);s.position.set((k%2?.004:-.004),-k*.026,0);s.rotation.z=k%2?.4:-.4;b.add(s)}
+      const ring=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.018,12),gold);ring.position.y=-7*.026+.03;b.add(ring);
+      b.position.set(L.cx+side*.028,bottom+.02,L.mouthZ+.03);bones.Head.attach(b);
+    }
+  }
+
   function buildArmor(THREE,root,body,bones,a,height,fit,L){
     const mat=armorMaterial(THREE,a.mat),trim=a.trim?new THREE.MeshStandardMaterial({color:new THREE.Color(...a.trim),metalness:.85,roughness:.3,envMap:envMap(THREE),envMapIntensity:1.2}):null;
     for(const n of a.shells||[])for(const k of [n,n+'_l',n+'_r'])if(SHELLS[k])fitShell(THREE,bones,fit,SHELLS[k],a.shellMat&&a.shellMat[n]?armorMaterial(THREE,a.shellMat[n]):mat,'Armor_'+k);
     if(a.pauldron)buildPauldrons(THREE,bones,a.pauldron,height,a.pauldron.mat?armorMaterial(THREE,a.pauldron.mat):mat,trim);
     if(a.mask)faceMask(THREE,body,L,a.mask);
+    if(a.helmet)buildHelmet(THREE,bones,L,a.helmet,armorMaterial(THREE,a.helmet.mat||a.mat),trim);
   }
 
   // Les modèles sont emballés en .js (tools/build_characters.js) : window.CHAR_ASSETS[nom]=GLB en base64.
@@ -704,6 +760,7 @@
     headFeatures(THREE,kit,root,body,bones,skinColor||new THREE.Color(.6,.45,.35));
     if(kit.eyeGlow){const inv=new THREE.Matrix4().copy(body.matrixWorld).invert(),col=new THREE.Color(...kit.eyeGlow);root.traverse(o=>{if(o.isMesh&&o.name==='Eyes')glowEyes(THREE,o,col,bones.Head,inv)})}
     const L=headLandmarks(THREE,root,body);
+    if(kit.bigBeard)dwarfBeard(THREE,root,bones,L,hairColor);
     if(kit.skull){skullFace(THREE,body,L);root.traverse(o=>{if(o.name==='Eyebrows')o.visible=false})}
     const outfitMeshes=[];root.traverse(o=>{if(o.isSkinnedMesh&&/Ranger|Peasant/.test(o.name))outfitMeshes.push(o)});
     if(kit.armor)buildArmor(THREE,root,body,bones,kit.armor,height,outfitMeshes,L);
