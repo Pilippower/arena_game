@@ -114,6 +114,29 @@ async function run(){
       await page.waitForTimeout(500);
       const anim=await page.evaluate(()=>HF.records.get(state.player.id).action?.getClip().name);
       assert.equal(anim,'Idle_Loop','animation de repos Quaternius attendue');
+      // Métamorphose : mouton qui erre dans 1 m de rayon, ne peut rien faire, brisée au premier coup
+      const poly=await page.evaluate(async()=>{for(const u of state.units)if(u!==state.player)u.ai=false;
+        const pl=state.player,e=state.units.find(u=>u.team!==pl.team);pl.x=e.x-6;pl.z=e.z;pl.target=e;pl.gcd=0;
+        // attentes en temps de simulation (le rendu logiciel des tests est lent)
+        const simWait=(sec)=>new Promise(r=>{const t0=state.elapsed;const f=()=>state.elapsed-t0>=sec?r():setTimeout(f,50);f()});
+        const cast=useSkill(pl,5);await simWait(1.7);const o={cast,poly:e.poly};
+        await simWait(2);const rec=HF.records.get(e.id);
+        o.dist=Math.hypot(e.x-e.polyX,e.z-e.polyZ);o.sheep=!!rec.sheep?.visible;o.hidden=!rec.model.visible;o.act=useSkill(e,0);
+        damage(pl,e,1);o.after=e.poly;return o});
+      assert.ok(poly.cast,'Polymorph lancé');assert.ok(poly.poly>5,`cible métamorphosée (${poly.poly})`);
+      assert.ok(poly.dist<=1.0,`le mouton reste dans 2 m de diamètre (${poly.dist})`);
+      assert.ok(poly.sheep&&poly.hidden,'modèle remplacé par le mouton');assert.equal(poly.act,false,'un mouton ne peut pas lancer de sort');
+      assert.equal(poly.after,0,'un coup brise la métamorphose');
+      // Saut : animation en l'air (pas de course qui « pédale »)
+      await page.evaluate(()=>{const p=state.player;p.vy=7.5;p.grounded=false});await page.waitForFunction(()=>HF.records.get(state.player.id).animKey==='air'||state.player.grounded,null,{timeout:10000});
+      assert.equal(await page.evaluate(()=>HF.records.get(state.player.id).animKey),'air','animation de saut en l\'air');
+      await page.waitForTimeout(1200);
+      // Pas chassé (caméra tenue) : le modèle se tourne vers la direction de course, l'orientation de jeu ne change pas
+      await page.evaluate(()=>{looking=true;state.player.yaw=camera.yaw});await page.waitForFunction(()=>state.player.grounded,null,{timeout:20000});await page.focus('#c');await page.keyboard.down('KeyD');await page.waitForFunction(()=>Math.abs(Math.abs(HF.records.get(state.player.id).moveOff)-Math.PI/2)<.2,null,{timeout:20000}).catch(()=>{});
+      const strafe=await page.evaluate(()=>({off:HF.records.get(state.player.id).moveOff,yaw:state.player.yaw,cam:camera.yaw}));
+      await page.keyboard.up('KeyD');await page.evaluate(()=>{looking=false});
+      assert.ok(Math.abs(Math.abs(strafe.off)-Math.PI/2)<.2,`corps tourné de 90° en pas chassé (${strafe.off})`);
+      assert.ok(Math.abs(strafe.yaw-strafe.cam)<1e-6,'orientation de jeu = caméra pendant le pas chassé');
       // Les 35 combinaisons race+classe s'assemblent, avec leurs pièces distinctives
       const built=await page.evaluate(async()=>{const out={};
         for(const id of Object.keys(CharacterKit.KITS)){const k=await CharacterKit.build(THREE,id,{withAnims:false});const names=new Set();k.root.traverse(o=>names.add(o.name));
