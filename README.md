@@ -10,8 +10,11 @@
 
 ## Desktop / mobile
 - `index.html` : version desktop + détection automatique mobile.
-- `mobile.html` : force directement le mode mobile.
+- `mobile.html` : redirige vers `index.html?mobile=1` (force le mode mobile).
 - Le mode mobile conserve joystick, caméra tactile, sorts cliquables et plein écran.
 
 ## Contrôles desktop
 Z/S/Q/D, Espace, clic droit caméra, molette zoom, TAB/clic gauche ciblage, sorts 1–5, Trinket R.
+
+## Tests
+`npm install` puis `npm test` (tests logiques + démarrage réel dans Edge/Chrome headless).

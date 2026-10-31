@@ -1,0 +1,12 @@
+{
+  "name": "arena-ascendant",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prototype d'arène 3v3 fantasy jouable dans le navigateur",
+  "scripts": {
+    "test": "node tests/run_all.js"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.48.0"
+  }
+}
