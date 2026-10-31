@@ -82,6 +82,7 @@ async function run(){
       assert.equal(s.round,1);assert.equal(s.units,6,'3v3 = 6 unités');
       assert.equal(s.pcls,'arcanist');assert.equal(s.prace,'orc');
       assert.ok(s.elapsed>0,'la simulation doit avancer');
+      assert.equal(await page.evaluate(()=>ENV.ok),true,'décor 3D (environment.js) chargé');
       assert.equal(await bootError(page),'');
       assert.deepEqual(errors,[],'erreurs JS desktop');
       await ctx.close();

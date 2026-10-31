@@ -12,7 +12,7 @@
 #top{border-width:0 0 1px;display:flex;align-items:center;justify-content:space-between;padding:0 16px}#bottom{border-width:1px 0 0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:10px 16px}
 h1{font-size:18px;margin:0;color:#ffe9b8;text-shadow:0 2px 3px #000}.sub{font-size:11px;color:var(--muted)}
 button{border:1px solid #8d6a35;background:linear-gradient(180deg,#45301c,#25180f);color:#fff1cf;border-radius:9px;padding:8px 11px;cursor:pointer;box-shadow:inset 0 1px #c29d5e,0 3px 12px #0007}button:hover{filter:brightness(1.15)}button:disabled{opacity:.45;cursor:default}
-#game{position:relative;min-height:0;background:#1b2230}canvas{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none}#c{z-index:0}#character3d{z-index:1;pointer-events:none;background:transparent}
+#game{position:relative;min-height:0;background:#1b2230}canvas{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none}#env3d{z-index:0;pointer-events:none}#c{z-index:1}#character3d{z-index:2;pointer-events:none;background:transparent}
 .hud{position:absolute;inset:0;z-index:3;pointer-events:none}.frame{position:absolute;background:linear-gradient(180deg,rgba(45,31,20,.92),rgba(18,13,10,.86));border:1px solid #806137;border-radius:11px;padding:9px;backdrop-filter:blur(5px);box-shadow:inset 0 1px #d2aa6744,0 7px 22px #0008}
 #selfFrame{left:14px;top:14px;width:236px}#targetFrame{right:14px;top:14px;width:236px}#arenaFrames{right:14px;top:118px;width:236px;padding:6px}#help{left:14px;bottom:14px;max-width:318px;font-size:11px;line-height:1.45;color:#e8dab8}
 .nameRow{display:flex;justify-content:space-between;gap:8px}.bar{height:9px;border-radius:999px;background:#251d16;overflow:hidden;margin-top:6px;box-shadow:inset 0 2px 3px #0009}.fill{height:100%;background:linear-gradient(#84ef9d,#2eb655)}.fill.enemy{background:linear-gradient(#ff9aa5,#df4352)}.resource{height:6px;margin-top:4px}.resource .fill{background:linear-gradient(#8fc7ff,#477be7)}
@@ -87,7 +87,7 @@ body.mobile-mode #playBtn{font-size:14px!important;padding:9px 14px!important}
 <div id="app">
 <header id="top"><div><h1>⚔ Arena Ascendant</h1><div class="sub">3v3 · WebGL · arène MMO fantasy originale</div></div><div class="topControls"><label class="volumeMini" title="Volume audio">🔊 <input id="volumeMini" type="range" min="0" max="200" value="65"></label><button id="settingsBtn">⚙ Interface</button><button id="fullscreenBtn" title="Plein écran" aria-label="Plein écran">⛶</button><button id="musicBtn">♫ Musique : ON</button><button id="restartBtn">Changer de classe</button></div></header>
 <main id="game">
-<canvas id="c" tabindex="0"></canvas>
+<canvas id="env3d"></canvas><canvas id="c" tabindex="0"></canvas>
 <canvas id="character3d" aria-hidden="true"></canvas>
 <div class="hud">
   <div id="selfFrame" class="frame uiMovable"></div>
@@ -201,6 +201,7 @@ body.mobile-mode #playBtn{font-size:14px!important;padding:9px 14px!important}
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js" crossorigin="anonymous"></script>
 <!-- Personnages CC0 assemblés (assets emballés en .js dans assets/characters/ : fonctionne en double-clic). -->
 <script src="characters.js"></script>
+<script src="environment.js"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id), canvas=$('c');
@@ -215,7 +216,7 @@ let PREFS=null;
 function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify(PREFS))}catch(_){}}
 function keyLabel(code){const m={Space:'Espace',Tab:'TAB',Escape:'Échap',ShiftLeft:'Shift G',ShiftRight:'Shift D',ControlLeft:'Ctrl G',ControlRight:'Ctrl D',AltLeft:'Alt G',AltRight:'Alt D',Backquote:'²',Minus:'-',Equal:'=',BracketLeft:'[',BracketRight:']',Semicolon:';',Comma:',',Period:'.',Slash:'/'};if(m[code])return m[code];if(/^Digit\d$/.test(code))return code.slice(-1);if(/^Key[A-Z]$/.test(code))return code.slice(-1);if(/^F\d+$/.test(code))return code;return code.replace(/^Numpad/,'Num ')}
 const RESERVED_BIND_CODES=new Set(['KeyZ','KeyQ','KeyS','KeyD','KeyW','KeyA','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space','Tab','Escape']);
-const gl=canvas.getContext('webgl',{antialias:true,alpha:false,premultipliedAlpha:false})||canvas.getContext('experimental-webgl');
+const gl=canvas.getContext('webgl',{antialias:true,alpha:true,premultipliedAlpha:true})||canvas.getContext('experimental-webgl');
 
 // ---------- Artist-made 3D character layer (CC0 assets) ----------
 // This layer is deliberately isolated from GameLogic: camera/movement controls stay frozen.
@@ -665,14 +666,14 @@ function sphereMesh(lat=14,lon=18){const p=[],n=[],i=[];for(let y=0;y<=lat;y++){
 function cylMesh(seg=20,topR=1){const p=[],n=[],i=[];for(let y=0;y<=1;y++)for(let k=0;k<=seg;k++){const a=k/seg*Math.PI*2,r=y?topR:1,x=Math.sin(a),z=Math.cos(a);p.push(x*r,y*2-1,z*r);n.push(x,0,z)}for(let k=0;k<seg;k++){const a=k,b=a+seg+1;i.push(a,b,a+1,b,b+1,a+1)}const top=p.length/3;p.push(0,1,0);n.push(0,1,0);for(let k=0;k<=seg;k++){const a=k/seg*Math.PI*2;p.push(Math.sin(a)*topR,1,Math.cos(a)*topR);n.push(0,1,0)}for(let k=0;k<seg;k++)i.push(top,top+k+1,top+k+2);const bot=p.length/3;p.push(0,-1,0);n.push(0,-1,0);for(let k=0;k<=seg;k++){const a=k/seg*Math.PI*2;p.push(Math.sin(a),-1,Math.cos(a));n.push(0,-1,0)}for(let k=0;k<seg;k++)i.push(bot,bot+k+2,bot+k+1);return mesh(p,n,i)}
 function torusMesh(seg=32,tube=9){const p=[],n=[],i=[],R=1,r=.12;for(let a=0;a<=seg;a++){const A=a/seg*Math.PI*2;for(let b=0;b<=tube;b++){const B=b/tube*Math.PI*2,cb=Math.cos(B),sb=Math.sin(B),sa=Math.sin(A),ca=Math.cos(A);p.push(sa*(R+r*cb),r*sb,ca*(R+r*cb));n.push(sa*cb,sb,ca*cb)}}for(let a=0;a<seg;a++)for(let b=0;b<tube;b++){const x=a*(tube+1)+b,y=x+tube+1;i.push(x,y,x+1,y,y+1,x+1)}return mesh(p,n,i)}
 if(gl)meshes={cube:cubeMesh(),sphere:sphereMesh(18,24),cyl:cylMesh(24),cone:cylMesh(24,.08),torus:torusMesh(36,10),chest:cylMesh(24,1.28),robe:cylMesh(24,.58),boot:cylMesh(18,.78)};
-function drawMesh(me,m,color,em=[0,0,0],alpha=1){gl.bindBuffer(gl.ARRAY_BUFFER,me.vb);gl.enableVertexAttribArray(loc.pos);gl.vertexAttribPointer(loc.pos,3,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ARRAY_BUFFER,me.nb);gl.enableVertexAttribArray(loc.normal);gl.vertexAttribPointer(loc.normal,3,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,me.ib);gl.uniformMatrix4fv(loc.model,false,m);gl.uniform3fv(loc.color,color);gl.uniform3fv(loc.em,em);gl.uniform1f(loc.alpha,alpha);if(alpha<.999){gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false)}else{gl.disable(gl.BLEND);gl.depthMask(true)}gl.drawElements(gl.TRIANGLES,me.count,gl.UNSIGNED_SHORT,0);if(alpha<.999){gl.depthMask(true);gl.disable(gl.BLEND)}}
+function drawMesh(me,m,color,em=[0,0,0],alpha=1){gl.bindBuffer(gl.ARRAY_BUFFER,me.vb);gl.enableVertexAttribArray(loc.pos);gl.vertexAttribPointer(loc.pos,3,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ARRAY_BUFFER,me.nb);gl.enableVertexAttribArray(loc.normal);gl.vertexAttribPointer(loc.normal,3,gl.FLOAT,false,0,0);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,me.ib);gl.uniformMatrix4fv(loc.model,false,m);gl.uniform3fv(loc.color,color);gl.uniform3fv(loc.em,em);gl.uniform1f(loc.alpha,alpha);if(alpha<.999){gl.enable(gl.BLEND);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false)}else{gl.disable(gl.BLEND);gl.depthMask(true)}gl.drawElements(gl.TRIANGLES,me.count,gl.UNSIGNED_SHORT,0);if(alpha<.999){gl.depthMask(true);gl.disable(gl.BLEND)}}
 function part(name,p,r,s,c,e=[0,0,0],a=1){drawMesh(meshes[name],model(p,r,s),c,e,a)}
 function glowPart(name,p,r,s,c,a=.45){
  const me=meshes[name],m=model(p,r,s);if(!me)return;
  gl.bindBuffer(gl.ARRAY_BUFFER,me.vb);gl.enableVertexAttribArray(loc.pos);gl.vertexAttribPointer(loc.pos,3,gl.FLOAT,false,0,0);
  gl.bindBuffer(gl.ARRAY_BUFFER,me.nb);gl.enableVertexAttribArray(loc.normal);gl.vertexAttribPointer(loc.normal,3,gl.FLOAT,false,0,0);
  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,me.ib);gl.uniformMatrix4fv(loc.model,false,m);gl.uniform3fv(loc.color,[0,0,0]);gl.uniform3fv(loc.em,c);gl.uniform1f(loc.alpha,a);
- gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE);gl.depthMask(false);gl.drawElements(gl.TRIANGLES,me.count,gl.UNSIGNED_SHORT,0);gl.depthMask(true);gl.disable(gl.BLEND);
+ gl.enable(gl.BLEND);gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE,gl.ZERO,gl.ONE);gl.depthMask(false);gl.drawElements(gl.TRIANGLES,me.count,gl.UNSIGNED_SHORT,0);gl.depthMask(true);gl.disable(gl.BLEND);
 }
 function local(u,x,y,z){const sy=Math.sin(u.yaw),cy=Math.cos(u.yaw);return[u.x+x*cy+z*sy,(u.y||0)+y,u.z-x*sy+z*cy]}
 
@@ -1074,7 +1075,23 @@ function renderHealthShrines(){
    else{const k=clamp(sh.respawn/45,0,1);part('torus',[sh.x,.06,sh.z],[0,0,0],[.72,.035,.72],[.22,.30,.24],[.05,.10,.06],.28);}
  }
 }
+// Décor three.js (environment.js) dessiné sous ce canevas ; en cas d'échec, l'arène historique ci-dessous reste affichée.
+const ENV={attempted:false,ok:false};
+function envEnsureInit(){
+  if(ENV.attempted)return ENV.ok;ENV.attempted=true;
+  try{ENV.ok=!!(window.THREE&&window.ArenaEnv&&ArenaEnv.init(THREE,$('env3d'),arena,{mobile:document.body.classList.contains('mobile-mode')}))}
+  catch(e){console.warn('Décor 3D indisponible, arène simplifiée :',e);ENV.ok=false}
+  if(!ENV.ok)$('env3d').style.display='none';return ENV.ok;
+}
 function renderArena(){
+ if(ENV.ok){
+  // le décor est sur le canevas du dessous : ici, seulement la profondeur des piliers/murs (les effets passent derrière) et les sanctuaires
+  const hx=arena.halfX,hz=arena.halfZ;gl.colorMask(false,false,false,false);
+  for(const p of arena.pillars)part('cyl',[p.x,p.h/2,p.z],[0,0,0],[p.r,p.h/2,p.r],[0,0,0]);
+  part('cube',[0,1.7,-hz-.5],[0,0,0],[hx+1.2,1.7,.5],[0,0,0]);part('cube',[0,1.7,hz+.5],[0,0,0],[hx+1.2,1.7,.5],[0,0,0]);
+  part('cube',[-hx-.5,1.7,0],[0,0,0],[.5,1.7,hz+1.2],[0,0,0]);part('cube',[hx+.5,1.7,0],[0,0,0],[.5,1.7,hz+1.2],[0,0,0]);
+  gl.colorMask(true,true,true,true);renderHealthShrines();return;
+ }
  const hx=arena.halfX,hz=arena.halfZ;
  // Broad arena floor with greener, less toy-like materials.
  part('cube',[0,-.26,0],[0,0,0],[hx+4,.24,hz+4],[.12,.14,.11]);
@@ -1192,7 +1209,8 @@ function renderFx(){
   }else part('sphere',[f.x,f.y,f.z],[0,0,0],[grow,grow,grow],f.color,hexish(f.color,.7),k*.55);
  }
 }
-function render(){if(!gl)return;resize();gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.clearColor(.10,.14,.22,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);setupCamera();if(typeof renderArena!=='function')throw Error('renderArena manquant');renderArena();renderPersistentCC();const hfOn=hfEnsureInit();if(state?.units)for(const u of state.units){const rec=hfOn?HF.records.get(u.id):null;if(!hfOn||(rec&&rec.failed))renderCharacter(u)}renderFx();renderOverlayWorld();if(hfOn)hfRender()}
+function render(){if(!gl)return;resize();gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);const envOn=envEnsureInit();if(envOn)gl.clearColor(0,0,0,0);else gl.clearColor(.10,.14,.22,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);setupCamera();
+if(envOn){const p=state?.player||{x:0,y:0,z:0},r=canvas.getBoundingClientRect();ArenaEnv.render(camPos,[p.x,(p.y||0)+1.25,p.z],state?.units,r.width,r.height)}if(typeof renderArena!=='function')throw Error('renderArena manquant');renderArena();renderPersistentCC();const hfOn=hfEnsureInit();if(state?.units)for(const u of state.units){const rec=hfOn?HF.records.get(u.id):null;if(!hfOn||(rec&&rec.failed))renderCharacter(u)}renderFx();renderOverlayWorld();if(hfOn)hfRender()}
 function projectScreen(x,y,z){if(!viewProj)return null;const q=tf(viewProj,[x,y,z,1]);if(q[3]<=.01)return null;const nx=q[0]/q[3],ny=q[1]/q[3];return{x:(nx*.5+.5)*canvas.clientWidth,y:(1-(ny*.5+.5))*canvas.clientHeight,z:q[2]/q[3]}}
 function renderOverlayWorld(){if(!state)return;const np=$('nameplates');np.innerHTML=state.units.filter(u=>u.alive).map(u=>{const p=projectScreen(u.x,(u.y||0)+2.65,u.z);if(!p||p.x<-60||p.x>canvas.clientWidth+60||p.y<-30||p.y>canvas.clientHeight+30)return'';const c=u.team===0?'#58c3ff':'#ff6976',target=u===state.player.target?' target':'';return`<div class="nameplate${target}" style="left:${p.x}px;top:${p.y}px"><div class="npName">${u.name}</div><div class="npBar"><div class="npFill" style="width:${100*u.hp/u.maxHp}%;background:${c}"></div></div></div>`}).join('');$('floaters').innerHTML=state.floaters.map(f=>{const p=projectScreen(f.x+f.off,f.y,f.z);if(!p)return'';const a=clamp(f.life/f.max,0,1);return`<div class="floater" style="left:${p.x}px;top:${p.y}px;color:${f.color};opacity:${a}">${f.text}</div>`}).join('')}
 
