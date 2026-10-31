@@ -102,12 +102,44 @@
     return m;
   }
 
+  // Fusionne des maillages statiques qui partagent un matériau (transformations appliquées) : des centaines
+  // d'appels de dessin deviennent quelques-uns, ce qui soulage beaucoup le processeur sur mobile.
+  function mergeMeshes(THREE,meshes,toLocal){
+    const groups=new Map();
+    for(const m of meshes){const k=m.material.uuid+'|'+m.castShadow+'|'+m.receiveShadow;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(m)}
+    const out=[];
+    for(const list of groups.values()){
+      if(list.length<2){out.push(null);continue}
+      const pos=[],nor=[],uv=[],idx=[];let base=0;
+      for(const m of list){
+        const g=m.geometry,mat=new THREE.Matrix4().multiplyMatrices(toLocal,m.matrixWorld),nm=new THREE.Matrix3().getNormalMatrix(mat);
+        const P=g.attributes.position,N=g.attributes.normal,U=g.attributes.uv,v=new THREE.Vector3();
+        for(let i=0;i<P.count;i++){v.fromBufferAttribute(P,i).applyMatrix4(mat);pos.push(v.x,v.y,v.z);
+          if(N){v.fromBufferAttribute(N,i).applyMatrix3(nm).normalize();nor.push(v.x,v.y,v.z)}else nor.push(0,1,0);
+          if(U)uv.push(U.getX(i),U.getY(i));else uv.push(0,0)}
+        if(g.index)for(let i=0;i<g.index.count;i++)idx.push(base+g.index.getX(i));else for(let i=0;i<P.count;i++)idx.push(base+i);
+        base+=P.count;
+      }
+      const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));
+      geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(idx);geo.computeBoundingSphere();
+      const mm=new THREE.Mesh(geo,list[0].material);mm.castShadow=list[0].castShadow;mm.receiveShadow=list[0].receiveShadow;
+      for(const m of list){m.parent.remove(m);m.geometry.dispose()}
+      out.push(mm);
+    }
+    return out.filter(Boolean);
+  }
+  function mergeStatic(THREE,S){
+    S.updateMatrixWorld(true);const list=[];
+    S.traverse(o=>{if(o.isMesh&&!o.isInstancedMesh&&!o.isSkinnedMesh&&!o.userData.dynamic&&!o.material.isShaderMaterial&&!o.material.transparent&&!o.material.onBeforeCompile.toString().includes('time'))list.push(o)});
+    for(const m of mergeMeshes(THREE,list,new THREE.Matrix4()))S.add(m);
+  }
+
   const E={ok:false,THREE:null};
 
   function init(THREE,canvasEl,arena,{mobile=false}={}){
     E.THREE=THREE;E.arena=arena;E.mobile=mobile;
     const R=E.renderer=new THREE.WebGLRenderer({canvas:canvasEl,antialias:!mobile,powerPreference:'high-performance'});
-    R.setPixelRatio(Math.min(mobile?1.25:1.5,devicePixelRatio||1));
+    R.setPixelRatio(Math.min(mobile?1:1.5,devicePixelRatio||1));
     R.outputEncoding=THREE.sRGBEncoding;R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.05;
     R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;
     const S=E.scene=new THREE.Scene();
@@ -146,6 +178,9 @@
     buildOutside(THREE,S,arena);
     buildCastle(THREE,S,arena);
     buildShadows(THREE,S);
+    mergeStatic(THREE,S);
+    // décor immobile : la carte d'ombres est calculée une fois, pas à chaque image
+    R.shadowMap.autoUpdate=false;R.shadowMap.needsUpdate=true;
     E.ok=true;return true;
   }
 
@@ -189,7 +224,7 @@
           transformed.z+=cos(time*1.3+ip.x*.27)*.05*k;`);
       sh.fragmentShader=sh.fragmentShader.replace('#include <normal_fragment_begin>','#include <normal_fragment_begin>\nnormal=normalize(vec3(0.,1.,0.)*.6+normal*.4);');   // éclairage doux, sans face sombre
     };
-    const N=E.mobile?9000:26000,inst=new THREE.InstancedMesh(blade,mat,N),m=new THREE.Matrix4(),q=new THREE.Quaternion(),s=new THREE.Vector3(),p=new THREE.Vector3(),col=new THREE.Color();
+    const N=E.mobile?7000:26000,inst=new THREE.InstancedMesh(blade,mat,N),m=new THREE.Matrix4(),q=new THREE.Quaternion(),s=new THREE.Vector3(),p=new THREE.Vector3(),col=new THREE.Color();
     let n=0,tries=0;
     while(n<N&&tries<N*12){tries++;
       const x=(r()*2-1)*hx,z=(r()*2-1)*hz,a=grassAmount(arena,x,z);if(r()>a*a)continue;
@@ -231,7 +266,7 @@
       add(new THREE.CylinderGeometry(r*1.3,r*1.0,.4,8),darkStone,h-.42);                      // chapiteau
       add(new THREE.CylinderGeometry(r*1.38,r*1.38,.22,8),stoneMat,h-.11);
       // cristal flottant au sommet
-      const cr=add(new THREE.OctahedronGeometry(.42,0),crystalMat,h+1.0,false);cr.scale.set(.75,1.6,.75);
+      const cr=add(new THREE.OctahedronGeometry(.42,0),crystalMat,h+1.0,false);cr.userData.dynamic=true;cr.scale.set(.75,1.6,.75);
       const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glow,color:0x56b4ff,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false,opacity:.75}));sp.scale.setScalar(3.2);sp.position.y=h+1.0;g.add(sp);
       E.crystals.push({mesh:cr,sprite:sp,y:h+1.0,phase:p.x*.3+p.z*.2});
       // pierres tombées et mousse au pied
@@ -311,7 +346,7 @@
       m.compose(p.set(x,y+sc,z),q,s.setScalar(sc));trunk.setMatrixAt(n,m);
       col.setHSL(.29+r()*.07,.30+r()*.2,.10+r()*.07);
       tiers.forEach((t,k)=>{m.compose(p.set(x,y+sc*(2.4+k*1.35),z),q,s.setScalar(sc*(1-k*.06)));t.setMatrixAt(n,m);t.setColorAt(n,col)});n++}
-    for(const t of [trunk,...tiers]){t.castShadow=true;S.add(t)}
+    for(const t of [trunk,...tiers])S.add(t);
     // chaîne de montagnes au loin (brume)
     const mMat=new THREE.MeshStandardMaterial({color:0x5c6688,roughness:1,flatShading:true});
     const snow=new THREE.MeshStandardMaterial({color:0xe8ecf6,roughness:.9,flatShading:true});
@@ -382,5 +417,6 @@
     R.render(E.scene,E.camera);
   }
 
-  return {init,render,get ok(){return E.ok},grassAmount};
+  const stats=()=>E.renderer?{calls:E.renderer.info.render.calls,triangles:E.renderer.info.render.triangles}:null;
+  return {init,render,stats,mergeMeshes,get ok(){return E.ok},grassAmount};
 });

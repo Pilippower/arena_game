@@ -153,8 +153,12 @@
   }
 
   // Les tenues fusionnent plusieurs pièces, chacune avec son squelette : GLTFLoader suffixe alors les doublons (root_1, spine_01_2…).
-  function bindToSkeleton(THREE,mesh,bones,host){
-    const sk=new THREE.Skeleton(mesh.skeleton.bones.map(b=>bones[b.name]||bones[b.name.replace(/_\d+$/,'')]||b),mesh.skeleton.boneInverses);
+  // Les pièces qui ont les mêmes os et les mêmes matrices de bind partagent un squelette (`shared`) :
+  // three ne recalcule alors les matrices qu'une fois par image au lieu d'une fois par pièce.
+  function bindToSkeleton(THREE,mesh,bones,host,shared){
+    const list=mesh.skeleton.bones.map(b=>bones[b.name]||bones[b.name.replace(/_\d+$/,'')]||b),inv=mesh.skeleton.boneInverses;
+    let sk=shared&&shared.find(k=>k.bones.length===list.length&&k.bones.every((b,i)=>b===list[i])&&k.boneInverses.every((m,i)=>m.equals(inv[i])));
+    if(!sk){sk=new THREE.Skeleton(list,inv);if(shared)shared.push(sk)}
     host.add(mesh);mesh.bind(sk,mesh.bindMatrix);
   }
 
@@ -735,7 +739,7 @@
     root.traverse(o=>{if(o.isSkinnedMesh){if(/^Super/i.test(o.name)){keepOnlyBones(o,['Head','neck_01']);body=o}}});
     const hairColor=new THREE.Color(...kit.hairColor);
     root.traverse(o=>{if(o.isMesh&&o.name==='Eyebrows'){o.material=o.material.clone();o.material.color=hairColor}});
-    const attach=g=>{const ms=[];g.scene.traverse(o=>{if(o.isSkinnedMesh)ms.push(o)});ms.forEach(m=>bindToSkeleton(THREE,m,bones,body.parent))};
+    const shared=[body.skeleton],attach=g=>{const ms=[];g.scene.traverse(o=>{if(o.isSkinnedMesh)ms.push(o)});ms.forEach(m=>bindToSkeleton(THREE,m,bones,body.parent,shared))};
     if(kit.robe)outfitG.scene.traverse(o=>{if(o.isSkinnedMesh&&/_Legs$/.test(o.name))keepOnlyBones(o,['calf_l','calf_r','foot_l','foot_r','ball_l','ball_r'])});
     attach(outfitG);hairGs.forEach(attach);
     const recolored=new Map(),skinTint=new THREE.Color(...kit.skin);let skinColor=null;
@@ -772,6 +776,11 @@
     const drop=wy(bones.foot_l)-foot0;
     if(Math.abs(drop)>1e-4){const rig=new THREE.Group();rig.name='Rig';[...root.children].forEach(c=>rig.add(c));root.add(rig);rig.position.y=-drop}
     height+=wy(bones.Head)-head0;
+    // Pièces rigides (épaulières, casque, armes, feuilles…) : fusionnées par matériau dans chaque groupe, moins d'appels de dessin.
+    const merge=globalThis.ArenaEnv&&globalThis.ArenaEnv.mergeMeshes;
+    if(merge){root.updateMatrixWorld(true);const groups=[];root.traverse(o=>{if(o.isGroup&&/^(Pauldron|Helmet|Shield|Sword|Runeblade|Dagger|Staff|Antler|Braid)$/.test(o.name))groups.push(o)});
+      for(const g of groups){const meshes=[];g.traverse(o=>{if(o.isMesh&&!o.isSkinnedMesh&&!o.material.transparent)meshes.push(o)});
+        for(const m of merge(THREE,meshes,new THREE.Matrix4().copy(g.matrixWorld).invert())){m.frustumCulled=false;g.add(m)}}}
     return {root,height,clips:animG?animG.animations:[]};
   }
 
