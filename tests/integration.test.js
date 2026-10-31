@@ -2,8 +2,10 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
-const logic=fs.readFileSync(path.join(__dirname,'..','game_logic.js'),'utf8').trim();
+// Fins de ligne normalisées : sous Windows, git (autocrlf) peut réécrire les fichiers en CRLF.
+const read=f=>fs.readFileSync(path.join(__dirname,'..',f),'utf8').replace(/\r\n/g,'\n');
+const html=read('index.html');
+const logic=read('game_logic.js').trim();
 
 assert.doesNotMatch(html,/script src="game_logic\.js"/, 'index.html doit rester autonome');
 assert.match(html,/script id="game-logic-inline"/, 'GameLogic inline manquant');
