@@ -21,6 +21,8 @@ button{border:1px solid #8d6a35;background:linear-gradient(180deg,#45301c,#25180
 .nameRow{display:flex;justify-content:space-between;gap:8px}.bar{height:9px;border-radius:999px;background:#251d16;overflow:hidden;margin-top:6px;box-shadow:inset 0 2px 3px #0009}.fill{height:100%;background:linear-gradient(#84ef9d,#2eb655)}.fill.enemy{background:linear-gradient(#ff9aa5,#df4352)}.resource{height:6px;margin-top:4px}.resource .fill{background:linear-gradient(#8fc7ff,#477be7)}
 .arenaRow{padding:5px 6px;border-bottom:1px solid #6c522d55}.arenaRow:last-child{border-bottom:0}.arenaTop{display:flex;align-items:center;justify-content:space-between;font-size:11px}.arenaTop b{font-size:12px}.miniBar{height:5px;background:#241b14;border-radius:99px;overflow:hidden;margin-top:3px}.miniFill{height:100%;background:#e65360}.castBar{display:flex;align-items:center;gap:4px;margin-top:3px}.castBar .cbIcon{width:16px;height:16px;flex:none;border-radius:4px;overflow:hidden;box-shadow:0 0 6px #b98cff}.castBar .cbIcon svg{width:100%;height:100%;display:block}.cbTrack{position:relative;flex:1;height:12px;background:#1a1220;border:1px solid #000a;border-radius:3px;overflow:hidden}.cbFill{height:100%;background:linear-gradient(90deg,#c58a2a,#ffd36b)}.cbName{position:absolute;inset:0;font-size:9px;line-height:12px;padding-left:4px;color:#fff;text-shadow:0 1px 2px #000;white-space:nowrap}.npCast{margin-top:2px;display:none;align-items:center;gap:3px}.npCast .npIcon{width:16px;height:16px;flex:none;border-radius:4px;overflow:hidden;box-shadow:0 0 6px #ffcf5c}.npCast .npIcon svg{width:100%;height:100%;display:block}.npCast .npTrack{position:relative;flex:1;height:10px;background:#1a1220;border:1px solid #000a;border-radius:3px;overflow:hidden}.npCast .npTrack>div{height:100%;background:linear-gradient(90deg,#c58a2a,#ffd36b)}.npCast .npTrack span{position:absolute;inset:0;font-size:8px;line-height:10px;padding-left:3px;color:#fff;font-weight:700;text-shadow:0 1px 2px #000;white-space:nowrap}
 .dr{font-size:9px;color:#f7d68e;margin-top:2px;min-height:10px}
+#skillTip{position:fixed;z-index:60;display:none;width:270px;pointer-events:none;background:linear-gradient(180deg,#1d1730f4,#0e0b16f4);border:1px solid #8a6cff;border-radius:9px;padding:9px 11px;color:#e9e3ff;font-size:12px;line-height:1.4;box-shadow:0 0 18px #6a4cff55,0 8px 20px #000a}#skillTip .tName{font-size:14px;font-weight:800;color:#ffe08a;margin-bottom:3px}#skillTip .tRow{display:flex;justify-content:space-between;color:#cfc6ef;font-size:11px}#skillTip .tDesc{margin-top:6px;color:#fff}#skillTip .tDmg{color:#ff8f6b}#skillTip .tHeal{color:#7dffa0}#skillTip .tNote{margin-top:4px;font-size:10px;color:#b6a8ff}
+body.skillDrag .skill[data-slot]{outline:1px dashed #ffd96f88}.skill.dragFrom{outline:2px solid #ffd96f!important;box-shadow:0 0 14px #ffd96f}
 #errorMsg{position:absolute;left:50%;top:17%;transform:translate(-50%,-50%);z-index:9;color:#ff3d3d;font-weight:800;font-size:22px;letter-spacing:.3px;text-shadow:0 2px 4px #000,0 0 10px #000;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}#errorMsg.show{opacity:1}body.mobile-mode #errorMsg{font-size:15px}
 #reticle{display:none;position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);opacity:.7}#reticle:before,#reticle:after{content:"";position:absolute;background:#fff5d9;box-shadow:0 0 9px #ffc85d}#reticle:before{left:7px;top:0;width:2px;height:16px}#reticle:after{left:0;top:7px;width:16px;height:2px}
 #pointerHint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:#1c140fdf;border:1px solid #7f6037;border-radius:999px;padding:6px 11px;font-size:11px;color:#eadcb7}
@@ -101,8 +103,8 @@ body.mobile-mode #playBtn{font-size:14px!important;padding:9px 14px!important}
   <div id="targetFrame" class="frame uiMovable"></div>
   <div id="arenaFrames" class="frame uiMovable"></div>
   <div id="partyFrames" class="frame uiMovable"></div>
-  <div id="help" class="frame"><b>Contrôles conservés</b><br>ZQSD : Z avancer · S reculer · Q gauche · D droite · Espace : saut<br><b>Clic droit maintenu</b> : caméra MMO<br>Molette : zoom<br>Clic gauche / TAB : ciblage<br>Raccourcis de sorts éditables via ⚙ Interface<br>Défaut : 1–6 · R : trinket PvP · spell queue 180 ms</div>
-  <div id="reticle"></div><div id="errorMsg"></div><div id="pointerHint">Clic gauche : cibler · Clic droit maintenu : tourner la caméra</div>
+  <div id="help" class="frame"><b>Contrôles conservés</b><br>ZQSD : Z avancer · S reculer · Q gauche · D droite · Espace : saut<br><b>Clic droit maintenu</b> : caméra MMO<br>Molette : zoom<br>Clic gauche / TAB : ciblage<br>Raccourcis de sorts éditables via ⚙ Interface<br>Défaut : 1–6 · R : trinket PvP · Shift + glisser : réordonner les sorts</div>
+  <div id="reticle"></div><div id="errorMsg"></div><div id="skillTip"></div><div id="pointerHint">Clic gauche : cibler · Clic droit maintenu : tourner la caméra</div>
   <div id="castBar"><div class="castFill"></div><div class="castText"></div></div>
   <div id="nameplates"></div><div id="floaters"></div><div id="roundSplash"></div>
 </div>
@@ -1231,6 +1233,86 @@ function autoAttack(u,dt){const sw=u.cls==='warden'?FORM_INFO[u.form]?.swing:SWI
 function setTarget(u,t){u.target=t||null;if(t&&t.team!==u.team)u.lastEnemy=t}
 // Cible amie du joueur pour les soins : l'allié ciblé, sinon soi-même.
 function friendlyTarget(u){const t=u.target;return t?.alive&&t.team===u.team?t:u}
+// ---------- Barre de sorts : ordre personnalisé (Shift + glisser) et infobulles ----------
+function slotOrder(p){const bar=skillsOf(p),key=p.cls+':'+barKey(p),o=PREFS.ui?.order?.[key];
+ return Array.isArray(o)&&o.length===bar.length&&o.slice().sort((a,b)=>a-b).every((v,i)=>v===i)?o:bar.map((_,i)=>i)}
+function swapSlots(a,b){const p=state?.player;if(!p||a===b)return;const o=slotOrder(p).slice();[o[a],o[b]]=[o[b],o[a]];
+ PREFS.ui=PREFS.ui||{};PREFS.ui.order=PREFS.ui.order||{};PREFS.ui.order[p.cls+':'+barKey(p)]=o;savePrefs();updateUI()}
+const SKILL_DRAG={from:null};
+document.addEventListener('pointerdown',e=>{const b=e.target.closest?.('.skill[data-slot]');if(!b)return;
+ if(e.shiftKey||SKILL_DRAG.armed){if(SKILL_DRAG.armed&&SKILL_DRAG.from!=null){swapSlots(SKILL_DRAG.from,+b.dataset.slot);SKILL_DRAG.from=null;SKILL_DRAG.armed=false;e.stopPropagation();e.preventDefault();return}
+  SKILL_DRAG.from=+b.dataset.slot;document.body.classList.add('skillDrag');e.stopPropagation();e.preventDefault()}
+ else if(MOBILE.enabled){clearTimeout(SKILL_DRAG.lp);const slot=+b.dataset.slot;SKILL_DRAG.lp=setTimeout(()=>{SKILL_DRAG.from=slot;SKILL_DRAG.armed=true;document.body.classList.add('skillDrag');showError('Touche un autre sort pour échanger')},650)}},true);
+document.addEventListener('pointerup',e=>{clearTimeout(SKILL_DRAG.lp);if(SKILL_DRAG.from==null||SKILL_DRAG.armed)return;const el=document.elementFromPoint(e.clientX,e.clientY)?.closest?.('.skill[data-slot]');
+ if(el)swapSlots(SKILL_DRAG.from,+el.dataset.slot);SKILL_DRAG.from=null;document.body.classList.remove('skillDrag')},true);
+document.addEventListener('click',e=>{if(e.shiftKey&&e.target.closest?.('.skill[data-slot]')){e.stopPropagation();e.preventDefault()}},true);
+
+// Texte des sorts : valeurs exactes du code (dégâts multipliés par 1,35 sous Burst ; coups critiques x1,5).
+const fmtS=s=>`${String(s).replace('.',',')} s`;
+function skillTooltip(u,i){
+ const S=skillsOf(u)[i];if(!S)return'';const C=CLASS[u.cls],burst=u.burst>0?1.35:1,dmp=1-(state?.dampening||0);
+ const D=v=>`<b class="tDmg">${Math.round(v*burst)}</b>`,H=v=>`<b class="tHeal">${Math.round(v*dmp)}</b>`;
+ const T={
+  'Mortal Strike':`Frappe violente : ${D(175)} dégâts (18 % de critique). Réduit les soins reçus par la cible de 25 % (cumul max 50 %, se dissipe lentement).`,
+  'Hamstring':`${D(45)} dégâts et ralentit la cible de 50 % pendant 15 s.`,
+  'Pummel':`Coup qui interrompt l'incantation de la cible et bloque cette école de magie pendant 4 s.`,
+  'Shield Wall':`Vous gagne un bouclier absorbant ${'<b class="tHeal">390</b>'} dégâts.`,
+  'Charge':`Fonce sur un ennemi entre 2,8 et 15 m : ${D(55)} dégâts et l'étourdit 2 s.`,
+  'Arcane Bolt':`Incantation 1,35 s : projectile arcanique infligeant ${D(205)} dégâts.`,
+  'Frost Nova':`Gèle les ennemis à moins de 8 m : ${D(90)} dégâts à la cible, ${D(60)} aux autres, immobilisés 2,5 s (brisé après 12 % des PV en dégâts).`,
+  'Counterspell':`Interrompt l'incantation de la cible et bloque cette école de magie 4 s.`,
+  'Arcane Power':`Augmente vos dégâts de 35 % pendant 8 s.`,
+  'Blink':`Téléportation de 7 m droit devant ; libère des racines.`,
+  'Polymorph':`Incantation 1,5 s : transforme la cible en mouton pendant 8 s (puis 4 s, 2 s, immunité ; remis à zéro après 20 s). Le moindre dégât rompt l'effet.`,
+  'Flash Heal':`Incantation 1,15 s : rend ${H(220)} points de vie à la cible amie (ou à vous).`,
+  'Power Shield':`Bouclier sur la cible amie absorbant ${'<b class="tHeal">300</b>'} dégâts.`,
+  'Silence':`Réduit la cible au silence pendant 2,8 s.`,
+  'Divine Hymn':`Rend ${H(230)} points de vie à tous vos alliés.`,
+  'Angelic Step':`Bond de 4,2 m vers l'avant ; libère des racines.`,
+  'Obliterate':`Frappe runique : ${D(190)} dégâts (16 % de critique), réduit les soins reçus de 16 % (max 50 %).`,
+  'Death Grip':`Attrape un ennemi à 15 m et le tire devant vous : ${D(50)} dégâts.`,
+  'Asphyxiate':`À distance : ${D(65)} dégâts et étourdit 2,5 s.`,
+  'Pillar of Frost':`+35 % de dégâts et +18 % de vitesse pendant 7 s.`,
+  'Death Advance':`Bond de 6 m dans la direction regardée, puis +18 % de vitesse 3 s.`,
+  'Wrath':`Incantation 1,5 s : ${D(175)} dégâts de nature.`,
+  'Entangling Roots':`Des racines enserrent la cible : immobilisée 5 s.`,
+  'Barkskin':`Bouclier d'écorce absorbant ${'<b class="tHeal">420</b>'} dégâts.`,
+  'Starfall':`Pluie d'étoiles : ${D(135)} dégâts à tous les ennemis à moins de 5,3 m.`,
+  'Cat Form':`Forme de félin : +30 % de vitesse, attaques rapides au corps à corps (${D(42)} toutes les 1 s).`,
+  'Bear Form':`Forme d'ours : +40 % de points de vie, -30 % de dégâts subis, coups puissants (${D(58)} toutes les 2 s).`,
+  'Human Form':`Reprend votre forme normale.`,
+  'Shred':`Lacère la cible : ${D(150)} dégâts (18 % de critique).`,
+  'Rake':`Griffure : ${D(80)} dégâts et ralentit de 30 % pendant 6 s.`,
+  'Maim':`${D(60)} dégâts et étourdit la cible 4 s.`,
+  'Wild Charge':`Bondit sur un ennemi entre 2,8 et 15 m : ${D(55)} dégâts et l'immobilise 2 s.`,
+  'Maul':`Coup de patte : ${D(120)} dégâts (18 % de critique).`,
+  'Swipe':`Balayage : ${D(85)} dégâts à tous les ennemis à moins de 5 m.`,
+  'Frenzied Regeneration':`Rend ${H(380)} points de vie.`,
+  'Backstab':`${D(150)} dégâts (22 % de critique).`,
+  'Cloak':`Absorbe ${'<b class="tHeal">220</b>'} dégâts, +18 % de vitesse 5 s, libère des racines, ralentissements et silences.`,
+  'Kidney Shot':`${D(55)} dégâts et étourdit 3 s.`,
+  'Vendetta':`+35 % de dégâts pendant 6,5 s.`,
+  'Shadowstep':`Surgit jusqu'à 8 m devant la cible ; ${D(55)} dégâts si vous arrivez au contact.`,
+  'Stealth':`Vous camoufle (hors combat) : quasi invisible et impossible à cibler, -30 % de vitesse. Débloque Ambush et Sap.`,
+  'Ambush':`Depuis le camouflage : ${D(330)} dégâts (30 % de critique). Rompt le camouflage.`,
+  'Sap':`Depuis le camouflage, à 5 m : assomme la cible 8 s (mêmes rendements décroissants que la Métamorphose). Le moindre dégât rompt l'effet.`,
+  'Shadow Bolt':`Incantation 1,45 s : ${D(195)} dégâts d'ombre.`,
+  'Fear':`Incantation 1,35 s : la cible fuit, terrorisée, pendant 3,6 s (un gros coup la libère).`,
+  'Spell Lock':`Interrompt l'incantation de la cible et bloque cette école de magie 4 s.`,
+  'Dark Soul':`+35 % de dégâts pendant 8 s et bouclier de ${'<b class="tHeal">180</b>'}.`,
+  'Demonic Gate':`Téléportation de 5 m vers l'avant.`
+ };
+ const range=S.range?`${String(S.range).replace('.',',')} m`:S.t==='melee'?'Corps à corps':S.t==='ranged'||S.t==='heal'?'15 m':S.t==='charge'?'2,8–15 m':S.t==='aoe'?'Autour de vous':'Personnel';
+ const castT={'Arcane Bolt':1.35,'Polymorph':1.5,'Flash Heal':1.15,'Wrath':1.5,'Shadow Bolt':1.45,'Fear':1.35}[S.n];
+ return `<div class="tName">${S.n}</div><div class="tRow"><span>${S.c?`${S.c} ${C.res}`:'Gratuit'}</span><span>${range}</span></div>
+  <div class="tRow"><span>${castT?`Incantation ${fmtS(castT)}`:'Instantané'}</span><span>${S.cd?`Recharge ${fmtS(S.cd)}`:'Pas de recharge'}</span></div>
+  <div class="tDesc">${T[S.n]||''}</div>${burst>1?'<div class="tNote">Burst actif : dégâts +35 % inclus</div>':''}${dmp<1?`<div class="tNote">Dampening : soins -${Math.round((1-dmp)*100)} % inclus</div>`:''}`;
+}
+let TIP_SLOT=null;
+document.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;const b=e.target.closest?.('#skills .skill[data-i]');const tip=$('skillTip');if(!tip)return;
+ if(!b||!state?.player){tip.style.display='none';TIP_SLOT=null;return}
+ const i=+b.dataset.i;if(TIP_SLOT!==i){TIP_SLOT=i;tip.innerHTML=skillTooltip(state.player,i)}tip.style.display='block';
+ if(tip.parentNode!==document.body)document.body.appendChild(tip);const r=b.getBoundingClientRect(),w=tip.offsetWidth;tip.style.left=clamp(r.left+r.width/2-w/2,6,innerWidth-w-6)+'px';tip.style.top=Math.max(6,r.top-tip.offsetHeight-10)+'px'});
 function hostileTarget(u,fallback=true){const t=u.target;if(t?.alive&&t.team!==u.team)return t;if(u.lastEnemy?.alive)return u.lastEnemy;return fallback?nearestEnemy(u):null}
 function updateFearMovement(u,dt){
  if(!u?.alive||u.fear<=0||u.root>0||u.stun>0)return;
@@ -1632,7 +1714,7 @@ function castBarHTML(u){const c=u.cast;if(!c)return'';const k=clamp(1-(c.end-now
 function frameHTML(u,enemy=false){const C=CLASS[u.cls];return`<div class="nameRow"><b>${u.name}</b><span>${Math.ceil(u.hp)} PV</span></div><div class="tiny">${RACE[u.race]?.name||''} ${C.name} · ${C.role}</div><div class="bar"><div class="fill ${enemy?'enemy':''}" style="width:${100*u.hp/u.maxHp}%"></div></div><div class="bar resource"><div class="fill" style="width:${u.res}%"></div></div><div class="tiny">${C.res} ${Math.round(u.res)}/100${u.shield>0?` · Bouclier ${Math.ceil(u.shield)}`:''}</div>`}
 function setHTML(el){if(el._html!==el._shown){el.innerHTML=el._html;el._shown=el._html}}
 function updateUI(){if(!state)return;const p=state.player,t=p.target;$('timer').textContent=`${String(Math.floor(state.t/60)).padStart(2,'0')}:${String(Math.floor(state.t%60)).padStart(2,'0')}`;$('score').textContent=`${state.scoreA} - ${state.scoreB}`;$('round').textContent=`Round ${state.round} · BO3`;$('selfFrame')._html=frameHTML(p,false);$('targetFrame')._html=t?frameHTML(t,true)+`<div class="tiny">${los(p,t)?'✓ Ligne de vue':'⚠ Ligne de vue bloquée'}</div>${castBarHTML(t)}`:'<b>Aucune cible</b>';$('arenaFrames')._html=state.units.filter(u=>u.team!==p.team).map(u=>unitRowHTML(u,true)).join('');$('partyFrames')._html=state.units.filter(u=>u.team===p.team).map(u=>unitRowHTML(u,false)).join('');$('status')._html=`${CLASS[p.cls].tags.map(x=>`<span class="tag">${x}</span>`).join('')}<br>${p.poly>0?'🐑 Mouton ':''}${p.stun>0?'🌀 Étourdi ':''}${p.root>0?'⛓ Immobilisé ':''}${p.silence>0?'⛔ Silence ':''}${p.fear>0?'👁 Fear ':''}${p.slow>0?`❄ Ralenti ${Math.round((p.slowPct||0)*100)}% `:''}${p.burst>0?'🔥 Burst ':''}${p.trinket>0?`· Trinket ${Math.ceil(p.trinket)}s`:''}${state.dampening>0?`<br>⚔ Dampening ${Math.round(state.dampening*100)}%`:''}`;for(const id of ['selfFrame','targetFrame','arenaFrames','partyFrames','status'])setHTML($(id));
- const C=CLASS[p.cls],bar=skillsOf(p);$('skills').classList.toggle('six',bar.length>5);$('skills').innerHTML=bar.map((s,i)=>`<button class="skill ${p.gcd>0?'gcding':''} ${p.queuedSkill?.i===i?'queued':''}" data-i="${i}" title="${s.n}"><span class="icon">${skillIconSVG(p.cls,i,s)}</span><span class="skillName">${s.n}</span><span class="cost">${s.c||''}</span><span class="key">${keyLabel(PREFS.keybinds.skills[i])}</span>${p.cd[i]>0?`<span class="cd">${p.cd[i]<10?p.cd[i].toFixed(1):p.cd[i].toFixed(0)}</span>`:''}</button>`).join('')+`<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(PREFS.keybinds.trinket)}</span>${p.trinket>0?`<span class="cd">${p.trinket.toFixed(0)}</span>`:''}</button>`;document.querySelectorAll('.skill[data-i]').forEach(b=>{b.onclick=()=>{if(!MOBILE.enabled)tryPlayerSkill(+b.dataset.i)};b.onpointerdown=e=>{if(MOBILE.enabled){e.preventDefault();tryPlayerSkill(+b.dataset.i)}}});$('trinketBtn').onclick=()=>{if(!MOBILE.enabled)useTrinket(p)};$('trinketBtn').onpointerdown=e=>{if(MOBILE.enabled){e.preventDefault();useTrinket(p)}};const cb=$('castBar');if(p.cast){cb.style.display='block';const q=clamp(1-(p.cast.end-now())/p.cast.dur,0,1);cb.querySelector('.castFill').style.width=`${q*100}%`;cb.querySelector('.castText').textContent=p.cast.name}else cb.style.display='none'}
+ const C=CLASS[p.cls],bar=skillsOf(p),order=slotOrder(p);$('skills').classList.toggle('six',bar.length>5);$('skills').innerHTML=order.map((i,slot)=>{const s=bar[i];return `<button class="skill ${p.gcd>0?'gcding':''} ${p.queuedSkill?.i===i?'queued':''} ${SKILL_DRAG.from===slot?'dragFrom':''}" data-i="${i}" data-slot="${slot}"><span class="icon">${skillIconSVG(p.cls,i,s)}</span><span class="skillName">${s.n}</span><span class="cost">${s.c||''}</span><span class="key">${keyLabel(PREFS.keybinds.skills[slot])}</span>${p.cd[i]>0?`<span class="cd">${p.cd[i]<10?p.cd[i].toFixed(1):p.cd[i].toFixed(0)}</span>`:''}</button>`}).join('')+`<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(PREFS.keybinds.trinket)}</span>${p.trinket>0?`<span class="cd">${p.trinket.toFixed(0)}</span>`:''}</button>`;document.querySelectorAll('.skill[data-i]').forEach(b=>{b.onclick=()=>{if(!MOBILE.enabled)tryPlayerSkill(+b.dataset.i)};b.onpointerdown=e=>{if(MOBILE.enabled){e.preventDefault();tryPlayerSkill(+b.dataset.i)}}});$('trinketBtn').onclick=()=>{if(!MOBILE.enabled)useTrinket(p)};$('trinketBtn').onpointerdown=e=>{if(MOBILE.enabled){e.preventDefault();useTrinket(p)}};const cb=$('castBar');if(p.cast){cb.style.display='block';const q=clamp(1-(p.cast.end-now())/p.cast.dur,0,1);cb.querySelector('.castFill').style.width=`${q*100}%`;cb.querySelector('.castText').textContent=p.cast.name}else cb.style.display='none'}
 
 // ---------- Original adaptive battle-fantasy audio (Web Audio; no external copyrighted assets) ----------
 const MUSIC={ctx:null,master:null,sfxMaster:null,reverb:null,limiter:null,noise:null,timer:null,next:0,step:0,playing:false};
@@ -1879,7 +1961,7 @@ setupMobileControls();
 
 // ---------- controls: exact requested spec ----------
 function setMoveKey(e,down){if(!state)return false;const m={keyz:'z',keyw:'w',keys:'s',keyq:'q',keya:'a',keyd:'d',arrowup:'arrowup',arrowdown:'arrowdown',arrowleft:'arrowleft',arrowright:'arrowright'},k=m[(e.code||'').toLowerCase()];if(k){state.keys[k]=down;e.preventDefault();return true}return false}
-window.addEventListener('keydown',e=>{if(captureBind){e.preventDefault();if(e.code==='Escape'){captureBind=null;$('bindStatus').textContent='Modification annulée.';renderBindGrid();return}assignCapturedBind(e.code);return}if(settingsOpen)return;if(setMoveKey(e,true))return;if(!state||$('overlay').style.display!=='none')return;if(e.code==='Tab'){e.preventDefault();const es=enemies(state.player).filter(e=>!e.stealth);if(es.length){const i=Math.max(-1,es.indexOf(state.player.target));setTarget(state.player,es[(i+1)%es.length]);updateUI()}return}const skillIndex=PREFS.keybinds.skills.indexOf(e.code);if(skillIndex>=0){e.preventDefault();tryPlayerSkill(skillIndex);return}if(e.code===PREFS.keybinds.trinket){e.preventDefault();useTrinket(state.player);return}if(e.code==='Space'){e.preventDefault();const p=state.player;if(p.alive&&p.stun<=0&&p.fear<=0&&!(p.poly>0)&&p.grounded){p.vy=7.5;p.grounded=false;p.cast=null}}});window.addEventListener('keyup',e=>setMoveKey(e,false));window.addEventListener('blur',()=>{if(state)state.keys={}});
+window.addEventListener('keydown',e=>{if(captureBind){e.preventDefault();if(e.code==='Escape'){captureBind=null;$('bindStatus').textContent='Modification annulée.';renderBindGrid();return}assignCapturedBind(e.code);return}if(settingsOpen)return;if(setMoveKey(e,true))return;if(!state||$('overlay').style.display!=='none')return;if(e.code==='Tab'){e.preventDefault();const es=enemies(state.player).filter(e=>!e.stealth);if(es.length){const i=Math.max(-1,es.indexOf(state.player.target));setTarget(state.player,es[(i+1)%es.length]);updateUI()}return}const skillIndex=PREFS.keybinds.skills.indexOf(e.code);if(skillIndex>=0){e.preventDefault();const o=slotOrder(state.player);if(o[skillIndex]!=null)tryPlayerSkill(o[skillIndex]);return}if(e.code===PREFS.keybinds.trinket){e.preventDefault();useTrinket(state.player);return}if(e.code==='Space'){e.preventDefault();const p=state.player;if(p.alive&&p.stun<=0&&p.fear<=0&&!(p.poly>0)&&p.grounded){p.vy=7.5;p.grounded=false;p.cast=null}}});window.addEventListener('keyup',e=>setMoveKey(e,false));window.addEventListener('blur',()=>{if(state)state.keys={}});
 function applyLook(dx,dy){
  if(!looking)return;
  const next=GameLogic.applyLook(camera.yaw,camera.pitch,dx,dy);
