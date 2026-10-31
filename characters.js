@@ -21,26 +21,33 @@
       palette:{dark:[.10,.10,.12],mid:[.36,.37,.40],trim:[.74,.56,.28],cloth:[.48,.50,.54]},
       weapon:'swordShield',
       armor:{mat:{kind:'metal',style:{base:[.64,.66,.70],trim:[.80,.60,.26],lames:3,ridge:true,rivets:true}},trim:[.80,.60,.26],
-        shells:['chest','belt','rerebrace','vambrace','cuisse','greave'],pauldron:{layers:3,size:.135}}},
+        shells:['cuirass','belt','rerebrace','vambrace','cuisse','greave'],pauldron:{layers:3,size:.135}}},
     arcanist:{ // Sorcière de bataille : robe violet profond / or, capuche, bâton à cristal arcane
       sex:'F',outfit:['Peasant_Body','Peasant_Arms','Peasant_Legs','Peasant_Feet','Ranger_Head_Hood'],
       hair:{F:'Hair_Long',M:'Hair_SimpleParted'},hairColor:[.92,.72,.38],
       palette:{dark:[.13,.05,.20],mid:[.36,.14,.55],trim:[.86,.66,.26],cloth:[.93,.89,.80]},
       robe:{color:[.30,.11,.47],trim:[.86,.66,.26],length:.86,flare:1.7},
-      staff:{crystal:[.78,.55,1.0]},eyeGlow:[.55,.30,1.0]},
+      staff:{crystal:[.78,.55,1.0]},eyeGlow:[.55,.30,1.0],
+      // mantelet de tissu brodé d'or, ceinture et brassards assortis
+      armor:{mat:{kind:'cloth',style:{base:[.30,.11,.46],trim:[.86,.66,.26],stitch:[.86,.66,.26],grain:.05}},trim:[.86,.66,.26],
+        shells:['belt','vambrace'],pauldron:{layers:2,size:.105,cover:1.3}}},
     oracle:{ // Prêtresse : robe blanche et or, bâton solaire
       sex:'F',outfit:['Peasant_Body','Peasant_Arms','Peasant_Legs','Peasant_Feet'],
       hair:{F:'Hair_Buns',M:'Hair_SimpleParted'},hairColor:[.45,.27,.14],
       palette:{dark:[.40,.30,.16],mid:[.86,.82,.72],trim:[.90,.72,.30],cloth:[.97,.95,.90]},
       robe:{color:[.90,.88,.82],trim:[.88,.68,.25],length:.9,flare:1.6},
-      staff:{crystal:[1.0,.82,.40],wood:0xe8dcc0,metal:0xd9b55a}},
+      staff:{crystal:[1.0,.82,.40],wood:0xe8dcc0,metal:0xd9b55a},
+      // mantelet blanc à larges bordures dorées, ceinture d'or
+      armor:{mat:{kind:'cloth',style:{base:[.93,.91,.85],trim:[.88,.68,.25],stitch:[.88,.68,.25],lames:2,grain:.04}},trim:[.92,.72,.28],
+        shellMat:{belt:{kind:'metal',style:{base:[.88,.68,.28],lames:1,rivets:true,trim:[.95,.85,.5]}}},
+        shells:['belt','vambrace'],pauldron:{layers:2,size:.11,cover:1.35}}},
     reaver:{ // Chevalier runique : plaques d'acier noirci à runes de givre, épaulières à pointes, grande lame runique
       sex:'M',outfit:['Ranger_Body','Ranger_Arms','Ranger_Legs','Ranger_Feet'],
       hair:{M:'Hair_Long',F:'Hair_Long'},hairColor:[.78,.80,.82],
       palette:{dark:[.05,.06,.08],mid:[.20,.24,.30],trim:[.55,.74,.88],cloth:[.26,.30,.36]},
       weapon:'runeblade',eyeGlow:[.40,.80,1.0],
       armor:{mat:{kind:'metal',style:{base:[.17,.19,.22],trim:[.30,.34,.40],lames:3,ridge:true,rune:[.45,.85,1]}},trim:[.34,.38,.46],
-        shells:['chest','belt','rerebrace','vambrace','cuisse','greave'],pauldron:{layers:3,size:.145,spikes:3}}},
+        shells:['cuirass','belt','rerebrace','vambrace','cuisse','greave'],pauldron:{layers:3,size:.145,spikes:3}}},
     warden:{ // Druide : cuir et lin naturels, bois de cerf, bâton noueux à cristal vert
       sex:'M',outfit:['Ranger_Body','Ranger_Arms','Peasant_Legs','Ranger_Feet'],
       hair:{M:'Hair_Long',F:'Hair_Long'},hairColor:[.36,.22,.10],
@@ -61,7 +68,10 @@
       hair:{M:'Hair_SimpleParted',F:'Hair_Long'},hairColor:[.12,.10,.10],
       palette:{dark:[.06,.04,.07],mid:[.22,.10,.24],trim:[.40,.80,.22],cloth:[.30,.26,.24]},
       robe:{color:[.12,.07,.13],trim:[.38,.78,.20],length:.9,flare:1.5},
-      staff:{crystal:[.40,1.0,.25],wood:0x1c1418,metal:0x50604a},eyeGlow:[.40,1.0,.25]}
+      staff:{crystal:[.40,1.0,.25],wood:0x1c1418,metal:0x50604a},eyeGlow:[.40,1.0,.25],
+      // mantelet sombre aux runes vertes et cornes d'os
+      armor:{mat:{kind:'cloth',style:{base:[.09,.06,.10],trim:[.38,.78,.20],rune:[.40,1.0,.25],grain:.06}},trim:[.20,.24,.18],
+        shells:['belt','vambrace'],pauldron:{layers:2,size:.115,cover:1.3,spikes:2,spikeColor:0xe6dcc0}}}
   };
   // RACE : morphologie (échelle des os, rotations seulement dans les animations), peau, cheveux, détails.
   const RACES={
@@ -419,7 +429,7 @@
   }
   function armorMaterial(THREE,a){
     const t=armorTexture(THREE,a.style),metal=a.kind==='metal';
-    const m=new THREE.MeshStandardMaterial({map:t.map,metalness:metal?.82:.04,roughness:metal?.3:.72,side:THREE.DoubleSide});
+    const m=new THREE.MeshStandardMaterial({map:t.map,metalness:metal?.82:.04,roughness:metal?.3:a.kind==='cloth'?.88:.72,side:THREE.DoubleSide});
     if(metal){m.envMap=envMap(THREE);m.envMapIntensity=1.2}
     if(t.emissiveMap){m.emissiveMap=t.emissiveMap;m.emissive=new THREE.Color(...a.style.rune);m.emissiveIntensity=1.8}
     return m;
@@ -428,6 +438,7 @@
   // Coque rigide ajustée à un segment : rayon max de la tenue autour de l'axe de l'os, par tranche et par angle.
   const SHELLS={
     chest:{bone:'spine_03',from:['spine_02','spine_03'],axis:'neck_01',range:[0,.97],rings:10,margin:.016},
+    cuirass:{bone:'spine_03',from:['spine_02','spine_03','clavicle_l','clavicle_r'],axis:'neck_01',range:[0,.93],rings:12,margin:.014},
     belt:{bone:'pelvis',from:['pelvis','spine_01'],axis:'spine_01',range:[.45,.75],rings:2,margin:.02},
     vambrace_l:{bone:'lowerarm_l',axis:'hand_l',range:[.3,.95],rings:5,margin:.012},vambrace_r:{bone:'lowerarm_r',axis:'hand_r',range:[.3,.95],rings:5,margin:.012},
     rerebrace_l:{bone:'upperarm_l',axis:'lowerarm_l',range:[.35,.85],rings:4,margin:.012},rerebrace_r:{bone:'upperarm_r',axis:'lowerarm_r',range:[.35,.85],rings:4,margin:.012},
@@ -504,7 +515,7 @@
         cap.scale.set(1.05,.62,1.12);cap.position.set(out*i*.03*s,-i*.042*s,0);cap.rotation.z=-out*(.2+i*.22);g.add(cap);
         if(trimMat){const rim=new THREE.Mesh(new THREE.TorusGeometry(r*Math.sin(cover),.007*s,6,40),trimMat);rim.rotation.x=Math.PI/2;rim.position.y=r*Math.cos(cover);cap.add(rim)}
         if(i===0&&p.spikes)for(let k=0;k<p.spikes;k++){
-          const sp=new THREE.Mesh(new THREE.ConeGeometry(.018*s,(.11-k*.02)*s,8),trimMat||mat);
+          const sp=new THREE.Mesh(new THREE.ConeGeometry(.018*s,(.11-k*.02)*s,8),p.spikeColor?new THREE.MeshStandardMaterial({color:p.spikeColor,roughness:.5}):trimMat||mat);
           const a=(k-(p.spikes-1)/2)*.45;sp.position.set(Math.sin(a)*r*.35,r*.62,Math.cos(a)*r*.35*0+(k-(p.spikes-1)/2)*.045*s);sp.rotation.z=-out*.35;cap.add(sp);
         }
       }
@@ -533,11 +544,12 @@
   // Masque de tissu sur le bas du visage (voleur) : copie skinnée du bas du visage, légèrement gonflée.
   function faceMask(THREE,body,L,color){
     const geo=body.geometry.clone(),pos=geo.attributes.position,nor=geo.attributes.normal,idx=geo.index,v=new THREE.Vector3();
-    const inZone=i=>{v.fromBufferAttribute(pos,i);return v.y<L.eye.y-.03&&v.y>L.chin-.05&&v.z>L.eye.z-.075};
-    const out=[];for(let i=0;i<idx.count;i+=3){const a=idx.getX(i),b=idx.getX(i+1),c=idx.getX(i+2);if(inZone(a)&&inZone(b)&&inZone(c))out.push(a,b,c)}
+    const inZone=i=>{v.fromBufferAttribute(pos,i);return v.y<L.eye.y-.028&&v.y>L.chin-.06&&v.z>L.eye.z-.085+Math.max(0,L.eye.y-.06-v.y)*.4};
+    const out=[];for(let i=0;i<idx.count;i+=3){const a=idx.getX(i),b=idx.getX(i+1),c=idx.getX(i+2);if(inZone(a)+inZone(b)+inZone(c)>=2)out.push(a,b,c)}
     // le tissu tombe du nez : il ne suit pas les lèvres ni le menton
     let nose=null;for(let i=0;i<pos.count;i++){v.fromBufferAttribute(pos,i);if(Math.abs(v.x-L.cx)<.01&&v.y<L.eye.y&&v.y>L.eye.y-.07&&(!nose||v.z>nose.z))nose=v.clone()}
     for(let i=0;i<pos.count;i++){v.fromBufferAttribute(pos,i).addScaledVector(new THREE.Vector3().fromBufferAttribute(nor,i),.006);
+      v.y=Math.min(v.y,L.eye.y-.03);                        // bord supérieur net, sous les yeux
       if(nose&&v.y<nose.y)v.z=Math.max(v.z,nose.z+.004-9*(v.x-L.cx)**2/.05*.05-.3*(nose.y-v.y));
       pos.setXYZ(i,v.x,v.y,v.z)}
     geo.computeVertexNormals();
