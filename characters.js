@@ -77,8 +77,25 @@
   }
 
   // Robe longue procédurale, skinnée bassin + cuisses pour suivre les jambes.
-  function buildRobe(THREE,body,bones,cfg){
-    body.updateMatrixWorld(true);
+  // Profil réel du corps habillé (pose de bind) : rayon max par secteur angulaire autour du bassin, à une hauteur donnée.
+  function bodyProfile(THREE,meshes,inv,center,y,band,seg){
+    const r=new Array(seg).fill(0),v=new THREE.Vector3();
+    for(const m of meshes){
+      const pos=m.geometry.attributes.position,mat=new THREE.Matrix4().multiplyMatrices(inv,m.matrixWorld);
+      for(let i=0;i<pos.count;i++){
+        v.fromBufferAttribute(pos,i).applyMatrix4(mat);if(Math.abs(v.y-y)>band)continue;
+        const dx=v.x-center.x,dz=v.z-center.z,a=(Math.atan2(dx,dz)+Math.PI*2)%(Math.PI*2);
+        const k=Math.min(seg-1,Math.floor(a/(Math.PI*2)*seg));r[k]=Math.max(r[k],Math.hypot(dx,dz));
+      }
+    }
+    // secteurs vides → voisins, puis lissage circulaire
+    for(let pass=0;pass<seg;pass++)for(let k=0;k<seg;k++)if(!r[k])r[k]=Math.max(r[(k+seg-1)%seg],r[(k+1)%seg]);
+    for(let pass=0;pass<3;pass++){const c=r.slice();for(let k=0;k<seg;k++)r[k]=Math.max(c[k],(c[(k+seg-1)%seg]+2*c[k]+c[(k+1)%seg])/4)}
+    return r;
+  }
+
+  function buildRobe(THREE,body,bones,cfg,fitMeshes){
+    body.updateMatrixWorld(true);fitMeshes.forEach(m=>m.updateMatrixWorld(true));
     const inv=new THREE.Matrix4().copy(body.matrixWorld).invert();
     const P=n=>new THREE.Vector3().setFromMatrixPosition(bones[n].matrixWorld).applyMatrix4(inv);
     const pelvis=P('pelvis'),tl=P('thigh_l'),tr=P('thigh_r'),cl=P('calf_l'),fl=P('foot_l');
@@ -87,11 +104,14 @@
     const hipHalf=Math.abs(tl.x-tr.x)/2,top=pelvis.y+.15,bottom=fl.y+(cl.y-fl.y)*(1-cfg.length)+.03;
     const lSign=Math.sign(tl.x-tr.x)||1,SEG=40,RINGS=16;
     const pos=[],uv=[],si=[],sw=[],idx=[];
+    // La robe épouse le corps habillé en haut (taille/bassin) puis s'évase ; un rayon ne diminue jamais en descendant.
+    let prev=null;
     for(let j=0;j<=RINGS;j++){
-      const t=j/RINGS,y=top+(bottom-top)*t;
-      const fl=Math.pow(t,1.4),rx=hipHalf*(1.7+(cfg.flare-1)*1.5*fl)+.015,rz=hipHalf*(1.5+(cfg.flare-1)*1.4*fl)+.012;
+      const t=j/RINGS,y=top+(bottom-top)*t,prof=bodyProfile(THREE,fitMeshes,inv,pelvis,y,.025,SEG);
+      const flare=(cfg.flare-1)*hipHalf*1.3*Math.pow(t,1.5);
+      const ring=prof.map((r,k)=>Math.max(r+.012,prev?prev[k]:0));prev=ring;
       for(let i=0;i<=SEG;i++){
-        const a=i/SEG*Math.PI*2,x=Math.sin(a)*rx,z=Math.cos(a)*rz;
+        const a=(i+.5)/SEG*Math.PI*2,rr=ring[i%SEG]+flare,x=Math.sin(a)*rr,z=Math.cos(a)*rr;
         pos.push(pelvis.x+x,y,pelvis.z+z);uv.push(i/SEG,t);
         const leg=Math.pow(t,.75)*.9,wl=clamp(.5+lSign*Math.sin(a)*.65,0,1);
         const calf=t>.7?(t-.7)/.3*.25:0;
@@ -125,9 +145,9 @@
     return robe;
   }
 
-  // Bâton tenu dans la main droite (attaché à l'os, vertical en pose de repos).
-  function buildStaff(THREE,bones,cfg,height){
-    const hand=bones.hand_r;if(!hand)return null;
+  // Bâton porté dans le dos, en diagonale (cristal au-dessus de l'épaule droite), attaché au haut de la colonne.
+  function buildStaff(THREE,body,bones,cfg,height,fitMeshes){
+    const spine=bones.spine_03;if(!spine)return null;
     const s=height/1.8,g=new THREE.Group();g.name='Staff';
     const wood=new THREE.MeshStandardMaterial({color:0x3b2416,roughness:.7,metalness:.05});
     const gold=new THREE.MeshStandardMaterial({color:0xc9a04a,roughness:.32,metalness:.85});
@@ -139,10 +159,18 @@
     for(const side of [-1,1]){const hook=new THREE.Mesh(new THREE.TorusGeometry(.085*s,.012*s,8,20,Math.PI*1.1),gold);hook.position.set(side*.02*s,.84*s,0);hook.rotation.set(0,side>0?0:Math.PI,-.5);g.add(hook)}
     const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(.07*s,0),crystalMat);crystal.scale.set(.8,1.5,.8);crystal.position.y=.86*s;g.add(crystal);
     const glow=new THREE.PointLight(cc,.9,1.4*s);glow.position.y=.86*s;g.add(glow);
-    hand.updateMatrixWorld(true);
-    const hp=new THREE.Vector3().setFromMatrixPosition(hand.matrixWorld);
-    g.position.set(hp.x,hp.y+.18*s,hp.z+.02*s);
-    hand.attach(g);
+    // Surface du dos mesurée sur la tenue (le personnage regarde +z, le dos est vers -z).
+    body.updateMatrixWorld(true);
+    const inv=new THREE.Matrix4().copy(body.matrixWorld).invert(),sp=new THREE.Vector3().setFromMatrixPosition(spine.matrixWorld).applyMatrix4(inv);
+    let back=sp.z;const v=new THREE.Vector3();
+    for(const m of fitMeshes){const pos=m.geometry.attributes.position,mat=new THREE.Matrix4().multiplyMatrices(inv,m.matrixWorld);
+      for(let i=0;i<pos.count;i++){v.fromBufferAttribute(pos,i).applyMatrix4(mat);if(Math.abs(v.y-sp.y)<.08&&Math.abs(v.x-sp.x)<.08)back=Math.min(back,v.z)}}
+    const tl=new THREE.Vector3().setFromMatrixPosition(bones.thigh_l.matrixWorld).applyMatrix4(inv),tr=new THREE.Vector3().setFromMatrixPosition(bones.thigh_r.matrixWorld).applyMatrix4(inv);
+    const toRight=Math.sign(tr.x-tl.x)||-1;           // côté droit du personnage en x
+    g.position.set(sp.x,sp.y-.12*s,back-.04*s);
+    g.rotation.z=-toRight*.55;                         // le haut part vers l'épaule droite
+    g.position.applyMatrix4(body.matrixWorld);g.quaternion.premultiply(new THREE.Quaternion().setFromRotationMatrix(body.matrixWorld));
+    spine.attach(g);
     return g;
   }
 
@@ -215,13 +243,10 @@
     });
     root.updateMatrixWorld(true);
     const height=new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3()).y;
-    if(kit.robe)buildRobe(THREE,body,bones,kit.robe);       // en pose de bind
-    if(kit.staff){
-      // Le bâton est placé dans la pose Idle (la main y est tournée différemment de la pose de bind).
-      const idle=animG?.animations.find(c=>c.name==='Idle_Loop');
-      if(idle){const mx=new THREE.AnimationMixer(root);mx.clipAction(idle).play();mx.update(0);root.updateMatrixWorld(true)}
-      buildStaff(THREE,bones,kit.staff,height);
-    }
+    // Robe et bâton sont construits en pose de bind, ajustés sur la tenue réelle.
+    const fit=[];root.traverse(o=>{if(o.isSkinnedMesh&&/_(Body|Legs)$/.test(o.name))fit.push(o)});   // pièces déjà déplacées sur le squelette du corps
+    if(kit.robe)buildRobe(THREE,body,bones,kit.robe,fit);
+    if(kit.staff)buildStaff(THREE,body,bones,kit.staff,height,fit);
     return {root,height,clips:animG?animG.animations:[]};
   }
 
