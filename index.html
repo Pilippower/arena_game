@@ -563,7 +563,11 @@ function hfRender(){
     }else rec.footPhase=null;
     hfUpdateRootFx(rec,u,t);
     const poly=u.poly>0&&u.alive;if(poly&&!rec.sheep){rec.sheep=hfMakeSheep();rec.group.add(rec.sheep)}
-    if(rec.sheep){rec.sheep.visible=poly;if(poly)hfAnimateSheep(rec.sheep,u,t)}if(rec.model)rec.model.visible=!poly;
+    const sheepOn=poly&&u.polyKind!=='sap';if(rec.sheep){rec.sheep.visible=sheepOn;if(sheepOn)hfAnimateSheep(rec.sheep,u,t)}
+    const form=u.alive&&!sheepOn?u.form:null;if(form&&!rec.beasts?.[form]){rec.beasts=rec.beasts||{};rec.beasts[form]=hfMakeBeast(form);rec.group.add(rec.beasts[form])}
+    for(const k in rec.beasts||{}){const b=rec.beasts[k];b.visible=k===form;if(b.visible)hfAnimateBeast(b,u,t)}
+    if(rec.model)rec.model.visible=!sheepOn&&!form;
+    const op=u.stealth&&u.alive?(u.team===state.player.team?.35:.07):1;if(rec.opacity!==op){rec.opacity=op;hfSetOpacity(rec.group,op)}
     if(!rec.clips.length&&rec.model){rec.model.position.y=(u.moving&&u.grounded?Math.abs(Math.sin(u.movePhase*2))*.035:0)}
   }
   hfMakePortraits();
@@ -571,6 +575,38 @@ function hfRender(){
   HF.renderer.render(HF.scene,HF.camera);
 }
 // Mouton de la Métamorphose : laine en boules, tête et pattes sombres ; les pattes s'animent quand il marche.
+// Bêtes du druide : félin (panthère sombre) et ours, avec pattes animées et yeux lumineux.
+function hfMakeBeast(kind){
+  const cat=kind==='cat',g=new THREE.Group();
+  // fourrure : bruit fin + marques druidiques lumineuses (vert pour le félin, ambre pour l'ours)
+  const fc=document.createElement('canvas');fc.width=fc.height=128;const fg=fc.getContext('2d');fg.fillStyle='#808080';fg.fillRect(0,0,128,128);
+  for(let i=0;i<2600;i++){const v=90+Math.random()*90|0;fg.strokeStyle=`rgb(${v},${v},${v})`;const x=Math.random()*128,y=Math.random()*128;fg.beginPath();fg.moveTo(x,y);fg.lineTo(x+(Math.random()-.5)*2,y+3+Math.random()*4);fg.stroke()}
+  const ec=document.createElement('canvas');ec.width=ec.height=128;const eg=ec.getContext('2d');eg.fillStyle='#000';eg.fillRect(0,0,128,128);eg.strokeStyle='#fff';eg.lineWidth=3;
+  for(let k=0;k<5;k++){eg.beginPath();const x=12+k*25;eg.moveTo(x,20);eg.quadraticCurveTo(x+10,64,x-4,108);eg.stroke()}
+  const furTex=new THREE.CanvasTexture(fc);furTex.wrapS=furTex.wrapT=THREE.RepeatWrapping;furTex.repeat.set(3,3);const glowTex=new THREE.CanvasTexture(ec);
+  const lin=c=>new THREE.Color(c).convertSRGBToLinear(),glowC=cat?new THREE.Color(.35,1,.45):new THREE.Color(1,.62,.2);
+  const fur=new THREE.MeshStandardMaterial({color:lin(cat?0x2b2433:0x5a3a22),map:furTex,roughness:.92,emissiveMap:glowTex,emissive:glowC,emissiveIntensity:1.2}),dark=new THREE.MeshStandardMaterial({color:lin(cat?0x120e16:0x26170c),roughness:.9});
+  const eyeM=new THREE.MeshBasicMaterial({color:cat?0x9dff6a:0xffb23a});
+  const H=cat?.5:.72;
+  const body=new THREE.Mesh(new THREE.SphereGeometry(.5,22,14),fur);body.scale.set(cat?.5:1.15,cat?.52:1.0,cat?1.5:1.5);body.position.y=H+(cat?.12:.3);g.add(body);
+  if(!cat){const hump=new THREE.Mesh(new THREE.SphereGeometry(.5,16,10),fur);hump.position.set(0,H+.72,.25);hump.scale.set(1.15,.7,1);g.add(hump)}
+  else{const chest=new THREE.Mesh(new THREE.SphereGeometry(.3,14,10),fur);chest.position.set(0,H+.2,.48);chest.scale.set(1,1.1,1.1);g.add(chest)}
+  const head=new THREE.Group();head.position.set(0,H+(cat?.36:.55),cat?.82:1.0);g.add(head);
+  const skull=new THREE.Mesh(new THREE.SphereGeometry(cat?.24:.36,16,12),fur);skull.scale.set(1,.9,cat?1.1:1.15);head.add(skull);
+  const muzzle=new THREE.Mesh(new THREE.SphereGeometry(cat?.13:.2,12,8),dark);muzzle.position.set(0,-.06,cat?.22:.32);muzzle.scale.set(1,.75,1);head.add(muzzle);
+  for(const s of [-1,1]){const ear=new THREE.Mesh(cat?new THREE.ConeGeometry(.08,.2,6):new THREE.SphereGeometry(.1,8,6),fur);ear.position.set(s*(cat?.14:.24),cat?.22:.27,-.02);head.add(ear);
+    const eye=new THREE.Mesh(new THREE.SphereGeometry(cat?.035:.045,8,6),eyeM);eye.position.set(s*(cat?.09:.14),.06,cat?.2:.3);head.add(eye)}
+  if(cat){const tail=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(0,H+.25,-.72),new THREE.Vector3(0,H+.15,-1.1),new THREE.Vector3(0,H+.35,-1.45)]),16,.045,6),fur);g.add(tail)}
+  g.userData.legs=[];for(const [x,z] of [[.22,.5],[-.22,.5],[.22,-.5],[-.22,-.5]]){const pv=new THREE.Group();pv.position.set(x*(cat?.75:1.5),H+(cat?.05:.1),z*(cat?1.1:1.25));const leg=new THREE.Mesh(new THREE.CylinderGeometry(cat?.075:.2,cat?.06:.17,H,8),fur);leg.position.y=-H/2;pv.add(leg);
+    const paw=new THREE.Mesh(new THREE.SphereGeometry(cat?.09:.17,8,6),dark);paw.scale.set(1,.55,1.3);paw.position.set(0,-H,.05);pv.add(paw);g.add(pv);g.userData.legs.push(pv)}
+  g.userData.head=head;g.userData.body=body;g.userData.kind=kind;g.scale.setScalar(cat?1.35:1.25);
+  g.traverse(o=>{if(o.isMesh)o.castShadow=false});return g;
+}
+function hfAnimateBeast(g,u,t){const run=u.moving?Math.sin(u.movePhase*1.4):0,atk=u.action>0&&u.actionType==='melee'?Math.sin((1-u.action/.36)*Math.PI):0;
+  g.userData.legs.forEach((l,i)=>l.rotation.x=(i===0||i===3?run:-run)*.7-(i<2?atk*.9:0));g.position.y=u.moving?Math.abs(run)*.05:0;
+  g.userData.head.position.z=(g.userData.kind==='cat'?.82:.95)+atk*.25;g.rotation.x=-atk*.15;g.userData.body.scale.y=(g.userData.kind==='cat'?.52:1.0)*(1+Math.sin(t*2)*.02)}
+function hfSetOpacity(root,op){root.traverse(o=>{if(!o.isMesh||!o.material)return;for(const m of [].concat(o.material)){if(m.userData.baseOp===undefined){m.userData.baseOp=m.opacity;m.userData.baseTr=m.transparent}
+  m.opacity=m.userData.baseOp*op;m.transparent=op<1||m.userData.baseTr;m.depthWrite=op>=1;m.needsUpdate=true}})}
 function hfMakeSheep(){
   const g=new THREE.Group(),wool=new THREE.MeshStandardMaterial({color:0xf3efe6,roughness:1}),dark=new THREE.MeshStandardMaterial({color:0x2f2a30,roughness:.8});
   for(const [x,y,z,r] of [[0,.62,0,.3],[0,.66,.22,.24],[0,.66,-.22,.25],[.15,.6,.05,.2],[-.15,.6,.05,.2],[.12,.7,-.15,.18],[-.12,.7,-.15,.18],[0,.8,0,.2]]){const b=new THREE.Mesh(new THREE.IcosahedronGeometry(r,1),wool);b.position.set(x,y,z);g.add(b)}
@@ -632,8 +668,8 @@ const CLASS={
  arcanist:{name:'Mage',role:'Caster',color:[.38,.28,.92],accent:[.78,.68,1],hp:1030,speed:5.5,res:'Mana',regen:12,skills:[{n:'Arcane Bolt',cd:1.5,c:12},{n:'Frost Nova',cd:9,c:18},{n:'Counterspell',cd:14,c:10},{n:'Arcane Power',cd:24,c:20},{n:'Blink',cd:15,c:10},{n:'Polymorph',cd:0,c:18}],tags:['burst','cast','contrôle']},
  oracle:{name:'Priest',role:'Healer',color:[.92,.82,.58],accent:[1,.95,.76],hp:1120,speed:5.6,res:'Mana',regen:6,skills:[{n:'Flash Heal',cd:1.3,c:28},{n:'Power Shield',cd:8,c:24},{n:'Silence',cd:16,c:18},{n:'Divine Hymn',cd:30,c:45},{n:'Angelic Step',cd:14,c:10}],tags:['soins','bouclier','support']},
  reaver:{name:'Death Knight',role:'Bruiser',color:[.28,.40,.52],accent:[.52,.88,1],hp:1300,speed:5.9,res:'Runic Power',regen:10,skills:[{n:'Obliterate',cd:5,c:0},{n:'Death Grip',cd:10,c:15},{n:'Asphyxiate',cd:12,c:18},{n:'Pillar of Frost',cd:24,c:25},{n:'Death Advance',cd:12,c:18}],tags:['pression','grip','mêlée']},
- warden:{name:'Druid',role:'Hybride',color:[.92,.48,.12],accent:[.72,1,.42],hp:1240,speed:6.15,res:'Nature',regen:11,skills:[{n:'Claw',cd:3,c:0},{n:'Entangling Roots',cd:10,c:16},{n:'Barkskin',cd:18,c:22},{n:'Starfall',cd:20,c:28},{n:'Wild Charge',cd:14,c:18}],tags:['hybride','roots','mobilité']},
- shade:{name:'Rogue',role:'Contrôle',color:[.34,.38,.46],accent:[1,.86,.38],hp:1080,speed:6.65,res:'Energy',regen:17,skills:[{n:'Backstab',cd:2.5,c:15},{n:'Cloak',cd:13,c:20},{n:'Kidney Shot',cd:11,c:22},{n:'Vendetta',cd:24,c:25},{n:'Shadowstep',cd:13,c:18}],tags:['mobilité','stun','burst']},
+ warden:{name:'Druid',role:'Hybride',color:[.92,.48,.12],accent:[.72,1,.42],hp:1240,speed:6.15,res:'Nature',regen:11,skills:[{n:'Wrath',cd:0,c:12},{n:'Entangling Roots',cd:10,c:16},{n:'Barkskin',cd:18,c:22},{n:'Starfall',cd:20,c:28},{k:'cat',n:'Cat Form',cd:0,c:0},{k:'bear',n:'Bear Form',cd:0,c:0}],tags:['hybride','roots','mobilité']},
+ shade:{name:'Rogue',role:'Contrôle',color:[.34,.38,.46],accent:[1,.86,.38],hp:1080,speed:6.65,res:'Energy',regen:17,skills:[{n:'Backstab',cd:2.5,c:15},{n:'Cloak',cd:13,c:20},{n:'Kidney Shot',cd:11,c:22},{n:'Vendetta',cd:24,c:25},{n:'Shadowstep',cd:13,c:18},{k:'stealth',n:'Stealth',cd:0,c:0}],tags:['mobilité','stun','burst']},
  warlock:{name:'Warlock',role:'Caster / DoT',color:[.32,.16,.42],accent:[.48,1,.24],hp:1160,speed:5.45,res:'Soul Power',regen:11,skills:[{n:'Shadow Bolt',cd:1.6,c:12},{n:'Fear',cd:10,c:18},{n:'Spell Lock',cd:15,c:12},{n:'Dark Soul',cd:25,c:24},{n:'Demonic Gate',cd:15,c:12}],tags:['DoT','fear','caster']}
 };
 
@@ -653,10 +689,18 @@ function skillMotif(name){
  if(/stun|kidney|asphyx/.test(n))return 'stun';
  if(/bolt/.test(n))return 'bolt';
  if(/poly|morph/.test(n))return 'sheep';
+ if(/cat form/.test(n))return 'cat';
+ if(/bear form/.test(n))return 'bear';
+ if(/human form/.test(n))return 'leaf';
+ if(/stealth/.test(n))return 'stealth';
+ if(/sap|maim/.test(n))return 'stun';
+ if(/wrath/.test(n))return 'bolt';
+ if(/frenzied/.test(n))return 'heal';
+ if(/wild charge/.test(n))return 'move';
  return 'strike';
 }
-function skillIconSVG(cls,i){
- const C=CLASS[cls],S=C.skills[i],a=rgbHex(C.accent),b=rgbHex(C.color),id=`g_${cls}_${i}`,m=skillMotif(S.n);
+function skillIconSVG(cls,i,S){
+ const C=CLASS[cls];S=S||C.skills[i];const a=rgbHex(C.accent),b=rgbHex(C.color),id=`g_${cls}_${S.n.replace(/\W/g,'')}`,m=skillMotif(S.n);
  const motifs={
   strike:`<path d="M13 35L34 12l3 3-21 23-7 2 4-5z" fill="#eef6ff"/><path d="M12 12l24 24" stroke="${a}" stroke-width="5" stroke-linecap="round"/><path d="M11 11l26 26" stroke="#fff" stroke-width="1.5" opacity=".7"/>`,
   heal:`<circle cx="24" cy="24" r="13" fill="#fff6b8" opacity=".22"/><path d="M20 10h8v10h10v8H28v10h-8V28H10v-8h10z" fill="#fff7cb"/><path d="M24 5v5M24 38v5M5 24h5M38 24h5" stroke="${a}" stroke-width="2"/>`,
@@ -669,6 +713,10 @@ function skillIconSVG(cls,i){
   grip:`<path d="M8 17c6-8 14-7 17-1s-2 10-7 9-6-7-2-10M40 31c-6 8-14 7-17 1s2-10 7-9 6 7 2 10" fill="none" stroke="#d5ecff" stroke-width="4"/><path d="M17 31l14-14" stroke="${a}" stroke-width="5"/>`,
   star:`<path d="M24 5l5 12 13 1-10 8 4 13-12-7-12 7 4-13-10-8 13-1z" fill="#fff2a8" stroke="${a}" stroke-width="2"/><circle cx="39" cy="8" r="3" fill="#fff"/>`,
   stun:`<path d="M9 26l8-8 5 6 7-12 10 8-7 8 7 6-11 8-5-8-8 7z" fill="#ffe27a" stroke="${a}" stroke-width="2"/><circle cx="15" cy="11" r="3" fill="#fff3a0"/>`,
+  cat:`<path d="M24 28c-6 0-11 4-11 9 0 3 3 5 6 4 2-1 3-2 5-2s3 1 5 2c3 1 6-1 6-4 0-5-5-9-11-9z" fill="#fff3d6"/><ellipse cx="12" cy="20" rx="4" ry="5.5" fill="#fff3d6"/><ellipse cx="20" cy="13" rx="4" ry="5.5" fill="#fff3d6"/><ellipse cx="28" cy="13" rx="4" ry="5.5" fill="#fff3d6"/><ellipse cx="36" cy="20" rx="4" ry="5.5" fill="#fff3d6"/><circle cx="24" cy="24" r="20" fill="none" stroke="${a}" stroke-width="2" opacity=".7"/>`,
+  bear:`<path d="M10 10c4 10 6 20 4 30M20 7c3 11 4 22 1 34M30 7c2 11 2 22-1 34M39 11c0 10-2 20-5 29" stroke="#ffd9a8" stroke-width="4.5" stroke-linecap="round" fill="none"/><path d="M10 10c4 10 6 20 4 30M20 7c3 11 4 22 1 34M30 7c2 11 2 22-1 34M39 11c0 10-2 20-5 29" stroke="${a}" stroke-width="1.5" fill="none"/>`,
+  leaf:`<path d="M10 38C10 18 22 8 40 8c0 18-10 30-30 30z" fill="#c9f59a"/><path d="M12 36L36 12" stroke="${a}" stroke-width="2.5"/>`,
+  stealth:`<path d="M5 24c6-9 13-13 19-13s13 4 19 13c-6 9-13 13-19 13S11 33 5 24z" fill="#2a2235" stroke="#d9c9ff" stroke-width="2"/><circle cx="24" cy="24" r="6" fill="${a}"/><path d="M8 40L40 8" stroke="#d9c9ff" stroke-width="3" opacity=".8"/>`,
   sheep:`<ellipse cx="25" cy="26" rx="14" ry="10" fill="#f4f0ff"/><circle cx="16" cy="20" r="6" fill="#fff"/><circle cx="28" cy="18" r="6" fill="#fff"/><ellipse cx="10" cy="27" rx="5" ry="6" fill="#3a3348"/><path d="M17 34v8M24 35v8M31 35v8M37 33v8" stroke="#3a3348" stroke-width="3" stroke-linecap="round"/><circle cx="24" cy="24" r="19" fill="none" stroke="${a}" stroke-width="2" opacity=".7"/>`,
   bolt:`<circle cx="14" cy="30" r="7" fill="${a}"/><path d="M16 29c10-13 15-16 27-20-6 9-11 17-19 28z" fill="#e8faff"/><path d="M19 30c8-8 13-12 20-15" stroke="${a}" stroke-width="4"/>`
  };
@@ -683,11 +731,83 @@ const SKILL_META={
  arcanist:[{t:'ranged',s:'arcane'},{t:'aoe',s:'frost'},{t:'ranged',s:'arcane',kick:1},{t:'self',s:'arcane'},{t:'self',s:'arcane'},{t:'ranged',s:'arcane'}],
  oracle:[{t:'heal',s:'holy'},{t:'heal',s:'holy'},{t:'ranged',s:'shadow'},{t:'self',s:'holy'},{t:'self',s:'holy'}],
  reaver:[{t:'melee'},{t:'ranged',s:'unholy'},{t:'ranged',s:'unholy'},{t:'self',s:'frost'},{t:'ranged'}],
- warden:[{t:'melee'},{t:'ranged',s:'nature'},{t:'self',s:'nature'},{t:'aoe',s:'arcane'},{t:'ranged'}],
- shade:[{t:'melee'},{t:'self'},{t:'melee'},{t:'self'},{t:'ranged'}],
+ warden:[{t:'ranged',s:'nature'},{t:'ranged',s:'nature'},{t:'self',s:'nature'},{t:'aoe',s:'arcane'},{t:'self'},{t:'self'}],
+ shade:[{t:'melee'},{t:'self'},{t:'melee'},{t:'self'},{t:'ranged'},{t:'self'}],
  warlock:[{t:'ranged',s:'shadow'},{t:'ranged',s:'shadow'},{t:'ranged',s:'shadow',kick:1},{t:'self',s:'shadow'},{t:'self',s:'shadow'}]
 };
 for(const k in SKILL_META)SKILL_META[k].forEach((m,i)=>Object.assign(CLASS[k].skills[i],m));
+// ---------- Formes du druide et camouflage du voleur ----------
+// Chaque forme a sa propre barre de sorts (et ses propres recharges) ; la barre « de base » est CLASS[cls].skills.
+CLASS.warden.bars={
+ cat:[{k:'shred',n:'Shred',cd:2.5,c:0,t:'melee',dmg:150},{k:'rake',n:'Rake',cd:6,c:0,t:'melee',dmg:80},{k:'maim',n:'Maim',cd:18,c:0,t:'melee',stun:4},
+      {k:'wildcharge',n:'Wild Charge',cd:14,c:0,t:'charge'},{k:'bear',n:'Bear Form',cd:0,c:0,t:'self'},{k:'human',n:'Human Form',cd:0,c:0,t:'self'}],
+ bear:[{k:'maul',n:'Maul',cd:3,c:0,t:'melee',dmg:120},{k:'swipe',n:'Swipe',cd:6,c:0,t:'aoe',dmg:85,r:5},{k:'frenzied',n:'Frenzied Regeneration',cd:24,c:0,t:'self',heal:380},
+      {k:'wildcharge',n:'Wild Charge',cd:14,c:0,t:'charge'},{k:'cat',n:'Cat Form',cd:0,c:0,t:'self'},{k:'human',n:'Human Form',cd:0,c:0,t:'self'}]
+};
+CLASS.shade.bars={stealth:[{k:'ambush',n:'Ambush',cd:0,c:30,t:'melee',dmg:330},{k:'sap',n:'Sap',cd:0,c:25,t:'ranged',range:5,dur:8},{k:'stealth',n:'Stealth',cd:0,c:0,t:'self'}]};
+const FORM_INFO={cat:{speed:1.3,swing:[1.0,42]},bear:{speed:1,hp:1.4,armor:.7,swing:[2.0,58]}};
+const barKey=u=>u.form||(u.stealth?'stealth':'');
+function skillsOf(u){return (u&&CLASS[u.cls].bars?.[barKey(u)])||CLASS[u.cls].skills}
+// Bascule de barre : chaque barre garde ses recharges.
+function syncBar(u){u.cdSets=u.cdSets||{'':u.cd};const k=barKey(u);u.cdSets[k]=u.cdSets[k]||skillsOf(u).map(()=>0);u.cd=u.cdSets[k];u.queuedSkill=null}
+function setForm(u,form){
+ const was=u.form,bear=FORM_INFO.bear;
+ if(was==='bear'){const k=u.hp/u.maxHp;u.maxHp=CLASS[u.cls].hp;u.hp=Math.max(1,Math.round(u.maxHp*k))}
+ u.form=form||null;
+ if(u.form==='bear'){const k=u.hp/u.maxHp;u.maxHp=Math.round(CLASS[u.cls].hp*bear.hp);u.hp=Math.round(u.maxHp*k)}
+ // changer de forme libère des entraves (racines, ralentissements) et de la Métamorphose
+ u.root=0;u.rootKind=null;u.rootBreakDamage=0;u.slow=0;if(u.poly>0&&u.polyKind!=='sap')endPoly(u,false);
+ syncBar(u);fx('blinkBurst',u.x,(u.y||0)+.9,u.z,u.form==='bear'?[1,.6,.25]:u.form==='cat'?[1,.85,.35]:[.6,1,.45],.6,.9);
+}
+function setStealth(u,on){
+ if(!!u.stealth===on)return;u.stealth=on;syncBar(u);
+ if(on){for(const v of state.units)if(v.team!==u.team&&v.target===u){v.target=null;if(v.lastEnemy===u)v.lastEnemy=null}fx('cloak',u.x,(u.y||0)+1,u.z,[.35,.3,.45],.5,.6)}
+ else{const base=u.cdSets[''];base[5]=Math.max(base[5],6)}
+}
+const inCombat=u=>now()-(u.lastCombat||-99)<3;
+function useSpecialSkill(u,i){
+ const S=skillsOf(u)[i];if(!S||!u.alive||u.stun>0||u.fear>0||u.poly>0||u.mobility||u.cast||u.cd[i]>0||!canPay(u,i))return false;
+ const shift=['cat','bear','human'].includes(S.k)||S.k==='stealth';if(u.gcd>0&&!(S.k==='stealth'&&u.stealth))return false;
+ let t=hostileTarget(u);if(u.ai&&t)u.target=t;const d=t?d2(u,t):999,melee=!!t&&d<2.45,c=CLASS[u.cls];
+ const k=S.k;let ok=true;
+ if(k==='cat'||k==='bear')setForm(u,k);
+ else if(k==='human')setForm(u,null);
+ else if(k==='stealth'){if(u.stealth)setStealth(u,false);else if(inCombat(u)){if(u===state.player)showError("I can't do that while in combat");return false}else setStealth(u,true)}
+ else if(k==='shred'||k==='maul'){if(!melee)return false;face(u,t);damage(u,t,S.dmg,Math.random()<.18);action(u,'melee')}
+ else if(k==='rake'){if(!melee)return false;face(u,t);damage(u,t,S.dmg);applySlow(t,.3,6);action(u,'melee')}
+ else if(k==='maim'){if(!melee)return false;face(u,t);damage(u,t,60);control(t,'stun',S.stun,u);action(u,'melee')}
+ else if(k==='swipe'){const hit=enemies(u).filter(e=>d2(u,e)<S.r&&!e.stealth);if(!hit.length)return false;hit.forEach(e=>damage(u,e,S.dmg));fx('slash',u.x,(u.y||0)+.9,u.z,c.accent,.9,.5);action(u,'melee')}
+ else if(k==='frenzied'){heal(u,u,S.heal);fx('holyBurst',u.x,.1,u.z,[1,.6,.25],.9,1);action(u,'cast')}
+ else if(k==='wildcharge'){ok=beginCharge(u,t,{cc:'root',dur:2});if(!ok)return false}
+ else if(k==='ambush'){if(!melee)return false;face(u,t);setStealth(u,false);damage(u,t,S.dmg,Math.random()<.3);action(u,'melee')}
+ else if(k==='sap'){if(!t||d>S.range||!los(u,t)||t.poly>0)return false;face(u,t);if(!control(t,'poly',S.dur,u))return false;t.polyKind='sap';t.cast=null;action(u,'melee')}
+ else return false;
+ if(!ok)return false;
+ if(!['cat','bear','human'].includes(k))fx('ring',u.x,.12,u.z,c.accent,.4,.6);
+ spellSfxKind(u,S);pay(u,i);u.cd[i]=S.cd;if(!(k==='stealth'&&!u.stealth))u.gcd=shift?1:1;updateUI();return true;
+}
+// Stratégie des formes (druide) et du camouflage (voleur) avant la logique générale.
+function aiSpecial(u,P){
+ const ready=(k)=>{const bar=skillsOf(u),i=bar.findIndex(s=>s.k===k);return i>=0&&aiCanUse(u,i)?i:-1};
+ if(u.cls==='warden'){
+  if(!u.form){const i=hpPct(u)<.4?5:4;if(aiCanUse(u,i)&&useSkill(u,i))return true;return false}
+  if(u.form==='cat'&&hpPct(u)<.35&&Math.random()<P.defensive){const i=ready('bear');if(i>=0&&useSkill(u,i))return true}
+  if(u.form==='bear'&&hpPct(u)>.8){const i=ready('cat');if(i>=0&&useSkill(u,i))return true}
+ }
+ if(u.cls==='shade'){
+  const foes=enemies(u).filter(e=>!e.stealth);
+  if(!u.stealth){if(!inCombat(u)&&aiCanUse(u,5)&&foes.every(e=>d2(u,e)>9)&&useSkill(u,5))return true;return false}
+  const healer=foes.find(e=>isHealer(e)&&!ccd(e)&&(e.dr.poly??1)>0),focus=teamFocus(u);
+  if(healer&&healer!==focus&&Math.random()<P.cc&&d2(u,healer)<5){const i=ready('sap');if(i>=0&&aiCastOn(u,i,healer))return true}
+  if(focus&&d2(u,focus)<2.45){const i=ready('ambush');if(i>=0&&aiCastOn(u,i,focus))return true}
+ }
+ return false;
+}
+function spellSfxKind(u,S){const a=sfxSpatial(u),L=a.level,P=a.pan;
+ if(S.t==='melee'||S.t==='aoe'){sfxNoise(.12,.2*L,1400,0,P);sfxTone(150,.16,'sawtooth',.08*L,70,0,P,800,.04)}
+ else if(S.k==='stealth'){sfxNoise(.3,.08*L,900,0,P,'lowpass')}
+ else if(S.t==='charge'){sfxNoise(.3,.16*L,600,0,P,'lowpass');sfxTone(110,.3,'sawtooth',.08*L,55,0,P,500,.04)}
+ else sfxChord([220,330,440],.4,'triangle',.08*L,P)}
 const RACE={
  human:{name:'Human',glyph:'🛡️',skin:[.78,.62,.48],ear:1,shoulder:1,height:1.00,bulk:1.00,beard:false,helmBias:0,desc:'Polyvalent et héroïque'},
  dwarf:{name:'Dwarf',glyph:'⛏️',skin:[.82,.67,.52],ear:.82,shoulder:1.15,height:.86,bulk:1.18,beard:true,helmBias:0,desc:'Petit, massif et barbu'},
@@ -780,16 +900,16 @@ function segmentCircle(ax,az,bx,bz,cx,cz,r){const vx=bx-ax,vz=bz-az,wx=cx-ax,wz=
 function resolveWalls(u){u.x=clamp(u.x,-arena.halfX+.72,arena.halfX-.72);u.z=clamp(u.z,-arena.halfZ+.72,arena.halfZ-.72);for(const p of arena.pillars){let dx=u.x-p.x,dz=u.z-p.z,d=Math.hypot(dx,dz),m=p.r+.66;if(d<m){d=d||.01;u.x=p.x+dx/d*m;u.z=p.z+dz/d*m}}}
 function addFloat(u,text,color){if(!state)return;state.floaters.push({x:u.x,y:(u.y||0)+2.3,z:u.z,text,color,life:1,max:1,off:(Math.random()-.5)*.5})}
 function fx(type,x,y,z,color,life=.55,size=.4,to=null,extra=null){if(!state)return;if(state.fx.length>180)state.fx.splice(0,state.fx.length-180);const f={type,x,y,z,color,life,max:life,size,to,from:[x,y,z],extra};try{f.fx3d=!!(window.SpellFX?.ok&&SpellFX.spawn(f))}catch(_){}state.fx.push(f)}
-function damage(src,t,v,crit=false){if(!t?.alive)return;if(t.poly>0)endPoly(t,true);v*=(src.burst>0?1.35:1)*(src.aiDmg||1);if(t.shield>0){const q=Math.min(t.shield,v);t.shield-=q;v-=q}v=Math.round(v*(crit?1.5:1));t.hp=Math.max(0,t.hp-v);t.flash=.14;src.res=clamp(src.res+6,0,100);if(t.fear>0&&v>=t.maxHp*.08){t.fear=0;t.fearOwner=null;addFloat(t,'Fear brisé','#d8a7ff')}if(t.root>0&&t.rootBreakDamage>0){t.rootBreakDamage-=v;if(t.rootMin<=0&&t.rootBreakDamage<=0){t.root=0;t.rootBreakDamage=0;addFloat(t,'Nova brisée','#9de8ff')}}addFloat(t,`-${v}`,crit?'#ffd36b':'#ff7d88');fx('burst',t.x,1.15,t.z,[1,.18,.08],.42,.35);if(t.hp<=0){t.alive=false;t.cast=null;t.mobility=null;t.fear=0;addFloat(t,'K.O.','#ffe6a6')}}
+function damage(src,t,v,crit=false){if(!t?.alive)return;if(t.poly>0)endPoly(t,true);src.lastCombat=t.lastCombat=now();if(t.stealth)setStealth(t,false);if(src.stealth&&src!==t)setStealth(src,false);if(t.form==='bear')v*=FORM_INFO.bear.armor;v*=(src.burst>0?1.35:1)*(src.aiDmg||1);if(t.shield>0){const q=Math.min(t.shield,v);t.shield-=q;v-=q}v=Math.round(v*(crit?1.5:1));t.hp=Math.max(0,t.hp-v);t.flash=.14;src.res=clamp(src.res+6,0,100);if(t.fear>0&&v>=t.maxHp*.08){t.fear=0;t.fearOwner=null;addFloat(t,'Fear brisé','#d8a7ff')}if(t.root>0&&t.rootBreakDamage>0){t.rootBreakDamage-=v;if(t.rootMin<=0&&t.rootBreakDamage<=0){t.root=0;t.rootBreakDamage=0;addFloat(t,'Nova brisée','#9de8ff')}}addFloat(t,`-${v}`,crit?'#ffd36b':'#ff7d88');fx('burst',t.x,1.15,t.z,[1,.18,.08],.42,.35);if(t.hp<=0){t.alive=false;t.cast=null;t.mobility=null;t.fear=0;addFloat(t,'K.O.','#ffe6a6')}}
 function heal(src,t,v){if(!t?.alive)return;v*=src.aiHeal||1;const damp=state?.dampening||0;v=Math.round(v*(1-clamp(t.antiheal,0,.6))*(1-damp));if(v<=0)return;t.hp=Math.min(t.maxHp,t.hp+v);addFloat(t,`+${v}`,'#6ff395');fx('burst',t.x,1.2,t.z,[.15,1,.5],.52,.42)}
-function control(t,type,dur,src=null){const m=t.dr[type]??1;if(m<=0)return false;dur*=m;t[type]=Math.max(t[type]||0,dur);t.dr[type]=m===1?.5:m===.5?.25:0;t.drT[type]=20;if(type==='stun'||type==='fear'||type==='silence'||type==='poly')t.cast=null;if(type==='poly'){t.polyOwner=src?.id??null;t.polyX=t.x;t.polyZ=t.z;t.wanderT=0;t.mobility=null;t.fear=0;t.fearOwner=null;t.queuedSkill=null}if(type==='fear'){t.fearOwner=src?.id??null;t.fearSourceX=src?.x??t.x;t.fearSourceZ=src?.z??t.z;t.mobility=null}const label=type==='poly'?'Mouton !':type==='stun'?'Étourdi':type==='root'?'Immobilisé':type==='fear'?'Fear':'Silence';addFloat(t,label,'#f3d078');return true}
+function control(t,type,dur,src=null){const m=t.dr[type]??1;if(m<=0)return false;dur*=m;t[type]=Math.max(t[type]||0,dur);t.dr[type]=m===1?.5:m===.5?.25:0;t.drT[type]=20;if(type==='stun'||type==='fear'||type==='silence'||type==='poly')t.cast=null;if(type==='poly'){t.polyOwner=src?.id??null;t.polyX=t.x;t.polyZ=t.z;t.wanderT=0;t.mobility=null;t.fear=0;t.fearOwner=null;t.queuedSkill=null}if(type==='fear'){t.fearOwner=src?.id??null;t.fearSourceX=src?.x??t.x;t.fearSourceZ=src?.z??t.z;t.mobility=null}const label=type==='poly'?(src?.cls==='shade'?'Assommé !':'Mouton !'):type==='stun'?'Étourdi':type==='root'?'Immobilisé':type==='fear'?'Fear':'Silence';addFloat(t,label,'#f3d078');return true}
 function applySlow(t,pct=.5,dur=8){if(!t?.alive)return;t.slow=Math.max(t.slow||0,dur);t.slowPct=Math.max(t.slowPct||0,clamp(pct,0,.8));addFloat(t,`Ralenti ${Math.round(t.slowPct*100)}%`,'#9ed7ff')}
-function moveSpeed(u){const buff=u.speedBuff>0?1.18:1,slow=u.slow>0?(1-clamp(u.slowPct||0,0,.8)):1;return CLASS[u.cls].speed*buff*slow}
+function moveSpeed(u){const buff=u.speedBuff>0?1.18:1,slow=u.slow>0?(1-clamp(u.slowPct||0,0,.8)):1,form=u.form?FORM_INFO[u.form].speed:1,st=u.stealth?.7:1;return CLASS[u.cls].speed*buff*slow*form*st}
 // Interruption : coupe l'incantation et verrouille son école 4 s (les sorts de cette école passent en recharge 4 s).
 // Sort non abouti sans faute du lanceur : on rend la ressource et la recharge.
 function refundCast(u,ca){const S=CLASS[u.cls].skills[ca.i];if(!S)return;u.res=clamp(u.res+S.c,0,100);u.cd[ca.i]=0}
 function interrupt(u,t){if(!t?.cast)return false;const S=CLASS[t.cls].skills[t.cast.i],sch=S?.s;t.cast=null;
- if(sch){CLASS[t.cls].skills.forEach((k,j)=>{if(k.s===sch)t.cd[j]=Math.max(t.cd[j],4)});t.lockout={school:sch,until:now()+4}}
+ if(sch){skillsOf(t).forEach((k,j)=>{if(k.s===sch)t.cd[j]=Math.max(t.cd[j],4)});t.lockout={school:sch,until:now()+4}}
  addFloat(t,'Interrompu !','#ff9f6b');fx('silence',t.x,(t.y||0)+1.3,t.z,[1,.55,.3],.6,.7);return true}
 // Death Grip : la cible est tirée jusqu'à 1,5 m devant le chevalier
 function startGrip(u,t){face(u,t);t.cast=null;t.mobility={type:'grip',tx:u.x+Math.sin(u.yaw)*1.5,tz:u.z+Math.cos(u.yaw)*1.5,speed:26,life:.7};
@@ -806,14 +926,14 @@ function blinkForward(u,distance=7.0){
  u.x=bestX;u.z=bestZ;resolveWalls(u);u.root=0;u.visualSnap=true;
  return {from:[ox,(u.y||0)+.75,oz],to:[u.x,(u.y||0)+.75,u.z],distance:Math.hypot(u.x-ox,u.z-oz)};
 }
-function beginCharge(u,t){
+function beginCharge(u,t,hitCC={cc:'stun',dur:2}){
  if(!t?.alive)return false;const d=d2(u,t);if(d<2.8||d>15||!los(u,t))return false;
- face(u,t);u.mobility={type:'charge',target:t,life:.72,speed:24,stop:1.48,hit:false,trailTick:0};u.cast=null;u.root=0;action(u,'dash');
+ face(u,t);u.mobility={type:'charge',cc:hitCC,target:t,life:.72,speed:24,stop:1.48,hit:false,trailTick:0};u.cast=null;u.root=0;action(u,'dash');
  fx('chargeStart',u.x,(u.y||0)+.85,u.z,CLASS[u.cls].accent,.42,.62);return true;
 }
 function finishCharge(u,hit=true){
  const m=u.mobility;if(!m)return;const t=m.target;u.mobility=null;u.moving=false;
- if(hit&&t?.alive&&d2(u,t)<2.15){damage(u,t,55);control(t,'stun',2);fx('chargeImpact',t.x,(t.y||0)+1.0,t.z,CLASS[u.cls].accent,.62,.92);addFloat(t,'Charge !','#ffd995')}
+ if(hit&&t?.alive&&d2(u,t)<2.15){damage(u,t,55);control(t,m.cc?.cc||'stun',m.cc?.dur||2,u);if(m.cc?.cc==='root')t.rootKind='vines';fx('chargeImpact',t.x,(t.y||0)+1.0,t.z,CLASS[u.cls].accent,.62,.92);addFloat(t,'Charge !','#ffd995')}
 }
 function updateMobility(u,dt){
  const m=u.mobility;if(!m)return false;
@@ -835,12 +955,12 @@ function updateMobility(u,dt){
  }
  return false;
 }
-function canPay(u,i){return u.res>=CLASS[u.cls].skills[i].c}function pay(u,i){u.res=Math.max(0,u.res-CLASS[u.cls].skills[i].c)}
+function canPay(u,i){return u.res>=(skillsOf(u)[i]?.c||0)}function pay(u,i){u.res=Math.max(0,u.res-(skillsOf(u)[i]?.c||0))}
 function action(u,type=.32){u.action=type==='cast'?.52:type==='dash'?.38:.36;u.actionType=type}
 const SPELL_QUEUE_WINDOW=.18;
 function showError(msg){const e=$('errorMsg');if(!e||!msg)return;e.textContent=msg;e.classList.add('show');clearTimeout(showError.t);showError.t=setTimeout(()=>e.classList.remove('show'),1500)}
 // Raison d'un échec de sort (affichée au joueur)
-function skillFailReason(u,i){const C=CLASS[u.cls],S=C.skills[i];if(!S||!u.alive)return'';
+function skillFailReason(u,i){const C=CLASS[u.cls],S=skillsOf(u)[i];if(!S||!u.alive)return'';
  if(u.stun>0||u.fear>0||u.poly>0||u.mobility)return "I can't do that right now";
  if(u.cd[i]>0)return u.lockout&&now()<u.lockout.until&&S.s===u.lockout.school?"That school is locked":"That ability isn't ready yet";
  if(u.gcd>0||u.cast)return'';
@@ -848,12 +968,13 @@ function skillFailReason(u,i){const C=CLASS[u.cls],S=C.skills[i];if(!S||!u.alive
  if(!canPay(u,i))return `I don't have enough ${C.res.toLowerCase()}`;
  const t=hostileTarget(u);
  if(S.t==='aoe'&&!enemies(u).some(e=>d2(u,e)<8))return "I'm out of range";
+ if(S.k==='ambush'||S.k==='sap'){if(!u.stealth)return "You must be in stealth"}
  if(S.t==='melee'||S.t==='ranged'||S.t==='charge'){if(!t)return "I have no target";const d=d2(u,t);if(S.t==='charge'&&d<2.8)return "I'm too close";
-  if(d>(S.t==='melee'?2.45:15))return "I'm out of range";if(!los(u,t))return "Target not in line of sight"}
+  if(d>(S.range||(S.t==='melee'?2.45:15)))return "I'm out of range";if(!los(u,t))return "Target not in line of sight"}
  if(S.kick&&!t?.cast)return "Target is not casting";
  return "I can't do that right now"}
 function tryPlayerSkill(i){
- const p=state?.player;if(!p||!CLASS[p.cls].skills[i]||p.poly>0)return false;
+ const p=state?.player;if(!p||!skillsOf(p)[i]||p.poly>0)return false;
  if(useSkill(p,i)){p.queuedSkill=null;return true}
  const locked=(p.gcd>0&&p.gcd<=SPELL_QUEUE_WINDOW)||(p.cd[i]>0&&p.cd[i]<=SPELL_QUEUE_WINDOW);
  if(locked&&p.alive&&p.stun<=0&&p.fear<=0&&!p.cast&&canPay(p,i)){p.queuedSkill={i,until:now()+.35};updateUI();return true}
@@ -905,7 +1026,7 @@ function spellFx(u,i,t,origin){
   else if(i===3)fx('darkAura',u.x,.1,u.z,c,.9,1.0);
  }
 }
-function useSkill(u,i){if(!u||!CLASS[u.cls]?.skills[i]||u.poly>0)return false;const origin={x:u?.x||0,z:u?.z||0};if(!u?.alive||u.stun>0||u.fear>0||u.gcd>0||u.cd[i]>0||u.cast||u.mobility||!canPay(u,i))return false;let t=hostileTarget(u);if(u.ai)u.target=t;else if(t&&!u.target?.alive)setTarget(u,t);const c=CLASS[u.cls],S=c.skills[i],selfMobility=i===4&&['arcanist','oracle','warlock'].includes(u.cls),selfCC=u.cls==='arcanist'&&i===1;if(!t&&u.cls!=='oracle'&&!selfMobility&&!selfCC)return false;const d=t?d2(u,t):999,melee=d<2.45,range=!!t&&d<15&&los(u,t);if(t&&!(i===4&&(u.cls==='arcanist'||u.cls==='reaver'))&&!(u.cls==='arcanist'&&i===1))face(u,t);
+function useSkill(u,i){if(!u||!skillsOf(u)[i]||u.poly>0)return false;if(skillsOf(u)[i].k)return useSpecialSkill(u,i);const origin={x:u?.x||0,z:u?.z||0};if(!u?.alive||u.stun>0||u.fear>0||u.gcd>0||u.cd[i]>0||u.cast||u.mobility||!canPay(u,i))return false;let t=hostileTarget(u);if(u.ai)u.target=t;else if(t&&!u.target?.alive)setTarget(u,t);const c=CLASS[u.cls],S=skillsOf(u)[i],selfMobility=i===4&&['arcanist','oracle','warlock'].includes(u.cls),selfCC=u.cls==='arcanist'&&i===1;if(!t&&u.cls!=='oracle'&&!selfMobility&&!selfCC)return false;const d=t?d2(u,t):999,melee=d<2.45,range=!!t&&d<15&&los(u,t);if(t&&!(i===4&&(u.cls==='arcanist'||u.cls==='reaver'))&&!(u.cls==='arcanist'&&i===1))face(u,t);
  let ok=true;
  if(i===4){
   if(u.cls==='arcanist'){blinkForward(u,7.0);action(u,'dash')}
@@ -939,7 +1060,7 @@ function useSkill(u,i){if(!u||!CLASS[u.cls]?.skills[i]||u.poly>0)return false;co
   else if(i===2&&range){control(t,'silence',2.8);action(u,'cast')}
   else if(i===3){allies(u).forEach(v=>heal(u,v,230));fx('ring',u.x,.1,u.z,c.accent,1,2);action(u,'cast')}else ok=false;
  } else if(u.cls==='warden'){
-  if(i===0&&melee){damage(u,t,145);action(u,'melee')}
+  if(i===0&&range&&u.silence<=0){u.cast={i:0,name:'Wrath',target:t,end:now()+1.5,dur:1.5,type:'damage',value:175};action(u,'cast')}
   else if(i===1&&range){if(control(t,'root',5,u))t.rootKind='vines';fx('roots',t.x,.1,t.z,c.accent,.8,.7);action(u,'cast')}
   else if(i===2){u.shield+=420;action(u,'cast')}
   else if(i===3){enemies(u).filter(e=>d2(u,e)<5.3).forEach(e=>damage(u,e,135));fx('ring',u.x,.1,u.z,c.accent,.85,1.4);action(u,'cast')}else ok=false;
@@ -972,7 +1093,10 @@ const AI_ROLE={
  arcanist:{dmg:0,peel:1,kick:2,burst:3,escape:4,cc:5,ccHealer:1},
  oracle:{healer:1,heal:0,shield:1,kick:2,mass:3,escape:4},
  reaver:{melee:1,dmg:0,grip:1,stun:2,kickStun:1,burst:3,gap:4},
- warden:{melee:1,dmg:0,root:1,peelRoot:1,def:2,aoe:3,gap:4},
+ warden:{},
+ warden_cat:{melee:1,dmg:0,slow:1,stun:2,kickStun:2,gap:3},
+ warden_bear:{melee:1,dmg:0,aoe:1,def:2,gap:3},
+ shade_stealth:{melee:1},
  shade:{melee:1,dmg:0,def:1,stun:2,kickStun:1,burst:3,gap:4},
  warlock:{dmg:0,cc:1,ccHealer:1,kick:2,burst:3,escape:4}
 };
@@ -980,7 +1104,7 @@ let DIFFICULTY=(()=>{try{return localStorage.getItem('arenaDifficulty')||'medium
 // Ennemis au niveau choisi ; alliés toujours compétents (très bons en Easy pour porter le joueur).
 function applyDifficulty(){const d=AI_PROFILES[DIFFICULTY]?DIFFICULTY:'medium',ally=d==='easy'?'hard':'medium';state.difficulty=d;
  for(const u of state.units){const enemy=u.team!==state.player.team,P=AI_PROFILES[enemy?d:ally];u.aiP=P;u.aiDmg=enemy?P.dmg:1;u.aiHeal=enemy?P.heal:1;u.aiNext=Math.random()*P.think}}
-const aiCanUse=(u,i)=>i!=null&&CLASS[u.cls].skills[i]&&u.cd[i]<=0&&u.gcd<=0&&canPay(u,i)&&!u.cast;
+const aiCanUse=(u,i)=>i!=null&&i>=0&&skillsOf(u)[i]&&u.cd[i]<=0&&u.gcd<=0&&canPay(u,i)&&!u.cast;
 function aiCastOn(u,i,t){if(!aiCanUse(u,i))return false;const keep=u.target;u.target=t;const ok=useSkill(u,i);if(!ok)u.target=keep;return ok}
 const isHealer=u=>u.cls==='oracle';
 const hpPct=u=>(u.hp+(u.shield||0)*.5)/u.maxHp;
@@ -988,8 +1112,8 @@ const ccd=u=>u.stun>0||u.fear>0||u.poly>0;
 // Cible de l'équipe : les IA d'une même équipe se concentrent sur la même cible (recalculée régulièrement).
 function teamFocus(u){
  state.aiFocus=state.aiFocus||{};const f=state.aiFocus[u.team],P=u.aiP||AI_PROFILES.medium;
- if(f&&f.t?.alive&&!(f.t.poly>0)&&now()<f.until)return f.t;
- const foes=enemies(u).filter(e=>!(e.poly>0));if(!foes.length)return null;
+ if(f&&f.t?.alive&&!(f.t.poly>0)&&!f.t.stealth&&now()<f.until)return f.t;
+ const foes=enemies(u).filter(e=>!(e.poly>0)&&!e.stealth);if(!foes.length)return null;
  let best=null,bs=1e9;
  for(const e of foes){const s=hpPct(e)-(isHealer(e)&&foes.length===1?.3:0)+(isHealer(e)?.12:0)+d2(u,e)*.012+(los(u,e)?0:.25)+Math.random()*(1-P.focus)*.6;if(s<bs){bs=s;best=e}}
  state.aiFocus[u.team]={t:best,until:now()+2.5+Math.random()*2};return best;
@@ -997,20 +1121,21 @@ function teamFocus(u){
 // Interruption : une incantation ennemie à portée, après le temps de réaction du profil.
 function aiTryKick(u,P,R){
  const kicks=[R.kick,R.kickStun].filter(i=>i!=null&&aiCanUse(u,i));if(!kicks.length)return false;
- for(const e of enemies(u)){const c=e.cast;if(!c)continue;const el=c.dur-(c.end-now());
+ for(const e of enemies(u)){const c=e.cast;if(!c||e.stealth)continue;const el=c.dur-(c.end-now());
   c.react=c.react||{};if(c.react[u.id]==null)c.react[u.id]=Math.random()<P.kick?P.react*(.75+Math.random()*.5):99;
   if(el<c.react[u.id]||c.end-now()<.08)continue;
   const important=c.type==='heal'||c.type==='poly'||c.type==='fear'||e.hp<e.maxHp*2;
-  for(const i of kicks){const S=CLASS[u.cls].skills[i],d=d2(u,e);if(d>(S.t==='melee'?2.45:15)||!los(u,e)||!important)continue;if(aiCastOn(u,i,e))return true}}
+  for(const i of kicks){const S=skillsOf(u)[i],d=d2(u,e);if(d>(S.t==='melee'?2.45:15)||!los(u,e)||!important)continue;if(aiCastOn(u,i,e))return true}}
  return false;
 }
 function ai(u,dt){
  if(!u.alive){u.moving=false;return}if(u.mobility){u.moving=true;return}
- const P=u.aiP||AI_PROFILES.medium,R=AI_ROLE[u.cls]||{};
+ const P=u.aiP||AI_PROFILES.medium,R=AI_ROLE[u.cls+(barKey(u)?'_'+barKey(u):'')]||AI_ROLE[u.cls]||{};
  // bijou : se libérer d'un contrôle long quand c'est utile
  if(u.trinket<=0&&(u.stun>.9||u.fear>1.3||u.poly>1.6||(u.root>1.4&&R.melee)||u.silence>1.8)&&Math.random()<P.trinket*dt*4&&(hpPct(u)<.7||Math.random()<.5))useTrinket(u);
  if(u.poly>0)return;if(u.stun>0||u.fear>0||u.cast){u.moving=false;return}
- const foes=enemies(u),friends=allies(u);if(!foes.length){u.moving=false;return}
+ const foes=enemies(u).filter(e=>!e.stealth),friends=allies(u);if(!foes.length){u.moving=false;return}
+ if(Math.random()>P.idle*.5&&aiSpecial(u,P))return;
  // 1. interrompre (réaction rapide, vérifiée à chaque pas)
  if(aiTryKick(u,P,R))return;
  // 2. décisions « réfléchies » à intervalle du profil
@@ -1037,7 +1162,7 @@ function ai(u,dt){
    const theirHealer=foes.find(e=>isHealer(e)&&!ccd(e)&&e!==t&&(e.dr.poly??1)>0);
    const pressure=hpPct(t)<.7;
    if(R.cc!=null&&theirHealer&&pressure&&d2(u,theirHealer)<15&&los(u,theirHealer)&&!(theirHealer.dr[u.cls==='warlock'?'fear':'poly']===0)&&aiCanUse(u,R.cc)&&aiCastOn(u,R.cc,theirHealer))return;
-   if(R.stun!=null&&pressure&&!ccd(t)&&(t.dr.stun??1)>0&&aiCanUse(u,R.stun)&&d<(CLASS[u.cls].skills[R.stun].t==='melee'?2.45:15)&&useSkill(u,R.stun))return;
+   if(R.stun!=null&&pressure&&!ccd(t)&&(t.dr.stun??1)>0&&aiCanUse(u,R.stun)&&d<(skillsOf(u)[R.stun].t==='melee'?2.45:15)&&useSkill(u,R.stun))return;
    if(R.root!=null&&meleeOnMe.length===0){const threat=foes.find(e=>AI_ROLE[e.cls]?.melee&&friends.some(a=>a!==u&&d2(e,a)<3)&&(e.dr.root??1)>0);if(threat&&d2(u,threat)<15&&aiCastOn(u,R.root,threat))return}
    if(R.grip!=null&&(isHealer(t)||d>6)&&d<15&&aiCanUse(u,R.grip)&&useSkill(u,R.grip))return;
   }
@@ -1087,16 +1212,17 @@ function playerMove(dt){
 // Mouton : erre lentement dans un cercle de 2 m de diamètre autour du point de métamorphose, sans rien pouvoir faire.
 function updatePolyWander(u,dt){
  if(!u?.alive||!(u.poly>0))return;
+ if(u.polyKind==='sap'){u.cast=null;u.mobility=null;u.moving=false;return}
  u.cast=null;u.mobility=null;u.wanderT=(u.wanderT||0)-dt;
  if(u.wanderT<=0||u.wanderX==null){const a=Math.random()*Math.PI*2,r=Math.random()*.9;u.wanderX=u.polyX+Math.sin(a)*r;u.wanderZ=u.polyZ+Math.cos(a)*r;u.wanderT=1.1+Math.random()*1.6;u.wanderPause=Math.random()<.35}
  const dx=u.wanderX-u.x,dz=u.wanderZ-u.z,d=Math.hypot(dx,dz);
  if(u.wanderPause||d<.05){u.moving=false;return}
  const s=Math.min(d,1.1*dt);u.x+=dx/d*s;u.z+=dz/d*s;u.yaw=Math.atan2(dx,dz);u.moving=true;u.movePhase+=dt*9;resolveWalls(u);
 }
-function endPoly(u,broken){u.poly=0;u.polyOwner=null;u.wanderX=null;fx('blinkBurst',u.x,(u.y||0)+.8,u.z,[.95,.85,1],.6,.6);if(broken)addFloat(u,'Métamorphose brisée','#d8a7ff')}
+function endPoly(u,broken){const sap=u.polyKind==='sap';u.poly=0;u.polyOwner=null;u.wanderX=null;u.polyKind=null;fx('blinkBurst',u.x,(u.y||0)+.8,u.z,[.95,.85,1],.6,.6);if(broken)addFloat(u,sap?'Assommer brisé':'Métamorphose brisée','#d8a7ff')}
 // Auto-attaque : les mêlées frappent avec leur arme dès qu'une cible ennemie est au contact (et devant eux pour le joueur).
-const SWING={sentinel:[2.2,52],reaver:[2.4,58],shade:[1.3,30],warden:[1.8,42]};
-function autoAttack(u,dt){const sw=SWING[u.cls];if(!sw||!u.alive)return;u.swing=Math.max(0,(u.swing||0)-dt);
+const SWING={sentinel:[2.2,52],reaver:[2.4,58],shade:[1.3,30]};
+function autoAttack(u,dt){const sw=u.cls==='warden'?FORM_INFO[u.form]?.swing:SWING[u.cls];if(!sw||!u.alive||u.stealth)return;u.swing=Math.max(0,(u.swing||0)-dt);
  if(u.swing>0||u.stun>0||u.fear>0||u.poly>0||u.cast||u.mobility||u.action>0)return;
  const t=hostileTarget(u,false);if(!t||(u.ai&&t.poly>0)||d2(u,t)>2.5)return;
  if(!u.ai){let rel=Math.atan2(t.x-u.x,t.z-u.z)-u.yaw;rel=Math.atan2(Math.sin(rel),Math.cos(rel));if(Math.abs(rel)>1.6)return}else face(u,t);
@@ -1117,7 +1243,7 @@ function updateHealthShrines(dt){
  const p=state.player;if(!p?.alive)return;
  for(const sh of state.shrines){if(sh.active&&p.hp<p.maxHp&&Math.hypot(p.x-sh.x,p.z-sh.z)<1.45){p.hp=p.maxHp;p.shield=0;sh.active=false;sh.respawn=45;fx('holyBurst',sh.x,.55,sh.z,[.25,1,.42],1.25,1.35);addFloat(p,'FULL HP','#8dff9d');updateUI();break}}
 }
-function update(dt){if(!state)return;if(state.splash>0)state.splash-=dt;if(state.ended){updateVisualState(dt);return}for(const u of state.units){u.prevX=u.x;u.prevY=u.y||0;u.prevZ=u.z;u.prevYaw=u.yaw}state.t=Math.max(0,state.t-dt);state.elapsed=(state.elapsed||0)+dt;state.dampening=clamp((state.elapsed-35)/90*.45,0,.45);playerMove(dt);for(const u of state.units){for(let i=0;i<u.cd.length;i++)u.cd[i]=Math.max(0,u.cd[i]-dt);u.gcd=Math.max(0,u.gcd-dt);u.trinket=Math.max(0,u.trinket-dt);u.stun=Math.max(0,u.stun-dt);u.poly=Math.max(0,(u.poly||0)-dt);if(u.poly<=0)u.polyOwner=null;u.root=Math.max(0,u.root-dt);u.silence=Math.max(0,u.silence-dt);u.fear=Math.max(0,(u.fear||0)-dt);if(u.fear<=0)u.fearOwner=null;u.rootMin=Math.max(0,(u.rootMin||0)-dt);if(u.root<=0){u.rootBreakDamage=0;u.rootMin=0;u.rootKind=null}u.burst=Math.max(0,u.burst-dt);u.speedBuff=Math.max(0,u.speedBuff-dt);u.slow=Math.max(0,(u.slow||0)-dt);if(u.slow<=0)u.slowPct=0;u.flash=Math.max(0,u.flash-dt);u.action=Math.max(0,u.action-dt);u.antiheal=Math.max(0,u.antiheal-dt*.025);u.res=clamp(u.res+CLASS[u.cls].regen*dt,0,100);updateMobility(u,dt);updateFearMovement(u,dt);updatePolyWander(u,dt);autoAttack(u,dt);if(!u.grounded){u.vy-=19*dt;u.y+=u.vy*dt;if(u.y<=0){u.y=0;u.vy=0;u.grounded=true;fx('ring',u.x,.04,u.z,[.65,.58,.45],.35,.5)}}for(const k in u.drT){u.drT[k]-=dt;if(u.drT[k]<=0){u.dr[k]=1;u.drT[k]=0}}if(u.cast&&now()>=u.cast.end){const ca=u.cast;if(!(ca.target?.alive&&los(u,ca.target))){refundCast(u,ca);if(u===state.player)showError(ca.target?.alive?'Target not in line of sight':'Invalid target')}else{if(ca.type==='damage'){const proj=u.cls==='warlock'?'shadowProjectile':'arcaneProjectile';fx(proj,u.x,(u.y||0)+1.55,u.z,CLASS[u.cls].accent,.48,.24,[ca.target.x,(ca.target.y||0)+1.2,ca.target.z]);damage(u,ca.target,ca.value);spellImpactSfx(u,'damage')}else if(ca.type==='poly'){for(const e of state.units)if(e!==ca.target&&e.poly>0&&e.polyOwner===u.id)endPoly(e,false);if(control(ca.target,'poly',ca.value,u))fx('blinkBurst',ca.target.x,(ca.target.y||0)+.8,ca.target.z,[.95,.85,1],.7,.8);spellImpactSfx(u,'fear')}else if(ca.type==='fear'){for(const e of state.units)if(e!==ca.target&&e.fear>0&&e.fearOwner===u.id){e.fear=0;e.fearOwner=null}control(ca.target,'fear',ca.value,u);fx('fear',ca.target.x,(ca.target.y||0)+1.15,ca.target.z,CLASS[u.cls].accent,1.0,1.05);spellImpactSfx(u,'fear')}else{fx('healBeam',u.x,(u.y||0)+1.45,u.z,CLASS[u.cls].accent,.34,.16,[ca.target.x,(ca.target.y||0)+1.25,ca.target.z]);heal(u,ca.target,ca.value);spellImpactSfx(u,'heal')}}u.cast=null}if(u===state.player&&u.queuedSkill){const q=u.queuedSkill;if(now()>q.until)u.queuedSkill=null;else if(u.gcd<=0&&u.cd[q.i]<=0&&!u.cast&&u.stun<=0){u.queuedSkill=null;useSkill(u,q.i)}}if(u.ai)ai(u,dt)}updateHealthShrines(dt);updateVisualState(dt);
+function update(dt){if(!state)return;if(state.splash>0)state.splash-=dt;if(state.ended){updateVisualState(dt);return}for(const u of state.units){u.prevX=u.x;u.prevY=u.y||0;u.prevZ=u.z;u.prevYaw=u.yaw}state.t=Math.max(0,state.t-dt);state.elapsed=(state.elapsed||0)+dt;state.dampening=clamp((state.elapsed-35)/90*.45,0,.45);playerMove(dt);for(const u of state.units){for(const cs of (u.cdSets?Object.values(u.cdSets):[u.cd]))for(let i=0;i<cs.length;i++)cs[i]=Math.max(0,cs[i]-dt);u.gcd=Math.max(0,u.gcd-dt);u.trinket=Math.max(0,u.trinket-dt);u.stun=Math.max(0,u.stun-dt);u.poly=Math.max(0,(u.poly||0)-dt);if(u.poly<=0)u.polyOwner=null;u.root=Math.max(0,u.root-dt);u.silence=Math.max(0,u.silence-dt);u.fear=Math.max(0,(u.fear||0)-dt);if(u.fear<=0)u.fearOwner=null;u.rootMin=Math.max(0,(u.rootMin||0)-dt);if(u.root<=0){u.rootBreakDamage=0;u.rootMin=0;u.rootKind=null}u.burst=Math.max(0,u.burst-dt);u.speedBuff=Math.max(0,u.speedBuff-dt);u.slow=Math.max(0,(u.slow||0)-dt);if(u.slow<=0)u.slowPct=0;u.flash=Math.max(0,u.flash-dt);u.action=Math.max(0,u.action-dt);u.antiheal=Math.max(0,u.antiheal-dt*.025);u.res=clamp(u.res+CLASS[u.cls].regen*dt,0,100);updateMobility(u,dt);updateFearMovement(u,dt);updatePolyWander(u,dt);autoAttack(u,dt);if(!u.grounded){u.vy-=19*dt;u.y+=u.vy*dt;if(u.y<=0){u.y=0;u.vy=0;u.grounded=true;fx('ring',u.x,.04,u.z,[.65,.58,.45],.35,.5)}}for(const k in u.drT){u.drT[k]-=dt;if(u.drT[k]<=0){u.dr[k]=1;u.drT[k]=0}}if(u.cast&&now()>=u.cast.end){const ca=u.cast;if(!(ca.target?.alive&&los(u,ca.target))){refundCast(u,ca);if(u===state.player)showError(ca.target?.alive?'Target not in line of sight':'Invalid target')}else{if(ca.type==='damage'){const proj=u.cls==='warlock'?'shadowProjectile':'arcaneProjectile';fx(proj,u.x,(u.y||0)+1.55,u.z,CLASS[u.cls].accent,.48,.24,[ca.target.x,(ca.target.y||0)+1.2,ca.target.z]);damage(u,ca.target,ca.value);spellImpactSfx(u,'damage')}else if(ca.type==='poly'){for(const e of state.units)if(e!==ca.target&&e.poly>0&&e.polyOwner===u.id)endPoly(e,false);if(control(ca.target,'poly',ca.value,u)&&(ca.target.polyKind='sheep'))fx('blinkBurst',ca.target.x,(ca.target.y||0)+.8,ca.target.z,[.95,.85,1],.7,.8);spellImpactSfx(u,'fear')}else if(ca.type==='fear'){for(const e of state.units)if(e!==ca.target&&e.fear>0&&e.fearOwner===u.id){e.fear=0;e.fearOwner=null}control(ca.target,'fear',ca.value,u);fx('fear',ca.target.x,(ca.target.y||0)+1.15,ca.target.z,CLASS[u.cls].accent,1.0,1.05);spellImpactSfx(u,'fear')}else{fx('healBeam',u.x,(u.y||0)+1.45,u.z,CLASS[u.cls].accent,.34,.16,[ca.target.x,(ca.target.y||0)+1.25,ca.target.z]);heal(u,ca.target,ca.value);spellImpactSfx(u,'heal')}}u.cast=null}if(u===state.player&&u.queuedSkill){const q=u.queuedSkill;if(now()>q.until)u.queuedSkill=null;else if(u.gcd<=0&&u.cd[q.i]<=0&&!u.cast&&u.stun<=0){u.queuedSkill=null;useSkill(u,q.i)}}if(u.ai)ai(u,dt)}updateHealthShrines(dt);updateVisualState(dt);
  const aliveA=state.units.some(u=>u.team===0&&u.alive),aliveB=state.units.some(u=>u.team===1&&u.alive);if(!aliveA||!aliveB||state.t<=0){state.ended=true;const ah=state.units.filter(u=>u.team===0).reduce((s,u)=>s+u.hp/u.maxHp,0),bh=state.units.filter(u=>u.team===1).reduce((s,u)=>s+u.hp/u.maxHp,0),win=(aliveA&&!aliveB)||(state.t<=0&&ah>bh);if(win)state.scoreA++;else state.scoreB++;showSplash(win?'Round gagné !':'Round perdu');setTimeout(()=>{if(state.scoreA>=2||state.scoreB>=2){showSplash(state.scoreA>state.scoreB?'VICTOIRE 2 manches':'DÉFAITE');state.scoreA=state.scoreB=state.round=0}resetRound()},1500)}state.uiTick-=dt;if(state.uiTick<=0){state.uiTick=.08;updateUI()}}
 function updateVisualState(dt){for(const f of state.fx){f.life-=dt}state.fx=state.fx.filter(f=>f.life>0);for(const f of state.floaters){f.life-=dt;f.y+=dt*.6}state.floaters=state.floaters.filter(f=>f.life>0)}
 
@@ -1476,7 +1602,7 @@ function renderOverlayWorld(){if(!state)return;const np=$('nameplates'),W=canvas
  for(const u of state.units){let e=OVERLAY.plates.get(u);
   if(!e){e=document.createElement('div');e.className='nameplate';e.innerHTML='<div class="npName"></div><div class="npBar"><div class="npFill"></div></div><div class="npCast"><span class="npIcon"></span><div class="npTrack"><div></div><span></span></div></div>';e.style.left=e.style.top='0';np.appendChild(e);
    e._name=e.firstChild;e._fill=e.children[1].firstChild;e._cast=e.children[2];e._castIcon=e._cast.firstChild;e._castFill=e._cast.lastChild.firstChild;e._castName=e._cast.lastChild.lastChild;e._k={};OVERLAY.plates.set(u,e)}
-  seen.add(u);const p=u.alive?projectScreen(u.rx??u.x,(u.ry??u.y??0)+2.65,u.rz??u.z):null,vis=!!p&&p.x>-60&&p.x<W+60&&p.y>-30&&p.y<H+30;
+  seen.add(u);const p=u.alive&&!(u.stealth&&u.team!==state.player.team)?projectScreen(u.rx??u.x,(u.ry??u.y??0)+2.65,u.rz??u.z):null,vis=!!p&&p.x>-60&&p.x<W+60&&p.y>-30&&p.y<H+30;
   if(e._k.vis!==vis){e.style.display=vis?'':'none';e._k.vis=vis}if(!vis)continue;
   e.style.transform=`translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px) translate(-50%,-100%)`;
   if(e._k.name!==u.name){e._name.textContent=u.name;e._k.name=u.name}
@@ -1495,7 +1621,7 @@ function renderOverlayWorld(){if(!state)return;const np=$('nameplates'),W=canvas
 
 // ---------- UI ----------
 function showSplash(t){$('roundSplash').textContent=t;$('roundSplash').style.opacity='1';setTimeout(()=>$('roundSplash').style.opacity='0',900)}
-function drText(u){const a=[];if(u.poly>0)a.push(`Mouton ${u.poly.toFixed(1)}`);if(u.stun>0)a.push(`Stun ${u.stun.toFixed(1)}`);if(u.root>0)a.push(`Root ${u.root.toFixed(1)}`);if(u.silence>0)a.push(`Sil ${u.silence.toFixed(1)}`);if(u.fear>0)a.push(`Fear ${u.fear.toFixed(1)}`);if(u.slow>0)a.push(`Slow ${Math.round((u.slowPct||0)*100)}% ${u.slow.toFixed(1)}`);return a.join(' · ')}
+function drText(u){const a=[];if(u.poly>0)a.push(`${u.polyKind==='sap'?'Assommé':'Mouton'} ${u.poly.toFixed(1)}`);if(u.stealth)a.push('Camouflé');if(u.form)a.push(u.form==='cat'?'Félin':'Ours');if(u.stun>0)a.push(`Stun ${u.stun.toFixed(1)}`);if(u.root>0)a.push(`Root ${u.root.toFixed(1)}`);if(u.silence>0)a.push(`Sil ${u.silence.toFixed(1)}`);if(u.fear>0)a.push(`Fear ${u.fear.toFixed(1)}`);if(u.slow>0)a.push(`Slow ${Math.round((u.slowPct||0)*100)}% ${u.slow.toFixed(1)}`);return a.join(' · ')}
 // Portrait : rendu 3D du visage (hfMakePortraits) ou, en attendant, l'icône de classe.
 function portraitHTML(u){const r=HF.records?.get(u.id);return `<div class="portrait">${r?.portrait?`<img src="${r.portrait}" alt="">`:skillIconSVG(u.cls,0)}${u.poly>0?'<div class="cc">🐑</div>':u.stun>0?'<div class="cc">🌀</div>':u.fear>0?'<div class="cc">👁</div>':''}</div>`}
 function unitRowHTML(u,enemy){const p=state.player,C=CLASS[u.cls],hp=100*u.hp/u.maxHp,col=enemy?'#e65360':hp>50?'#3fcf6a':hp>25?'#e6c13f':'#e65360';
@@ -1506,7 +1632,7 @@ function castBarHTML(u){const c=u.cast;if(!c)return'';const k=clamp(1-(c.end-now
 function frameHTML(u,enemy=false){const C=CLASS[u.cls];return`<div class="nameRow"><b>${u.name}</b><span>${Math.ceil(u.hp)} PV</span></div><div class="tiny">${RACE[u.race]?.name||''} ${C.name} · ${C.role}</div><div class="bar"><div class="fill ${enemy?'enemy':''}" style="width:${100*u.hp/u.maxHp}%"></div></div><div class="bar resource"><div class="fill" style="width:${u.res}%"></div></div><div class="tiny">${C.res} ${Math.round(u.res)}/100${u.shield>0?` · Bouclier ${Math.ceil(u.shield)}`:''}</div>`}
 function setHTML(el){if(el._html!==el._shown){el.innerHTML=el._html;el._shown=el._html}}
 function updateUI(){if(!state)return;const p=state.player,t=p.target;$('timer').textContent=`${String(Math.floor(state.t/60)).padStart(2,'0')}:${String(Math.floor(state.t%60)).padStart(2,'0')}`;$('score').textContent=`${state.scoreA} - ${state.scoreB}`;$('round').textContent=`Round ${state.round} · BO3`;$('selfFrame')._html=frameHTML(p,false);$('targetFrame')._html=t?frameHTML(t,true)+`<div class="tiny">${los(p,t)?'✓ Ligne de vue':'⚠ Ligne de vue bloquée'}</div>${castBarHTML(t)}`:'<b>Aucune cible</b>';$('arenaFrames')._html=state.units.filter(u=>u.team!==p.team).map(u=>unitRowHTML(u,true)).join('');$('partyFrames')._html=state.units.filter(u=>u.team===p.team).map(u=>unitRowHTML(u,false)).join('');$('status')._html=`${CLASS[p.cls].tags.map(x=>`<span class="tag">${x}</span>`).join('')}<br>${p.poly>0?'🐑 Mouton ':''}${p.stun>0?'🌀 Étourdi ':''}${p.root>0?'⛓ Immobilisé ':''}${p.silence>0?'⛔ Silence ':''}${p.fear>0?'👁 Fear ':''}${p.slow>0?`❄ Ralenti ${Math.round((p.slowPct||0)*100)}% `:''}${p.burst>0?'🔥 Burst ':''}${p.trinket>0?`· Trinket ${Math.ceil(p.trinket)}s`:''}${state.dampening>0?`<br>⚔ Dampening ${Math.round(state.dampening*100)}%`:''}`;for(const id of ['selfFrame','targetFrame','arenaFrames','partyFrames','status'])setHTML($(id));
- const C=CLASS[p.cls];$('skills').classList.toggle('six',C.skills.length>5);$('skills').innerHTML=C.skills.map((s,i)=>`<button class="skill ${p.gcd>0?'gcding':''} ${p.queuedSkill?.i===i?'queued':''}" data-i="${i}" title="${s.n}"><span class="icon">${skillIconSVG(p.cls,i)}</span><span class="skillName">${s.n}</span><span class="cost">${s.c||''}</span><span class="key">${keyLabel(PREFS.keybinds.skills[i])}</span>${p.cd[i]>0?`<span class="cd">${p.cd[i]<10?p.cd[i].toFixed(1):p.cd[i].toFixed(0)}</span>`:''}</button>`).join('')+`<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(PREFS.keybinds.trinket)}</span>${p.trinket>0?`<span class="cd">${p.trinket.toFixed(0)}</span>`:''}</button>`;document.querySelectorAll('.skill[data-i]').forEach(b=>{b.onclick=()=>{if(!MOBILE.enabled)tryPlayerSkill(+b.dataset.i)};b.onpointerdown=e=>{if(MOBILE.enabled){e.preventDefault();tryPlayerSkill(+b.dataset.i)}}});$('trinketBtn').onclick=()=>{if(!MOBILE.enabled)useTrinket(p)};$('trinketBtn').onpointerdown=e=>{if(MOBILE.enabled){e.preventDefault();useTrinket(p)}};const cb=$('castBar');if(p.cast){cb.style.display='block';const q=clamp(1-(p.cast.end-now())/p.cast.dur,0,1);cb.querySelector('.castFill').style.width=`${q*100}%`;cb.querySelector('.castText').textContent=p.cast.name}else cb.style.display='none'}
+ const C=CLASS[p.cls],bar=skillsOf(p);$('skills').classList.toggle('six',bar.length>5);$('skills').innerHTML=bar.map((s,i)=>`<button class="skill ${p.gcd>0?'gcding':''} ${p.queuedSkill?.i===i?'queued':''}" data-i="${i}" title="${s.n}"><span class="icon">${skillIconSVG(p.cls,i,s)}</span><span class="skillName">${s.n}</span><span class="cost">${s.c||''}</span><span class="key">${keyLabel(PREFS.keybinds.skills[i])}</span>${p.cd[i]>0?`<span class="cd">${p.cd[i]<10?p.cd[i].toFixed(1):p.cd[i].toFixed(0)}</span>`:''}</button>`).join('')+`<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(PREFS.keybinds.trinket)}</span>${p.trinket>0?`<span class="cd">${p.trinket.toFixed(0)}</span>`:''}</button>`;document.querySelectorAll('.skill[data-i]').forEach(b=>{b.onclick=()=>{if(!MOBILE.enabled)tryPlayerSkill(+b.dataset.i)};b.onpointerdown=e=>{if(MOBILE.enabled){e.preventDefault();tryPlayerSkill(+b.dataset.i)}}});$('trinketBtn').onclick=()=>{if(!MOBILE.enabled)useTrinket(p)};$('trinketBtn').onpointerdown=e=>{if(MOBILE.enabled){e.preventDefault();useTrinket(p)}};const cb=$('castBar');if(p.cast){cb.style.display='block';const q=clamp(1-(p.cast.end-now())/p.cast.dur,0,1);cb.querySelector('.castFill').style.width=`${q*100}%`;cb.querySelector('.castText').textContent=p.cast.name}else cb.style.display='none'}
 
 // ---------- Original adaptive battle-fantasy audio (Web Audio; no external copyrighted assets) ----------
 const MUSIC={ctx:null,master:null,sfxMaster:null,reverb:null,limiter:null,noise:null,timer:null,next:0,step:0,playing:false};
@@ -1732,7 +1858,7 @@ mobileViewportSync();window.addEventListener('resize',mobileViewportSync);window
 $('fullscreenBtn')?.addEventListener('click',e=>{e.preventDefault();mobileRequestFullscreen()});
 
 // ---------- mobile touch controls (desktop controls remain unchanged) ----------
-function mobileCycleTarget(){if(!state?.player?.alive)return;const es=enemies(state.player);if(!es.length)return;const i=Math.max(-1,es.indexOf(state.player.target));setTarget(state.player,es[(i+1)%es.length]);updateUI()}
+function mobileCycleTarget(){if(!state?.player?.alive)return;const es=enemies(state.player).filter(e=>!e.stealth);if(!es.length)return;const i=Math.max(-1,es.indexOf(state.player.target));setTarget(state.player,es[(i+1)%es.length]);updateUI()}
 function mobileJump(){const p=state?.player;if(p?.alive&&p.stun<=0&&p.fear<=0&&p.grounded){p.vy=7.5;p.grounded=false;p.cast=null}}
 function setupMobileControls(){
  if(!MOBILE.enabled)return;
@@ -1753,7 +1879,7 @@ setupMobileControls();
 
 // ---------- controls: exact requested spec ----------
 function setMoveKey(e,down){if(!state)return false;const m={keyz:'z',keyw:'w',keys:'s',keyq:'q',keya:'a',keyd:'d',arrowup:'arrowup',arrowdown:'arrowdown',arrowleft:'arrowleft',arrowright:'arrowright'},k=m[(e.code||'').toLowerCase()];if(k){state.keys[k]=down;e.preventDefault();return true}return false}
-window.addEventListener('keydown',e=>{if(captureBind){e.preventDefault();if(e.code==='Escape'){captureBind=null;$('bindStatus').textContent='Modification annulée.';renderBindGrid();return}assignCapturedBind(e.code);return}if(settingsOpen)return;if(setMoveKey(e,true))return;if(!state||$('overlay').style.display!=='none')return;if(e.code==='Tab'){e.preventDefault();const es=enemies(state.player);if(es.length){const i=Math.max(-1,es.indexOf(state.player.target));setTarget(state.player,es[(i+1)%es.length]);updateUI()}return}const skillIndex=PREFS.keybinds.skills.indexOf(e.code);if(skillIndex>=0){e.preventDefault();tryPlayerSkill(skillIndex);return}if(e.code===PREFS.keybinds.trinket){e.preventDefault();useTrinket(state.player);return}if(e.code==='Space'){e.preventDefault();const p=state.player;if(p.alive&&p.stun<=0&&p.fear<=0&&!(p.poly>0)&&p.grounded){p.vy=7.5;p.grounded=false;p.cast=null}}});window.addEventListener('keyup',e=>setMoveKey(e,false));window.addEventListener('blur',()=>{if(state)state.keys={}});
+window.addEventListener('keydown',e=>{if(captureBind){e.preventDefault();if(e.code==='Escape'){captureBind=null;$('bindStatus').textContent='Modification annulée.';renderBindGrid();return}assignCapturedBind(e.code);return}if(settingsOpen)return;if(setMoveKey(e,true))return;if(!state||$('overlay').style.display!=='none')return;if(e.code==='Tab'){e.preventDefault();const es=enemies(state.player).filter(e=>!e.stealth);if(es.length){const i=Math.max(-1,es.indexOf(state.player.target));setTarget(state.player,es[(i+1)%es.length]);updateUI()}return}const skillIndex=PREFS.keybinds.skills.indexOf(e.code);if(skillIndex>=0){e.preventDefault();tryPlayerSkill(skillIndex);return}if(e.code===PREFS.keybinds.trinket){e.preventDefault();useTrinket(state.player);return}if(e.code==='Space'){e.preventDefault();const p=state.player;if(p.alive&&p.stun<=0&&p.fear<=0&&!(p.poly>0)&&p.grounded){p.vy=7.5;p.grounded=false;p.cast=null}}});window.addEventListener('keyup',e=>setMoveKey(e,false));window.addEventListener('blur',()=>{if(state)state.keys={}});
 function applyLook(dx,dy){
  if(!looking)return;
  const next=GameLogic.applyLook(camera.yaw,camera.pitch,dx,dy);
@@ -1762,11 +1888,11 @@ function applyLook(dx,dy){
  if(state?.player?.alive)state.player.yaw=camera.yaw
 }
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
-document.addEventListener('pointerdown',e=>{const row=e.target.closest?.('[data-uid]');if(!row||!state?.player||uiEditMode)return;const u=state.units[+row.dataset.uid];if(u?.alive){setTarget(state.player,u);updateUI()}e.preventDefault()});
+document.addEventListener('pointerdown',e=>{const row=e.target.closest?.('[data-uid]');if(!row||!state?.player||uiEditMode)return;const u=state.units[+row.dataset.uid];if(u?.alive&&!(u.stealth&&u.team!==state.player.team)){setTarget(state.player,u);updateUI()}e.preventDefault()});
 $('selfFrame').addEventListener('pointerdown',e=>{if(!state?.player||uiEditMode)return;setTarget(state.player,state.player);updateUI()});
 // boutons souris enfoncés (gauche+droit ensemble = avancer, comme dans les MMO)
 let MOUSE_BTN=0;for(const ev of ['mousedown','mouseup','mousemove'])window.addEventListener(ev,e=>{MOUSE_BTN=e.buttons|0},true);window.addEventListener('blur',()=>{MOUSE_BTN=0});
-function pickTargetAt(sx,sy){if(!state?.player?.alive)return false;let best=null,bestD=1e9;for(const u of state.units.filter(v=>v.alive)){const p=projectScreen(u.rx??u.x,(u.ry??u.y??0)+1.35,u.rz??u.z);if(!p)continue;const d=Math.hypot(sx-p.x,sy-p.y);if(d<62&&d<bestD){best=u;bestD=d}}if(best){setTarget(state.player,best);updateUI();return true}return false}
+function pickTargetAt(sx,sy){if(!state?.player?.alive)return false;let best=null,bestD=1e9;for(const u of state.units.filter(v=>v.alive&&!(v.stealth&&v.team!==state.player.team))){const p=projectScreen(u.rx??u.x,(u.ry??u.y??0)+1.35,u.rz??u.z);if(!p)continue;const d=Math.hypot(sx-p.x,sy-p.y);if(d<62&&d<bestD){best=u;bestD=d}}if(best){setTarget(state.player,best);updateUI();return true}return false}
 canvas.addEventListener('pointerdown',e=>{canvas.focus();if(MOBILE.enabled&&e.pointerType==='touch')return;if(e.button===0){const r=canvas.getBoundingClientRect();pickTargetAt(e.clientX-r.left,e.clientY-r.top);return}if(e.button!==2)return;looking=true;rightPointerId=e.pointerId;lastPX=e.clientX;lastPY=e.clientY;if(canvas.requestPointerLock){try{canvas.requestPointerLock()}catch(_){}}if(document.pointerLockElement!==canvas)canvas.setPointerCapture?.(e.pointerId);if(state?.player?.alive)state.player.yaw=camera.yaw;e.preventDefault()});document.addEventListener('mousemove',e=>{if(looking&&document.pointerLockElement===canvas)applyLook(e.movementX||0,e.movementY||0)});canvas.addEventListener('pointermove',e=>{if(!looking||document.pointerLockElement===canvas)return;const dx=e.clientX-lastPX,dy=e.clientY-lastPY;lastPX=e.clientX;lastPY=e.clientY;applyLook(dx,dy)});function stopLook(){looking=false;if(rightPointerId!=null)try{canvas.releasePointerCapture?.(rightPointerId)}catch(_){}rightPointerId=null;if(document.pointerLockElement===canvas&&document.exitPointerLock)document.exitPointerLock()}canvas.addEventListener('pointerup',e=>{if(e.button===2)stopLook()});window.addEventListener('mouseup',e=>{if(e.button===2&&looking)stopLook()});canvas.addEventListener('wheel',e=>{camera.dist=clamp(camera.dist+Math.sign(e.deltaY)*.65,4.5,12.5);e.preventDefault()},{passive:false});
 
 const SIM_DT=1/120,MAX_SIM_STEPS=6;let last=now(),simAccumulator=0,fatal=false;function loop(){if(fatal)return;try{const n=now(),frameDt=Math.min(.05,n-last);last=n;simAccumulator+=frameDt;let steps=0;while(state&&simAccumulator>=SIM_DT&&steps<MAX_SIM_STEPS){update(SIM_DT);simAccumulator-=SIM_DT;steps++}if(steps===MAX_SIM_STEPS)simAccumulator=0;renderAlpha=clamp(simAccumulator/SIM_DT,0,1);render();requestAnimationFrame(loop)}catch(err){fatal=true;console.error(err);$('bootError').style.display='block';$('bootError').textContent='Erreur WebGL : '+(err?.message||String(err));$('overlay').style.display='flex'}}
