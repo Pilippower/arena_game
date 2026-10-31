@@ -7,6 +7,7 @@
     "test": "node tests/run_all.js"
   },
   "devDependencies": {
-    "playwright-core": "^1.48.0"
+    "playwright-core": "^1.48.0",
+    "three": "^0.128.0"
   }
 }

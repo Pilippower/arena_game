@@ -1,0 +1,75 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Char viewer</title>
+<style>html,body{margin:0;height:100%;background:#2a2622;overflow:hidden}canvas{display:block}</style>
+<script src="../node_modules/three/build/three.min.js"></script>
+<script src="../node_modules/three/examples/js/loaders/GLTFLoader.js"></script>
+<script src="../characters.js"></script>
+</head><body>
+<script>
+// Outil de dev : ?parts=url1|url2&anim=Idle_Loop&t=.4&yaw=0&cam=full|face
+const q=new URLSearchParams(location.search);
+const parts=(q.get('parts')||'').split('|').filter(Boolean);
+const ANIM_URL='../assets_src/Universal Animation Library[Standard]/Universal Animation Library[Standard]/Unreal-Godot/UAL1_Standard.glb';
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setSize(innerWidth,innerHeight);renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;
+document.body.appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x2a2622);
+scene.add(new THREE.HemisphereLight(0xfff1dc,0x3a3024,1.0));
+const key=new THREE.DirectionalLight(0xfff0d8,2.2);key.position.set(2,4,3);scene.add(key);
+const rim=new THREE.DirectionalLight(0x9cc4ff,1.4);rim.position.set(-3,2.5,-3);scene.add(rim);
+const camera=new THREE.PerspectiveCamera(30,innerWidth/innerHeight,.05,100);
+// Le pack Quaternius référence parfois "X_png.png" alors que le fichier s'appelle "X.png".
+const manager=new THREE.LoadingManager();manager.setURLModifier(u=>u.replace(/_png\.png$/,'.png'));
+const loader=new THREE.GLTFLoader(manager);
+const load=u=>new Promise((res,rej)=>loader.load(u,res,undefined,rej));
+window.__ready=false;window.__info={};
+// Ne garde que les triangles dont tous les sommets sont dominés par l'un des os listés
+// (évite que le corps nu traverse la tenue).
+function keepOnlyBones(mesh,names){
+  const geo=mesh.geometry,si=geo.attributes.skinIndex,sw=geo.attributes.skinWeight,idx=geo.index;
+  const keep=new Set(names.map(n=>mesh.skeleton.bones.findIndex(b=>b.name===n)).filter(i=>i>=0));
+  const comp=(a,v,k)=>k===0?a.getX(v):k===1?a.getY(v):k===2?a.getZ(v):a.getW(v);
+  const ok=v=>{let best=0,bw=-1;for(let k=0;k<4;k++){const w=comp(sw,v,k);if(w>bw){bw=w;best=comp(si,v,k)}}return keep.has(best)};
+  const out=[];for(let i=0;i<idx.count;i+=3){const a=idx.getX(i),b=idx.getX(i+1),c=idx.getX(i+2);if(ok(a)&&ok(b)&&ok(c))out.push(a,b,c)}
+  geo.setIndex(out);
+}
+(async()=>{
+  try{
+    if(q.get('kit')){
+      const k=await CharacterKit.build(THREE,q.get('kit'),{baseUrl:'../',loader});
+      return show(k.root,k.clips);
+    }
+    const gl=await Promise.all(parts.map(load));
+    const base=gl[0].scene,bones={};
+    base.traverse(o=>{if(o.isBone)bones[o.name]=o});
+    if(q.get('headonly'))base.traverse(o=>{if(o.isSkinnedMesh)keepOnlyBones(o,['Head','neck_01'])});
+    for(const g of gl.slice(1)){
+      const meshes=[];g.scene.traverse(o=>{if(o.isSkinnedMesh)meshes.push(o)});
+      for(const m of meshes){
+        const sk=new THREE.Skeleton(m.skeleton.bones.map(b=>bones[b.name]||b),m.skeleton.boneInverses);
+        base.add(m);m.bind(sk,m.bindMatrix);
+      }
+    }
+    show(base,q.get('anim')?(await load(ANIM_URL)).animations:[]);
+  }catch(e){window.__info.error=String(e&&e.stack||e);window.__ready=true}
+})();
+function show(base,clips){
+    base.rotation.y=+(q.get('yaw')||0);
+    scene.add(base);
+    const mats=new Set();base.traverse(o=>{if(o.isMesh){o.frustumCulled=false;mats.add(o.name+':'+o.material.name)}});
+    window.__info.meshes=[...mats];
+    const an=q.get('anim');
+    if(an){
+      const clip=clips.find(c=>c.name===an);
+      const mixer=new THREE.AnimationMixer(base);const act=mixer.clipAction(clip);act.play();
+      mixer.update(clip.duration*(+(q.get('t')||0)));
+    }
+    base.updateMatrixWorld(true);
+    const box=new THREE.Box3().setFromObject(base),size=box.getSize(new THREE.Vector3()),c=box.getCenter(new THREE.Vector3());
+    window.__info.height=size.y;
+    let head=null;base.traverse(o=>{if(o.isBone&&o.name==='Head')head=o});
+    if(q.get('cam')==='face'&&head){const p=new THREE.Vector3().setFromMatrixPosition(head.matrixWorld);p.y+=.08;camera.position.set(p.x,p.y,p.z+.75);camera.lookAt(p)}
+    else{camera.position.set(0,c.y,size.y*2.25);camera.lookAt(0,c.y,0)}
+    renderer.render(scene,camera);window.__ready=true;
+}
+</script></body></html>
