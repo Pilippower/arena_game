@@ -53,7 +53,7 @@
       sex:'M',outfit:['Ranger_Body','Ranger_Arms','Peasant_Legs','Ranger_Feet'],
       hair:{M:'Hair_Long',F:'Hair_Long'},hairColor:[.36,.22,.10],
       palette:{dark:[.16,.10,.05],mid:[.40,.27,.13],trim:[.52,.60,.24],cloth:[.66,.58,.40]},
-      staff:{crystal:[.45,1.0,.35],wood:0x4a3018,metal:0x8a7a40},antlers:true,
+      staff:{crystal:[.45,1.0,.35],wood:0x4a3018,metal:0x8a7a40,inHand:true},antlers:true,
       armor:{mat:{kind:'leather',style:{base:[.32,.21,.11],trim:[.22,.34,.12],stitch:[.6,.5,.3]}},shells:['vambrace','greave'],
         pauldron:{layers:2,size:.125,leaves:true,mat:{kind:'leather',style:{base:[.30,.20,.11],lames:4,grain:.16}}}}},
     shade:{ // Voleuse : armure de cuir noir et rouge, masque, capuche, deux dagues aux hanches
@@ -298,6 +298,8 @@
     const hc=cc.clone().multiplyScalar(.85);hc.g*=.55;               // halo plus saturé que le cristal
     const halo=glowSprite(THREE,hc,.42*s),core=glowSprite(THREE,cc,.13*s);halo.position.y=core.position.y=.86*s;halo.name='CrystalGlow';g.add(halo,core);
     halo.onBeforeRender=()=>{const t=performance.now()/1000,p=1+Math.sin(t*3.1)*.12+Math.sin(t*7.3)*.05;halo.scale.set(.42*s*p,.42*s*p,1);glow.intensity=1.4*p};
+    if(cfg.inHand){const G=handGrip(THREE,bones,'r');g.position.copy(G.pos);g.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(0,.82,.57));
+      g.position.addScaledVector(new THREE.Vector3(0,.82,.57),.25*s);return mount(THREE,body,G.bone,g)}
     const M=backMount(THREE,body,bones,fitMeshes);
     g.position.set(M.sp.x,M.sp.y-.12*s,M.back-.04*s);
     g.rotation.z=-M.toRight*.55;                       // le haut part vers l'épaule droite
@@ -318,28 +320,33 @@
       const guard=B(width*3.2,.035,.04,guardMat);w.add(guard);
       const grip=new THREE.Mesh(new THREE.CylinderGeometry(.016*s,.018*s,.2*s,8),leather);grip.position.y=-.11*s;w.add(grip);
       const pommel=new THREE.Mesh(new THREE.SphereGeometry(.028*s,10,8),guardMat);pommel.position.y=-.23*s;w.add(pommel);return w};
+    // Armes tenues en main (les mêlées frappent avec) : poignée dans le poing, lame vers l'avant en T-pose (pouce devant).
+    const inHand=(w,side,gripY,tilt=.35)=>{const G=handGrip(THREE,bones,side),g=new THREE.Group();g.name=w.name;w.name='';w.position.y=-gripY;g.add(w);
+      g.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(0,Math.sin(tilt),Math.cos(tilt)));g.position.copy(G.pos);mount(THREE,body,G.bone,g);return g};
     if(kind==='swordShield'){
-      // Bouclier rond sur le dos, épée longue à la hanche gauche
+      // Bouclier rond sanglé sur l'avant-bras gauche (face extérieure), épée longue en main droite
       const sh=new THREE.Group();sh.name='Shield';
       const wood=new THREE.MeshStandardMaterial({color:0x6b1d16,roughness:.6,metalness:.1});
       const disc=new THREE.Mesh(new THREE.CylinderGeometry(.27*s,.27*s,.03*s,32),wood);disc.rotation.x=Math.PI/2;sh.add(disc);
       const rim=new THREE.Mesh(new THREE.TorusGeometry(.27*s,.018*s,8,40),steel);sh.add(rim);
-      const boss=new THREE.Mesh(new THREE.SphereGeometry(.07*s,16,10,0,Math.PI*2,0,Math.PI/2),steel);boss.rotation.x=-Math.PI/2;boss.position.z=-.015*s;sh.add(boss);
-      for(const a of [0,Math.PI/2]){const band=B(.04,.5,.01,bronze);band.rotation.z=a;band.position.z=-.018*s;sh.add(band)}
-      sh.position.set(M.sp.x,M.sp.y-.06*s,M.back-.05*s);mount(THREE,body,bones.spine_03,sh);
-      const sw=sword(.78,.055,steel,bronze);sw.name='Sword';sw.rotation.set(.25,0,Math.PI+M.toRight*.22);
-      sw.position.set(M.pelvis.x-M.toRight*(M.hipHalf+.1*s),M.pelvis.y+.02*s,M.pelvis.z-.03*s);mount(THREE,body,bones.pelvis,sw);
+      const boss=new THREE.Mesh(new THREE.SphereGeometry(.07*s,16,10,0,Math.PI*2,0,Math.PI/2),steel);boss.rotation.x=Math.PI/2;boss.position.z=.015*s;sh.add(boss);
+      for(const a of [0,Math.PI/2]){const band=B(.04,.5,.01,bronze);band.rotation.z=a;band.position.z=.018*s;sh.add(band)}
+      const la=bones.lowerarm_l.getWorldPosition(new THREE.Vector3()),hl=bones.hand_l.getWorldPosition(new THREE.Vector3());
+      sh.position.copy(la).lerp(hl,.5).add(new THREE.Vector3(0,.07*s,0));sh.rotation.x=-Math.PI/2;mount(THREE,body,bones.lowerarm_l,sh);
+      const sw=sword(.78,.055,steel,bronze);sw.name='Sword';inHand(sw,'r',-.11*s,.3);
     }else if(kind==='runeblade'){
-      // Grande lame runique dans le dos, poignée au-dessus de l'épaule droite
       const sw=sword(1.0,.09,dark,dark);sw.name='Runeblade';
       const rc=new THREE.Color(.45,.85,1),rune=new THREE.MeshStandardMaterial({color:rc,emissive:rc,emissiveIntensity:2.2});
       for(let i=0;i<5;i++){const r=B(.035,.05,.016,rune);r.position.y=(.15+i*.17)*s;sw.add(r)}
       const glow=glowSprite(THREE,rc,.35*s);glow.position.y=.5*s;glow.scale.set(.25*s,1.1*s,1);glow.material.opacity=.35;sw.add(glow);
-      sw.rotation.z=Math.PI-M.toRight*.5;sw.position.set(M.sp.x,M.sp.y+.05*s,M.back-.05*s);mount(THREE,body,bones.spine_03,sw);
+      inHand(sw,'r',-.11*s,.4);
     }else if(kind==='daggers'){
-      for(const side of [-1,1]){const d=sword(.26,.04,steel,dark);d.name='Dagger';d.rotation.set(-.35,0,Math.PI+side*.15);
-        d.position.set(M.pelvis.x+side*(M.hipHalf+.09*s),M.pelvis.y-.02*s,M.pelvis.z-.04*s);mount(THREE,body,bones.pelvis,d)}
+      for(const side of ['l','r']){const d=sword(.26,.04,steel,dark);d.name='Dagger';inHand(d,side,-.11*s,.15)}
     }
+  }
+  function handGrip(THREE,bones,side){
+    const H=bones['hand_'+side].getWorldPosition(new THREE.Vector3()),L=bones['lowerarm_'+side].getWorldPosition(new THREE.Vector3()),dir=H.clone().sub(L).normalize();
+    return {pos:H.clone().addScaledVector(dir,.075).add(new THREE.Vector3(0,-.028,0)),bone:bones['hand_'+side]};
   }
 
   // Détails raciaux sur la tête : oreilles pointues, défenses, bois de cerf (druide). Mesurés sur la tête réelle.

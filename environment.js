@@ -302,11 +302,11 @@
       g.fillStyle='#e8cf8a';g.font='bold 80px serif';g.textAlign='center';g.fillText(emblem,64,140);
       const m=new THREE.MeshStandardMaterial({map:tex(THREE,c,false),side:THREE.DoubleSide,roughness:.8,alphaTest:.5});
       m.onBeforeCompile=sh=>{sh.uniforms.time=E.time;sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nuniform float time;')
-        .replace('#include <begin_vertex>','#include <begin_vertex>\nfloat k=(1.5-position.y)/3.;transformed.z+=sin(time*2.2+position.y*1.6+modelMatrix[3].z)*.12*k;');};
+        .replace('#include <begin_vertex>','#include <begin_vertex>\nfloat k=(1.5-position.y)/3.;transformed.z+=(sin(time*2.2+position.y*1.6+modelMatrix[3].z)*.5+.5)*.16*k;');};
       return m};
     const red=bannerMat('#7a1418','⚔'),blue=bannerMat('#143a7a','✦');
     for(const side of [-1,1])for(const z of [-18,-9,0,9,18]){
-      const b=new THREE.Mesh(new THREE.PlaneGeometry(1.3,3,4,8),side<0?red:blue);b.position.set(side*(hx-.05),2.1,z);b.rotation.y=-side*Math.PI/2;b.castShadow=true;S.add(b);
+      const b=new THREE.Mesh(new THREE.PlaneGeometry(1.3,3,4,8),side<0?red:blue);b.position.set(side*(hx-.14),2.1,z);b.rotation.y=-side*Math.PI/2;b.castShadow=true;S.add(b);
     }
     // braseros
     const flame=flameTexture(THREE),glow=glowTexture(THREE);E.flames=[];
@@ -364,10 +364,10 @@
     const gold=new THREE.MeshStandardMaterial({color:0xd8ae58,metalness:.8,roughness:.35}),win=new THREE.MeshBasicMaterial({color:0xffc56a});
     const rock=new THREE.MeshStandardMaterial({color:0x38352f,roughness:1,flatShading:true});
     // promontoire rocheux
-    const hill=new THREE.CylinderGeometry(56,80,30,14,4);const hp=hill.attributes.position,rr=rng(5);
-    for(let i=0;i<hp.count;i++){const y=hp.getY(i);if(y>-14&&y<14){hp.setX(i,hp.getX(i)*(1+(rr()-.5)*.18));hp.setZ(i,hp.getZ(i)*(1+(rr()-.5)*.18))}}
+    const hill=new THREE.CylinderGeometry(66,96,30,18,4);const hp=hill.attributes.position,rr=rng(5);
+    for(let i=0;i<hp.count;i++){const y=hp.getY(i);if(y>-14&&y<10){hp.setX(i,hp.getX(i)*(1+(rr()-.5)*.18));hp.setZ(i,hp.getZ(i)*(1+(rr()-.5)*.18))}}
     hill.computeVertexNormals();const hm=new THREE.Mesh(hill,rock);hm.position.y=base+12;g.add(hm);
-    const turf=new THREE.Mesh(new THREE.CylinderGeometry(57,57,1.2,14),new THREE.MeshStandardMaterial({color:0x3f5a2a,roughness:1}));turf.position.y=base+27.2;g.add(turf);
+    const turf=new THREE.Mesh(new THREE.CylinderGeometry(67,67,1.2,18),new THREE.MeshStandardMaterial({color:0x3f5a2a,roughness:1}));turf.position.y=base+27.2;g.add(turf);
     const top=base+27;
     const uvScale=(geo,sx,sy)=>{const uv=geo.attributes.uv;for(let i=0;i<uv.count;i++)uv.setXY(i,uv.getX(i)*sx,uv.getY(i)*sy);return geo};
     const tower=(x,z,r,h,roofH,flag)=>{

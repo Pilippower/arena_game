@@ -16,7 +16,9 @@ button{border:1px solid #8d6a35;background:linear-gradient(180deg,#45301c,#25180
 .hud{position:absolute;inset:0;z-index:3;pointer-events:none}.frame{position:absolute;background:linear-gradient(180deg,rgba(45,31,20,.92),rgba(18,13,10,.86));border:1px solid #806137;border-radius:11px;padding:9px;backdrop-filter:blur(5px);box-shadow:inset 0 1px #d2aa6744,0 7px 22px #0008}
 #selfFrame{left:14px;top:14px;width:236px}#targetFrame{right:14px;top:14px;width:236px}#arenaFrames{right:14px;top:118px;width:236px;padding:6px}#help{left:14px;bottom:14px;max-width:318px;font-size:11px;line-height:1.45;color:#e8dab8}
 .nameRow{display:flex;justify-content:space-between;gap:8px}.bar{height:9px;border-radius:999px;background:#251d16;overflow:hidden;margin-top:6px;box-shadow:inset 0 2px 3px #0009}.fill{height:100%;background:linear-gradient(#84ef9d,#2eb655)}.fill.enemy{background:linear-gradient(#ff9aa5,#df4352)}.resource{height:6px;margin-top:4px}.resource .fill{background:linear-gradient(#8fc7ff,#477be7)}
-.arenaRow{padding:5px 6px;border-bottom:1px solid #6c522d55}.arenaRow:last-child{border-bottom:0}.arenaTop{display:flex;align-items:center;justify-content:space-between;font-size:11px}.arenaTop b{font-size:12px}.miniBar{height:5px;background:#241b14;border-radius:99px;overflow:hidden;margin-top:3px}.miniFill{height:100%;background:#e65360}.dr{font-size:9px;color:#f7d68e;margin-top:2px;min-height:10px}
+.arenaRow{padding:5px 6px;border-bottom:1px solid #6c522d55}.arenaRow:last-child{border-bottom:0}.arenaTop{display:flex;align-items:center;justify-content:space-between;font-size:11px}.arenaTop b{font-size:12px}.miniBar{height:5px;background:#241b14;border-radius:99px;overflow:hidden;margin-top:3px}.miniFill{height:100%;background:#e65360}.castBar{display:flex;align-items:center;gap:4px;margin-top:3px}.castBar .cbIcon{width:16px;height:16px;flex:none;border-radius:4px;overflow:hidden;box-shadow:0 0 6px #b98cff}.castBar .cbIcon svg{width:100%;height:100%;display:block}.cbTrack{position:relative;flex:1;height:12px;background:#1a1220;border:1px solid #000a;border-radius:3px;overflow:hidden}.cbFill{height:100%;background:linear-gradient(90deg,#c58a2a,#ffd36b)}.cbName{position:absolute;inset:0;font-size:9px;line-height:12px;padding-left:4px;color:#fff;text-shadow:0 1px 2px #000;white-space:nowrap}.npCast{height:4px;margin-top:2px;background:#1a1220;border-radius:2px;overflow:hidden;display:none}.npCast>div{height:100%;background:#ffcf5c}
+.dr{font-size:9px;color:#f7d68e;margin-top:2px;min-height:10px}
+#errorMsg{position:absolute;left:50%;top:33%;transform:translate(-50%,-50%);z-index:9;color:#ff3d3d;font-weight:800;font-size:22px;letter-spacing:.3px;text-shadow:0 2px 4px #000,0 0 10px #000;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}#errorMsg.show{opacity:1}body.mobile-mode #errorMsg{font-size:15px}
 #reticle{display:none;position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);opacity:.7}#reticle:before,#reticle:after{content:"";position:absolute;background:#fff5d9;box-shadow:0 0 9px #ffc85d}#reticle:before{left:7px;top:0;width:2px;height:16px}#reticle:after{left:0;top:7px;width:16px;height:2px}
 #pointerHint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:#1c140fdf;border:1px solid #7f6037;border-radius:999px;padding:6px 11px;font-size:11px;color:#eadcb7}
 #castBar{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);width:min(430px,55%);height:27px;border:1px solid #92703b;background:#17110c;border-radius:8px;overflow:hidden;display:none;box-shadow:0 4px 18px #0009}.castFill{height:100%;width:0;background:linear-gradient(90deg,#9b5f18,#f1c55f)}.castText{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-weight:bold;text-shadow:0 1px 2px #000}
@@ -94,7 +96,7 @@ body.mobile-mode #playBtn{font-size:14px!important;padding:9px 14px!important}
   <div id="targetFrame" class="frame uiMovable"></div>
   <div id="arenaFrames" class="frame uiMovable"></div>
   <div id="help" class="frame"><b>Contrôles conservés</b><br>ZQSD : Z avancer · S reculer · Q gauche · D droite · Espace : saut<br><b>Clic droit maintenu</b> : caméra MMO<br>Molette : zoom<br>Clic gauche / TAB : ciblage<br>Raccourcis de sorts éditables via ⚙ Interface<br>Défaut : 1–5 · R : trinket PvP · spell queue 180 ms</div>
-  <div id="reticle"></div><div id="pointerHint">Clic gauche : cibler · Clic droit maintenu : tourner la caméra</div>
+  <div id="reticle"></div><div id="errorMsg"></div><div id="pointerHint">Clic gauche : cibler · Clic droit maintenu : tourner la caméra</div>
   <div id="castBar"><div class="castFill"></div><div class="castText"></div></div>
   <div id="nameplates"></div><div id="floaters"></div><div id="roundSplash"></div>
 </div>
@@ -282,7 +284,7 @@ function previewEnsure(){
 function previewSetAnim(){
  if(!PREVIEW.mixer||!PREVIEW.group)return;
  const rec={mixer:PREVIEW.mixer,clips:PREVIEW.clips||[],action:PREVIEW.action,animKey:PREVIEW.currentKey};
- const fake={alive:true,moving:false,stun:0,fear:0,action:0,actionType:'',cast:null};
+ const fake={alive:true,grounded:true,moving:false,stun:0,fear:0,action:0,actionType:'',cast:null};
  hfSetAnim(rec,fake);PREVIEW.action=rec.action;PREVIEW.currentKey=rec.animKey;
 }
 function previewClearGroup(){
@@ -470,11 +472,12 @@ function hfSetAnim(rec,u){
   const t=now();if(u.moving)rec.lastMove=t;const moving=u.moving||t-(rec.lastMove||0)<.18;
   let key='idle',names=['Idle_Loop','Idle'];
   if(!u.alive){key='death';names=['Death01','Death_A','Death','Die']}
-  else if(u.stun>0){key='cc';names=['Hit_Chest','Hit_A','Hit','Idle']}
+  else if(u.stun>0||u.mobility?.type==='grip'){key='cc';names=['Hit_Chest','Hit_A','Hit','Idle']}
   else if(!u.grounded&&!u.mobility){key='air';names=['Jump_Loop','Jump_Idle','Jump']}
   else if(u.fear>0){key='run';names=['Jog_Fwd_Loop','Running_A','Run','Walking_A','Walk']}
   else if(u.action>0&&u.actionType==='melee'){key='attack';names=['Sword_Attack','1H_Melee_Attack_Chop','Unarmed_Melee_Attack_Punch_A','Attack']}
   else if(u.cast||(u.action>0&&u.actionType==='cast')){key='cast';names=['Spell_Simple_Shoot','Spellcast_Long','Spellcast','Cast','Interact','Spell']}
+  else if(moving&&rec.back){key='back';names=['Walk_Loop','Jog_Fwd_Loop']}
   else if(moving){key='run';names=['Jog_Fwd_Loop','Running_A','Run','Walking_A','Walk']}
   // réception de saut : brève animation d'atterrissage si on ne repart pas en courant
   if(key==='idle'&&rec.animKey==='air'&&hfFindClip(rec,['Jump_Land'])?.name==='Jump_Land'){key='land';names=['Jump_Land'];rec.landUntil=t+.45}
@@ -530,15 +533,15 @@ function hfRender(){
     if(u.visualSnap){rx=u.x;rz=u.z;ryaw=u.yaw;u.prevX=u.x;u.prevZ=u.z;u.prevYaw=u.yaw;u.visualSnap=false;}
     else{const a=renderAlpha;rx=lerp(u.prevX??u.x,u.x,a);rz=lerp(u.prevZ??u.z,u.z,a);const py=u.prevYaw??u.yaw,da=((u.yaw-py+Math.PI)%(Math.PI*2))-Math.PI;ryaw=py+da*a;}
     {let off=0,back=false;
-     if(u.alive&&u.moving&&!(u.poly>0)&&!u.mobility&&(rec.animKey==='run'||rec.animKey==='air')){const mdx=u.x-(u.prevX??u.x),mdz=u.z-(u.prevZ??u.z);
+     if(u.alive&&u.moving&&!(u.poly>0)&&!u.mobility&&(rec.animKey==='run'||rec.animKey==='back'||rec.animKey==='air')){const mdx=u.x-(u.prevX??u.x),mdz=u.z-(u.prevZ??u.z);
       if(mdx*mdx+mdz*mdz>1e-9){let rel=Math.atan2(mdx,mdz)-u.yaw;rel=Math.atan2(Math.sin(rel),Math.cos(rel));if(Math.abs(rel)>1.75){back=true;rel=Math.atan2(Math.sin(rel-Math.PI),Math.cos(rel-Math.PI))}off=clamp(rel,-1.57,1.57)}}
      rec.moveOff=(rec.moveOff||0)+(off-(rec.moveOff||0))*Math.min(1,dt*12);rec.back=back;ryaw+=rec.moveOff}
     // orientation affichée lissée (vitesse de rotation max) : plus de demi-tour instantané quand l'unité se tourne pour frapper
     if(rec.dispYaw==null||snapped)rec.dispYaw=ryaw;else{const dy=Math.atan2(Math.sin(ryaw-rec.dispYaw),Math.cos(ryaw-rec.dispYaw)),mx=18*dt;rec.dispYaw+=clamp(dy,-mx,mx)}ryaw=rec.dispYaw;
     rec.vx=rx;rec.vz=rz;rec.vyaw=ryaw;rec.group.position.set(rx,(u.y||0)+(rec.hdRace&&!u.alive?.05:0),rz);const deathTilt=rec.hdRace&&!u.alive?1.18:0,castLean=rec.hdRace&&u.alive&&(u.cast||u.actionType==='cast')?Math.sin(now()*8)*.025:0;rec.group.rotation.set(castLean,ryaw,deathTilt);rec.group.scale.set(sc[0],sc[1],sc[2]);
     if(rec.aura){rec.aura.material.opacity=u===state.player?.target?.95:.38;rec.aura.scale.setScalar(u===state.player?.target?1.35:1)}
-    hfSetAnim(rec,u);if(rec.action&&rec.animKey==='run')rec.action.timeScale=clamp(moveSpeed(u)/CLASS[u.cls].speed,.45,1.18)*(rec.back?-.85:1);if(rec.mixer)rec.mixer.update(dt);
-    if(rec.action&&rec.animKey==='run'&&u.alive&&u.grounded&&u.moving&&!u.mobility){
+    hfSetAnim(rec,u);if(rec.action&&rec.animKey==='run')rec.action.timeScale=clamp(moveSpeed(u)/CLASS[u.cls].speed,.45,1.18);if(rec.action&&rec.animKey==='back')rec.action.timeScale=-1.25;if(rec.mixer)rec.mixer.update(dt);
+    if(rec.action&&(rec.animKey==='run'||rec.animKey==='back')&&u.alive&&u.grounded&&u.moving&&!u.mobility){
       const clip=rec.action.getClip?.(),dur=clip?.duration||0;
       if(dur>.05){
         const phase=((rec.action.time%dur)+dur)%dur/dur,prev=rec.footPhase;
@@ -576,12 +579,12 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), now=()=>performance.now()/1000, 
 PREFS=loadPrefs();
 const css=c=>`rgb(${Math.round(c[0]*255)},${Math.round(c[1]*255)},${Math.round(c[2]*255)})`;
 const CLASS={
- sentinel:{name:'Warrior',role:'Tank / mêlée',color:[.18,.46,.82],accent:[.70,.86,1],hp:1500,speed:6.0,res:'Rage',regen:9,skills:[{n:'Mortal Strike',cd:1.1,c:0},{n:'Hamstring',cd:7,c:15},{n:'Pummel',cd:12,c:10},{n:'Shield Wall',cd:22,c:25},{n:'Charge',cd:14,c:18}],tags:['mêlée','interrupt','peel']},
+ sentinel:{name:'Warrior',role:'Tank / mêlée',color:[.18,.46,.82],accent:[.70,.86,1],hp:1500,speed:6.0,res:'Rage',regen:9,skills:[{n:'Mortal Strike',cd:6,c:0},{n:'Hamstring',cd:7,c:15},{n:'Pummel',cd:12,c:10},{n:'Shield Wall',cd:22,c:25},{n:'Charge',cd:14,c:18}],tags:['mêlée','interrupt','peel']},
  arcanist:{name:'Mage',role:'Caster',color:[.38,.28,.92],accent:[.78,.68,1],hp:1030,speed:5.5,res:'Mana',regen:12,skills:[{n:'Arcane Bolt',cd:1.5,c:12},{n:'Frost Nova',cd:9,c:18},{n:'Counterspell',cd:14,c:10},{n:'Arcane Power',cd:24,c:20},{n:'Blink',cd:15,c:10},{n:'Polymorph',cd:12,c:18}],tags:['burst','cast','contrôle']},
  oracle:{name:'Priest',role:'Healer',color:[.92,.82,.58],accent:[1,.95,.76],hp:1120,speed:5.6,res:'Mana',regen:6,skills:[{n:'Flash Heal',cd:1.3,c:28},{n:'Power Shield',cd:8,c:24},{n:'Silence',cd:16,c:18},{n:'Divine Hymn',cd:30,c:45},{n:'Angelic Step',cd:14,c:10}],tags:['soins','bouclier','support']},
- reaver:{name:'Death Knight',role:'Bruiser',color:[.28,.40,.52],accent:[.52,.88,1],hp:1300,speed:5.9,res:'Runic Power',regen:10,skills:[{n:'Obliterate',cd:1.2,c:0},{n:'Death Grip',cd:10,c:15},{n:'Asphyxiate',cd:12,c:18},{n:'Pillar of Frost',cd:24,c:25},{n:'Death Advance',cd:12,c:18}],tags:['pression','grip','mêlée']},
- warden:{name:'Druid',role:'Hybride',color:[.92,.48,.12],accent:[.72,1,.42],hp:1240,speed:6.15,res:'Nature',regen:11,skills:[{n:'Claw',cd:1,c:0},{n:'Entangling Roots',cd:10,c:16},{n:'Barkskin',cd:18,c:22},{n:'Starfall',cd:20,c:28},{n:'Wild Charge',cd:14,c:18}],tags:['hybride','roots','mobilité']},
- shade:{name:'Rogue',role:'Contrôle',color:[.34,.38,.46],accent:[1,.86,.38],hp:1080,speed:6.65,res:'Energy',regen:17,skills:[{n:'Backstab',cd:.9,c:15},{n:'Cloak',cd:13,c:20},{n:'Kidney Shot',cd:11,c:22},{n:'Vendetta',cd:24,c:25},{n:'Shadowstep',cd:13,c:18}],tags:['mobilité','stun','burst']},
+ reaver:{name:'Death Knight',role:'Bruiser',color:[.28,.40,.52],accent:[.52,.88,1],hp:1300,speed:5.9,res:'Runic Power',regen:10,skills:[{n:'Obliterate',cd:5,c:0},{n:'Death Grip',cd:10,c:15},{n:'Asphyxiate',cd:12,c:18},{n:'Pillar of Frost',cd:24,c:25},{n:'Death Advance',cd:12,c:18}],tags:['pression','grip','mêlée']},
+ warden:{name:'Druid',role:'Hybride',color:[.92,.48,.12],accent:[.72,1,.42],hp:1240,speed:6.15,res:'Nature',regen:11,skills:[{n:'Claw',cd:3,c:0},{n:'Entangling Roots',cd:10,c:16},{n:'Barkskin',cd:18,c:22},{n:'Starfall',cd:20,c:28},{n:'Wild Charge',cd:14,c:18}],tags:['hybride','roots','mobilité']},
+ shade:{name:'Rogue',role:'Contrôle',color:[.34,.38,.46],accent:[1,.86,.38],hp:1080,speed:6.65,res:'Energy',regen:17,skills:[{n:'Backstab',cd:2.5,c:15},{n:'Cloak',cd:13,c:20},{n:'Kidney Shot',cd:11,c:22},{n:'Vendetta',cd:24,c:25},{n:'Shadowstep',cd:13,c:18}],tags:['mobilité','stun','burst']},
  warlock:{name:'Warlock',role:'Caster / DoT',color:[.32,.16,.42],accent:[.48,1,.24],hp:1160,speed:5.45,res:'Soul Power',regen:11,skills:[{n:'Shadow Bolt',cd:1.6,c:12},{n:'Fear',cd:10,c:18},{n:'Spell Lock',cd:15,c:12},{n:'Dark Soul',cd:25,c:24},{n:'Demonic Gate',cd:15,c:12}],tags:['DoT','fear','caster']}
 };
 
@@ -624,6 +627,18 @@ function skillIconSVG(cls,i){
 }
 function trinketIconSVG(){return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="trg"><stop stop-color="#ffe88b"/><stop offset=".55" stop-color="#80632b"/><stop offset="1" stop-color="#17100b"/></radialGradient></defs><rect width="48" height="48" rx="7" fill="url(#trg)"/><circle cx="24" cy="24" r="14" fill="none" stroke="#fff0a8" stroke-width="3"/><path d="M24 8l5 11 11 5-11 5-5 11-5-11-11-5 11-5z" fill="#fff1a0"/><circle cx="24" cy="24" r="4" fill="#9a6b24"/></svg>`}
 
+// Portée (t) et école de magie (s) de chaque sort. melee = 2,45 m, ranged = 15 m + ligne de vue.
+// kick = interruption : coupe l'incantation et verrouille son école 4 s.
+const SKILL_META={
+ sentinel:[{t:'melee'},{t:'melee'},{t:'melee',kick:1},{t:'self'},{t:'charge'}],
+ arcanist:[{t:'ranged',s:'arcane'},{t:'aoe',s:'frost'},{t:'ranged',s:'arcane',kick:1},{t:'self',s:'arcane'},{t:'self',s:'arcane'},{t:'ranged',s:'arcane'}],
+ oracle:[{t:'heal',s:'holy'},{t:'heal',s:'holy'},{t:'ranged',s:'shadow'},{t:'self',s:'holy'},{t:'self',s:'holy'}],
+ reaver:[{t:'melee'},{t:'ranged',s:'unholy'},{t:'ranged',s:'unholy'},{t:'self',s:'frost'},{t:'ranged'}],
+ warden:[{t:'melee'},{t:'ranged',s:'nature'},{t:'self',s:'nature'},{t:'aoe',s:'arcane'},{t:'ranged'}],
+ shade:[{t:'melee'},{t:'self'},{t:'melee'},{t:'self'},{t:'ranged'}],
+ warlock:[{t:'ranged',s:'shadow'},{t:'ranged',s:'shadow'},{t:'ranged',s:'shadow',kick:1},{t:'self',s:'shadow'},{t:'self',s:'shadow'}]
+};
+for(const k in SKILL_META)SKILL_META[k].forEach((m,i)=>Object.assign(CLASS[k].skills[i],m));
 const RACE={
  human:{name:'Human',glyph:'🛡️',skin:[.78,.62,.48],ear:1,shoulder:1,height:1.00,bulk:1.00,beard:false,helmBias:0,desc:'Polyvalent et héroïque'},
  dwarf:{name:'Dwarf',glyph:'⛏️',skin:[.82,.67,.52],ear:.82,shoulder:1.15,height:.86,bulk:1.18,beard:true,helmBias:0,desc:'Petit, massif et barbu'},
@@ -721,6 +736,13 @@ function heal(src,t,v){if(!t?.alive)return;const damp=state?.dampening||0;v=Math
 function control(t,type,dur,src=null){const m=t.dr[type]??1;if(m<=0)return false;dur*=m;t[type]=Math.max(t[type]||0,dur);t.dr[type]=m===1?.5:m===.5?.25:0;t.drT[type]=18;if(type==='stun'||type==='fear'||type==='silence'||type==='poly')t.cast=null;if(type==='poly'){t.polyOwner=src?.id??null;t.polyX=t.x;t.polyZ=t.z;t.wanderT=0;t.mobility=null;t.fear=0;t.fearOwner=null;t.queuedSkill=null}if(type==='fear'){t.fearOwner=src?.id??null;t.fearSourceX=src?.x??t.x;t.fearSourceZ=src?.z??t.z;t.mobility=null}const label=type==='poly'?'Mouton !':type==='stun'?'Étourdi':type==='root'?'Immobilisé':type==='fear'?'Fear':'Silence';addFloat(t,label,'#f3d078');return true}
 function applySlow(t,pct=.5,dur=8){if(!t?.alive)return;t.slow=Math.max(t.slow||0,dur);t.slowPct=Math.max(t.slowPct||0,clamp(pct,0,.8));addFloat(t,`Ralenti ${Math.round(t.slowPct*100)}%`,'#9ed7ff')}
 function moveSpeed(u){const buff=u.speedBuff>0?1.18:1,slow=u.slow>0?(1-clamp(u.slowPct||0,0,.8)):1;return CLASS[u.cls].speed*buff*slow}
+// Interruption : coupe l'incantation et verrouille son école 4 s (les sorts de cette école passent en recharge 4 s).
+function interrupt(u,t){if(!t?.cast)return false;const S=CLASS[t.cls].skills[t.cast.i],sch=S?.s;t.cast=null;
+ if(sch){CLASS[t.cls].skills.forEach((k,j)=>{if(k.s===sch)t.cd[j]=Math.max(t.cd[j],4)});t.lockout={school:sch,until:now()+4}}
+ addFloat(t,'Interrompu !','#ff9f6b');fx('silence',t.x,(t.y||0)+1.3,t.z,[1,.55,.3],.6,.7);return true}
+// Death Grip : la cible est tirée jusqu'à 1,5 m devant le chevalier
+function startGrip(u,t){face(u,t);t.cast=null;t.mobility={type:'grip',tx:u.x+Math.sin(u.yaw)*1.5,tz:u.z+Math.cos(u.yaw)*1.5,speed:26,life:.7};
+ fx('chain',u.x,(u.y||0)+1.2,u.z,CLASS[u.cls].accent,.5,.45,[t.x,(t.y||0)+1.2,t.z])}
 function face(u,t){if(t)u.yaw=Math.atan2(t.x-u.x,t.z-u.z)}function dashToward(u,t,a){if(!t)return;let dx=t.x-u.x,dz=t.z-u.z,d=Math.hypot(dx,dz)||1;u.x+=dx/d*a;u.z+=dz/d*a;resolveWalls(u)}
 function pointWalkable(x,z,margin=.68){
  if(x<-arena.halfX+margin||x>arena.halfX-margin||z<-arena.halfZ+margin||z>arena.halfZ-margin)return false;
@@ -744,6 +766,12 @@ function finishCharge(u,hit=true){
 }
 function updateMobility(u,dt){
  const m=u.mobility;if(!m)return false;
+ if(m.type==='grip'){
+  m.life-=dt;const dx=m.tx-u.x,dz=m.tz-u.z,d=Math.hypot(dx,dz);
+  if(d<.05||m.life<=0){u.mobility=null;u.moving=false;return false}
+  const st=Math.min(d,m.speed*dt),nx=u.x+dx/d*st,nz=u.z+dz/d*st;if(!pointWalkable(nx,nz,.64)){u.mobility=null;u.moving=false;return false}
+  u.x=nx;u.z=nz;u.yaw=Math.atan2(-dx,-dz);u.moving=false;return true
+ }
  if(m.type==='charge'){
   const t=m.target;if(!t?.alive){finishCharge(u,false);return false}
   m.life-=dt;let dx=t.x-u.x,dz=t.z-u.z,d=Math.hypot(dx,dz)||.001;face(u,t);
@@ -759,12 +787,26 @@ function updateMobility(u,dt){
 function canPay(u,i){return u.res>=CLASS[u.cls].skills[i].c}function pay(u,i){u.res=Math.max(0,u.res-CLASS[u.cls].skills[i].c)}
 function action(u,type=.32){u.action=type==='cast'?.52:type==='dash'?.38:.36;u.actionType=type}
 const SPELL_QUEUE_WINDOW=.18;
+function showError(msg){const e=$('errorMsg');if(!e||!msg)return;e.textContent=msg;e.classList.add('show');clearTimeout(showError.t);showError.t=setTimeout(()=>e.classList.remove('show'),1500)}
+// Raison d'un échec de sort (affichée au joueur)
+function skillFailReason(u,i){const C=CLASS[u.cls],S=C.skills[i];if(!S||!u.alive)return'';
+ if(u.stun>0||u.fear>0||u.poly>0||u.mobility)return "I can't do that right now";
+ if(u.cd[i]>0)return u.lockout&&now()<u.lockout.until&&S.s===u.lockout.school?"That school is locked":"That ability isn't ready yet";
+ if(u.gcd>0||u.cast)return'';
+ if(S.s&&u.silence>0)return "I can't do that while silenced";
+ if(!canPay(u,i))return `I don't have enough ${C.res.toLowerCase()}`;
+ const t=hostileTarget(u);
+ if(S.t==='aoe'&&!enemies(u).some(e=>d2(u,e)<8))return "I'm out of range";
+ if(S.t==='melee'||S.t==='ranged'||S.t==='charge'){if(!t)return "I have no target";const d=d2(u,t);if(S.t==='charge'&&d<2.8)return "I'm too close";
+  if(d>(S.t==='melee'?2.45:15))return "I'm out of range";if(!los(u,t))return "Target not in line of sight"}
+ if(S.kick&&!t?.cast)return "Target is not casting";
+ return "I can't do that right now"}
 function tryPlayerSkill(i){
  const p=state?.player;if(!p||!CLASS[p.cls].skills[i]||p.poly>0)return false;
  if(useSkill(p,i)){p.queuedSkill=null;return true}
  const locked=(p.gcd>0&&p.gcd<=SPELL_QUEUE_WINDOW)||(p.cd[i]>0&&p.cd[i]<=SPELL_QUEUE_WINDOW);
  if(locked&&p.alive&&p.stun<=0&&p.fear<=0&&!p.cast&&canPay(p,i)){p.queuedSkill={i,until:now()+.35};updateUI();return true}
- return false;
+ showError(skillFailReason(p,i));return false;
 }
 function spellFx(u,i,t,origin){
  const c=CLASS[u.cls].accent, at=t||u;
@@ -823,41 +865,41 @@ function useSkill(u,i){if(!u||!CLASS[u.cls]?.skills[i]||u.poly>0)return false;co
   if(ok&&u.cls!=='sentinel'){resolveWalls(u);fx('ring',u.x,.12,u.z,c.accent,.5,.75)}
  }
  else if(u.cls==='sentinel'){
-  if(i===0&&melee){damage(u,t,128,Math.random()<.18);action(u,'melee')}
+  if(i===0&&melee){damage(u,t,175,Math.random()<.18);t.antiheal=Math.min(.5,t.antiheal+.25);action(u,'melee')}
   else if(i===1&&melee){applySlow(t,.50,15);damage(u,t,45);action(u,'melee')}
-  else if(i===2&&range){t.cast=null;control(t,'silence',2.7);action(u,'melee')}
+  else if(i===2&&melee){interrupt(u,t);action(u,'melee')}
   else if(i===3){u.shield+=390;fx('ring',u.x,.5,u.z,c.accent,.8,1);action(u,'cast')}else ok=false;
  } else if(u.cls==='reaver'){
-  if(i===0&&melee){damage(u,t,142,Math.random()<.16);t.antiheal=Math.min(.5,t.antiheal+.16);action(u,'melee')}
-  else if(i===1&&range){let dx=u.x-t.x,dz=u.z-t.z,m=Math.hypot(dx,dz)||1;t.x+=dx/m*4.2;t.z+=dz/m*4.2;resolveWalls(t);damage(u,t,50);action(u,'melee')}
-  else if(i===2&&melee){damage(u,t,65);control(t,'stun',2.5);action(u,'melee')}
+  if(i===0&&melee){damage(u,t,190,Math.random()<.16);t.antiheal=Math.min(.5,t.antiheal+.16);action(u,'melee')}
+  else if(i===1&&range){damage(u,t,50);startGrip(u,t);action(u,'cast')}
+  else if(i===2&&range){damage(u,t,65);control(t,'stun',2.5);action(u,'cast')}
   else if(i===3){u.burst=7;u.speedBuff=7;fx('ring',u.x,.1,u.z,[1,.25,.05],1,1.15);action(u,'cast')}else ok=false;
  } else if(u.cls==='arcanist'){
-  if(i===0&&range&&u.silence<=0){u.cast={name:'Arcane Bolt',target:t,end:now()+1.35,dur:1.35,type:'damage',value:205};action(u,'cast')}
+  if(i===0&&range&&u.silence<=0){u.cast={i:0,name:'Arcane Bolt',target:t,end:now()+1.35,dur:1.35,type:'damage',value:205};action(u,'cast')}
   else if(i===1){const hit=enemies(u).filter(e=>d2(u,e)<8.0&&los(u,e));if(!hit.length)return false;hit.forEach(e=>{damage(u,e,e===t?90:60);if(control(e,'root',2.5,u)){e.rootBreakDamage=e.maxHp*.12;e.rootMin=1.0}fx('nova',e.x,.10,e.z,c.accent,.72,.75)});fx('nova',u.x,.10,u.z,c.accent,1.15,1.8);action(u,'cast')}
-  else if(i===2&&range){t.cast=null;control(t,'silence',3);action(u,'cast')}
+  else if(i===2&&range){interrupt(u,t);action(u,'cast')}
   else if(i===3){u.burst=8;fx('ring',u.x,.1,u.z,c.accent,1,1.2);action(u,'cast')}
-  else if(i===5&&range&&u.silence<=0&&(t.dr.poly??1)>0){u.cast={name:'Polymorph',target:t,end:now()+1.5,dur:1.5,type:'poly',value:8};action(u,'cast')}else ok=false;
+  else if(i===5&&range&&u.silence<=0&&(t.dr.poly??1)>0){u.cast={i:5,name:'Polymorph',target:t,end:now()+1.5,dur:1.5,type:'poly',value:8};action(u,'cast')}else ok=false;
  } else if(u.cls==='oracle'){
   const a=lowestAlly(u);
-  if(i===0&&a&&los(u,a)&&u.silence<=0){u.cast={name:'Flash Heal',target:a,end:now()+1.15,dur:1.15,type:'heal',value:220};action(u,'cast')}
+  if(i===0&&a&&los(u,a)&&u.silence<=0){u.cast={i:0,name:'Flash Heal',target:a,end:now()+1.15,dur:1.15,type:'heal',value:220};action(u,'cast')}
   else if(i===1&&a){a.shield+=300;fx('ring',a.x,.2,a.z,c.accent,.8,.8);action(u,'cast')}
   else if(i===2&&range){control(t,'silence',2.8);action(u,'cast')}
   else if(i===3){allies(u).forEach(v=>heal(u,v,230));fx('ring',u.x,.1,u.z,c.accent,1,2);action(u,'cast')}else ok=false;
  } else if(u.cls==='warden'){
-  if(i===0&&melee){damage(u,t,118);action(u,'melee')}
+  if(i===0&&melee){damage(u,t,145);action(u,'melee')}
   else if(i===1&&range){control(t,'root',3.1);fx('ring',t.x,.1,t.z,c.accent,.8,.7);action(u,'cast')}
   else if(i===2){u.shield+=420;action(u,'cast')}
   else if(i===3){enemies(u).filter(e=>d2(u,e)<5.3).forEach(e=>damage(u,e,135));fx('ring',u.x,.1,u.z,c.accent,.85,1.4);action(u,'cast')}else ok=false;
  } else if(u.cls==='shade'){
-  if(i===0&&melee){damage(u,t,130,Math.random()<.22);action(u,'melee')}
-  else if(i===1){u.shield+=220;u.speedBuff=5;fx('ring',u.x,.1,u.z,c.accent,.7,.9);action(u,'cast')}
+  if(i===0&&melee){damage(u,t,150,Math.random()<.22);action(u,'melee')}
+  else if(i===1){u.root=0;u.rootBreakDamage=0;u.slow=0;u.silence=0;u.shield+=220;u.speedBuff=5;fx('ring',u.x,.1,u.z,c.accent,.7,.9);action(u,'cast')}
   else if(i===2&&melee){damage(u,t,55);control(t,'stun',3);action(u,'melee')}
   else if(i===3){u.burst=6.5;action(u,'cast')}else ok=false;
  } else if(u.cls==='warlock'){
-  if(i===0&&range&&u.silence<=0){u.cast={name:'Shadow Bolt',target:t,end:now()+1.45,dur:1.45,type:'damage',value:195};action(u,'cast')}
-  else if(i===1&&range&&u.silence<=0){u.cast={name:'Fear',target:t,end:now()+1.35,dur:1.35,type:'fear',value:3.6};action(u,'cast')}
-  else if(i===2&&range){t.cast=null;control(t,'silence',2.6);action(u,'cast')}
+  if(i===0&&range&&u.silence<=0){u.cast={i:0,name:'Shadow Bolt',target:t,end:now()+1.45,dur:1.45,type:'damage',value:195};action(u,'cast')}
+  else if(i===1&&range&&u.silence<=0){u.cast={i:1,name:'Fear',target:t,end:now()+1.35,dur:1.35,type:'fear',value:3.6};action(u,'cast')}
+  else if(i===2&&range){interrupt(u,t);action(u,'cast')}
   else if(i===3){u.burst=8;u.shield+=180;fx('ring',u.x,.1,u.z,c.accent,1,1.15);action(u,'cast')}else ok=false;
  }
  if(!ok)return false;spellFx(u,i,t,origin);spellSfx(u,i,t);pay(u,i);u.cd[i]=S.cd;u.gcd=i===4?.35:1.05;updateUI();return true}
@@ -865,13 +907,14 @@ function useTrinket(u){if(!u?.alive||u.trinket>0)return;if(u.stun>0||u.root>0||u
 // Avance tant qu'on n'est pas revenu à portée, ne repart qu'au-delà d'une marge ; seuls les lanceurs reculent (kite).
 function aiMoveDir(u,d,desired,caster){let dir=u.aiDir||0;if(dir===1&&d<=desired+.2)dir=0;else if(dir===-1&&d>=desired)dir=0;if(!dir){if(d>desired+1.2)dir=1;else if(caster&&d<desired-2.5)dir=-1}u.aiDir=dir;return dir}
 function ai(u,dt){if(!u.alive){u.moving=false;return}if(u.mobility){u.moving=true;return}if(u.trinket<=0&&(u.stun>.5||u.root>1.4||u.silence>1.8||u.fear>1.8||u.poly>2.5))useTrinket(u);if(u.poly>0)return;if(u.stun>0||u.fear>0||u.cast){u.moving=false;return}let t=nearestEnemy(u,true);u.target=t;if(!t)return;const healer=u.cls==='oracle';if(healer&&lowestAlly(u).hp/lowestAlly(u).maxHp<.64){for(const i of [0,1,3])if(u.cd[i]<=0&&u.gcd<=0&&canPay(u,i)&&useSkill(u,i))return}
- const d=d2(u,t),caster=u.cls==='arcanist'||u.cls==='warlock'||healer,desired=caster?9:1.9,ang=Math.atan2(t.x-u.x,t.z-u.z),dir=aiMoveDir(u,d,desired,caster);u.moving=!!dir&&u.root<=0;if(u.moving){const sp=moveSpeed(u);u.x+=Math.sin(ang)*sp*dt*dir;u.z+=Math.cos(ang)*sp*dt*dir;u.yaw=ang;u.movePhase+=dt*8.5;resolveWalls(u)}if(u.gcd<=0&&u.cd[4]<=0&&canPay(u,4)){const wantsMobility=(!caster&&d>7.5)||(caster&&d<3.2);if(wantsMobility&&Math.random()<dt*.9){if(caster&&d<3.2)u.yaw=ang+Math.PI;if(useSkill(u,4))return}}if(u.cls==='arcanist'&&u.cd[5]<=0&&u.gcd<=0&&canPay(u,5)&&Math.random()<dt*.45){const v=enemies(u).filter(e=>e!==t&&!(e.poly>0)&&(e.dr.poly??1)>0&&d2(u,e)<15&&los(u,e)).sort((a,b)=>(b.cls==='oracle')-(a.cls==='oracle'))[0];if(v){const keep=u.target;u.target=v;if(useSkill(u,5))return;u.target=keep}}if(Math.random()<dt*1.7&&u.gcd<=0){for(const i of [2,3,1,0])if(u.cd[i]<=0&&canPay(u,i)&&useSkill(u,i))break}}
+ const d=d2(u,t),caster=u.cls==='arcanist'||u.cls==='warlock'||healer,desired=caster?9:1.9,ang=Math.atan2(t.x-u.x,t.z-u.z),dir=aiMoveDir(u,d,desired,caster);u.moving=!!dir&&u.root<=0;if(u.moving){const sp=moveSpeed(u)*(dir<0?.7:1);u.x+=Math.sin(ang)*sp*dt*dir;u.z+=Math.cos(ang)*sp*dt*dir;u.yaw=ang;u.movePhase+=dt*8.5;resolveWalls(u)}if(u.gcd<=0&&u.cd[4]<=0&&canPay(u,4)){const wantsMobility=(!caster&&d>7.5)||(caster&&d<3.2);if(wantsMobility&&Math.random()<dt*.9){if(caster&&d<3.2)u.yaw=ang+Math.PI;if(useSkill(u,4))return}}if(u.cls==='arcanist'&&u.cd[5]<=0&&u.gcd<=0&&canPay(u,5)&&Math.random()<dt*.45){const v=enemies(u).filter(e=>e!==t&&!(e.poly>0)&&(e.dr.poly??1)>0&&d2(u,e)<15&&los(u,e)).sort((a,b)=>(b.cls==='oracle')-(a.cls==='oracle'))[0];if(v){const keep=u.target;u.target=v;if(useSkill(u,5))return;u.target=keep}}if(Math.random()<dt*1.7&&u.gcd<=0){for(const i of [2,3,1,0])if(u.cd[i]<=0&&canPay(u,i)&&useSkill(u,i))break}}
 function playerMove(dt){
  const p=state.player;
  if(p.poly>0)return;
  if(!p.alive||p.stun>0||p.fear>0){p.moving=false;return}
  if(p.mobility){p.moving=true;return}
- const mv=GameLogic.moveVector(state.keys,camera.yaw);
+ let mv=GameLogic.moveVector(state.keys,camera.yaw);
+ if((MOUSE_BTN&3)===3&&looking)mv=GameLogic.moveVector({...state.keys,z:true},camera.yaw);   // clic gauche + droit = avancer
  let dx=mv.x,dz=mv.z;
  if(MOBILE.enabled&&(Math.abs(MOBILE.moveForward)>.04||Math.abs(MOBILE.moveRight)>.04)){
    const fw=GameLogic.forward(camera.yaw),rt=GameLogic.screenRight(camera.yaw),f=MOBILE.moveForward,r=MOBILE.moveRight;
@@ -881,9 +924,10 @@ function playerMove(dt){
  p.moving=!!(dx||dz);
  if(!p.moving)return;
  if(p.cast)p.cast=null;
- const sp=moveSpeed(p);
+ const fw=GameLogic.forward(camera.yaw),back=(dx*fw.x+dz*fw.z)/(Math.hypot(dx,dz)||1)<-.5;   // recul : on garde le regard vers l'avant
+ const sp=moveSpeed(p)*(back?.62:1);
  p.x+=dx*sp*dt;p.z+=dz*sp*dt;
- p.yaw=(looking||MOBILE.lookPointer!==null)?camera.yaw:Math.atan2(dx,dz);
+ p.yaw=(looking||MOBILE.lookPointer!==null||back)?camera.yaw:Math.atan2(dx,dz);
  p.movePhase+=dt*9.2;
  resolveWalls(p)
 }
@@ -897,6 +941,15 @@ function updatePolyWander(u,dt){
  const s=Math.min(d,1.1*dt);u.x+=dx/d*s;u.z+=dz/d*s;u.yaw=Math.atan2(dx,dz);u.moving=true;u.movePhase+=dt*9;resolveWalls(u);
 }
 function endPoly(u,broken){u.poly=0;u.polyOwner=null;u.wanderX=null;fx('blinkBurst',u.x,(u.y||0)+.8,u.z,[.95,.85,1],.6,.6);if(broken)addFloat(u,'Métamorphose brisée','#d8a7ff')}
+// Auto-attaque : les mêlées frappent avec leur arme dès qu'une cible ennemie est au contact (et devant eux pour le joueur).
+const SWING={sentinel:[2.2,52],reaver:[2.4,58],shade:[1.3,30],warden:[1.8,42]};
+function autoAttack(u,dt){const sw=SWING[u.cls];if(!sw||!u.alive)return;u.swing=Math.max(0,(u.swing||0)-dt);
+ if(u.swing>0||u.stun>0||u.fear>0||u.poly>0||u.cast||u.mobility||u.action>0)return;
+ const t=hostileTarget(u,false);if(!t||(u.ai&&t.poly>0)||d2(u,t)>2.5)return;
+ if(!u.ai){let rel=Math.atan2(t.x-u.x,t.z-u.z)-u.yaw;rel=Math.atan2(Math.sin(rel),Math.cos(rel));if(Math.abs(rel)>1.6)return}else face(u,t);
+ damage(u,t,sw[1]*(.9+Math.random()*.2),Math.random()<.12);action(u,'melee');u.swing=sw[0]}
+// Cible hostile d'une unité (la cible courante si c'est un ennemi, sinon le dernier ennemi ciblé ou le plus proche).
+function hostileTarget(u,fallback=true){const t=u.target;if(t?.alive&&t.team!==u.team)return t;if(u.lastEnemy?.alive)return u.lastEnemy;return fallback?nearestEnemy(u):null}
 function updateFearMovement(u,dt){
  if(!u?.alive||u.fear<=0||u.root>0||u.stun>0)return;
  const ax=u.x-(u.fearSourceX??u.x),az=u.z-(u.fearSourceZ??u.z),base=Math.atan2(ax,az),wobble=Math.sin((state.elapsed||0)*4.2+(u.fearPhase||0))*.72,ang=base+wobble,sp=CLASS[u.cls].speed*1.12;
@@ -908,7 +961,7 @@ function updateHealthShrines(dt){
  const p=state.player;if(!p?.alive)return;
  for(const sh of state.shrines){if(sh.active&&p.hp<p.maxHp&&Math.hypot(p.x-sh.x,p.z-sh.z)<1.45){p.hp=p.maxHp;p.shield=0;sh.active=false;sh.respawn=45;fx('holyBurst',sh.x,.55,sh.z,[.25,1,.42],1.25,1.35);addFloat(p,'FULL HP','#8dff9d');updateUI();break}}
 }
-function update(dt){if(!state)return;if(state.splash>0)state.splash-=dt;if(state.ended){updateVisualState(dt);return}for(const u of state.units){u.prevX=u.x;u.prevY=u.y||0;u.prevZ=u.z;u.prevYaw=u.yaw}state.t=Math.max(0,state.t-dt);state.elapsed=(state.elapsed||0)+dt;state.dampening=clamp((state.elapsed-35)/90*.45,0,.45);playerMove(dt);for(const u of state.units){for(let i=0;i<u.cd.length;i++)u.cd[i]=Math.max(0,u.cd[i]-dt);u.gcd=Math.max(0,u.gcd-dt);u.trinket=Math.max(0,u.trinket-dt);u.stun=Math.max(0,u.stun-dt);u.poly=Math.max(0,(u.poly||0)-dt);if(u.poly<=0)u.polyOwner=null;u.root=Math.max(0,u.root-dt);u.silence=Math.max(0,u.silence-dt);u.fear=Math.max(0,(u.fear||0)-dt);if(u.fear<=0)u.fearOwner=null;u.rootMin=Math.max(0,(u.rootMin||0)-dt);if(u.root<=0){u.rootBreakDamage=0;u.rootMin=0}u.burst=Math.max(0,u.burst-dt);u.speedBuff=Math.max(0,u.speedBuff-dt);u.slow=Math.max(0,(u.slow||0)-dt);if(u.slow<=0)u.slowPct=0;u.flash=Math.max(0,u.flash-dt);u.action=Math.max(0,u.action-dt);u.antiheal=Math.max(0,u.antiheal-dt*.025);u.res=clamp(u.res+CLASS[u.cls].regen*dt,0,100);updateMobility(u,dt);updateFearMovement(u,dt);updatePolyWander(u,dt);if(!u.grounded){u.vy-=19*dt;u.y+=u.vy*dt;if(u.y<=0){u.y=0;u.vy=0;u.grounded=true;fx('ring',u.x,.04,u.z,[.65,.58,.45],.35,.5)}}for(const k in u.drT){u.drT[k]-=dt;if(u.drT[k]<=0){u.dr[k]=1;u.drT[k]=0}}if(u.cast&&now()>=u.cast.end){const ca=u.cast;if(ca.target?.alive&&los(u,ca.target)){if(ca.type==='damage'){const proj=u.cls==='warlock'?'shadowProjectile':'arcaneProjectile';fx(proj,u.x,(u.y||0)+1.55,u.z,CLASS[u.cls].accent,.48,.24,[ca.target.x,(ca.target.y||0)+1.2,ca.target.z]);damage(u,ca.target,ca.value);spellImpactSfx(u,'damage')}else if(ca.type==='poly'){for(const e of state.units)if(e!==ca.target&&e.poly>0&&e.polyOwner===u.id)endPoly(e,false);if(control(ca.target,'poly',ca.value,u))fx('blinkBurst',ca.target.x,(ca.target.y||0)+.8,ca.target.z,[.95,.85,1],.7,.8);spellImpactSfx(u,'fear')}else if(ca.type==='fear'){for(const e of state.units)if(e!==ca.target&&e.fear>0&&e.fearOwner===u.id){e.fear=0;e.fearOwner=null}control(ca.target,'fear',ca.value,u);fx('fear',ca.target.x,(ca.target.y||0)+1.15,ca.target.z,CLASS[u.cls].accent,1.0,1.05);spellImpactSfx(u,'fear')}else{fx('healBeam',u.x,(u.y||0)+1.45,u.z,CLASS[u.cls].accent,.34,.16,[ca.target.x,(ca.target.y||0)+1.25,ca.target.z]);heal(u,ca.target,ca.value);spellImpactSfx(u,'heal')}}u.cast=null}if(u===state.player&&u.queuedSkill){const q=u.queuedSkill;if(now()>q.until)u.queuedSkill=null;else if(u.gcd<=0&&u.cd[q.i]<=0&&!u.cast&&u.stun<=0){u.queuedSkill=null;useSkill(u,q.i)}}if(u.ai)ai(u,dt)}updateHealthShrines(dt);updateVisualState(dt);
+function update(dt){if(!state)return;if(state.splash>0)state.splash-=dt;if(state.ended){updateVisualState(dt);return}for(const u of state.units){u.prevX=u.x;u.prevY=u.y||0;u.prevZ=u.z;u.prevYaw=u.yaw}state.t=Math.max(0,state.t-dt);state.elapsed=(state.elapsed||0)+dt;state.dampening=clamp((state.elapsed-35)/90*.45,0,.45);playerMove(dt);for(const u of state.units){for(let i=0;i<u.cd.length;i++)u.cd[i]=Math.max(0,u.cd[i]-dt);u.gcd=Math.max(0,u.gcd-dt);u.trinket=Math.max(0,u.trinket-dt);u.stun=Math.max(0,u.stun-dt);u.poly=Math.max(0,(u.poly||0)-dt);if(u.poly<=0)u.polyOwner=null;u.root=Math.max(0,u.root-dt);u.silence=Math.max(0,u.silence-dt);u.fear=Math.max(0,(u.fear||0)-dt);if(u.fear<=0)u.fearOwner=null;u.rootMin=Math.max(0,(u.rootMin||0)-dt);if(u.root<=0){u.rootBreakDamage=0;u.rootMin=0}u.burst=Math.max(0,u.burst-dt);u.speedBuff=Math.max(0,u.speedBuff-dt);u.slow=Math.max(0,(u.slow||0)-dt);if(u.slow<=0)u.slowPct=0;u.flash=Math.max(0,u.flash-dt);u.action=Math.max(0,u.action-dt);u.antiheal=Math.max(0,u.antiheal-dt*.025);u.res=clamp(u.res+CLASS[u.cls].regen*dt,0,100);updateMobility(u,dt);updateFearMovement(u,dt);updatePolyWander(u,dt);autoAttack(u,dt);if(!u.grounded){u.vy-=19*dt;u.y+=u.vy*dt;if(u.y<=0){u.y=0;u.vy=0;u.grounded=true;fx('ring',u.x,.04,u.z,[.65,.58,.45],.35,.5)}}for(const k in u.drT){u.drT[k]-=dt;if(u.drT[k]<=0){u.dr[k]=1;u.drT[k]=0}}if(u.cast&&now()>=u.cast.end){const ca=u.cast;if(ca.target?.alive&&los(u,ca.target)){if(ca.type==='damage'){const proj=u.cls==='warlock'?'shadowProjectile':'arcaneProjectile';fx(proj,u.x,(u.y||0)+1.55,u.z,CLASS[u.cls].accent,.48,.24,[ca.target.x,(ca.target.y||0)+1.2,ca.target.z]);damage(u,ca.target,ca.value);spellImpactSfx(u,'damage')}else if(ca.type==='poly'){for(const e of state.units)if(e!==ca.target&&e.poly>0&&e.polyOwner===u.id)endPoly(e,false);if(control(ca.target,'poly',ca.value,u))fx('blinkBurst',ca.target.x,(ca.target.y||0)+.8,ca.target.z,[.95,.85,1],.7,.8);spellImpactSfx(u,'fear')}else if(ca.type==='fear'){for(const e of state.units)if(e!==ca.target&&e.fear>0&&e.fearOwner===u.id){e.fear=0;e.fearOwner=null}control(ca.target,'fear',ca.value,u);fx('fear',ca.target.x,(ca.target.y||0)+1.15,ca.target.z,CLASS[u.cls].accent,1.0,1.05);spellImpactSfx(u,'fear')}else{fx('healBeam',u.x,(u.y||0)+1.45,u.z,CLASS[u.cls].accent,.34,.16,[ca.target.x,(ca.target.y||0)+1.25,ca.target.z]);heal(u,ca.target,ca.value);spellImpactSfx(u,'heal')}}u.cast=null}if(u===state.player&&u.queuedSkill){const q=u.queuedSkill;if(now()>q.until)u.queuedSkill=null;else if(u.gcd<=0&&u.cd[q.i]<=0&&!u.cast&&u.stun<=0){u.queuedSkill=null;useSkill(u,q.i)}}if(u.ai)ai(u,dt)}updateHealthShrines(dt);updateVisualState(dt);
  const aliveA=state.units.some(u=>u.team===0&&u.alive),aliveB=state.units.some(u=>u.team===1&&u.alive);if(!aliveA||!aliveB||state.t<=0){state.ended=true;const ah=state.units.filter(u=>u.team===0).reduce((s,u)=>s+u.hp/u.maxHp,0),bh=state.units.filter(u=>u.team===1).reduce((s,u)=>s+u.hp/u.maxHp,0),win=(aliveA&&!aliveB)||(state.t<=0&&ah>bh);if(win)state.scoreA++;else state.scoreB++;showSplash(win?'Round gagné !':'Round perdu');setTimeout(()=>{if(state.scoreA>=2||state.scoreB>=2){showSplash(state.scoreA>state.scoreB?'VICTOIRE 2 manches':'DÉFAITE');state.scoreA=state.scoreB=state.round=0}resetRound()},1500)}state.uiTick-=dt;if(state.uiTick<=0){state.uiTick=.08;updateUI()}}
 function updateVisualState(dt){for(const f of state.fx){f.life-=dt}state.fx=state.fx.filter(f=>f.life>0);for(const f of state.floaters){f.life-=dt;f.y+=dt*.6}state.floaters=state.floaters.filter(f=>f.life>0)}
 
@@ -1264,15 +1317,16 @@ function projectScreen(x,y,z){if(!viewProj)return null;const q=tf(viewProj,[x,y,
 const OVERLAY={plates:new Map(),floaters:[]};
 function renderOverlayWorld(){if(!state)return;const np=$('nameplates'),W=canvas.clientWidth,H=canvas.clientHeight,seen=new Set();
  for(const u of state.units){let e=OVERLAY.plates.get(u);
-  if(!e){e=document.createElement('div');e.className='nameplate';e.innerHTML='<div class="npName"></div><div class="npBar"><div class="npFill"></div></div>';e.style.left=e.style.top='0';np.appendChild(e);
-   e._name=e.firstChild;e._fill=e.lastChild.firstChild;e._k={};OVERLAY.plates.set(u,e)}
+  if(!e){e=document.createElement('div');e.className='nameplate';e.innerHTML='<div class="npName"></div><div class="npBar"><div class="npFill"></div></div><div class="npCast"><div></div></div>';e.style.left=e.style.top='0';np.appendChild(e);
+   e._name=e.firstChild;e._fill=e.children[1].firstChild;e._cast=e.children[2];e._castFill=e._cast.firstChild;e._k={};OVERLAY.plates.set(u,e)}
   seen.add(u);const p=u.alive?projectScreen(u.rx??u.x,(u.ry??u.y??0)+2.65,u.rz??u.z):null,vis=!!p&&p.x>-60&&p.x<W+60&&p.y>-30&&p.y<H+30;
   if(e._k.vis!==vis){e.style.display=vis?'':'none';e._k.vis=vis}if(!vis)continue;
   e.style.transform=`translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px) translate(-50%,-100%)`;
   if(e._k.name!==u.name){e._name.textContent=u.name;e._k.name=u.name}
   const w=(100*u.hp/u.maxHp).toFixed(1);if(e._k.w!==w){e._fill.style.width=w+'%';e._k.w=w}
   const c=u.team===0?'#58c3ff':'#ff6976';if(e._k.c!==c){e._fill.style.background=c;e._k.c=c}
-  const t=u===state.player.target;if(e._k.t!==t){e.classList.toggle('target',t);e._k.t=t}}
+  const t=u===state.player.target;if(e._k.t!==t){e.classList.toggle('target',t);e._k.t=t}
+  const cs=!!u.cast;if(e._k.cs!==cs){e._cast.style.display=cs?'block':'none';e._k.cs=cs}if(cs)e._castFill.style.width=(clamp(1-(u.cast.end-now())/u.cast.dur,0,1)*100).toFixed(1)+'%'}
  for(const [u,e] of OVERLAY.plates)if(!seen.has(u)){e.remove();OVERLAY.plates.delete(u)}
  const fl=$('floaters'),pool=OVERLAY.floaters;let n=0;
  for(const f of state.floaters){const p=projectScreen(f.x+f.off,f.y,f.z);if(!p)continue;
@@ -1285,9 +1339,11 @@ function renderOverlayWorld(){if(!state)return;const np=$('nameplates'),W=canvas
 // ---------- UI ----------
 function showSplash(t){$('roundSplash').textContent=t;$('roundSplash').style.opacity='1';setTimeout(()=>$('roundSplash').style.opacity='0',900)}
 function drText(u){const a=[];if(u.poly>0)a.push(`Mouton ${u.poly.toFixed(1)}`);if(u.stun>0)a.push(`Stun ${u.stun.toFixed(1)}`);if(u.root>0)a.push(`Root ${u.root.toFixed(1)}`);if(u.silence>0)a.push(`Sil ${u.silence.toFixed(1)}`);if(u.fear>0)a.push(`Fear ${u.fear.toFixed(1)}`);if(u.slow>0)a.push(`Slow ${Math.round((u.slowPct||0)*100)}% ${u.slow.toFixed(1)}`);return a.join(' · ')}
+function castBarHTML(u){const c=u.cast;if(!c)return'';const k=clamp(1-(c.end-now())/c.dur,0,1);
+ return `<div class="castBar"><span class="cbIcon">${skillIconSVG(u.cls,c.i??0)}</span><div class="cbTrack"><div class="cbFill" style="width:${(k*100).toFixed(0)}%"></div><span class="cbName">${c.name}</span></div></div>`}
 function frameHTML(u,enemy=false){const C=CLASS[u.cls];return`<div class="nameRow"><b>${u.name}</b><span>${Math.ceil(u.hp)} PV</span></div><div class="tiny">${RACE[u.race]?.name||''} ${C.name} · ${C.role}</div><div class="bar"><div class="fill ${enemy?'enemy':''}" style="width:${100*u.hp/u.maxHp}%"></div></div><div class="bar resource"><div class="fill" style="width:${u.res}%"></div></div><div class="tiny">${C.res} ${Math.round(u.res)}/100${u.shield>0?` · Bouclier ${Math.ceil(u.shield)}`:''}</div>`}
 function setHTML(el){if(el._html!==el._shown){el.innerHTML=el._html;el._shown=el._html}}
-function updateUI(){if(!state)return;const p=state.player,t=p.target;$('timer').textContent=`${String(Math.floor(state.t/60)).padStart(2,'0')}:${String(Math.floor(state.t%60)).padStart(2,'0')}`;$('score').textContent=`${state.scoreA} - ${state.scoreB}`;$('round').textContent=`Round ${state.round} · BO3`;$('selfFrame')._html=frameHTML(p,false);$('targetFrame')._html=t?frameHTML(t,true)+`<div class="tiny">${los(p,t)?'✓ Ligne de vue':'⚠ Ligne de vue bloquée'}${t.cast?` · ✦ ${t.cast.name}`:''}</div>`:'<b>Aucune cible</b>';$('arenaFrames')._html=enemies(p).map(u=>`<div class="arenaRow"><div class="arenaTop"><b>${u.name}</b><span>${CLASS[u.cls].name}</span></div><div class="miniBar"><div class="miniFill" style="width:${100*u.hp/u.maxHp}%"></div></div><div class="dr">${u.cast?`✦ ${u.cast.name} · `:''}${drText(u)}</div></div>`).join('');$('status')._html=`${CLASS[p.cls].tags.map(x=>`<span class="tag">${x}</span>`).join('')}<br>${p.poly>0?'🐑 Mouton ':''}${p.stun>0?'🌀 Étourdi ':''}${p.root>0?'⛓ Immobilisé ':''}${p.silence>0?'⛔ Silence ':''}${p.fear>0?'👁 Fear ':''}${p.slow>0?`❄ Ralenti ${Math.round((p.slowPct||0)*100)}% `:''}${p.burst>0?'🔥 Burst ':''}${p.trinket>0?`· Trinket ${Math.ceil(p.trinket)}s`:''}${state.dampening>0?`<br>⚔ Dampening ${Math.round(state.dampening*100)}%`:''}`;for(const id of ['selfFrame','targetFrame','arenaFrames','status'])setHTML($(id));
+function updateUI(){if(!state)return;const p=state.player,t=p.target;$('timer').textContent=`${String(Math.floor(state.t/60)).padStart(2,'0')}:${String(Math.floor(state.t%60)).padStart(2,'0')}`;$('score').textContent=`${state.scoreA} - ${state.scoreB}`;$('round').textContent=`Round ${state.round} · BO3`;$('selfFrame')._html=frameHTML(p,false);$('targetFrame')._html=t?frameHTML(t,true)+`<div class="tiny">${los(p,t)?'✓ Ligne de vue':'⚠ Ligne de vue bloquée'}</div>${castBarHTML(t)}`:'<b>Aucune cible</b>';$('arenaFrames')._html=enemies(p).map(u=>`<div class="arenaRow"><div class="arenaTop"><b>${u.name}</b><span>${CLASS[u.cls].name}</span></div><div class="miniBar"><div class="miniFill" style="width:${100*u.hp/u.maxHp}%"></div></div>${castBarHTML(u)}<div class="dr">${drText(u)}</div></div>`).join('');$('status')._html=`${CLASS[p.cls].tags.map(x=>`<span class="tag">${x}</span>`).join('')}<br>${p.poly>0?'🐑 Mouton ':''}${p.stun>0?'🌀 Étourdi ':''}${p.root>0?'⛓ Immobilisé ':''}${p.silence>0?'⛔ Silence ':''}${p.fear>0?'👁 Fear ':''}${p.slow>0?`❄ Ralenti ${Math.round((p.slowPct||0)*100)}% `:''}${p.burst>0?'🔥 Burst ':''}${p.trinket>0?`· Trinket ${Math.ceil(p.trinket)}s`:''}${state.dampening>0?`<br>⚔ Dampening ${Math.round(state.dampening*100)}%`:''}`;for(const id of ['selfFrame','targetFrame','arenaFrames','status'])setHTML($(id));
  const C=CLASS[p.cls];$('skills').classList.toggle('six',C.skills.length>5);$('skills').innerHTML=C.skills.map((s,i)=>`<button class="skill ${p.gcd>0?'gcding':''} ${p.queuedSkill?.i===i?'queued':''}" data-i="${i}" title="${s.n}"><span class="icon">${skillIconSVG(p.cls,i)}</span><span class="skillName">${s.n}</span><span class="cost">${s.c||''}</span><span class="key">${keyLabel(PREFS.keybinds.skills[i])}</span>${p.cd[i]>0?`<span class="cd">${p.cd[i]<10?p.cd[i].toFixed(1):p.cd[i].toFixed(0)}</span>`:''}</button>`).join('')+`<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(PREFS.keybinds.trinket)}</span>${p.trinket>0?`<span class="cd">${p.trinket.toFixed(0)}</span>`:''}</button>`;document.querySelectorAll('.skill[data-i]').forEach(b=>{b.onclick=()=>{if(!MOBILE.enabled)tryPlayerSkill(+b.dataset.i)};b.onpointerdown=e=>{if(MOBILE.enabled){e.preventDefault();tryPlayerSkill(+b.dataset.i)}}});$('trinketBtn').onclick=()=>{if(!MOBILE.enabled)useTrinket(p)};$('trinketBtn').onpointerdown=e=>{if(MOBILE.enabled){e.preventDefault();useTrinket(p)}};const cb=$('castBar');if(p.cast){cb.style.display='block';const q=clamp(1-(p.cast.end-now())/p.cast.dur,0,1);cb.querySelector('.castFill').style.width=`${q*100}%`;cb.querySelector('.castText').textContent=p.cast.name}else cb.style.display='none'}
 
 // ---------- Original adaptive battle-fantasy audio (Web Audio; no external copyrighted assets) ----------
@@ -1453,7 +1509,7 @@ function chooseClass(){
  raceBox.querySelectorAll('button').forEach(b=>b.onclick=()=>{selectedRace=b.dataset.r;refresh()});
  box.querySelectorAll('button').forEach(b=>b.onclick=()=>{selectedClass=b.dataset.c;refresh()});
  refresh();
- play.onclick=()=>{if(!selectedClass||!selectedRace)return;if(MOBILE.enabled)mobileRequestFullscreen();state={pcls:selectedClass,prace:selectedRace,scoreA:0,scoreB:0,round:0};$('overlay').style.display='none';$('reticle').style.display='block';resetRound();musicStart();canvas.focus();requestAnimationFrame(mobileViewportSync)};
+ play.onclick=()=>{if(!selectedClass||!selectedRace)return;if(MOBILE.enabled)mobileRequestFullscreen();state={pcls:selectedClass,prace:selectedRace,scoreA:0,scoreB:0,round:0};$('overlay').style.display='none';resetRound();musicStart();canvas.focus();requestAnimationFrame(mobileViewportSync)};
 }
 $('restartBtn').onclick=chooseClass;$('musicBtn').onclick=musicToggle;$('settingsBtn').onclick=openSettings;$('closeSettingsBtn').onclick=closeSettings;$('editUiBtn').onclick=()=>setUiEditMode(!uiEditMode);$('resetUiBtn').onclick=resetFramePositions;$('resetBindsBtn').onclick=resetBindings;$('musicVolume').oninput=e=>setMusicVolume(e.target.value/100);$('volumeMini').oninput=e=>setMusicVolume(e.target.value/100);setMusicVolume(PREFS.volume);requestAnimationFrame(applyFramePositions);
 
@@ -1510,11 +1566,13 @@ function applyLook(dx,dy){
  if(state?.player?.alive)state.player.yaw=camera.yaw
 }
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
+// boutons souris enfoncés (gauche+droit ensemble = avancer, comme dans les MMO)
+let MOUSE_BTN=0;for(const ev of ['mousedown','mouseup','mousemove'])window.addEventListener(ev,e=>{MOUSE_BTN=e.buttons|0},true);window.addEventListener('blur',()=>{MOUSE_BTN=0});
 function pickTargetAt(sx,sy){if(!state?.player?.alive)return false;let best=null,bestD=1e9;for(const u of enemies(state.player)){const p=projectScreen(u.x,(u.y||0)+1.35,u.z);if(!p)continue;const d=Math.hypot(sx-p.x,sy-p.y);if(d<62&&d<bestD){best=u;bestD=d}}if(best){state.player.target=best;updateUI();return true}return false}
 canvas.addEventListener('pointerdown',e=>{canvas.focus();if(MOBILE.enabled&&e.pointerType==='touch')return;if(e.button===0){const r=canvas.getBoundingClientRect();pickTargetAt(e.clientX-r.left,e.clientY-r.top);return}if(e.button!==2)return;looking=true;rightPointerId=e.pointerId;lastPX=e.clientX;lastPY=e.clientY;if(canvas.requestPointerLock){try{canvas.requestPointerLock()}catch(_){}}if(document.pointerLockElement!==canvas)canvas.setPointerCapture?.(e.pointerId);if(state?.player?.alive)state.player.yaw=camera.yaw;e.preventDefault()});document.addEventListener('mousemove',e=>{if(looking&&document.pointerLockElement===canvas)applyLook(e.movementX||0,e.movementY||0)});canvas.addEventListener('pointermove',e=>{if(!looking||document.pointerLockElement===canvas)return;const dx=e.clientX-lastPX,dy=e.clientY-lastPY;lastPX=e.clientX;lastPY=e.clientY;applyLook(dx,dy)});function stopLook(){looking=false;if(rightPointerId!=null)try{canvas.releasePointerCapture?.(rightPointerId)}catch(_){}rightPointerId=null;if(document.pointerLockElement===canvas&&document.exitPointerLock)document.exitPointerLock()}canvas.addEventListener('pointerup',e=>{if(e.button===2)stopLook()});window.addEventListener('mouseup',e=>{if(e.button===2&&looking)stopLook()});canvas.addEventListener('wheel',e=>{camera.dist=clamp(camera.dist+Math.sign(e.deltaY)*.65,4.5,12.5);e.preventDefault()},{passive:false});
 
 const SIM_DT=1/120,MAX_SIM_STEPS=6;let last=now(),simAccumulator=0,fatal=false;function loop(){if(fatal)return;try{const n=now(),frameDt=Math.min(.05,n-last);last=n;simAccumulator+=frameDt;let steps=0;while(state&&simAccumulator>=SIM_DT&&steps<MAX_SIM_STEPS){update(SIM_DT);simAccumulator-=SIM_DT;steps++}if(steps===MAX_SIM_STEPS)simAccumulator=0;renderAlpha=clamp(simAccumulator/SIM_DT,0,1);render();requestAnimationFrame(loop)}catch(err){fatal=true;console.error(err);$('bootError').style.display='block';$('bootError').textContent='Erreur WebGL : '+(err?.message||String(err));$('overlay').style.display='flex'}}
-try{GameLogic.selfCheck();chooseClass();if(gl){gl.enable(gl.DEPTH_TEST);loop()}const auto=new URLSearchParams(location.search).get('autoplay');if(auto&&CLASS[auto]){const ar=new URLSearchParams(location.search).get('race');state={pcls:auto,prace:RACE[ar]?ar:raceForClass(auto),scoreA:0,scoreB:0,round:0};$('overlay').style.display='none';$('reticle').style.display='block';resetRound()}}catch(err){console.error(err);$('bootError').style.display='block';$('bootError').textContent='Erreur de démarrage : '+(err?.message||String(err));$('overlay').style.display='flex'}
+try{GameLogic.selfCheck();chooseClass();if(gl){gl.enable(gl.DEPTH_TEST);loop()}const auto=new URLSearchParams(location.search).get('autoplay');if(auto&&CLASS[auto]){const ar=new URLSearchParams(location.search).get('race');state={pcls:auto,prace:RACE[ar]?ar:raceForClass(auto),scoreA:0,scoreB:0,round:0};$('overlay').style.display='none';resetRound()}}catch(err){console.error(err);$('bootError').style.display='block';$('bootError').textContent='Erreur de démarrage : '+(err?.message||String(err));$('overlay').style.display='flex'}
 </script>
 </body>
 </html>
