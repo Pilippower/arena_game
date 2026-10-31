@@ -23,7 +23,8 @@
       skinBoost:[1.32,1.18,1.06],
       palette:{dark:[.13,.05,.20],mid:[.36,.14,.55],trim:[.86,.66,.26],cloth:[.93,.89,.80]},
       robe:{color:[.30,.11,.47],trim:[.86,.66,.26],length:.86,flare:1.7},
-      staff:{crystal:[.78,.55,1.0]}
+      staff:{crystal:[.78,.55,1.0]},
+      eyeGlow:[.55,.30,1.0]                      // lueur arcane, même teinte que le cristal
     }
   };
 
@@ -145,6 +146,38 @@
     return robe;
   }
 
+  // Halo lumineux additif (sprite) : donne l'impression de lumière sans post-traitement.
+  const haloTextures=new Map();
+  function glowSprite(THREE,color,size){
+    if(!haloTextures.has('h')){const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');
+      const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.25,'rgba(255,255,255,.55)');gr.addColorStop(1,'rgba(255,255,255,0)');
+      g.fillStyle=gr;g.fillRect(0,0,64,64);haloTextures.set('h',new THREE.CanvasTexture(c))}
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:haloTextures.get('h'),color,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false}));
+    sp.scale.set(size,size,1);return sp;
+  }
+
+  // Yeux lumineux : l'iris (zone brune saturée de la texture) est recoloré et rendu émissif.
+  function glowEyes(THREE,mesh,color,headBone,inv){
+    const m=mesh.material=mesh.material.clone(),img=m.map&&m.map.image;if(!img)return;
+    const size=img.width||256,c=document.createElement('canvas');c.width=c.height=size;const g=c.getContext('2d');g.drawImage(img,0,0,size,size);
+    const mask=document.createElement('canvas');mask.width=mask.height=size;const mg=mask.getContext('2d'),mid=mg.createImageData(size,size);
+    const id=g.getImageData(0,0,size,size),d=id.data;
+    for(let i=0;i<d.length;i+=4){const [h,s,l]=rgbToHsl(d[i]/255,d[i+1]/255,d[i+2]/255);
+      const x=(i/4)%size,y=Math.floor(i/4/size),r=Math.hypot(x-size/2,y-size/2)/size;
+      if(r<.14&&(s>.3&&h<.14&&l<.55||l<.12)){const k=l<.12?.35:1;d[i]=color.r*255*k;d[i+1]=color.g*255*k;d[i+2]=color.b*255*k;mid.data[i]=mid.data[i+1]=mid.data[i+2]=255*k;mid.data[i+3]=255}
+      else mid.data[i+3]=255}
+    g.putImageData(id,0,0);mg.putImageData(mid,0,0);
+    const t=new THREE.CanvasTexture(c);t.flipY=m.map.flipY;t.encoding=m.map.encoding;m.map=t;
+    const e=new THREE.CanvasTexture(mask);e.flipY=m.map.flipY;m.emissiveMap=e;m.emissive=color.clone();m.emissiveIntensity=1.6;
+    // petits halos devant chaque œil, attachés à la tête
+    const pos=mesh.geometry.attributes.position,v=new THREE.Vector3(),sides=[[],[]];
+    mesh.updateMatrixWorld(true);const mat=new THREE.Matrix4().multiplyMatrices(inv,mesh.matrixWorld);
+    for(let i=0;i<pos.count;i++){v.fromBufferAttribute(pos,i).applyMatrix4(mat);sides[v.x<0?0:1].push(v.clone())}
+    for(const pts of sides){if(!pts.length)continue;
+      const cen=pts.reduce((a,b)=>a.add(b),new THREE.Vector3()).multiplyScalar(1/pts.length),front=Math.max(...pts.map(p=>p.z));
+      const sp=glowSprite(THREE,color,.024);sp.material.opacity=.7;sp.name='EyeGlow';sp.position.set(cen.x,cen.y,front+.004);headBone.attach(sp)}
+  }
+
   // Bâton porté dans le dos, en diagonale (cristal au-dessus de l'épaule droite), attaché au haut de la colonne.
   function buildStaff(THREE,body,bones,cfg,height,fitMeshes){
     const spine=bones.spine_03;if(!spine)return null;
@@ -152,13 +185,17 @@
     const wood=new THREE.MeshStandardMaterial({color:0x3b2416,roughness:.7,metalness:.05});
     const gold=new THREE.MeshStandardMaterial({color:0xc9a04a,roughness:.32,metalness:.85});
     const cc=new THREE.Color(...cfg.crystal);
-    const crystalMat=new THREE.MeshStandardMaterial({color:cc,emissive:cc,emissiveIntensity:1.6,roughness:.15,metalness:.1,transparent:true,opacity:.92});
+    const crystalMat=new THREE.MeshStandardMaterial({color:cc,emissive:cc,emissiveIntensity:2.8,roughness:.15,metalness:.1,transparent:true,opacity:.95});
     const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.018*s,.024*s,1.55*s,10),wood);g.add(shaft);
     for(const y of [-.70,-.2,.55,.68]){const r=new THREE.Mesh(new THREE.CylinderGeometry(.03*s,.03*s,.035*s,12),gold);r.position.y=y*s;g.add(r)}
     // Tête du bâton : deux crochets dorés qui enserrent le cristal
     for(const side of [-1,1]){const hook=new THREE.Mesh(new THREE.TorusGeometry(.085*s,.012*s,8,20,Math.PI*1.1),gold);hook.position.set(side*.02*s,.84*s,0);hook.rotation.set(0,side>0?0:Math.PI,-.5);g.add(hook)}
     const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(.07*s,0),crystalMat);crystal.scale.set(.8,1.5,.8);crystal.position.y=.86*s;g.add(crystal);
-    const glow=new THREE.PointLight(cc,.9,1.4*s);glow.position.y=.86*s;g.add(glow);
+    const glow=new THREE.PointLight(cc,1.4,1.8*s);glow.position.y=.86*s;g.add(glow);
+    // Halo magique pulsant autour du cristal
+    const hc=cc.clone().multiplyScalar(.85);hc.g*=.55;               // halo plus saturé que le cristal
+    const halo=glowSprite(THREE,hc,.42*s),core=glowSprite(THREE,cc,.13*s);halo.position.y=core.position.y=.86*s;halo.name='CrystalGlow';g.add(halo,core);
+    halo.onBeforeRender=()=>{const t=performance.now()/1000,p=1+Math.sin(t*3.1)*.12+Math.sin(t*7.3)*.05;halo.scale.set(.42*s*p,.42*s*p,1);glow.intensity=1.4*p};
     // Surface du dos mesurée sur la tenue (le personnage regarde +z, le dos est vers -z).
     body.updateMatrixWorld(true);
     const inv=new THREE.Matrix4().copy(body.matrixWorld).invert(),sp=new THREE.Vector3().setFromMatrixPosition(spine.matrixWorld).applyMatrix4(inv);
@@ -247,6 +284,7 @@
     const fit=[];root.traverse(o=>{if(o.isSkinnedMesh&&/_(Body|Legs)$/.test(o.name))fit.push(o)});   // pièces déjà déplacées sur le squelette du corps
     if(kit.robe)buildRobe(THREE,body,bones,kit.robe,fit);
     if(kit.staff)buildStaff(THREE,body,bones,kit.staff,height,fit);
+    if(kit.eyeGlow){const inv=new THREE.Matrix4().copy(body.matrixWorld).invert(),col=new THREE.Color(...kit.eyeGlow);root.traverse(o=>{if(o.isMesh&&o.name==='Eyes')glowEyes(THREE,o,col,bones.Head,inv)})}
     return {root,height,clips:animG?animG.animations:[]};
   }
 
