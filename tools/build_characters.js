@@ -7,7 +7,7 @@ const path=require('node:path');
 const sharp=require('sharp');
 const {NodeIO}=require('@gltf-transform/core');
 const {ALL_EXTENSIONS}=require('@gltf-transform/extensions');
-const {prune,dedup,resample}=require('@gltf-transform/functions');
+const {prune,dedup,resample,mergeDocuments,unpartition}=require('@gltf-transform/functions');
 const CharacterKit=require('../characters.js');
 
 const ROOT=path.join(__dirname,'..');
@@ -45,8 +45,21 @@ async function shrinkTextures(doc){
   }
 }
 
+// Lit un fichier source ; une liste de pièces modulaires est fusionnée en un seul document (texture partagée dédoublonnée).
+async function readSources(io,srcFiles){
+  const [first,...others]=srcFiles.map(f=>fixMissingUris(path.join(ROOT,f)));
+  const doc=await io.read(first);
+  for(const f of others){
+    mergeDocuments(doc,await io.read(f));
+    const [main,...extra]=doc.getRoot().listScenes();
+    for(const sc of extra){for(const n of sc.listChildren())main.addChild(n);sc.dispose()}
+  }
+  if(others.length)await doc.transform(unpartition());
+  return doc;
+}
+
 async function bundle(io,name,srcFile,{animsKeep=null}={}){
-  const doc=await io.read(fixMissingUris(path.join(ROOT,srcFile)));
+  const doc=await readSources(io,[].concat(srcFile));
   if(animsKeep){
     // Bibliothèque d'animations : on retire le mannequin et les clips inutiles.
     for(const a of doc.getRoot().listAnimations())if(!animsKeep.includes(a.getName()))a.dispose();
@@ -70,13 +83,10 @@ async function bundle(io,name,srcFile,{animsKeep=null}={}){
 (async()=>{
   fs.mkdirSync(OUT,{recursive:true});
   const io=new NodeIO().registerExtensions(ALL_EXTENSIONS);
-  const files=new Map();
-  for(const kit of Object.values(CharacterKit.KITS)){
-    files.set(kit.body,SRC.base+kit.body);
-    files.set(kit.outfit,SRC.outfit+kit.outfit);
-    for(const h of kit.hair)files.set(h,SRC.hair+h);
-    for(const p of kit.parts||[])files.set(p,SRC.parts+p);
-  }
-  for(const [file,src] of files)await bundle(io,CharacterKit.assetName(file),src);
+  const {outfits,files}=CharacterKit.buildManifest();
+  const only=process.argv[2]?new RegExp(process.argv[2]):null;      // ex. node tools/build_characters.js outfit_
+  for(const f of files)if(!only||only.test(f))await bundle(io,CharacterKit.assetName(f),(/^Hair_/.test(f)?SRC.hair:SRC.base)+f);
+  for(const [name,parts] of Object.entries(outfits))if(!only||only.test(name))await bundle(io,name,parts.map(p=>SRC.parts+p));
+  if(only&&!only.test('anims'))return;
   await bundle(io,'anims',SRC.anims,{animsKeep:CharacterKit.ANIMS});
 })().catch(e=>{console.error(e);process.exit(1)});

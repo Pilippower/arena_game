@@ -333,7 +333,7 @@ function updateSelectPreview3D(rk,ck){
  const kit=hfKitFor(fake);
  if(kit)hfLoadKit(kit,loader,(model,clips)=>{
   if(requestId!==PREVIEW.requestId||PREVIEW.group!==group)return;
-  group.add(model);const rs=hfRaceScale(fake.race);group.scale.set(rs[0],rs[1],rs[2]);
+  group.add(model);const rs=hfRaceScale(fake.race,true);group.scale.set(rs[0],rs[1],rs[2]);
   PREVIEW.clips=clips;PREVIEW.mixer=new THREE.AnimationMixer(model);previewSetAnim();
   group.position.set(0,0,0);group.rotation.y=.20;PREVIEW.loaded=true;
   if(PREVIEW.loadTimer){clearTimeout(PREVIEW.loadTimer);PREVIEW.loadTimer=null}
@@ -364,8 +364,9 @@ function hfInit(){
     HF.enabled=true;return true;
   }catch(e){console.warn('Renderer personnages HD indisponible',e);HF.enabled=false;return false}
 }
-function hfRaceScale(race){
-  if(race==='dwarf')return [1.13,.84,1.13];
+function hfRaceScale(race,kit=false){
+  // Personnages assemblés : le nain a déjà ses proportions (jambes courtes, torse large), pas d'écrasement.
+  if(race==='dwarf')return kit?[.88,.88,.88]:[1.13,.84,1.13];
   if(race==='elf')return [.98,1.06,.98];
   if(race==='orc')return [1.10,1.05,1.08];
   if(race==='undead')return [.96,1.00,.96];
@@ -495,7 +496,7 @@ function hfCreateRecord(u){
   const kit=hfKitFor(u);
   if(kit)hfLoadKit(kit,HF.loader,(model,clips)=>{
     if(!HF.records.has(u.id))return;
-    rec.model=model;rec.group.add(model);rec.clips=clips;rec.mixer=new THREE.AnimationMixer(model);
+    rec.model=model;rec.kit=true;rec.group.add(model);rec.clips=clips;rec.mixer=new THREE.AnimationMixer(model);
     rec.decor=new THREE.Group();rec.group.add(rec.decor);hfAddAura(rec,u,rec.decor);rec.loaded=true;rec.failed=false;
   },()=>tryCandidate(0));
   else tryCandidate(0);
@@ -517,7 +518,7 @@ function hfRender(){
   const t=now(),dt=Math.min(.05,t-HF.last);HF.last=t;
   for(const u of state.units){
     const rec=HF.records.get(u.id);if(!rec?.loaded)continue;
-    const sc=hfRaceScale(u.race);
+    const sc=hfRaceScale(u.race,rec.kit);
     let rx,rz,ryaw;
     if(u.visualSnap){rx=u.x;rz=u.z;ryaw=u.yaw;u.prevX=u.x;u.prevZ=u.z;u.prevYaw=u.yaw;u.visualSnap=false;}
     else{const a=renderAlpha;rx=lerp(u.prevX??u.x,u.x,a);rz=lerp(u.prevZ??u.z,u.z,a);const py=u.prevYaw??u.yaw,da=((u.yaw-py+Math.PI)%(Math.PI*2))-Math.PI;ryaw=py+da*a;}

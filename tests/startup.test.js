@@ -113,6 +113,20 @@ async function run(){
       await page.waitForTimeout(500);
       const anim=await page.evaluate(()=>HF.records.get(state.player.id).action?.getClip().name);
       assert.equal(anim,'Idle_Loop','animation de repos Quaternius attendue');
+      // Les 35 combinaisons race+classe s'assemblent, avec leurs pièces distinctives
+      const built=await page.evaluate(async()=>{const out={};
+        for(const id of Object.keys(CharacterKit.KITS)){const k=await CharacterKit.build(THREE,id,{withAnims:false});const names=new Set();k.root.traverse(o=>names.add(o.name));
+          out[id]={h:k.height,robe:names.has('Robe'),staff:names.has('Staff'),tusk:names.has('Tusk'),ear:names.has('Ear'),beard:names.has('Hair_Beard')}}
+        return out});
+      assert.equal(Object.keys(built).length,35,'35 kits race+classe');
+      for(const [id,b] of Object.entries(built)){
+        const [race,cls]=id.split('_');
+        assert.ok(b.h>1.4&&b.h<2.3,`${id}: hauteur ${b.h}`);
+        assert.equal(b.robe,['arcanist','oracle','warlock'].includes(cls),`${id}: robe`);
+        assert.equal(b.staff,['arcanist','oracle','warlock','warden'].includes(cls),`${id}: bâton`);
+        assert.equal(b.tusk,race==='orc',`${id}: défenses`);assert.equal(b.ear,race==='orc'||race==='elf',`${id}: oreilles`);
+        assert.equal(b.beard,race==='dwarf',`${id}: barbe`);
+      }
       assert.deepEqual(errors,[],'erreurs JS arène Humain Mage');
       await ctx.close();
     }
