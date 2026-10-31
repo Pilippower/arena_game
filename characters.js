@@ -12,16 +12,18 @@
     base:'assets_src/Universal Base Characters[Standard]/Universal Base Characters[Standard]/Base Characters/Godot - UE/',
     hair:'assets_src/Universal Base Characters[Standard]/Universal Base Characters[Standard]/Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)/',
     outfit:'assets_src/Modular Character Outfits - Fantasy[Standard]/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Outfits/',
+    parts:'assets_src/Modular Character Outfits - Fantasy[Standard]/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Modular Parts/',
     anims:'assets_src/Universal Animation Library[Standard]/Universal Animation Library[Standard]/Unreal-Godot/UAL1_Standard.glb'
   };
 
   const KITS={
-    // Sorcière de bataille humaine : robe violet profond / or, manches crème, cheveux cuivrés en chignons.
+    // Sorcière de bataille humaine : robe violet profond / or, manches crème, capuche, cheveux blonds longs.
     human_arcanist:{
       body:'Superhero_Female_FullBody.gltf',
       outfit:'Female_Peasant.gltf',
-      hair:['Hair_Buns.gltf'],
-      hairColor:[.42,.13,.05],
+      parts:['Female_Ranger_Head_Hood.gltf'],
+      hair:['Hair_Long.gltf'],
+      hairColor:[.92,.72,.38],
       skinBoost:[1.32,1.18,1.06],
       palette:{dark:[.13,.05,.20],mid:[.36,.14,.55],trim:[.86,.66,.26],cloth:[.93,.89,.80]},
       robe:{color:[.30,.11,.47],trim:[.86,.66,.26],length:.86,flare:1.7},
@@ -51,6 +53,7 @@
       else if(s>=.18&&(h<.16||h>.92)){                    // bruns / cuir / tan
         t=l>.48?pal.trim:l>.2?pal.mid:pal.dark;
       }
+      else if(s>=.18&&h>.18&&h<.48)t=pal.mid;                // verts (tenue Rôdeur) : teinte unie, le relief vient de k
       if(!t)continue;
       const k=l/.5;                                       // garde le relief peint (lumière/ombre)
       d[i]=clamp(t[0]*k*255,0,255);d[i+1]=clamp(t[1]*k*255,0,255);d[i+2]=clamp(t[2]*k*255,0,255);
@@ -157,12 +160,14 @@
   async function build(THREE,kitId,{baseUrl='',loader=makeLoader(THREE),withAnims=true}={}){
     const kit=KITS[kitId];if(!kit)throw new Error('Kit inconnu : '+kitId);
     const load=u=>new Promise((res,rej)=>loader.load(baseUrl+u,res,undefined,rej));
+    const parts=kit.parts||[];
     const [bodyG,outfitG,...rest]=await Promise.all([
       load(SRC.base+kit.body),load(SRC.outfit+kit.outfit),
       ...kit.hair.map(h=>load(SRC.hair+h)),
+      ...parts.map(p=>load(SRC.parts+p)),
       ...(withAnims?[load(SRC.anims)]:[])
     ]);
-    const hairGs=rest.slice(0,kit.hair.length),animG=withAnims?rest[kit.hair.length]:null;
+    const nh=kit.hair.length,hairGs=rest.slice(0,nh),partGs=rest.slice(nh,nh+parts.length),animG=withAnims?rest[nh+parts.length]:null;
     const root=bodyG.scene,bones={};
     root.traverse(o=>{if(o.isBone)bones[o.name]=o});
     let body=null;
@@ -171,7 +176,7 @@
     root.traverse(o=>{if(o.isMesh&&o.name==='Eyebrows'){o.material=o.material.clone();o.material.color=hairColor}});
     const attach=g=>{const ms=[];g.scene.traverse(o=>{if(o.isSkinnedMesh)ms.push(o)});ms.forEach(m=>bindToSkeleton(THREE,m,bones,body.parent))};
     if(kit.robe)outfitG.scene.traverse(o=>{if(o.isSkinnedMesh&&/_Legs$/.test(o.name))keepOnlyBones(o,['calf_l','calf_r','foot_l','foot_r','ball_l','ball_r'])});
-    attach(outfitG);hairGs.forEach(attach);
+    attach(outfitG);hairGs.forEach(attach);partGs.forEach(attach);
     const recolored=new Map();
     root.traverse(o=>{
       if(!o.isMesh||!o.material)return;
