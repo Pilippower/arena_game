@@ -117,14 +117,29 @@ function setUiEditMode(on) {
     dragFrame = null;
   }
 }
+// Pas : les siens bien présents ; ceux des autres selon la distance (inaudibles au-delà de FOOT_HEAR m, de plus en
+// plus forts en approchant) et placés à gauche / droite par rapport à la caméra.
+const FOOT_HEAR = 24;
+function footstepSpatial(u) {
+  const p = state?.player;
+  if (!p || u === p) return { pan: 0, level: 1.7 };
+  const dx = u.x - p.x,
+    dz = u.z - p.z,
+    d = Math.hypot(dx, dz, ((u.y || 0) - (p.y || 0)) * 0.8),
+    k = clamp(1 - d / FOOT_HEAR, 0, 1),
+    r = GameLogic.screenRight(camera.yaw),
+    side = d > 0.01 ? (dx * r.x + dz * r.z) / d : 0;
+  return { pan: clamp(side * Math.min(1, d / 4) * 0.85, -0.85, 0.85) || 0, level: k * k * 1.1 };
+}
 function footstepNoiseLayer(
   u,
   { dur = 0.09, vol = 0.05, freq = 900, q = 0.8, delay = 0, kind = 'bandpass', rate = 1 } = {}
 ) {
   const ctx = sfxCtx();
   if (!ctx || !MUSIC.noise) return;
-  const a = sfxSpatial(u),
-    t = ctx.currentTime + delay,
+  const a = footstepSpatial(u);
+  if (a.level < 0.01) return;
+  const t = ctx.currentTime + delay,
     n = ctx.createBufferSource(),
     f = ctx.createBiquadFilter(),
     g = ctx.createGain();

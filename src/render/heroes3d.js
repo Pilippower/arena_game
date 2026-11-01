@@ -796,6 +796,9 @@ function hfSetAnim(rec, u) {
   rec.animKey = key;
   rec.footPhase = null;
 }
+// Pose du pied (talon au sol) dans les clips de course / marche, en fraction du clip : mesurée sur les os
+// foot_l / foot_r des modèles (le son du pas tombe exactement quand le pied touche le sol).
+const FOOT_CONTACTS = { Jog_Fwd_Loop: [0.01, 0.51], Walk_Loop: [0.46, 0.96], default: [0.01, 0.51] };
 // Animation de frappe : instant de départ dans le clip et vitesse, pour que l'impact (vitesse max de la main,
 // 0,38 s dans Sword_Attack) coïncide avec les dégâts et les sons au lieu d'arriver 0,35 s plus tard, coupé.
 const ATTACK_HIT = { Sword_Attack: { from: 0.26, speed: 1.5 } };
@@ -1004,13 +1007,18 @@ function hfRender() {
         const phase = (((rec.action.time % dur) + dur) % dur) / dur,
           prev = rec.footPhase;
         if (prev != null) {
-          const crossed = m => (phase >= prev ? prev < m && phase >= m : prev < m || phase >= m);
-          if (crossed(0.16)) {
-            footstepSfx(u, rec.footSide++ & 1);
-          }
-          if (crossed(0.66)) {
-            footstepSfx(u, rec.footSide++ & 1);
-          }
+          // sens de lecture : le recul joue Walk_Loop à l'envers (la phase diminue)
+          const fwd = rec.action.timeScale >= 0,
+            crossed = m =>
+              fwd
+                ? phase >= prev
+                  ? prev < m && phase >= m
+                  : prev < m || phase >= m
+                : phase <= prev
+                  ? phase < m && prev >= m
+                  : prev >= m || phase < m;
+          for (const m of FOOT_CONTACTS[clip.name] || FOOT_CONTACTS.default)
+            if (crossed(m)) footstepSfx(u, rec.footSide++ & 1);
         }
         rec.footPhase = phase;
       }
