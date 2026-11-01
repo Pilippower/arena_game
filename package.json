@@ -5,7 +5,8 @@
   "description": "Prototype d'arène 3v3 fantasy jouable dans le navigateur",
   "scripts": {
     "test": "node tests/run_all.js",
-    "format": "prettier --write \"src/**/*.js\" game_logic.js \"tests/**/*.js\" \"tools/*.js\""
+    "format": "prettier --write \"src/**/*.js\" game_logic.js \"tests/**/*.js\" \"tools/*.js\"",
+    "test:all": "node tests/run_all.js --all"
   },
   "devDependencies": {
     "@gltf-transform/core": "^4.5.1",

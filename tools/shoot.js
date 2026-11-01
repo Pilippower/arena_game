@@ -10,7 +10,7 @@ async function shoot(jobs, { w = 520, h = 720 } = {}) {
   const port = server.address().port;
   const browser = await chromium.launch({
     executablePath: process.env.BROWSER_PATH || EDGE,
-    args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']
+    args: require('../tests/browser/browser.js').launchArgs()
   });
   try {
     const page = await browser.newPage({ viewport: { width: w, height: h } });

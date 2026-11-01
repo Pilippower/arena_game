@@ -14,7 +14,7 @@ try {
   process.exit(0);
 }
 
-const ROOT = path.join(__dirname, '..');
+const ROOT = path.join(__dirname, '..', '..');
 const url = (file, query = '') => pathToFileURL(path.join(ROOT, file)).href + query;
 
 function findBrowser() {
@@ -59,7 +59,7 @@ async function run() {
   const browser = await chromium.launch({
     executablePath,
     headless: true,
-    args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required']
+    args: require('./browser.js').launchArgs(['--autoplay-policy=no-user-gesture-required'])
   });
   try {
     // 1. Desktop : sélection + preview + round
