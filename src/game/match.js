@@ -36,23 +36,45 @@ function endRound(win) {
     else resetRound();
   }, 1500);
 }
+// Tri du récapitulatif : clic sur une colonne (Damage / Healing / Kills), second clic = ordre inverse.
+const RESULTS_SORT = { key: 'damage', dir: -1 };
+function renderResultsTables() {
+  const K = RESULTS_SORT.key,
+    all = state.units.map(u => ({ u, s: statOf(u) || { damage: 0, healing: 0, kills: 0 } })),
+    max = { damage: 1, healing: 1, kills: 1 };
+  for (const { s } of all) for (const k in max) max[k] = Math.max(max[k], s[k]);
+  const cell = (s, k) =>
+    `<td class="rNum${k === K ? ' sorted' : ''}${s[k] > 0 && s[k] === max[k] ? ' best' : ''}"><span>${Math.round(s[k])}</span><i style="width:${((100 * s[k]) / max[k]).toFixed(0)}%"></i></td>`;
+  const head = (k, label) =>
+    `<th class="sortable${k === K ? ' sorted' : ''}" data-sort="${k}">${label}${k === K ? (RESULTS_SORT.dir < 0 ? ' ▼' : ' ▲') : ''}</th>`;
+  const table = team =>
+    `<table class="resTable"><thead><tr><th>Hero</th><th>Class</th>${head('damage', 'Damage')}${head('healing', 'Healing')}${head('kills', 'Kills')}</tr></thead><tbody>${all
+      .filter(x => x.u.team === team)
+      .sort((x, y) => (x.s[K] - y.s[K]) * RESULTS_SORT.dir)
+      .map(
+        ({ u, s }) =>
+          `<tr><td class="rName">${u === state.player ? 'You' : u.name}</td><td>${RACE[u.race]?.name || ''} ${CLASS[u.cls].name}</td>${cell(s, 'damage')}${cell(s, 'healing')}${cell(s, 'kills')}</tr>`
+      )
+      .join('')}</tbody></table>`;
+  $('resultsTeams').innerHTML =
+    `<h3 class="ally">Your team</h3>${table(0)}<h3 class="enemy">Enemy team</h3>${table(1)}`;
+  $('resultsTeams')
+    .querySelectorAll('[data-sort]')
+    .forEach(
+      th =>
+        (th.onclick = () => {
+          RESULTS_SORT.dir = RESULTS_SORT.key === th.dataset.sort ? -RESULTS_SORT.dir : -1;
+          RESULTS_SORT.key = th.dataset.sort;
+          renderResultsTables();
+        })
+    );
+}
 function showResults() {
   const win = state.scoreA > state.scoreB;
-  const row = u => {
-    const s = statOf(u) || { damage: 0, healing: 0, kills: 0 },
-      C = CLASS[u.cls];
-    return `<tr><td class="rName">${u === state.player ? 'You' : u.name}</td><td>${RACE[u.race]?.name || ''} ${C.name}</td><td>${Math.round(s.damage)}</td><td>${Math.round(s.healing)}</td><td>${s.kills}</td></tr>`;
-  };
-  const table = team =>
-    `<table class="resTable"><thead><tr><th>Hero</th><th>Class</th><th>Damage</th><th>Healing</th><th>Kills</th></tr></thead><tbody>${state.units
-      .filter(u => u.team === team)
-      .map(row)
-      .join('')}</tbody></table>`;
   $('resultsTitle').textContent = win ? 'Victory' : 'Defeat';
   $('resultsTitle').className = win ? 'win' : 'loss';
   $('resultsScore').textContent = `${state.scoreA} - ${state.scoreB}`;
-  $('resultsTeams').innerHTML =
-    `<h3 class="ally">Your team</h3>${table(0)}<h3 class="enemy">Enemy team</h3>${table(1)}`;
+  renderResultsTables();
   $('results').style.display = 'flex';
   if (win) setTimeout(() => SFX.victory(true), 300);
 }

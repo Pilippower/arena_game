@@ -198,3 +198,47 @@ button:active:not(:disabled) {
 #help {
   background: #0d1638cc !important;
 }
+/* récapitulatif de match : colonnes triables, barres proportionnelles, meilleure valeur en or */
+.resTable th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+.resTable th.sortable:hover,
+.resTable th.sorted {
+  color: var(--gold-hi) !important;
+}
+.resTable td.rNum {
+  position: relative;
+  min-width: 90px;
+}
+.resTable td.rNum span {
+  position: relative;
+  z-index: 1;
+}
+.resTable td.rNum i {
+  position: absolute;
+  left: 8%;
+  bottom: 3px;
+  height: 3px;
+  max-width: 84%;
+  border-radius: 2px;
+  background: #5f7fd8;
+  transition: width 0.4s;
+}
+.resTable td.rNum.sorted i {
+  background: var(--gold);
+}
+.resTable td.rNum.best span {
+  color: var(--gold-hi);
+  font-weight: 900;
+  text-shadow: 0 0 8px #ffd96f99;
+}
+.resTable tbody tr {
+  animation: resIn 0.35s ease both;
+}
+@keyframes resIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
