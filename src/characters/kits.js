@@ -27,7 +27,8 @@
     'Jump_Start',
     'Jump_Loop',
     'Jump_Land',
-    'Roll'
+    'Roll',
+    'Sword_Idle' // posture de garde en mêlée entre deux frappes
   ];
 
   // CLASSE : tenue (pièces modulaires fusionnées au build), coiffure par défaut, palette, robe, arme, lueur des yeux.

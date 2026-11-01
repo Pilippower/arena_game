@@ -726,6 +726,11 @@ function hfSetAnim(rec, u) {
     key = 'run';
     names = ['Jog_Fwd_Loop', 'Running_A', 'Run', 'Walking_A', 'Walk'];
   }
+  // garde de combat : mêlée immobile au contact d'un ennemi (entre deux frappes d'auto-attaque)
+  else if (key === 'idle' && inMeleeGuard(u)) {
+    key = 'guard';
+    names = ['Sword_Idle', 'Idle_Loop'];
+  }
   // réception de saut : brève animation d'atterrissage si on ne repart pas en courant
   if (key === 'idle' && rec.animKey === 'air' && hfFindClip(rec, ['Jump_Land'])?.name === 'Jump_Land') {
     key = 'land';
@@ -1604,4 +1609,10 @@ function hfRebuildOccluders() {
   add(new THREE.BoxGeometry(0.3, 4.9, hz * 2 + 0.6), -hx - 0.15, 2.45, 0);
   add(new THREE.BoxGeometry(0.3, 4.9, hz * 2 + 0.6), hx + 0.15, 2.45, 0);
   HF.scene.add(g);
+}
+
+function inMeleeGuard(u) {
+  if (!u.alive || u.form || !(SWING[u.cls] || u.cls === 'warden')) return false;
+  const t = u.target?.alive && u.target.team !== u.team ? u.target : u.lastEnemy;
+  return !!t?.alive && d2(u, t) < 3.2 && now() - (u.lastCombat || -99) < 4;
 }
