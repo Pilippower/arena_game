@@ -1,23 +1,8 @@
 'use strict';
 // Arène (collision), état global, caméra, maths matrices/vecteurs, moteur WebGL historique (maillages primitifs).
-const arena = {
-  halfX: 34,
-  halfZ: 25,
-  pillars: [
-    { x: -12, z: -8, r: 1.6, h: 5.0 },
-    { x: 12, z: -8, r: 1.6, h: 5.0 },
-    { x: -12, z: 8, r: 1.6, h: 5.0 },
-    { x: 12, z: 8, r: 1.6, h: 5.0 },
-    { x: 0, z: -14, r: 1.1, h: 4.0 },
-    { x: 0, z: 14, r: 1.1, h: 4.0 },
-    { x: -18, z: 0, r: 1.15, h: 4.1 },
-    { x: 18, z: 0, r: 1.15, h: 4.1 }
-  ]
-};
-const HEALTH_SPOTS = [
-  { x: 0, z: -20 },
-  { x: 0, z: 20 }
-];
+// Carte courante : remplie par applyMap() (src/data/maps.js).
+const arena = { halfX: 34, halfZ: 25, pillars: [] };
+const HEALTH_SPOTS = [];
 
 let state = null,
   camera = { yaw: Math.PI / 2, pitch: 0.2, dist: 8.3 },

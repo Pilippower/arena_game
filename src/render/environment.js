@@ -398,9 +398,50 @@
     R.toneMappingExposure = 1.15;
     R.shadowMap.enabled = true;
     R.shadowMap.type = THREE.PCFSoftShadowMap;
-    const S = (E.scene = new THREE.Scene());
     E.camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1600);
     E.time = { value: 0 };
+    E.ok = true;
+    return setMap(E.mapId || 'castle', arena);
+  }
+  // Cartes : constructeur de scène par identifiant (« castle » ici, les autres dans src/render/map_<id>.js).
+  const MAP_BUILDERS = { castle: buildCastleMap };
+  function registerMap(id, fn) {
+    MAP_BUILDERS[id] = fn;
+  }
+  function disposeScene(S) {
+    S.traverse(o => {
+      o.geometry?.dispose();
+      for (const m of [].concat(o.material || [])) {
+        for (const k in m) if (m[k]?.isTexture) m[k].dispose();
+        m.dispose?.();
+      }
+    });
+  }
+  function setMap(id, arena) {
+    if (!E.renderer) {
+      E.mapId = id;
+      return true;
+    }
+    if (E.scene && E.mapId === id) return true;
+    if (E.scene) disposeScene(E.scene);
+    E.mapId = id;
+    E.arena = arena;
+    E.crystals = [];
+    E.flames = [];
+    E.floaters = [];
+    E.rune = null;
+    E.anim = [];
+    const S = (E.scene = new E.THREE.Scene());
+    (MAP_BUILDERS[id] || MAP_BUILDERS.castle)(E.THREE, S, arena, E);
+    buildShadows(E.THREE, S);
+    mergeStatic(E.THREE, S);
+    // décor immobile : la carte d'ombres est calculée une fois, pas à chaque image
+    E.renderer.shadowMap.autoUpdate = false;
+    E.renderer.shadowMap.needsUpdate = true;
+    return true;
+  }
+  function buildCastleMap(THREE, S, arena) {
+    const mobile = E.mobile;
     S.fog = new THREE.Fog(0x1c2448, 55, 470);
 
     // Ciel : dégradé crépuscule, soleil bas, étoiles naissantes
@@ -455,13 +496,6 @@
     buildOutside(THREE, S, arena);
     buildCastle(THREE, S, arena);
     buildFantasy(THREE, S, arena);
-    buildShadows(THREE, S);
-    mergeStatic(THREE, S);
-    // décor immobile : la carte d'ombres est calculée une fois, pas à chaque image
-    R.shadowMap.autoUpdate = false;
-    R.shadowMap.needsUpdate = true;
-    E.ok = true;
-    return true;
   }
 
   // ---- Sol : dallage + herbe mélangés par un masque, cercle runique au centre ----
@@ -1388,6 +1422,7 @@
       } else f.light.intensity = 1.1 + Math.sin(t * 11 + k) * 0.15 + Math.sin(t * 5.3 + k) * 0.1;
     }
     for (const f of E.floaters || []) f.g.position.y = f.y + Math.sin(t * 0.35 + f.ph) * 1.6;
+    for (const fn of E.anim || []) fn(t);
     if (E.rune) E.rune.material.emissiveIntensity = 1.25 + Math.sin(t * 1.5) * 0.25;
     (units || []).forEach((u, i) => {
       const b = E.blobs[i];
@@ -1405,6 +1440,9 @@
     E.renderer ? { calls: E.renderer.info.render.calls, triangles: E.renderer.info.render.triangles } : null;
   return {
     init,
+    setMap,
+    registerMap,
+    helpers: { clamp, smooth, rng, noise, noise2, canvas, tex, stoneCanvas, glowTexture, flameTexture, mergeMeshes },
     render,
     stats,
     mergeMeshes,

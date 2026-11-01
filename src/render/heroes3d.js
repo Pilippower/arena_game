@@ -364,32 +364,8 @@ function hfInit() {
     const rim = new THREE.DirectionalLight(0x7f9cff, 1.15);
     rim.position.set(8, 5, -8);
     HF.scene.add(rim);
-    // Invisible depth-only arena geometry occludes characters behind pillars/walls.
-    const occMat = new THREE.MeshBasicMaterial({
-      color: 0x000000,
-      colorWrite: false,
-      depthWrite: true,
-      side: THREE.DoubleSide
-    });
-    for (const pp of arena.pillars) {
-      const m = new THREE.Mesh(new THREE.CylinderGeometry(pp.r + 0.02, pp.r + 0.02, pp.h, 24), occMat);
-      m.position.set(pp.x, pp.h / 2, pp.z);
-      m.renderOrder = -10;
-      HF.scene.add(m);
-    }
-    const wallSpecs = [
-      [0, 2.45, -arena.halfZ - 0.15, arena.halfX * 2 + 0.6, 4.9, 0.3],
-      [0, 2.45, arena.halfZ + 0.15, arena.halfX * 2 + 0.6, 4.9, 0.3],
-      [-arena.halfX - 0.15, 2.45, 0, 0.3, 4.9, arena.halfZ * 2 + 0.6],
-      [arena.halfX + 0.15, 2.45, 0, 0.3, 4.9, arena.halfZ * 2 + 0.6]
-    ];
-    for (const w of wallSpecs) {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(w[3], w[4], w[5]), occMat);
-      m.position.set(w[0], w[1], w[2]);
-      m.renderOrder = -10;
-      HF.scene.add(m);
-    }
     HF.enabled = true;
+    hfRebuildOccluders();
     return true;
   } catch (e) {
     console.warn('Renderer personnages HD indisponible', e);
@@ -1495,3 +1471,29 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v)),
   lerp = (a, b, t) => a + (b - a) * t;
 PREFS = loadPrefs();
 const css = c => `rgb(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)})`;
+
+// Géométrie invisible (profondeur seule) des piliers et murs de la carte courante : cache les personnages derrière.
+function hfRebuildOccluders() {
+  if (!HF.enabled || !HF.scene) return;
+  if (HF.occluders) {
+    HF.scene.remove(HF.occluders);
+    HF.occluders.traverse(o => o.geometry?.dispose());
+  }
+  const g = (HF.occluders = new THREE.Group());
+  const occMat = new THREE.MeshBasicMaterial({ color: 0, colorWrite: false, depthWrite: true, side: THREE.DoubleSide });
+  const add = (geo, x, y, z) => {
+    const m = new THREE.Mesh(geo, occMat);
+    m.position.set(x, y, z);
+    m.renderOrder = -10;
+    g.add(m);
+  };
+  for (const pp of arena.pillars)
+    add(new THREE.CylinderGeometry(pp.r + 0.02, pp.r + 0.02, pp.h, 24), pp.x, pp.h / 2, pp.z);
+  const hx = arena.halfX,
+    hz = arena.halfZ;
+  add(new THREE.BoxGeometry(hx * 2 + 0.6, 4.9, 0.3), 0, 2.45, -hz - 0.15);
+  add(new THREE.BoxGeometry(hx * 2 + 0.6, 4.9, 0.3), 0, 2.45, hz + 0.15);
+  add(new THREE.BoxGeometry(0.3, 4.9, hz * 2 + 0.6), -hx - 0.15, 2.45, 0);
+  add(new THREE.BoxGeometry(0.3, 4.9, hz * 2 + 0.6), hx + 0.15, 2.45, 0);
+  HF.scene.add(g);
+}

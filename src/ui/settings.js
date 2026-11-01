@@ -281,8 +281,27 @@ function updateSelectPreview(selectedRace, selectedClass) {
     box.innerHTML = `<div class="pvHead"><span>Preview</span><span class="tiny">same model as in the arena</span></div><div class="pvArt"><canvas id="preview3d" aria-hidden="true"></canvas><div id="previewLoading" class="previewLoading">Loading hero…</div></div><div class="previewHint"></div>`;
   updateSelectPreview3D(rk, ck);
 }
+// Cartes : une vignette par carte (assets/ui/map_thumbs.js), clic = applyMap.
+function renderMapChoices() {
+  const box = $('mapChoices');
+  if (!box) return;
+  box.innerHTML = Object.entries(MAPS)
+    .map(
+      ([id, M]) =>
+        `<button class="mapCard${id === MAP_ID ? ' selected' : ''}" data-map="${id}"><img src="${window.MAP_THUMBS?.[id] || ''}" alt=""><div class="mapLabel"><b>${M.name}</b><span>${M.desc}</span></div></button>`
+    )
+    .join('');
+  box.querySelectorAll('[data-map]').forEach(
+    b =>
+      (b.onclick = () => {
+        applyMap(b.dataset.map);
+        renderMapChoices();
+      })
+  );
+}
 function chooseClass() {
   playLobbyMusic();
+  renderMapChoices();
   let selectedClass = state?.pcls || null,
     selectedRace = state?.prace || null;
   const raceBox = $('raceChoices'),

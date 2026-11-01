@@ -39,6 +39,8 @@ try {
   }
   const auto = new URLSearchParams(location.search).get('autoplay');
   const qd = new URLSearchParams(location.search).get('diff');
+  const qm = new URLSearchParams(location.search).get('map');
+  if (qm && MAPS[qm]) applyMap(qm);
   if (qd && AI_PROFILES[qd]) DIFFICULTY = qd;
   if (auto && CLASS[auto]) {
     const ar = new URLSearchParams(location.search).get('race');
