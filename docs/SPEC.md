@@ -43,6 +43,10 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Lobby : design de l'utilisateur (`interface_target.png`) — murs de bois et torches, blason en haut, cadre doré, titres en ruban, cartes de race/classe illustrées, prévisualisation devant les voûtes du donjon sur un socle de pierre, plaque du chrono. Bande du bas plus fine sur PC. Tout tient dans la page en 1366×768 (vérifié par `full.test.js`) ; si la fenêtre est trop petite, défilement **dans le cadre** avec une barre au style de l'UI. Le même design sera appliqué en jeu ensuite.
 - Lobby (suite) : les deux torches ont un **vrai feu animé** (pas d'image figée) ; le cadre doré (grand cadre et cadre de la prévisualisation) vient de la panoplie de l'utilisateur (`assets_src/ui/kit_18.png`, angles continus, pas une simple bande) ; rubans sans ligne sous les titres ; pas de petites phrases (« same model as in the arena », « Choose a race and a class ») ; toutes les cartes de race et de classe ont **la même taille** (classes centrées 4 + 3). 🧪
 
+## Formats de match — `src/game/combat.js` (`TEAM_SIZE`, `teamsFor`), lobby « Mode »
+- Le joueur choisit **1v1, 2v2 ou 3v3** au lobby (mémorisé ; `?size=1|2|3` pour les tests). 3v3 par défaut, inchangé.
+- 2v2 : vous + un soigneur (ou un guerrier si vous êtes prêtre) contre chevalier de la mort + prêtre. 1v1 : contre un chevalier de la mort (un guerrier si vous jouez chevalier de la mort), jamais un soigneur seul. 🧪
+
 ## Cartes — `src/data/maps.js`, `src/render/environment.js`, `src/render/map_*.js`
 - « The Castle » : ne pas modifier sans demande. Le décor suit toujours la carte de gameplay (test dans `smoke.test.js`).
 - « The Bridge » : pont accessible par deux rampes à chaque extrémité (de part et d'autre, perpendiculaires au pont) ; on peut lancer des sorts depuis le tablier ; pas de ligne de vue entre le tablier et le dessous du pont. 🧪

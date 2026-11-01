@@ -64,9 +64,34 @@ function compForPlayer(cls) {
   if (cls === 'warlock') return ['oracle', 'sentinel'];
   return ['oracle', 'sentinel'];
 }
+// Format du match choisi au lobby : 1v1, 2v2 ou 3v3 (TEAM_SIZE joueurs par équipe, 3 par défaut).
+let TEAM_SIZE = (() => {
+  try {
+    const n = +(new URLSearchParams(location.search).get('size') || localStorage.getItem('arenaTeamSize'));
+    return n >= 1 && n <= 3 ? n : 3;
+  } catch (_) {
+    return 3;
+  }
+})();
+// Équipes selon le format : en 2v2 un soigneur et un combattant de chaque côté ; en 1v1 un adversaire
+// qui peut mourir (pas de soigneur seul en face).
+function teamsFor(pcls, size) {
+  const allies = compForPlayer(pcls),
+    foes = [
+      ['reaver', 'Kargan', 'orc'],
+      ['arcanist', 'Nyx', 'elf'],
+      ['oracle', 'Seris', 'dwarf']
+    ];
+  if (size === 3) return { allies, foes };
+  if (size === 2) return { allies: allies.slice(0, 1), foes: [foes[0], foes[2]] };
+  return { allies: [], foes: [pcls === 'reaver' ? ['sentinel', 'Kargan', 'orc'] : foes[0]] };
+}
 function resetRound() {
   const o = state || {},
-    allies = compForPlayer(o.pcls || 'sentinel');
+    size = o.size || TEAM_SIZE,
+    T = teamsFor(o.pcls || 'sentinel', size),
+    allies = T.allies,
+    spot = (i, n, gap) => (i - (n - 1) / 2) * gap; // en 3v3 : mêmes places qu'avant (alliés tous les 5, adversaires tous les 6)
   state = {
     pcls: o.pcls || 'sentinel',
     prace: o.prace || raceForClass(o.pcls || 'sentinel'),
@@ -75,6 +100,7 @@ function resetRound() {
     round: (o.round || 0) + 1,
     stats: o.stats && o.round ? o.stats : [],
     map: o.map,
+    size,
     t: 150,
     elapsed: 0,
     dampening: 0,
@@ -86,17 +112,18 @@ function resetRound() {
     splash: 1.8,
     uiTick: 0
   };
+  const mates = [
+    [allies[0], 'Lyra', raceForClass(allies[0], 0, 1)],
+    [allies[1], 'Torren', 'dwarf']
+  ].slice(0, allies.length);
   state.units = [
-    makeUnit(state.pcls, -26, -5, 0, 'You', false, state.prace, 0),
-    makeUnit(allies[0], -26, 0, 0, 'Lyra', true, raceForClass(allies[0], 0, 1), 1),
-    makeUnit(allies[1], -26, 5, 0, 'Torren', true, 'dwarf', 2),
-    makeUnit('reaver', 26, -6, 1, 'Kargan', true, 'orc', 0),
-    makeUnit('arcanist', 26, 0, 1, 'Nyx', true, 'elf', 1),
-    makeUnit('oracle', 26, 6, 1, 'Seris', true, 'dwarf', 2)
+    makeUnit(state.pcls, -26, spot(0, size, 5), 0, 'You', false, state.prace, 0),
+    ...mates.map(([c, n, r], i) => makeUnit(c, -26, spot(i + 1, size, 5), 0, n, true, r, i + 1)),
+    ...T.foes.map(([c, n, r], i) => makeUnit(c, 26, spot(i, size, 6), 1, n, true, r, i))
   ];
   state.units.forEach((u, i) => (u.slotIndex = i));
   state.player = state.units[0];
-  setTarget(state.player, state.units[3]);
+  setTarget(state.player, state.units[size]);
   applyDifficulty();
   camera.yaw = Math.PI / 2;
   camera.pitch = 0.2;

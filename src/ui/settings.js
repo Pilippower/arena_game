@@ -354,6 +354,20 @@ function chooseClass() {
       })
   );
   diffRefresh();
+  const sizes = $('sizeChoices'),
+    sizeRefresh = () =>
+      sizes.querySelectorAll('button').forEach(b => b.classList.toggle('selected', +b.dataset.s === TEAM_SIZE));
+  sizes.querySelectorAll('button').forEach(
+    b =>
+      (b.onclick = () => {
+        TEAM_SIZE = +b.dataset.s;
+        try {
+          localStorage.setItem('arenaTeamSize', TEAM_SIZE);
+        } catch (_) {}
+        sizeRefresh();
+      })
+  );
+  sizeRefresh();
   box.querySelectorAll('button').forEach(
     b =>
       (b.onclick = () => {

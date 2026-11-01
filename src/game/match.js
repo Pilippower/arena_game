@@ -2,7 +2,7 @@
 // Match en 3 manches : score, statistiques par personnage (dégâts, soins, éliminations) cumulées sur les manches,
 // écran de résultats final avec « Play again » / « Back to lobby ».
 const MATCH_ROUNDS = 3;
-// Statistiques indexées par la place de l'unité (0-2 votre équipe, 3-5 adversaires) : les unités sont recréées à chaque manche.
+// Statistiques indexées par la place de l'unité (votre équipe puis les adversaires) : les unités sont recréées à chaque manche.
 function statOf(u) {
   if (!state?.stats || u?.slotIndex == null) return null;
   return (state.stats[u.slotIndex] ||= { damage: 0, healing: 0, kills: 0 });

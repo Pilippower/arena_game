@@ -68,6 +68,27 @@ for (const sx of [-1, 1])
   }
 assert.equal(ctx.groundAt({ x: 0, z: 0, y: 0 }), 0, 'sous le pont : on reste au sol');
 assert.ok(ctx.blockedBySurface({ x: B.rampX, z: B.halfW + 1, y: 0 }), 'on ne traverse pas une rampe par le côté');
+// Formats de match : 1v1, 2v2, 3v3
+{
+  const ctx2 = {
+    console,
+    Math,
+    window: {},
+    document: { addEventListener() {} },
+    location: { search: '' },
+    URLSearchParams
+  };
+  ctx2.globalThis = ctx2;
+  vm.createContext(ctx2);
+  vm.runInContext(read('src/game/combat.js').replace(/^(const|let) /gm, 'var '), ctx2, { filename: 'combat.js' });
+  for (const n of [1, 2, 3]) {
+    const T = ctx2.teamsFor('arcanist', n);
+    assert.equal(T.allies.length + 1, n, n + 'v' + n + ' : alliés');
+    assert.equal(T.foes.length, n, n + 'v' + n + ' : adversaires');
+  }
+  assert.notEqual(ctx2.teamsFor('arcanist', 1).foes[0][0], 'oracle', '1v1 : pas de soigneur seul');
+  assert.ok(read('index.html').includes('id="sizeChoices"'), 'lobby : choix du mode');
+}
 // Lobby : feu animé des torches, petites phrases masquées, cartes de race et de classe de même taille
 const lobbyCss = read('src/ui/lobby.css').replace(/\s+/g, ' ');
 assert.match(read('src/ui/lobby.js'), /TORCHES[\s\S]*requestAnimationFrame/, 'torches du lobby animées');
