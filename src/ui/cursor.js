@@ -40,7 +40,7 @@ setGameCursor('gauntlet');
 function unitAtScreen(sx, sy) {
   if (!state?.units) return null;
   let best = null,
-    bestD = 62;
+    bestD = MOBILE.enabled ? 90 : 62; // doigt moins précis que la souris
   for (const u of state.units) {
     if (!u.alive || (u.stealth && u.team !== state.player.team)) continue;
     const p = projectScreen(u.rx ?? u.x, (u.ry ?? u.y ?? 0) + 1.35, u.rz ?? u.z);

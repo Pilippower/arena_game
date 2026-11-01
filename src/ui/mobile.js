@@ -100,6 +100,7 @@ function setupMobileControls() {
     MOBILE.lookPointer = e.pointerId;
     MOBILE.lookX = e.clientX;
     MOBILE.lookY = e.clientY;
+    MOBILE.tap = { x: e.clientX, y: e.clientY, t: performance.now(), moved: 0 };
     look.setPointerCapture?.(e.pointerId);
     e.preventDefault();
   });
@@ -109,6 +110,7 @@ function setupMobileControls() {
       dy = e.clientY - MOBILE.lookY;
     MOBILE.lookX = e.clientX;
     MOBILE.lookY = e.clientY;
+    if (MOBILE.tap) MOBILE.tap.moved += Math.abs(dx) + Math.abs(dy);
     const next = GameLogic.applyLook(camera.yaw, camera.pitch, dx, dy, 0.0052, 0.0046);
     camera.yaw = next.yaw;
     camera.pitch = next.pitch;
@@ -118,6 +120,13 @@ function setupMobileControls() {
   const stopLook = e => {
     if (e?.pointerId != null && e.pointerId !== MOBILE.lookPointer) return;
     MOBILE.lookPointer = null;
+    // appui bref sans glisser = cibler le personnage touché
+    const tp = MOBILE.tap;
+    MOBILE.tap = null;
+    if (e?.type === 'pointerup' && tp && tp.moved < 14 && performance.now() - tp.t < 350) {
+      const rc = canvas.getBoundingClientRect();
+      pickTargetAt(tp.x - rc.left, tp.y - rc.top);
+    }
   };
   look?.addEventListener('pointerup', stopLook);
   look?.addEventListener('pointercancel', stopLook);
