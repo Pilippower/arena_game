@@ -2,8 +2,10 @@
 // Pas de simulation (120 Hz) et état visuel.
 function update(dt) {
   if (!state) return;
+  if (window.NET?.role === 'guest') return netGuestUpdate(dt); // en ligne : l'invité suit l'hôte (src/net/online.js)
   if (state.splash > 0) state.splash -= dt;
   if (state.ended) {
+    if (window.NET?.role === 'host') netHostUpdate(dt); // l'invité doit voir la fin de manche
     // fin de manche : plus de mouvement ni d'interpolation résiduelle entre les deux dernières positions
     // (le personnage tremblait sur place) ; les vainqueurs fêtent la victoire (heroes3d.js, « cheer »)
     for (const u of state.units) {
@@ -28,6 +30,7 @@ function update(dt) {
   state.elapsed = (state.elapsed || 0) + dt;
   state.dampening = clamp(((state.elapsed - 35) / 90) * 0.45, 0, 0.45);
   playerMove(dt);
+  if (window.NET?.role === 'host') netHostUpdate(dt);
   for (const u of state.units) {
     for (const cs of u.cdSets ? Object.values(u.cdSets) : [u.cd])
       for (let i = 0; i < cs.length; i++) cs[i] = Math.max(0, cs[i] - dt);
@@ -127,7 +130,7 @@ function update(dt) {
       }
       u.cast = null;
     }
-    if (u === state.player && u.queuedSkill) {
+    if ((u === state.player || u.remote) && u.queuedSkill) {
       const q = u.queuedSkill;
       if (now() > q.until) u.queuedSkill = null;
       else if (u.gcd <= 0 && u.cd[q.i] <= 0 && !u.cast && u.stun <= 0) {

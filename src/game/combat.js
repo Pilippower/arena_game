@@ -89,7 +89,9 @@ function teamsFor(pcls, size) {
 function resetRound() {
   const o = state || {},
     size = o.size || TEAM_SIZE,
-    T = teamsFor(o.pcls || 'sentinel', size),
+    T = o.online
+      ? { allies: [], foes: [[o.online.cls, o.online.name, o.online.race]] }
+      : teamsFor(o.pcls || 'sentinel', size),
     allies = T.allies,
     spot = (i, n, gap) => (i - (n - 1) / 2) * gap; // en 3v3 : mêmes places qu'avant (alliés tous les 5, adversaires tous les 6)
   state = {
@@ -100,6 +102,7 @@ function resetRound() {
     round: (o.round || 0) + 1,
     stats: o.stats && o.round ? o.stats : [],
     map: o.map,
+    online: o.online || null, // en ligne : l'adversaire est l'ami connecté (src/net/online.js)
     size,
     t: 150,
     elapsed: 0,
@@ -122,6 +125,12 @@ function resetRound() {
     ...T.foes.map(([c, n, r], i) => makeUnit(c, 26, spot(i, size, 6), 1, n, true, r, i))
   ];
   state.units.forEach((u, i) => (u.slotIndex = i));
+  if (state.online)
+    for (const u of state.units)
+      if (u.team === 1) {
+        u.remote = true;
+        u.ai = false;
+      }
   state.player = state.units[0];
   setTarget(state.player, state.units[size]);
   applyDifficulty();
@@ -130,6 +139,7 @@ function resetRound() {
   showSplash(`Round ${state.round}`);
   if (HF.enabled) hfSyncUnits();
   updateUI();
+  if (state.online) netSendRoster();
 }
 // distance 3D : une unité sur le pont n'est pas « au contact » d'une unité en dessous
 const d2 = (a, b) => (!a || !b ? 999 : Math.hypot(a.x - b.x, a.z - b.z, ((a.y || 0) - (b.y || 0)) * 0.8));
@@ -570,6 +580,7 @@ function tryPlayerSkill(i) {
   if (!p || !skillsOf(p)[i] || p.poly > 0) return false;
   p.pressed = { i, t: now() }; // retour visuel d'appui (barre de sorts)
   updateUI();
+  if (window.NET?.role === 'guest') return (netSend({ t: 'skill', i }), true); // l'hôte lance le sort
   if (useSkill(p, i)) {
     p.queuedSkill = null;
     return true;
@@ -851,6 +862,7 @@ function useSkill(u, i) {
   return true;
 }
 function useTrinket(u) {
+  if (window.NET?.role === 'guest' && u === state?.player) return netSend({ t: 'trinket' });
   if (!u?.alive || u.trinket > 0) return;
   if (u.stun > 0 || u.root > 0 || u.silence > 0 || u.fear > 0 || u.poly > 0) {
     u.stun = u.root = u.silence = u.fear = u.poly = 0;

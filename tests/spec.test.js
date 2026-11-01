@@ -340,4 +340,28 @@ assert.ok(
   /Masse runique du nain[\s\S]*?0\.62 \* s[\s\S]*?AdditiveBlending/.test(read('src/characters/builder.js')),
   'masse du nain : grosse, lumineuse, plus courte'
 );
+// Jeu en ligne : points d'accroche présents, réseau isolé dans src/net/online.js (pas de chargement hors ligne)
+{
+  const on = read('src/net/online.js');
+  assert.ok(/^var NET = \{/m.test(on), 'NET visible comme window.NET');
+  assert.ok(
+    on.includes("s.src = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js'") &&
+      !read('index.html').includes('peerjs'),
+    'PeerJS chargé seulement au clic'
+  );
+  assert.match(
+    read('src/game/sim.js'),
+    /NET\?\.role === 'guest'\) return netGuestUpdate\(dt\)/,
+    'invité : suit l’hôte'
+  );
+  assert.match(
+    read('src/game/combat.js'),
+    /NET\?\.role === 'guest'\) return \(?netSend\(\{ t: 'skill', i \}\)/,
+    'invité : sorts envoyés à l’hôte'
+  );
+  assert.ok(
+    read('index.html').includes('id="onlineBtn"') && read('index.html').includes('id="netPanel"'),
+    'lobby : bouton Online'
+  );
+}
 console.log('OK - spécifications validées (docs/SPEC.md)');

@@ -121,7 +121,9 @@ function musicDrum(time, accent = false, intensity = 0.5) {
 function musicIntensity() {
   if (!state || $('overlay')?.style.display !== 'none') return 0.28;
   const alive = state.units?.filter(u => u.alive) || [];
-  const danger = alive.length ? 1 - Math.min(...alive.filter(u => u.team === 0).map(u => u.hp / u.maxHp), 1) : 0;
+  const danger = alive.length
+    ? 1 - Math.min(...alive.filter(u => u.team === state.player.team).map(u => u.hp / u.maxHp), 1)
+    : 0;
   const action = alive.some(u => u.cast || u.mobility || u.action > 0) ? 1 : 0;
   const pressure = (state.t || 150) < 65 ? 0.22 : 0;
   return clamp(0.38 + danger * 0.3 + action * 0.18 + pressure + (state.dampening || 0) * 0.3, 0.3, 1);

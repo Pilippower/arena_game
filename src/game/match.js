@@ -59,8 +59,9 @@ function renderResultsTables() {
           `<tr><td class="rName">${resultsPortrait(u)}${u === state.player ? 'You' : u.name}</td><td>${RACE[u.race]?.name || ''} ${CLASS[u.cls].name}</td>${cell(s, 'damage')}${cell(s, 'healing')}${cell(s, 'kills')}</tr>`
       )
       .join('')}</tbody></table>`;
+  const mine = state.player.team; // en ligne, l'invité est dans l'équipe 1
   $('resultsTeams').innerHTML =
-    `<h3 class="ally">Your team</h3>${table(0)}<h3 class="enemy">Enemy team</h3>${table(1)}`;
+    `<h3 class="ally">Your team</h3>${table(mine)}<h3 class="enemy">Enemy team</h3>${table(1 - mine)}`;
   $('resultsTeams')
     .querySelectorAll('[data-sort]')
     .forEach(
@@ -78,6 +79,9 @@ function resultsPortrait(u) {
   return src ? `<img class="rPort" src="${src}" alt="">` : '';
 }
 function showResults() {
+  if (window.NET?.role === 'host' && state.online)
+    netSend({ t: 'results', stats: state.stats, scoreA: state.scoreA, scoreB: state.scoreB });
+  $('resultsAgain').style.display = window.NET?.role === 'guest' ? 'none' : ''; // l'invité attend l'hôte
   const win = state.scoreA > state.scoreB;
   $('results').className = win ? 'win' : 'loss';
   $('resultsTitle').textContent = win ? 'Victory' : 'Defeat';
@@ -95,7 +99,15 @@ function hideResults() {
 // Nouveau match avec la même composition.
 function playAgain() {
   hideResults();
-  state = { pcls: state.pcls, prace: state.prace, scoreA: 0, scoreB: 0, round: 0, map: state.map };
+  state = {
+    pcls: state.pcls,
+    prace: state.prace,
+    scoreA: 0,
+    scoreB: 0,
+    round: 0,
+    map: state.map,
+    online: state.online
+  };
   resetRound();
   playGameMusic();
 }
@@ -104,6 +116,7 @@ function backToLobby() {
 }
 // Sortie du match : retour au lobby (sa musique) et partie réellement arrêtée (plus de simulation ni de sons).
 function leaveMatch() {
+  if (window.NET?.role && state?.units) netClose('Offline');
   hideResults();
   $('leaveConfirm').style.display = 'none';
   chooseClass(); // relit la race et la classe de la partie pour les présélectionner

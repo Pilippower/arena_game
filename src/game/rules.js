@@ -70,6 +70,7 @@ function setTarget(u, t) {
   u.target = t || null;
   // cibler un allié (ou soi) arrête l'auto-attaque et la garde de combat : plus d'« ennemi en cours »
   if (t) u.lastEnemy = t.team !== u.team ? t : null;
+  if (window.NET?.role === 'guest' && u === state?.player) netSend({ t: 'target', i: state.units.indexOf(t) });
 }
 // Cible amie du joueur pour les soins : l'allié ciblé, sinon soi-même.
 function friendlyTarget(u) {

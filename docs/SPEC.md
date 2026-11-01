@@ -70,6 +70,11 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Le joueur choisit **1v1, 2v2 ou 3v3** au lobby (mémorisé ; `?size=1|2|3` pour les tests). 3v3 par défaut, inchangé.
 - 2v2 : vous + un soigneur (ou un guerrier si vous êtes prêtre) contre chevalier de la mort + prêtre. 1v1 : contre un chevalier de la mort (un guerrier si vous jouez chevalier de la mort), jamais un soigneur seul. 🧪
 
+## Jeu en ligne — `src/net/online.js`
+- Étape 1 : **1v1 contre un ami**, de navigateur à navigateur (WebRTC via PeerJS, chargé seulement au clic sur « Online » ; le service public PeerJS ne sert qu'à se trouver). Lobby : bouton Online → Host a game (code de 5 caractères) ou Join (saisir le code) ; l'invité choisit race et classe, l'hôte lance avec Play. 🧪
+- L'hôte fait autorité (dégâts, sorts, contrôles, manches) et envoie l'état 20 fois/s ; l'invité se déplace en local avec **les mêmes contrôles** (pas de latence) et reprend la position de l'hôte pendant un déplacement imposé (ruée, blink, peur, étourdissement, mouton) ou si l'écart dépasse 3 m. Sorts (avec file d'attente comme hors ligne), cible et trinket de l'invité partent chez l'hôte ; effets, chiffres et sons de combat sont relayés. Couleurs, scores, fin de manche et résultats sont vus depuis sa propre équipe. Si l'invité part, une IA reprend son personnage ; si l'hôte part, l'invité revient au lobby. 🧪
+- Le jeu hors ligne est inchangé (`window.NET.role` nul).
+
 ## Cartes — `src/data/maps.js`, `src/render/environment.js`, `src/render/map_*.js`
 - « The Castle » : ne pas modifier sans demande. Le décor suit toujours la carte de gameplay (test dans `smoke.test.js`).
 - « The Bridge » : pont accessible par deux rampes à chaque extrémité (de part et d'autre, perpendiculaires au pont) ; on peut lancer des sorts depuis le tablier ; pas de ligne de vue entre le tablier et le dessous du pont. 🧪

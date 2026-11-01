@@ -79,7 +79,8 @@ function renderCharacter(u) {
     dark = [0.055, 0.045, 0.05],
     metal = [0.48, 0.52, 0.58],
     gold = [0.86, 0.66, 0.25];
-  const teamRing = u === state.player?.target ? [1, 0.72, 0.1] : u.team === 0 ? [0.08, 0.5, 1] : [1, 0.12, 0.2];
+  const teamRing =
+    u === state.player?.target ? [1, 0.72, 0.1] : u.team === state.player?.team ? [0.08, 0.5, 1] : [1, 0.12, 0.2]; // couleurs relatives au joueur (en ligne : équipe 1)
   // Ground shadow + selection rings
   part('cyl', [u.x, 0.022, u.z], [0, 0, 0], [0.78, 0.012, 0.78], [0.012, 0.012, 0.016], [0, 0, 0], 0.42);
   part(
@@ -1192,7 +1193,7 @@ function renderOverlayWorld() {
       e._fill.style.width = w + '%';
       e._k.w = w;
     }
-    const c = u.team === 0 ? '#58c3ff' : '#ff6976';
+    const c = u.team === state.player.team ? '#58c3ff' : '#ff6976';
     if (e._k.c !== c) {
       e._fill.style.background = c;
       e._k.c = c;

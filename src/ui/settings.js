@@ -373,7 +373,7 @@ function chooseClass() {
   $('reticle').style.display = 'none';
   play.disabled = true;
   const refresh = () => {
-    play.disabled = !(selectedClass && selectedRace);
+    play.disabled = !(selectedClass && selectedRace) || window.NET?.role === 'guest'; // invité : l'hôte lance
     label.textContent =
       selectedClass && selectedRace
         ? `${RACE[selectedRace].name} ${CLASS[selectedClass].name}`
@@ -383,6 +383,8 @@ function chooseClass() {
     updateSelectPreview(selectedRace, selectedClass);
     lobbySkillBar(selectedClass);
     LOBBY_CHIPS();
+    if (window.NET?.role === 'guest') netLobbyChoice(selectedRace, selectedClass);
+    else NET_CHOICE = { race: selectedRace, cls: selectedClass };
   };
   LOBBY_CHIPS = () => ($('lobbyChips').innerHTML = lobbyChipsHTML(selectedRace, selectedClass));
   raceBox.querySelectorAll('button').forEach(
@@ -433,7 +435,18 @@ function chooseClass() {
   play.onclick = () => {
     if (!selectedClass || !selectedRace) return;
     if (MOBILE.enabled) mobileRequestFullscreen();
-    state = { pcls: selectedClass, prace: selectedRace, scoreA: 0, scoreB: 0, round: 0 };
+    // en ligne (hôte avec un ami prêt) : 1v1 contre lui
+    const online = window.NET?.role === 'host' && NET.conn?.open && NET.guest ? { ...NET.guest } : null;
+    if (window.NET?.role === 'host' && !online) return netStatus('Waiting for your friend to join and pick a class…');
+    state = {
+      pcls: selectedClass,
+      prace: selectedRace,
+      scoreA: 0,
+      scoreB: 0,
+      round: 0,
+      online,
+      size: online ? 1 : undefined
+    };
     $('overlay').style.display = 'none';
     resetRound();
     musicStart();
