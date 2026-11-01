@@ -123,7 +123,7 @@ const CLASS = {
     regen: 11,
     skills: [
       { n: 'Shadow Bolt', cd: 1.6, c: 12 },
-      { n: 'Fear', cd: 10, c: 18 },
+      { n: 'Fear', cd: 0, c: 18 },
       { n: 'Spell Lock', cd: 15, c: 12 },
       { n: 'Dark Soul', cd: 25, c: 24 },
       { n: 'Demonic Gate', cd: 15, c: 12 }
