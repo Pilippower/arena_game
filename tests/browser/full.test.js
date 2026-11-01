@@ -352,6 +352,11 @@ async function run() {
       assert.ok(m.timer, 'timer visible');
       assert.ok(m.score, 'score visible');
       assert.ok(m.vh - m.canvasBottom < 4, `bande vide sous l'arène (${m.vh - m.canvasBottom}px)`);
+      const bg = await page.evaluate(() => {
+        const cs = getComputedStyle(document.getElementById('bottom'));
+        return cs.backgroundImage + ' ' + cs.backgroundColor;
+      });
+      assert.equal(bg, 'none rgba(0, 0, 0, 0)', `barre du bas mobile non transparente (${bg})`);
       assert.deepEqual(errors, [], 'erreurs JS mobile');
       await ctx.close();
     }

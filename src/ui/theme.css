@@ -125,7 +125,8 @@ button:active:not(:disabled) {
   border-color: var(--gold) !important;
 }
 .skill .icon {
-  border-color: var(--gold) !important;
+  border: 0 !important; /* un seul cadre (celui du bouton) */
+  box-shadow: none !important;
 }
 .bar,
 .unitInfo .hpb,
@@ -241,4 +242,10 @@ button:active:not(:disabled) {
     opacity: 0;
     transform: translateY(6px);
   }
+}
+/* mobile : la barre du bas reste transparente (pas de bande sous l'arène) */
+body.mobile-mode #bottom {
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }

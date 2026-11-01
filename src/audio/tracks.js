@@ -103,8 +103,7 @@ function setGameTrack(blob, name) {
   TRACKS.game.loop = true;
   TRACKS.game.preload = 'metadata';
   TRACKS.gameName = name || 'custom';
-  const l = $('gameTrackName');
-  if (l) l.textContent = TRACKS.gameName;
+  for (const id of ['gameTrackName', 'lobbyTrackName']) if ($(id)) $(id).textContent = TRACKS.gameName;
 }
 function trackDb() {
   return new Promise((res, rej) => {
@@ -130,8 +129,7 @@ async function clearGameTrack() {
   if (TRACKS.game) TRACKS.game.pause();
   TRACKS.game = null;
   TRACKS.gameName = '';
-  const l = $('gameTrackName');
-  if (l) l.textContent = 'Procedural soundtrack';
+  for (const id of ['gameTrackName', 'lobbyTrackName']) if ($(id)) $(id).textContent = 'Procedural soundtrack';
   try {
     const db = await trackDb();
     db.transaction('t', 'readwrite').objectStore('t').delete('game');
@@ -145,3 +143,9 @@ async function clearGameTrack() {
     r.onsuccess = () => r.result && setGameTrack(r.result.blob, r.result.name);
   } catch (_) {}
 })();
+// Bouton du lobby : même sélecteur de fichier que les réglages (le fichier reste sur l'appareil).
+$('lobbyTrackBtn').onclick = () => $('gameTrackInput').click();
+// Sur la machine qui possède assets/audio/local/game.mp3, le lobby l'indique dès qu'il est trouvé.
+localGameTrack()?.addEventListener('loadedmetadata', () => {
+  if (!TRACKS.game && $('lobbyTrackName')) $('lobbyTrackName').textContent = 'Local file (assets/audio/local/game.mp3)';
+});
