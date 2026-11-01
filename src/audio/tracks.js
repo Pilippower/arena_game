@@ -3,6 +3,8 @@
 //  - lobby : assets/audio/lobby.mp3 en boucle tant que l'écran de sélection est ouvert ;
 //  - en jeu : un fichier choisi par le joueur (⚙ Interface), gardé dans le navigateur (IndexedDB), jamais publié.
 //    Chaque partie démarre à une position aléatoire avec un fondu ; sans fichier, la musique procédurale joue.
+//  - fichier local facultatif assets/audio/local/game.mp3 (ignoré par git, jamais publié) : utilisé quand le joueur
+//    n'a rien choisi, sur la machine qui le possède (absent sur GitHub Pages → musique procédurale).
 const TRACKS = { lobby: null, game: null, gameUrl: null, gameName: '', want: 'none' };
 const TRACK_VOL = { lobby: 0.32, game: 0.16 }; // la musique ne doit pas couvrir les bruitages
 function trackVolume(kind) {
@@ -45,17 +47,32 @@ function playSafe(a) {
 function playLobbyMusic() {
   TRACKS.want = 'lobby';
   if (TRACKS.game) fadeTo(TRACKS.game, 0, 0.8);
+  if (TRACKS.local) fadeTo(TRACKS.local, 0, 0.8);
   musicStopProcedural();
   if (!PREFS.musicOn) return;
   const a = lobbyAudio();
   playSafe(a);
   fadeTo(a, trackVolume('lobby'), 1.5);
 }
+// Fichier local par défaut : chargé une fois ; s'il est absent (erreur), on garde la musique procédurale.
+function localGameTrack() {
+  if (TRACKS.local === undefined) {
+    const a = new Audio('assets/audio/local/game.mp3');
+    a.loop = true;
+    a.preload = 'metadata';
+    TRACKS.local = a;
+    a.addEventListener('error', () => {
+      TRACKS.local = null;
+      if (TRACKS.want === 'game' && !TRACKS.game) musicStartProcedural();
+    });
+  }
+  return TRACKS.local;
+}
 function playGameMusic() {
   TRACKS.want = 'game';
   if (TRACKS.lobby) fadeTo(TRACKS.lobby, 0, 1);
   if (!PREFS.musicOn) return;
-  const g = TRACKS.game;
+  const g = TRACKS.game || localGameTrack();
   if (!g) return musicStartProcedural();
   musicStopProcedural();
   const start = () => {
@@ -68,13 +85,15 @@ function playGameMusic() {
   else g.addEventListener('loadedmetadata', start, { once: true });
 }
 function stopAllMusic() {
+  if (TRACKS.local) fadeTo(TRACKS.local, 0, 0.5);
   if (TRACKS.lobby) fadeTo(TRACKS.lobby, 0, 0.5);
   if (TRACKS.game) fadeTo(TRACKS.game, 0, 0.5);
   musicStopProcedural();
 }
 function refreshTrackVolumes() {
   if (TRACKS.want === 'lobby' && TRACKS.lobby && !TRACKS.lobby.paused) TRACKS.lobby.volume = trackVolume('lobby');
-  if (TRACKS.want === 'game' && TRACKS.game && !TRACKS.game.paused) TRACKS.game.volume = trackVolume('game');
+  const g = TRACKS.game || TRACKS.local;
+  if (TRACKS.want === 'game' && g && !g.paused) g.volume = trackVolume('game');
 }
 // ---- fichier de musique de jeu choisi par le joueur (stocké localement) ----
 function setGameTrack(blob, name) {
