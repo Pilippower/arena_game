@@ -108,4 +108,15 @@ assert.ok(read('index.html').includes('.nameplate.enemy .npCast'), "barre d'inca
 const aiSrc = read('src/game/ai.js');
 for (const k of ['function aiSteer', 'function aiCover', 'u.aiPeel', 'const ccReady'])
   assert.ok(aiSrc.includes(k), 'IA : ' + k);
+// Icônes dessinées par l'utilisateur : chaque entrée de SPELL_ART a son image
+{
+  const fs = require('node:fs');
+  for (const k of ctx.SPELL_ART)
+    assert.ok(fs.existsSync(require('node:path').join(__dirname, '..', 'assets/ui/spells', k + '.webp')), 'icône ' + k);
+  assert.match(
+    ctx.skillIconSVG('arcanist', 5),
+    /assets\/ui\/spells\/polymorph\.webp/,
+    'Polymorph : icône de l’utilisateur'
+  );
+}
 console.log('OK - spécifications validées (docs/SPEC.md)');

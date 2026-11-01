@@ -168,9 +168,22 @@ function skillMotif(name) {
   if (/wild charge/.test(n)) return 'move';
   return 'strike';
 }
+// Icônes dessinées par l'utilisateur (assets/ui/spells/<sort>.webp, découpées par tools/build_spell_icons.js) :
+// elles remplacent entièrement l'ancienne icône vectorielle ; les sorts sans illustration gardent celle-ci.
+const SPELL_ART = new Set(
+  (
+    'arcane_bolt frost_nova blink polymorph arcane_power shadow_bolt fear power_shield flash_heal charge hamstring ' +
+    'mortal_strike death_grip obliterate shield_wall backstab kidney_shot shadowstep ambush sap cat_form bear_form ' +
+    'frenzied_regeneration shred maim'
+  ).split(' ')
+);
+const spellArtKey = n => n.toLowerCase().replace(/\W+/g, '_');
 function skillIconSVG(cls, i, S) {
   const C = CLASS[cls];
   S = S || C.skills[i];
+  const art = spellArtKey(S.n);
+  if (SPELL_ART.has(art))
+    return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><image href="assets/ui/spells/${art}.webp" width="48" height="48" preserveAspectRatio="xMidYMid slice"/></svg>`;
   const a = rgbHex(C.accent),
     b = rgbHex(C.color),
     id = `g_${cls}_${S.n.replace(/\W/g, '')}`,
