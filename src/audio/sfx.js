@@ -214,7 +214,10 @@ function sfxSpatial(u) {
   const dx = u.x - state.player.x,
     dz = u.z - state.player.z,
     dist = Math.hypot(dx, dz);
-  return { pan: clamp(dx / 18, -0.78, 0.78), level: u === state.player ? 1 : clamp(1 - dist / 38, 0.28, 0.68) };
+  const pan = clamp(dx / 18, -0.78, 0.78),
+    level = u === state.player ? 1 : clamp(1 - dist / 38, 0.28, 0.68);
+  // positions invalides (téléportation en cours, test) : son centré plutôt qu'une erreur
+  return { pan: Number.isFinite(pan) ? pan : 0, level: Number.isFinite(level) ? level : 0.5 };
 }
 function sfxTone(
   freq,

@@ -1,4 +1,36 @@
 'use strict';
+// Le son ne doit jamais arrêter le jeu : toute erreur audio est ignorée (avertissement console).
+for (const name of [
+  'footstepSfx',
+  'spellSfx',
+  'spellSfxKind',
+  'spellImpactSfx',
+  'sfxTone',
+  'sfxNoise',
+  'sfxSweep',
+  'sfxChord',
+  'sfxMetal'
+]) {
+  const fn = window[name];
+  if (typeof fn !== 'function') continue;
+  window[name] = function (...args) {
+    try {
+      return fn.apply(this, args);
+    } catch (e) {
+      console.warn('Audio ignoré :', name, e.message);
+    }
+  };
+}
+for (const k of Object.keys(SFX)) {
+  const fn = SFX[k];
+  SFX[k] = (...args) => {
+    try {
+      return fn(...args);
+    } catch (e) {
+      console.warn('Audio ignoré :', k, e.message);
+    }
+  };
+}
 // Boucle principale (simulation fixe + rendu) et démarrage.
 const SIM_DT = 1 / 120,
   MAX_SIM_STEPS = 6;
