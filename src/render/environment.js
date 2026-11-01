@@ -383,7 +383,8 @@
 
   const E = { ok: false, THREE: null };
 
-  function init(THREE, canvasEl, arena, { mobile = false } = {}) {
+  function init(THREE, canvasEl, arena, { mobile = false, map = 'castle' } = {}) {
+    E.mapId = E.mapId || map;
     E.THREE = THREE;
     E.arena = arena;
     E.mobile = mobile;
@@ -1448,6 +1449,9 @@
     mergeMeshes,
     get ok() {
       return E.ok;
+    },
+    get mapId() {
+      return E.mapId;
     },
     grassAmount
   };

@@ -546,7 +546,7 @@ function envEnsureInit() {
     ENV.ok = !!(
       window.THREE &&
       window.ArenaEnv &&
-      ArenaEnv.init(THREE, $('env3d'), arena, { mobile: document.body.classList.contains('mobile-mode') })
+      ArenaEnv.init(THREE, $('env3d'), arena, { mobile: document.body.classList.contains('mobile-mode'), map: MAP_ID })
     );
   } catch (e) {
     console.warn('Décor 3D indisponible, arène simplifiée :', e);

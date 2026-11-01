@@ -19,14 +19,18 @@ const isNoise = t => /Failed to load resource|net::ERR_|Failed to fetch|CORS/i.t
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
     page.on('console', m => m.type() === 'error' && !isNoise(m.text()) && errors.push(m.text()));
+    // carte mémorisée « bridge » : le décor doit suivre la carte de gameplay (bug : décor castle + obstacles bridge)
+    await page.addInitScript(() => localStorage.setItem('arenaMap', 'bridge'));
     await page.goto(pathToFileURL(path.join(ROOT, 'index.html')).href + '?autoplay=warden&race=orc');
     await page.waitForFunction(() => state?.units?.every(u => HF.records.get(u.id)?.loaded), null, { timeout: 90000 });
     await page.waitForTimeout(1000);
     const r = await page.evaluate(() => ({
       env: ENV.ok,
       kits: state.units.filter(u => HF.records.get(u.id)?.kit).length,
-      elapsed: state.elapsed
+      elapsed: state.elapsed,
+      mapOk: ArenaEnv.mapId === MAP_ID && MAP_ID === 'bridge' && arena.pillars.length === MAPS.bridge.pillars.length
     }));
+    assert.equal(r.mapOk, true, 'décor et obstacles de la même carte');
     assert.equal(r.env, true, 'décor 3D chargé');
     assert.equal(r.kits, 6, '6 personnages assemblés');
     assert.ok(r.elapsed > 0.5, 'la simulation avance');
