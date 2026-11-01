@@ -690,6 +690,7 @@ function useSkill(u, i) {
       action(u, 'melee');
     } else if (i === 3) {
       u.shield += S.shield;
+      u.shieldName = S.n;
       fx('ring', u.x, 0.5, u.z, c.accent, 0.8, 1);
       action(u, 'cast');
     } else ok = false;
@@ -748,6 +749,7 @@ function useSkill(u, i) {
       action(u, 'cast');
     } else if (i === 1 && a) {
       a.shield += S.shield;
+      a.shieldName = S.n;
       fx('ring', a.x, 0.2, a.z, c.accent, 0.8, 0.8);
       action(u, 'cast');
     } else if (i === 2 && range) {
@@ -768,6 +770,7 @@ function useSkill(u, i) {
       action(u, 'cast');
     } else if (i === 2) {
       u.shield += S.shield;
+      u.shieldName = S.n;
       action(u, 'cast');
     } else if (i === 3) {
       enemies(u)
@@ -813,6 +816,7 @@ function useSkill(u, i) {
     } else if (i === 3) {
       u.burst = S.burst;
       u.shield += S.shield;
+      u.shieldName = S.n;
       fx('ring', u.x, 0.1, u.z, c.accent, 1, 1.15);
       action(u, 'cast');
     } else ok = false;
@@ -836,6 +840,7 @@ function useTrinket(u) {
     u.rootMin = 0;
     u.trinket = 90;
     u.shield += 80;
+    u.shieldName = 'Trinket';
     fx('ring', u.x, 0.15, u.z, [1, 0.82, 0.28], 0.8, 1);
     addFloat(u, 'Trinket !', '#ffe17d');
     updateUI();

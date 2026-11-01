@@ -19,6 +19,35 @@ function drText(u) {
   if (u.slow > 0) a.push(`Slow ${Math.round((u.slowPct || 0) * 100)}% ${u.slow.toFixed(1)}`);
   return a.join(' · ');
 }
+// Buffs à côté de la barre de vie : icône du sort, temps restant (ou absorption restante d'un bouclier).
+// Lus dans l'état de l'unité, seule source de vérité : rien à tenir à jour dans le combat.
+const BURST_SPELL = { reaver: 'Pillar of Frost', arcanist: 'Arcane Power', shade: 'Vendetta', warlock: 'Dark Soul' };
+function buffList(u) {
+  const b = [];
+  if (u.burst > 0 && BURST_SPELL[u.cls]) b.push({ n: BURST_SPELL[u.cls], t: u.burst });
+  if (u.speedBuff > 0 && !(u.burst > 0) && u.cls === 'reaver') b.push({ n: 'Death Advance', t: u.speedBuff });
+  if (u.spellImmune > 0) b.push({ n: 'Cloak', t: u.spellImmune });
+  if (u.shield > 0) {
+    const n = u.shieldName || 'Power Shield',
+      same = b.find(x => x.n === n);
+    if (same) same.v = Math.ceil(u.shield);
+    else b.push({ n, v: Math.ceil(u.shield) });
+  }
+  if (u.stealth) b.push({ n: 'Stealth' });
+  if (u.form) b.push({ n: u.form === 'cat' ? 'Cat Form' : 'Bear Form' });
+  return b;
+}
+function buffsHTML(u) {
+  const b = u.alive ? buffList(u) : [];
+  if (!b.length) return '';
+  const time = t => (t < 3 ? t.toFixed(1) : Math.ceil(t) + 's');
+  return `<div class="buffs">${b
+    .map(
+      x =>
+        `<span class="buff" title="${x.n}"><img src="assets/ui/spells/${spellArtKey(x.n)}.webp" alt="">${x.t != null ? `<b>${time(x.t)}</b>` : ''}${x.v != null ? `<i>${x.v}</i>` : ''}</span>`
+    )
+    .join('')}</div>`;
+}
 // Portrait : rendu 3D du visage (hfMakePortraits) ou, en attendant, l'icône de classe.
 function portraitHTML(u) {
   const r = HF.records?.get(u.id);
@@ -30,7 +59,7 @@ function unitRowHTML(u, enemy) {
     hp = (100 * u.hp) / u.maxHp,
     col = enemy ? '#e65360' : hp > 50 ? '#3fcf6a' : hp > 25 ? '#e6c13f' : '#e65360';
   return `<div class="unitRow${u === p.target ? ' sel' : ''}${u.alive ? '' : ' dead'}" data-uid="${state.units.indexOf(u)}">${portraitHTML(u)}<div class="unitInfo"><div class="nm">${u === p ? 'You' : u.name}<span>${C.name}</span></div>
-  <div class="hpb"><div style="width:${hp.toFixed(1)}%;background:${col}"></div></div><div class="rsb"><div style="width:${u.res}%"></div></div>${castBarHTML(u)}<div class="dr">${drText(u)}</div></div></div>`;
+  <div class="hpb"><div style="width:${hp.toFixed(1)}%;background:${col}"></div></div><div class="rsb"><div style="width:${u.res}%"></div></div>${castBarHTML(u)}<div class="dr">${drText(u)}</div></div>${buffsHTML(u)}</div>`;
 }
 function castBarHTML(u) {
   const c = u.cast;
@@ -40,7 +69,7 @@ function castBarHTML(u) {
 }
 function frameHTML(u, enemy = false) {
   const C = CLASS[u.cls];
-  return `<div class="nameRow"><b>${u.name}</b><span>${Math.ceil(u.hp)} HP</span></div><div class="tiny">${RACE[u.race]?.name || ''} ${C.name} · ${C.role} · ${ARMOR[C.armor]?.label || ''}</div><div class="bar"><div class="fill ${enemy ? 'enemy' : ''}" style="width:${(100 * u.hp) / u.maxHp}%"></div></div><div class="bar resource"><div class="fill" style="width:${u.res}%"></div></div><div class="tiny">${C.res} ${Math.round(u.res)}/100${u.shield > 0 ? ` · Shield ${Math.ceil(u.shield)}` : ''}</div>`;
+  return `<div class="nameRow"><b>${u.name}</b><span>${Math.ceil(u.hp)} HP</span></div><div class="tiny">${RACE[u.race]?.name || ''} ${C.name} · ${C.role} · ${ARMOR[C.armor]?.label || ''}</div><div class="bar"><div class="fill ${enemy ? 'enemy' : ''}" style="width:${(100 * u.hp) / u.maxHp}%"></div></div><div class="bar resource"><div class="fill" style="width:${u.res}%"></div></div><div class="tiny">${C.res} ${Math.round(u.res)}/100${u.shield > 0 ? ` · Shield ${Math.ceil(u.shield)}` : ''}</div>${buffsHTML(u)}`;
 }
 function setHTML(el) {
   if (el._html !== el._shown) {

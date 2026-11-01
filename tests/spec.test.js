@@ -166,4 +166,14 @@ assert.ok(
   'barre de vie de la cible stable'
 );
 assert.ok(read('index.html').includes('grid-template-rows:58px 1fr 84px;'), 'PC : bande du bas fine');
+// Buffs à côté de la barre de vie : icône du sort et temps restant (bouclier : absorption restante)
+run('src/ui/hud.js');
+{
+  const b = ctx.buffList({ cls: 'warlock', burst: 4, shield: 90, shieldName: 'Dark Soul', spellImmune: 0 });
+  assert.equal(b.length, 1, 'Dark Soul : une seule icône (dégâts + bouclier)');
+  assert.deepEqual([b[0].n, b[0].t, b[0].v], ['Dark Soul', 4, 90]);
+  const html = ctx.buffsHTML({ alive: true, cls: 'shade', spellImmune: 2.2, burst: 0, shield: 0 });
+  assert.ok(html.includes('spells/cloak.webp') && html.includes('2.2'), 'Cloak : icône + temps restant');
+  assert.match(read('src/ui/hud.js'), /drText\(u\)}<\/div><\/div>\$\{buffsHTML\(u\)}/, 'buffs des cadres d’équipe');
+}
 console.log('OK - spécifications validées (docs/SPEC.md)');
