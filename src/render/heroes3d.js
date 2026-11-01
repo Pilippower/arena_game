@@ -996,129 +996,231 @@ function hfRender() {
   HF.renderer.render(HF.scene, HF.camera);
 }
 // Mouton de la Métamorphose : laine en boules, tête et pattes sombres ; les pattes s'animent quand il marche.
-// Bêtes du druide : félin (panthère sombre) et ours, avec pattes animées et yeux lumineux.
+// Bêtes du druide (designs originaux) : panthère runique élancée et ours gardien massif à plaques d'écorce.
+// Construites en masses anatomiques (poitrail, épaules, taille, hanches) ; pattes en deux segments animées.
 function hfMakeBeast(kind) {
   const cat = kind === 'cat',
     g = new THREE.Group();
-  // fourrure : bruit fin + marques druidiques lumineuses (vert pour le félin, ambre pour l'ours)
+  const lin = c => new THREE.Color(c).convertSRGBToLinear();
+  // fourrure : poils courts + marques runiques (vert pour le félin, ambre pour l'ours) dans une carte émissive
   const fc = document.createElement('canvas');
-  fc.width = fc.height = 128;
+  fc.width = fc.height = 256;
   const fg = fc.getContext('2d');
-  fg.fillStyle = '#808080';
-  fg.fillRect(0, 0, 128, 128);
-  for (let i = 0; i < 2600; i++) {
-    const v = (90 + Math.random() * 90) | 0;
+  fg.fillStyle = '#7c7c7c';
+  fg.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 9000; i++) {
+    const v = (100 + Math.random() * 90) | 0;
     fg.strokeStyle = `rgb(${v},${v},${v})`;
-    const x = Math.random() * 128,
-      y = Math.random() * 128;
+    const x = Math.random() * 256,
+      y = Math.random() * 256;
     fg.beginPath();
     fg.moveTo(x, y);
-    fg.lineTo(x + (Math.random() - 0.5) * 2, y + 3 + Math.random() * 4);
+    fg.lineTo(x + (Math.random() - 0.5) * 2, y + 4 + Math.random() * 5);
     fg.stroke();
   }
   const ec = document.createElement('canvas');
-  ec.width = ec.height = 128;
+  ec.width = ec.height = 256;
   const eg = ec.getContext('2d');
   eg.fillStyle = '#000';
-  eg.fillRect(0, 0, 128, 128);
+  eg.fillRect(0, 0, 256, 256);
   eg.strokeStyle = '#fff';
-  eg.lineWidth = 3;
-  for (let k = 0; k < 5; k++) {
+  eg.lineCap = 'round';
+  eg.lineWidth = cat ? 5 : 6;
+  for (let k = 0; k < 6; k++) {
+    const x = 18 + k * 42;
     eg.beginPath();
-    const x = 12 + k * 25;
-    eg.moveTo(x, 20);
-    eg.quadraticCurveTo(x + 10, 64, x - 4, 108);
+    eg.moveTo(x, 30);
+    eg.quadraticCurveTo(x + 16, 90, x - 2, 150);
+    eg.lineTo(x + 10, 175);
+    eg.stroke();
+    eg.beginPath();
+    eg.arc(x + 4, 205, 6, 0, 7);
     eg.stroke();
   }
   const furTex = new THREE.CanvasTexture(fc);
   furTex.wrapS = furTex.wrapT = THREE.RepeatWrapping;
-  furTex.repeat.set(3, 3);
-  const glowTex = new THREE.CanvasTexture(ec);
-  const lin = c => new THREE.Color(c).convertSRGBToLinear(),
-    glowC = cat ? new THREE.Color(0.35, 1, 0.45) : new THREE.Color(1, 0.62, 0.2);
+  furTex.repeat.set(2, 2);
+  const glowC = cat ? new THREE.Color(0.25, 1, 0.45) : new THREE.Color(1, 0.6, 0.18);
   const fur = new THREE.MeshStandardMaterial({
-      color: lin(cat ? 0x2b2433 : 0x5a3a22),
-      map: furTex,
-      roughness: 0.92,
-      emissiveMap: glowTex,
-      emissive: glowC,
-      emissiveIntensity: 1.2
-    }),
-    dark = new THREE.MeshStandardMaterial({ color: lin(cat ? 0x120e16 : 0x26170c), roughness: 0.9 });
+    color: lin(cat ? 0x26213a : 0x5b3b22),
+    map: furTex,
+    roughness: 0.9,
+    emissiveMap: new THREE.CanvasTexture(ec),
+    emissive: glowC,
+    emissiveIntensity: 1.1
+  });
+  const belly = new THREE.MeshStandardMaterial({ color: lin(cat ? 0x3a3450 : 0x7a5634), map: furTex, roughness: 0.9 });
+  const dark = new THREE.MeshStandardMaterial({ color: lin(cat ? 0x0f0c16 : 0x22150b), roughness: 0.8 });
+  const bone = new THREE.MeshStandardMaterial({ color: 0xe8dcc0, roughness: 0.45 });
   const eyeM = new THREE.MeshBasicMaterial({ color: cat ? 0x9dff6a : 0xffb23a });
-  const H = cat ? 0.5 : 0.72;
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 22, 14), fur);
-  body.scale.set(cat ? 0.5 : 1.15, cat ? 0.52 : 1.0, cat ? 1.5 : 1.5);
-  body.position.y = H + (cat ? 0.12 : 0.3);
+  const blob = (r, sx, sy, sz, x, y, z, mat = fur, parent = g) => {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 22, 14), mat);
+    m.scale.set(sx, sy, sz);
+    m.position.set(x, y, z);
+    parent.add(m);
+    return m;
+  };
+  // dimensions : H = hauteur du dos, L = demi-longueur du corps
+  const H = cat ? 0.78 : 1.05,
+    L = cat ? 0.62 : 0.62;
+  const body = new THREE.Group();
+  body.position.y = H;
   g.add(body);
-  if (!cat) {
-    const hump = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 10), fur);
-    hump.position.set(0, H + 0.72, 0.25);
-    hump.scale.set(1.15, 0.7, 1);
-    g.add(hump);
-  } else {
-    const chest = new THREE.Mesh(new THREE.SphereGeometry(0.3, 14, 10), fur);
-    chest.position.set(0, H + 0.2, 0.48);
-    chest.scale.set(1, 1.1, 1.1);
-    g.add(chest);
-  }
-  const head = new THREE.Group();
-  head.position.set(0, H + (cat ? 0.36 : 0.55), cat ? 0.82 : 1.0);
-  g.add(head);
-  const skull = new THREE.Mesh(new THREE.SphereGeometry(cat ? 0.24 : 0.36, 16, 12), fur);
-  skull.scale.set(1, 0.9, cat ? 1.1 : 1.15);
-  head.add(skull);
-  const muzzle = new THREE.Mesh(new THREE.SphereGeometry(cat ? 0.13 : 0.2, 12, 8), dark);
-  muzzle.position.set(0, -0.06, cat ? 0.22 : 0.32);
-  muzzle.scale.set(1, 0.75, 1);
-  head.add(muzzle);
-  for (const s of [-1, 1]) {
-    const ear = new THREE.Mesh(cat ? new THREE.ConeGeometry(0.08, 0.2, 6) : new THREE.SphereGeometry(0.1, 8, 6), fur);
-    ear.position.set(s * (cat ? 0.14 : 0.24), cat ? 0.22 : 0.27, -0.02);
-    head.add(ear);
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(cat ? 0.035 : 0.045, 8, 6), eyeM);
-    eye.position.set(s * (cat ? 0.09 : 0.14), 0.06, cat ? 0.2 : 0.3);
-    head.add(eye);
-  }
   if (cat) {
-    const tail = new THREE.Mesh(
-      new THREE.TubeGeometry(
-        new THREE.CatmullRomCurve3([
-          new THREE.Vector3(0, H + 0.25, -0.72),
-          new THREE.Vector3(0, H + 0.15, -1.1),
-          new THREE.Vector3(0, H + 0.35, -1.45)
-        ]),
-        16,
-        0.045,
-        6
-      ),
-      fur
-    );
-    g.add(tail);
+    blob(0.3, 1, 1.05, 1.15, 0, 0.02, 0.32, fur, body); // poitrail
+    blob(0.24, 1, 0.9, 1.6, 0, 0.0, -0.05, fur, body); // taille fine
+    blob(0.27, 1.05, 1, 1.1, 0, 0.04, -0.42, fur, body); // hanches
+    blob(0.2, 1.2, 0.7, 2.2, 0, -0.12, 0.05, belly, body); // ventre
+    for (const s of [-1, 1]) blob(0.12, 0.9, 1.3, 1.2, s * 0.17, 0.16, 0.36, fur, body); // omoplates
+  } else {
+    blob(0.5, 1.15, 1.0, 1.0, 0, 0.05, 0.3, fur, body); // poitrail massif
+    blob(0.42, 1.1, 0.85, 1.05, 0, 0.3, 0.16, fur, body); // bosse d'épaules
+    blob(0.44, 1.05, 0.95, 1.2, 0, 0.0, -0.32, fur, body); // arrière-train
+    blob(0.38, 1.1, 0.75, 1.6, 0, -0.2, 0.0, belly, body); // ventre
+    // plaques d'écorce moussues sur le dos
+    const barkM = new THREE.MeshStandardMaterial({ color: lin(0x4a3220), roughness: 1, flatShading: true });
+    const moss = new THREE.MeshStandardMaterial({ color: lin(0x4f7a2a), roughness: 1, flatShading: true });
+    for (let k = 0; k < 4; k++) {
+      const p = new THREE.Mesh(new THREE.DodecahedronGeometry(0.2 - k * 0.02, 0), barkM);
+      p.scale.set(1.6, 0.45, 1.1);
+      p.position.set(0, 0.62 - k * 0.11, 0.22 - k * 0.24);
+      p.rotation.x = 0.3;
+      body.add(p);
+      const m = new THREE.Mesh(new THREE.DodecahedronGeometry(0.09, 0), moss);
+      m.position.set(k % 2 ? 0.12 : -0.12, 0.7 - k * 0.11, 0.2 - k * 0.24);
+      body.add(m);
+    }
   }
+  // tête
+  const head = new THREE.Group();
+  head.position.set(0, H + (cat ? 0.2 : 0.28), cat ? 0.78 : 0.95);
+  g.add(head);
+  if (cat) {
+    blob(0.17, 1, 0.88, 1.1, 0, 0, 0, fur, head);
+    blob(0.1, 1, 0.75, 1.1, 0, -0.06, 0.15, dark, head); // museau
+    blob(0.07, 1.3, 0.5, 1, 0, -0.12, 0.1, dark, head); // mâchoire
+    for (const s of [-1, 1]) {
+      const ear = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.18, 4), fur);
+      ear.position.set(s * 0.11, 0.17, -0.04);
+      ear.rotation.z = -s * 0.25;
+      head.add(ear);
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 6), eyeM);
+      eye.scale.set(1.3, 0.7, 1);
+      eye.position.set(s * 0.075, 0.04, 0.14);
+      head.add(eye);
+      const fang = new THREE.Mesh(new THREE.ConeGeometry(0.014, 0.07, 6), bone);
+      fang.rotation.x = Math.PI;
+      fang.position.set(s * 0.04, -0.14, 0.2);
+      head.add(fang);
+    }
+    // crinière de feuilles (touche druidique)
+    const leaf = new THREE.MeshStandardMaterial({
+      color: lin(0x3fae4a),
+      emissive: lin(0x1a6a22),
+      emissiveIntensity: 0.6,
+      roughness: 0.7,
+      side: THREE.DoubleSide
+    });
+    for (let k = 0; k < 9; k++) {
+      const a = -0.9 + (k / 8) * 1.8,
+        l = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), leaf);
+      l.scale.set(0.5, 0.25, 1.6);
+      l.position.set(Math.sin(a) * 0.16, 0.08 + Math.cos(a) * 0.05, -0.16);
+      l.rotation.set(0.6, a, 0);
+      head.add(l);
+    }
+  } else {
+    blob(0.28, 1.05, 0.92, 1.05, 0, 0, 0, fur, head);
+    blob(0.15, 1, 0.8, 1.2, 0, -0.06, 0.26, dark, head); // museau
+    blob(0.09, 1, 0.7, 1, 0, -0.02, 0.4, dark, head); // truffe
+    for (const s of [-1, 1]) {
+      blob(0.08, 1, 1, 0.6, s * 0.2, 0.22, -0.05, fur, head); // oreilles rondes
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), eyeM);
+      eye.position.set(s * 0.11, 0.08, 0.22);
+      head.add(eye);
+      const fang = new THREE.Mesh(new THREE.ConeGeometry(0.022, 0.1, 6), bone);
+      fang.rotation.x = Math.PI;
+      fang.position.set(s * 0.07, -0.16, 0.36);
+      head.add(fang);
+    }
+  }
+  // pattes en deux segments (cuisse + jambe), pivot à l'épaule / la hanche
   g.userData.legs = [];
-  for (const [x, z] of [
-    [0.22, 0.5],
-    [-0.22, 0.5],
-    [0.22, -0.5],
-    [-0.22, -0.5]
-  ]) {
-    const pv = new THREE.Group();
-    pv.position.set(x * (cat ? 0.75 : 1.5), H + (cat ? 0.05 : 0.1), z * (cat ? 1.1 : 1.25));
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(cat ? 0.075 : 0.2, cat ? 0.06 : 0.17, H, 8), fur);
-    leg.position.y = -H / 2;
-    pv.add(leg);
-    const paw = new THREE.Mesh(new THREE.SphereGeometry(cat ? 0.09 : 0.17, 8, 6), dark);
-    paw.scale.set(1, 0.55, 1.3);
-    paw.position.set(0, -H, 0.05);
-    pv.add(paw);
+  const legPos = cat
+    ? [
+        [0.15, 0.36],
+        [-0.15, 0.36],
+        [0.16, -0.42],
+        [-0.16, -0.42]
+      ]
+    : [
+        [0.32, 0.36],
+        [-0.32, 0.36],
+        [0.3, -0.36],
+        [-0.3, -0.36]
+      ];
+  legPos.forEach(([x, z], i) => {
+    const front = i < 2,
+      pv = new THREE.Group();
+    pv.position.set(x, H, z);
+    const up = cat ? 0.36 : 0.52,
+      low = cat ? 0.42 : 0.5,
+      w = cat ? 0.085 : 0.17;
+    const thigh = new THREE.Mesh(new THREE.CylinderGeometry(w * 1.7, w, up, 10), fur);
+    blob(w * 1.6, 1, 1, front ? 1.1 : 1.4, 0, -0.02, 0, fur, pv); // épaule / cuisse arrondie
+    thigh.position.y = -up / 2;
+    if (!front) thigh.scale.set(1, 1, 1.4);
+    pv.add(thigh);
+    const knee = new THREE.Group();
+    knee.position.y = -up;
+    pv.add(knee);
+    const shin = new THREE.Mesh(new THREE.CylinderGeometry(w * 0.9, w * 0.75, low, 10), fur);
+    shin.position.y = -low / 2;
+    knee.add(shin);
+    const paw = new THREE.Mesh(new THREE.SphereGeometry(w * 1.25, 10, 8), dark);
+    paw.scale.set(1, 0.55, 1.4);
+    paw.position.set(0, -low, 0.04);
+    knee.add(paw);
+    for (let c = -1; c <= 1; c++) {
+      const claw = new THREE.Mesh(new THREE.ConeGeometry(w * 0.18, w * (cat ? 0.7 : 0.9), 5), bone);
+      claw.rotation.x = Math.PI / 2;
+      claw.position.set(c * w * 0.45, -low - 0.02, w * 1.5);
+      knee.add(claw);
+    }
+    pv.userData.knee = knee;
+    pv.userData.front = front;
     g.add(pv);
     g.userData.legs.push(pv);
+  });
+  if (cat) {
+    // queue longue en courbe
+    const pts = [];
+    for (let k = 0; k <= 8; k++) pts.push(new THREE.Vector3(0, H + 0.05 + Math.sin(k * 0.45) * 0.18, -0.6 - k * 0.11));
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.045, 8), fur));
   }
+  // aura druidique sous la bête
+  const aura = new THREE.Mesh(
+    new THREE.RingGeometry(0.5, 0.75, 32),
+    new THREE.MeshBasicMaterial({
+      color: glowC,
+      transparent: true,
+      opacity: 0.35,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    })
+  );
+  aura.rotation.x = -Math.PI / 2;
+  aura.position.y = 0.03;
+  g.add(aura);
+  head.scale.setScalar(cat ? 1.35 : 1.3);
+  // cou : relie le poitrail à la tête
+  blob(cat ? 0.15 : 0.3, 1, 1, 1.5, 0, H + (cat ? 0.12 : 0.18), cat ? 0.6 : 0.68, fur, g).rotation.x = -0.6;
   g.userData.head = head;
+  g.userData.headZ = head.position.z;
   g.userData.body = body;
   g.userData.kind = kind;
-  g.scale.setScalar(cat ? 1.35 : 1.25);
+  g.scale.setScalar(cat ? 1.3 : 1.25);
   g.traverse(o => {
     if (o.isMesh) o.castShadow = false;
   });
@@ -1126,12 +1228,18 @@ function hfMakeBeast(kind) {
 }
 function hfAnimateBeast(g, u, t) {
   const run = u.moving ? Math.sin(u.movePhase * 1.4) : 0,
-    atk = u.action > 0 && u.actionType === 'melee' ? Math.sin((1 - u.action / 0.36) * Math.PI) : 0;
-  g.userData.legs.forEach((l, i) => (l.rotation.x = (i === 0 || i === 3 ? run : -run) * 0.7 - (i < 2 ? atk * 0.9 : 0)));
-  g.position.y = u.moving ? Math.abs(run) * 0.05 : 0;
-  g.userData.head.position.z = (g.userData.kind === 'cat' ? 0.82 : 0.95) + atk * 0.25;
+    atk = u.action > 0 && u.actionType === 'melee' ? Math.sin((1 - u.action / 0.36) * Math.PI) : 0,
+    cat = g.userData.kind === 'cat';
+  g.userData.legs.forEach((l, i) => {
+    const ph = i === 0 || i === 3 ? run : -run;
+    l.rotation.x = ph * (cat ? 0.8 : 0.55) - (l.userData.front ? atk * 0.9 : 0);
+    l.userData.knee.rotation.x = Math.max(0, -ph) * (l.userData.front ? -0.6 : 0.7);
+  });
+  g.position.y = u.moving ? Math.abs(run) * (cat ? 0.07 : 0.04) : 0;
+  g.userData.head.position.z = g.userData.headZ + atk * 0.25;
+  g.userData.head.rotation.x = u.moving ? 0 : Math.sin(t * 1.2) * 0.05;
   g.rotation.x = -atk * 0.15;
-  g.userData.body.scale.y = (g.userData.kind === 'cat' ? 0.52 : 1.0) * (1 + Math.sin(t * 2) * 0.02);
+  g.userData.body.scale.y = 1 + Math.sin(t * 2) * 0.02;
 }
 function hfSetOpacity(root, op) {
   root.traverse(o => {
