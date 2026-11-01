@@ -162,7 +162,8 @@ function aiStep(u, h, step) {
 }
 // The Bridge : passer du sable au tablier (ou l'inverse) se fait par une rampe. Renvoie le prochain point de
 // passage (pied puis haut de la rampe, ou l'inverse), ou goal si on est au même niveau. Rampe gardée en mémoire.
-const onDeck = v => !!arena.bridge && (v.y || 0) > arena.bridge.y - 0.6 && Math.abs(v.z) <= arena.bridge.halfW;
+// sur le tablier = dans la zone du garde-corps (bridgeRail va 0,6 m au-delà du bord)
+const onDeck = v => !!arena.bridge && (v.y || 0) > arena.bridge.y - 0.6 && Math.abs(v.z) <= arena.bridge.halfW + 0.6;
 function aiWaypoint(u, goal) {
   const B = arena.bridge,
     deck = onDeck;
@@ -188,9 +189,13 @@ function aiWaypoint(u, goal) {
         }
       }
   }
+  // sur la rampe = dans l'ouverture du garde-corps (bridgeRail) ; plus large, on visait le pied depuis l'angle
+  // du tablier et le garde-corps bloquait (tremblement en haut de la rampe)
   const { sx, sz } = u.aiRamp,
     onRamp =
-      Math.abs(u.x - sx * B.rampX) < B.rampW / 2 && u.z * sz > B.halfW - 1 && u.z * sz < B.halfW + B.rampLen + 1.5;
+      Math.abs(u.x - sx * B.rampX) < B.rampW / 2 - 0.4 &&
+      u.z * sz > B.halfW - 1 &&
+      u.z * sz < B.halfW + B.rampLen + 1.5;
   return end(sx, sz, onRamp ? up : !up);
 }
 // Cible de l'équipe : les IA d'une même équipe se concentrent sur la même cible (recalculée régulièrement).
@@ -402,15 +407,19 @@ function ai(u, dt) {
   // autre niveau que le but (pont) : une mêlée passe par la rampe ; un lanceur au sol se place à côté du pont, à
   // hauteur du but, jamais dessous (il hésitait sous le tablier en voyant puis perdant sa cible)
   const wp = aiWaypoint(u, goal);
+  let via = false;
   if (wp !== goal && caster && !onDeck(u))
     goal = { x: goal.x, y: goal.y, z: (u.z < 0 ? -1 : 1) * (arena.bridge.halfW + 4) };
   else if (wp !== goal && (!caster || !los(u, goal))) {
     goal = wp;
     desired = 0.3;
+    via = true;
   }
   const gd = d2(u, goal),
     ang = Math.atan2(goal.x - u.x, goal.z - u.z);
   let dir = aiMoveDir(u, gd, desired, caster);
+  // point de passage d'une rampe : on y va jusqu'au bout (sinon, à moins de 1,5 m, on restait planté à côté)
+  if (via && gd > 0.35) dir = u.aiDir = 1;
   if (caster && meleeOnMe.length && !u.root) {
     dir = -1;
     u.aiDir = -1;

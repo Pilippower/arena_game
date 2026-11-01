@@ -79,6 +79,9 @@ run('src/game/ai.js');
   assert.ok(top.x === B.rampX && top.z > 0 && top.z < B.halfW, 'IA : sur la rampe, vers le tablier');
   const same = { x: 0, y: 0, z: 9 };
   assert.equal(ctx.aiWaypoint({ x: 3, y: 0, z: 9 }, same), same, 'IA : même niveau, tout droit');
+  // descente depuis l'angle de l'ouverture : d'abord le haut de la rampe (dans l'ouverture), pas le pied en biais
+  const corner = ctx.aiWaypoint({ x: B.rampX - 1.1, y: B.y, z: B.halfW - 0.35 }, { x: 20, y: 0, z: 10 });
+  assert.ok(corner.x === B.rampX && corner.z < B.halfW, 'IA : descente sans buter dans l’angle');
   // contre un mur : on longe au lieu de courir sur place
   const u = { x: ctx.arena.halfX - 0.72, z: 0, y: 0 };
   assert.notEqual(ctx.aiStep(u, Math.PI / 2 + 0.2, 0.05), null, 'IA : longe le mur');
