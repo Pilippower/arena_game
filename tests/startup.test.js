@@ -146,7 +146,7 @@ async function run(){
       for(const [id,b] of Object.entries(built)){
         const [race,cls]=id.split('_');
         assert.ok(b.h>1.4&&b.h<2.3,`${id}: hauteur ${b.h}`);
-        assert.equal(b.robe,['arcanist','oracle','warlock'].includes(cls),`${id}: robe`);
+        assert.equal(b.robe,['arcanist','oracle','warlock','warden'].includes(cls),`${id}: robe`);
         assert.equal(b.staff,['arcanist','oracle','warlock','warden'].includes(cls),`${id}: bâton`);
         assert.equal(b.tusk,race==='orc',`${id}: défenses`);assert.equal(b.ear,race==='orc'||race==='elf',`${id}: oreilles`);
         assert.equal(b.beard,race==='dwarf',`${id}: barbe`);
