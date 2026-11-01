@@ -94,6 +94,49 @@ function aiCastOn(u, i, t) {
 const isHealer = u => u.cls === 'oracle';
 const hpPct = u => (u.hp + (u.shield || 0) * 0.5) / u.maxHp;
 const ccd = u => u.stun > 0 || u.fear > 0 || u.poly > 0;
+// Enchaînement des contrôles : jamais un contrôle par-dessus un autre ; le suivant part pour arriver quand
+// le précédent se termine (en tenant compte du temps d'incantation du sort).
+const ccLeft = e => Math.max(e.stun || 0, e.fear || 0, e.poly || 0);
+const ccReady = (u, i, e) => ccLeft(e) <= (SPELLS[skillsOf(u)[i]?.n]?.cast || 0) + 0.25;
+// Couvert : point derrière le pilier le plus proche, à l'opposé d'un lanceur adverse qui nous voit.
+function aiCover(u, foes) {
+  if ((u.y || 0) > 1) return null;
+  const th = foes.filter(e => !AI_ROLE[e.cls]?.melee && !ccd(e) && los(e, u)).sort((a, b) => d2(a, u) - d2(b, u))[0];
+  if (!th) return null;
+  let best = null,
+    bd = 14;
+  for (const p of arena.pillars) {
+    if (p.r < 1 || p.h < 2.5) continue;
+    const dx = p.x - th.x,
+      dz = p.z - th.z,
+      L = Math.hypot(dx, dz) || 1,
+      off = p.r + 1.1,
+      c = { x: p.x + (dx / L) * off, y: 0, z: p.z + (dz / L) * off },
+      dd = Math.hypot(c.x - u.x, c.z - u.z);
+    if (dd < bd) {
+      bd = dd;
+      best = c;
+    }
+  }
+  return best;
+}
+// Contournement des piliers : si un pilier barre la route dans les 4 m, on vise sa tangente (côté le plus court)
+// au lieu de buter dessus et de glisser.
+function aiSteer(u, a) {
+  for (const p of arena.pillars) {
+    if ((u.y || 0) > p.h) continue;
+    const dx = p.x - u.x,
+      dz = p.z - u.z,
+      ahead = dx * Math.sin(a) + dz * Math.cos(a),
+      side = dx * Math.cos(a) - dz * Math.sin(a),
+      clear = p.r + 0.8;
+    if (ahead <= 0 || ahead > 4 || Math.abs(side) >= clear) continue;
+    const c = Math.atan2(side, ahead),
+      tg = Math.asin(Math.min(1, clear / Math.hypot(dx, dz)));
+    return a + (side > 0 ? c - tg : c + tg);
+  }
+  return a;
+}
 // Cible de l'équipe : les IA d'une même équipe se concentrent sur la même cible (recalculée régulièrement).
 function teamFocus(u) {
   state.aiFocus = state.aiFocus || {};
@@ -179,7 +222,14 @@ function ai(u, dt) {
   const think = u.aiNext <= 0;
   if (think) u.aiNext = P.think * (0.7 + Math.random() * 0.6);
   const healer = isHealer(u);
-  let t = healer ? foes.filter(e => !(e.poly > 0)).sort((a, b) => d2(a, u) - d2(b, u))[0] : teamFocus(u);
+  // protéger son soigneur : une mêlée le frappe alors qu'il faiblit → on la prend pour cible quelques secondes
+  if (think && !healer && !u.aiPeel) {
+    const mine = friends.find(a => a !== u && isHealer(a) && hpPct(a) < 0.6),
+      onIt = mine && foes.find(e => AI_ROLE[e.cls]?.melee && d2(e, mine) < 3.2 && !ccd(e));
+    if (onIt && Math.random() < P.peel) u.aiPeel = { t: onIt, until: now() + 3 };
+  }
+  if (u.aiPeel && (!u.aiPeel.t.alive || u.aiPeel.t.stealth || now() > u.aiPeel.until)) u.aiPeel = null;
+  let t = healer ? foes.filter(e => !(e.poly > 0)).sort((a, b) => d2(a, u) - d2(b, u))[0] : u.aiPeel?.t || teamFocus(u);
   if (!t) {
     u.moving = false;
     return;
@@ -219,7 +269,9 @@ function ai(u, dt) {
     }
     // contrôle : le soigneur adverse pendant qu'on presse la cible, ou une menace sur nous
     if (Math.random() < P.cc) {
-      const theirHealer = foes.find(e => isHealer(e) && !ccd(e) && e !== t && (e.dr.poly ?? 1) > 0);
+      const theirHealer = foes.find(
+        e => isHealer(e) && (R.cc == null || ccReady(u, R.cc, e)) && e !== t && (e.dr.poly ?? 1) > 0
+      );
       const pressure = hpPct(t) < 0.7;
       if (
         R.cc != null &&
@@ -234,8 +286,8 @@ function ai(u, dt) {
         return;
       if (
         R.stun != null &&
-        pressure &&
-        !ccd(t) &&
+        (pressure || t === u.aiPeel?.t) &&
+        ccReady(u, R.stun, t) &&
         (t.dr.stun ?? 1) > 0 &&
         aiCanUse(u, R.stun) &&
         d < (skillsOf(u)[R.stun].t === 'melee' ? 2.45 : 15) &&
@@ -276,6 +328,16 @@ function ai(u, dt) {
     }
   }
   if (caster && !los(u, goal)) desired = Math.min(desired, Math.max(2, d2(u, goal) - 3));
+  // en danger face à des lanceurs : se mettre à couvert derrière un pilier (pas en Easy), jusqu'à reprendre des PV
+  if (caster && P.defensive >= 0.7 && foes.some(e => e.target === u)) {
+    if (hpPct(u) < 0.4) u.aiHide = true;
+    else if (hpPct(u) > 0.65) u.aiHide = false;
+  } else u.aiHide = false;
+  const cover = u.aiHide && !meleeOnMe.length ? aiCover(u, foes) : null;
+  if (cover) {
+    goal = cover;
+    desired = 0.3;
+  }
   const gd = d2(u, goal),
     ang = Math.atan2(goal.x - u.x, goal.z - u.z);
   let dir = aiMoveDir(u, gd, desired, caster);
@@ -288,9 +350,11 @@ function ai(u, dt) {
     const sp = moveSpeed(u) * (dir < 0 ? 0.7 : 1);
     let a = ang;
     if (dir < 0 && meleeOnMe.length) a = Math.atan2(meleeOnMe[0].x - u.x, meleeOnMe[0].z - u.z);
-    u.x += Math.sin(a) * sp * dt * dir;
-    u.z += Math.cos(a) * sp * dt * dir;
-    u.yaw = a;
+    // cap réel (recul = dos au danger), dévié autour des piliers ; en reculant on garde le regard vers la menace
+    const h = aiSteer(u, dir < 0 ? a + Math.PI : a);
+    u.x += Math.sin(h) * sp * dt;
+    u.z += Math.cos(h) * sp * dt;
+    u.yaw = dir < 0 ? a : h;
     u.movePhase += dt * 8.5;
     resolveWalls(u);
   } else if (!u.cast) u.yaw = Math.atan2(t.x - u.x, t.z - u.z);

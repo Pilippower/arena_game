@@ -105,4 +105,7 @@ assert.match(
   'dégâts colorés par école, critiques en gros'
 );
 assert.ok(read('index.html').includes('.nameplate.enemy .npCast'), "barre d'incantation ennemie lisible");
+const aiSrc = read('src/game/ai.js');
+for (const k of ['function aiSteer', 'function aiCover', 'u.aiPeel', 'const ccReady'])
+  assert.ok(aiSrc.includes(k), 'IA : ' + k);
 console.log('OK - spécifications validées (docs/SPEC.md)');
