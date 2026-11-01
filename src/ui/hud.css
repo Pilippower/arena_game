@@ -72,10 +72,10 @@ body:not(.mobile-mode):not(.lobby) #bottom {
   overflow: visible;
 }
 body:not(.mobile-mode):not(.lobby) #center {
-  align-self: end;
+  /* déborde au-dessus de la barre sans agrandir la ligne (sinon les sorts, centrés dessus, descendaient) */
   width: 270px;
   height: 92px;
-  margin-bottom: -2px;
+  margin: -18px 0 -6px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -129,7 +129,9 @@ body:not(.mobile-mode) .skill .key {
 }
 body:not(.mobile-mode) .skill.queued,
 body:not(.mobile-mode) .skill.pressed {
-  box-shadow: 0 0 14px #ffc85d, 0 0 4px #fff3c0 !important;
+  box-shadow:
+    0 0 14px #ffc85d,
+    0 0 4px #fff3c0 !important;
 }
 body:not(.mobile-mode) .tag {
   border: 0 !important;

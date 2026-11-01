@@ -31,7 +31,9 @@ function endRound(win) {
   showSplash(win ? 'Round won!' : 'Round lost');
   if (win) SFX.victory(false);
   else SFX.defeat();
+  const match = state;
   setTimeout(() => {
+    if (state !== match) return; // match quitté entre-temps (Change class)
     if (state.round >= MATCH_ROUNDS) showResults();
     else resetRound();
   }, 1500);
@@ -89,8 +91,21 @@ function playAgain() {
   playGameMusic();
 }
 function backToLobby() {
-  hideResults();
-  chooseClass();
+  leaveMatch();
 }
+// Sortie du match : retour au lobby (sa musique) et partie réellement arrêtée (plus de simulation ni de sons).
+function leaveMatch() {
+  hideResults();
+  $('leaveConfirm').style.display = 'none';
+  chooseClass(); // relit la race et la classe de la partie pour les présélectionner
+  state = null;
+}
+// « Change class » pendant un match : on demande d'abord si l'on veut vraiment le quitter.
+function requestChangeClass() {
+  if (!state?.units || $('overlay').style.display !== 'none') chooseClass();
+  else $('leaveConfirm').style.display = 'flex';
+}
+$('leaveYes').onclick = leaveMatch;
+$('leaveNo').onclick = () => ($('leaveConfirm').style.display = 'none');
 $('resultsAgain').onclick = playAgain;
 $('resultsLobby').onclick = backToLobby;

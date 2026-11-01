@@ -105,41 +105,65 @@ function updateUI() {
     .map(u => unitRowHTML(u, false))
     .join('');
   $('status')._html =
-    `${CLASS[p.cls].tags.map(x => `<span class="tag">${x}</span>`).join('')}<br>${p.poly > 0 ? '🐑 Sheep ' : ''}${p.stun > 0 ? '🌀 Stunned ' : ''}${p.root > 0 ? '⛓ Rooted ' : ''}${p.silence > 0 ? '⛔ Silence ' : ''}${p.fear > 0 ? '👁 Fear ' : ''}${p.slow > 0 ? `❄ Slowed ${Math.round((p.slowPct || 0) * 100)}% ` : ''}${p.burst > 0 ? '🔥 Burst ' : ''}${p.trinket > 0 ? `· Trinket ${Math.ceil(p.trinket)}s` : ''}${state.dampening > 0 ? `<br>⚔ Dampening ${Math.round(state.dampening * 100)}%` : ''}`;
+    `${p.poly > 0 ? '🐑 Sheep ' : ''}${p.stun > 0 ? '🌀 Stunned ' : ''}${p.root > 0 ? '⛓ Rooted ' : ''}${p.silence > 0 ? '⛔ Silence ' : ''}${p.fear > 0 ? '👁 Fear ' : ''}${p.slow > 0 ? `❄ Slowed ${Math.round((p.slowPct || 0) * 100)}% ` : ''}${p.burst > 0 ? '🔥 Burst ' : ''}${p.trinket > 0 ? `· Trinket ${Math.ceil(p.trinket)}s` : ''}${state.dampening > 0 ? `<br>⚔ Dampening ${Math.round(state.dampening * 100)}%` : ''}`;
   for (const id of ['selfFrame', 'targetFrame', 'arenaFrames', 'partyFrames', 'status']) setHTML($(id));
-  const C = CLASS[p.cls],
+  renderSkillBar(p);
+  hudCastFrame();
+}
+// Barre de sorts : boutons construits une seule fois par barre (classe, forme, ordre, touches) ; ensuite seuls
+// recharges et états changent. Reconstruits 12 fois/s, un clic tombait entre deux boutons (sort non lancé) et le
+// survol repartait à chaque fois (icône qui tremble).
+function renderSkillBar(p) {
+  const box = $('skills'),
     bar = skillsOf(p),
-    order = slotOrder(p);
-  $('skills').classList.toggle('six', bar.length > 5);
-  $('skills').innerHTML =
-    order
-      .map((i, slot) => {
-        const s = bar[i];
-        return `<button class="skill ${p.queuedSkill?.i === i ? 'queued' : ''} ${p.pressed?.i === i && now() - p.pressed.t < 0.18 ? 'pressed' : ''} ${SKILL_DRAG.from === slot ? 'dragFrom' : ''}" data-i="${i}" data-slot="${slot}"><span class="icon">${skillIconSVG(p.cls, i, s)}</span>${cooldownHTML(p, i, s)}<span class="skillName">${s.n}</span><span class="cost">${s.c || ''}</span><span class="key">${keyLabel(PREFS.keybinds.skills[slot])}</span></button>`;
-      })
-      .join('') +
-    `<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(PREFS.keybinds.trinket)}</span>${p.trinket > 0 ? sweepHTML(p.trinket / 90, p.trinket) : ''}</button>`;
-  document.querySelectorAll('.skill[data-i]').forEach(b => {
-    b.onclick = () => {
-      if (!MOBILE.enabled) tryPlayerSkill(+b.dataset.i);
+    order = slotOrder(p),
+    key = [p.cls, barKey(p), order, PREFS.keybinds.skills, PREFS.keybinds.trinket].join('|');
+  if (box._key !== key) {
+    box._key = key;
+    box.classList.toggle('six', bar.length > 5);
+    box.innerHTML =
+      order
+        .map((i, slot) => {
+          const s = bar[i];
+          return `<button class="skill" data-i="${i}" data-slot="${slot}"><span class="icon">${skillIconSVG(p.cls, i, s)}</span><span class="cdw"></span><span class="skillName">${s.n}</span><span class="cost">${s.c || ''}</span><span class="key">${keyLabel(PREFS.keybinds.skills[slot])}</span></button>`;
+        })
+        .join('') +
+      `<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(PREFS.keybinds.trinket)}</span><span class="cdw"></span></button>`;
+    box.querySelectorAll('.skill[data-i]').forEach(b => {
+      b.onclick = () => {
+        if (!MOBILE.enabled) tryPlayerSkill(+b.dataset.i);
+      };
+      b.onpointerdown = e => {
+        if (MOBILE.enabled) {
+          e.preventDefault();
+          tryPlayerSkill(+b.dataset.i);
+        }
+      };
+    });
+    $('trinketBtn').onclick = () => {
+      if (!MOBILE.enabled) useTrinket(state.player);
     };
-    b.onpointerdown = e => {
+    // pas de focus clavier sur un bouton cliqué (sinon Espace, le saut, relancerait le sort)
+    for (const b of box.children) b.onmousedown = e => e.preventDefault();
+    $('trinketBtn').onpointerdown = e => {
       if (MOBILE.enabled) {
         e.preventDefault();
-        tryPlayerSkill(+b.dataset.i);
+        useTrinket(state.player);
       }
     };
-  });
-  $('trinketBtn').onclick = () => {
-    if (!MOBILE.enabled) useTrinket(p);
-  };
-  $('trinketBtn').onpointerdown = e => {
-    if (MOBILE.enabled) {
-      e.preventDefault();
-      useTrinket(p);
-    }
-  };
-  hudCastFrame();
+  }
+  for (const b of box.children) {
+    let cd;
+    if (b.dataset.i != null) {
+      const i = +b.dataset.i;
+      b.classList.toggle('queued', p.queuedSkill?.i === i);
+      b.classList.toggle('pressed', p.pressed?.i === i && now() - p.pressed.t < 0.18);
+      b.classList.toggle('dragFrom', SKILL_DRAG.from === +b.dataset.slot);
+      cd = cooldownHTML(p, i, bar[i]);
+    } else cd = p.trinket > 0 ? sweepHTML(p.trinket / 90, p.trinket) : '';
+    const w = b.querySelector('.cdw');
+    if (w._h !== cd) w.innerHTML = w._h = cd;
+  }
 }
 const castProgress = u => (u.cast ? clamp(1 - (u.cast.end - now()) / u.cast.dur, 0, 1) : 0);
 // Barres d'incantation (la sienne, cible, cadres d'arène) : progression mise à jour à chaque image, sans à-coups.

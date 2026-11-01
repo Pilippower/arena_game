@@ -200,4 +200,22 @@ run('src/ui/hud.js');
     'portrait + emblème'
   );
 }
+// Barre de sorts stable (clic = sort, pas de tremblement), cible amie, sortie de match, lobby épuré
+{
+  const hud = read('src/ui/hud.js');
+  assert.match(hud, /if \(box\._key !== key\)/, 'barre de sorts construite une fois');
+  assert.ok(!/skills'\)\.innerHTML/.test(hud), 'pas de reconstruction à chaque mise à jour');
+  assert.ok(!hud.includes('class="tag"'), 'pas de bulles sur la barre du bas');
+  assert.match(
+    read('src/game/rules.js'),
+    /u\.lastEnemy = t\.team !== u\.team \? t : null/,
+    'se cibler arrête le combat'
+  );
+  assert.match(read('src/game/match.js'), /function leaveMatch[\s\S]*?state = null/, 'quitter arrête le match');
+  assert.ok(read('index.html').includes('id="leaveConfirm"'), 'confirmation avant de quitter');
+  assert.ok(
+    read('src/ui/lobby.css').replace(/\s+/g, ' ').includes('body.lobby #top .sub, body.lobby #status { display: none;'),
+    'lobby épuré'
+  );
+}
 console.log('OK - spécifications validées (docs/SPEC.md)');

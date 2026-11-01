@@ -68,7 +68,8 @@ function autoAttack(u, dt) {
 // Cible hostile d'une unité (la cible courante si c'est un ennemi, sinon le dernier ennemi ciblé ou le plus proche).
 function setTarget(u, t) {
   u.target = t || null;
-  if (t && t.team !== u.team) u.lastEnemy = t;
+  // cibler un allié (ou soi) arrête l'auto-attaque et la garde de combat : plus d'« ennemi en cours »
+  if (t) u.lastEnemy = t.team !== u.team ? t : null;
 }
 // Cible amie du joueur pour les soins : l'allié ciblé, sinon soi-même.
 function friendlyTarget(u) {

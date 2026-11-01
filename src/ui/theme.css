@@ -34,11 +34,16 @@ h3,
 #bottom {
   background: linear-gradient(180deg, #1b2a5e 0%, #0e1738 55%, #0a1029 100%) !important;
   border-color: var(--gold) !important;
-  box-shadow: inset 0 1px #fff0b866, inset 0 -1px #00000088, 0 0 24px #000c !important;
+  box-shadow:
+    inset 0 1px #fff0b866,
+    inset 0 -1px #00000088,
+    0 0 24px #000c !important;
 }
 h1 {
   color: var(--gold-hi) !important;
-  text-shadow: 0 0 12px #f5c25a88, 0 2px 3px #000 !important;
+  text-shadow:
+    0 0 12px #f5c25a88,
+    0 2px 3px #000 !important;
   letter-spacing: 0.04em;
 }
 .sub,
@@ -52,8 +57,14 @@ button {
   color: #fff8e2 !important;
   border-radius: 12px !important;
   text-shadow: 0 1px 2px #000a;
-  box-shadow: inset 0 1px #ffffff55, inset 0 -2px #0007, 0 0 0 1px #3a2708, 0 4px 12px #000a !important;
-  transition: filter 0.15s, transform 0.08s;
+  box-shadow:
+    inset 0 1px #ffffff55,
+    inset 0 -2px #0007,
+    0 0 0 1px #3a2708,
+    0 4px 12px #000a !important;
+  transition:
+    filter 0.15s,
+    transform 0.08s;
 }
 button:hover:not(:disabled) {
   filter: brightness(1.18) saturate(1.1);
@@ -67,7 +78,11 @@ button:active:not(:disabled) {
   text-shadow: 0 1px #ffeab0;
   font-weight: 900;
   letter-spacing: 0.06em;
-  box-shadow: inset 0 1px #fff7, 0 0 0 1px #3a2708, 0 0 18px #ffc65a99, 0 4px 14px #000a !important;
+  box-shadow:
+    inset 0 1px #fff7,
+    0 0 0 1px #3a2708,
+    0 0 18px #ffc65a99,
+    0 4px 14px #000a !important;
 }
 /* panneaux et cadres */
 .frame,
@@ -109,7 +124,9 @@ button:active:not(:disabled) {
 }
 .iconChoice.selected {
   outline: 2px solid #ffd96f !important;
-  box-shadow: 0 0 18px #ffd96faa, inset 0 0 18px #ffd96f33 !important;
+  box-shadow:
+    0 0 18px #ffd96faa,
+    inset 0 0 18px #ffd96f33 !important;
 }
 .racePick .label,
 .classPick .label {
@@ -153,12 +170,21 @@ button:active:not(:disabled) {
   background:
     radial-gradient(ellipse 60% 12% at 50% 90%, #8fd6ff66 0%, #4a7cff22 60%, transparent 100%),
     radial-gradient(circle at 50% 38%, #b48cff55 0%, transparent 42%),
-    conic-gradient(from 200deg at 50% 0%, transparent 0 40deg, #ffffff10 45deg, transparent 52deg 70deg, #ffffff0c 76deg, transparent 84deg 360deg),
+    conic-gradient(
+      from 200deg at 50% 0%,
+      transparent 0 40deg,
+      #ffffff10 45deg,
+      transparent 52deg 70deg,
+      #ffffff0c 76deg,
+      transparent 84deg 360deg
+    ),
     radial-gradient(circle at 20% 20%, #ffffff22 0 1px, transparent 2px),
     radial-gradient(circle at 75% 30%, #ffffff1c 0 1px, transparent 2px),
     radial-gradient(circle at 40% 12%, #ffffff18 0 1px, transparent 2px),
     linear-gradient(180deg, #2a1f63 0%, #1a2a6a 40%, #0f173f 75%, #070b1c 100%) !important;
-  box-shadow: inset 0 0 40px #000a, inset 0 0 0 1px #ffe9a833 !important;
+  box-shadow:
+    inset 0 0 40px #000a,
+    inset 0 0 0 1px #ffe9a833 !important;
 }
 .pvArt:before {
   content: '';
@@ -169,7 +195,9 @@ button:active:not(:disabled) {
   height: 22%;
   border-radius: 50%;
   border: 2px solid #9fdcff99;
-  box-shadow: 0 0 22px #6fb8ffaa, inset 0 0 22px #6fb8ff88;
+  box-shadow:
+    0 0 22px #6fb8ffaa,
+    inset 0 0 22px #6fb8ff88;
   background: repeating-conic-gradient(from 0deg, #9fdcff33 0deg 4deg, transparent 4deg 18deg);
   animation: pvRune 14s linear infinite;
   pointer-events: none;
@@ -283,7 +311,9 @@ body.mobile-mode #bottom {
 .skill .cost,
 .skill .key {
   z-index: 4;
-  text-shadow: 0 1px 2px #000, 0 0 4px #000;
+  text-shadow:
+    0 1px 2px #000,
+    0 0 4px #000;
 }
 .skill .cost {
   top: 3px;
@@ -308,7 +338,9 @@ body.mobile-mode #bottom {
 .skill.pressed {
   transform: scale(0.92);
   filter: brightness(1.45);
-  box-shadow: 0 0 0 2px #fff6, 0 0 16px #ffd96f !important;
+  box-shadow:
+    0 0 0 2px #fff6,
+    0 0 16px #ffd96f !important;
 }
 body.mobile-mode .skill .icon {
   width: auto !important;

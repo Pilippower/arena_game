@@ -61,6 +61,11 @@ body.lobby #score {
   font-size: 12px;
   line-height: 1.1;
 }
+/* lobby épuré : ni sous-titre du jeu, ni infos de partie en bas à gauche */
+body.lobby #top .sub,
+body.lobby #status {
+  display: none;
+}
 /* PC : bande du bas plus fine pendant le lobby, tout tient dans la page */
 body.lobby:not(.mobile-mode) #app {
   grid-template-rows: 58px 1fr 84px !important;

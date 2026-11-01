@@ -402,7 +402,7 @@ function chooseClass() {
     requestAnimationFrame(mobileViewportSync);
   };
 }
-$('restartBtn').onclick = chooseClass;
+$('restartBtn').onclick = () => requestChangeClass();
 updateMusicButton();
 $('musicBtn').onclick = musicToggle;
 $('settingsBtn').onclick = openSettings;
