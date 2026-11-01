@@ -70,6 +70,8 @@ body:not(.mobile-mode) #results.win .resPanel {
   --fw: 652;
   --fh: 354;
   --fb: 119;
+  --scx: 330.5;
+  --scy: 125;
   --edge: #ffc85a;
   background-image:
     url(../../assets/ui/results/frame_victory_top.webp), url(../../assets/ui/results/frame_victory_bottom.webp),
@@ -79,6 +81,8 @@ body:not(.mobile-mode) #results.loss .resPanel {
   --fw: 613;
   --fh: 352;
   --fb: 117;
+  --scx: 307;
+  --scy: 118.5;
   --edge: #ff4a2a;
   background-image:
     url(../../assets/ui/results/frame_defeat_top.webp), url(../../assets/ui/results/frame_defeat_bottom.webp),
@@ -101,23 +105,26 @@ body:not(.mobile-mode) #resultsTitle {
   overflow: hidden;
   clip: rect(0 0 0 0);
 }
+/* score centré sur la plaque peinte : centre mesuré sur chaque cadre (--scx, --scy en pixels de l'image source),
+   tout en unités --u, donc relatif à la taille du panneau */
 body:not(.mobile-mode) #resultsScore {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(111 * var(--u));
+  left: calc(var(--scx) * var(--u));
+  top: calc((var(--scy) - 14) * var(--u));
   height: calc(28 * var(--u));
+  transform: translateX(-50%);
   margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
   font-family: 'Cinzel', Georgia, serif;
   font-size: calc(21 * var(--u));
-  line-height: calc(28 * var(--u));
+  line-height: 1;
   color: #fff4d6;
   text-shadow:
     0 0 8px #000,
     0 1px 2px #000;
-}
-body:not(.mobile-mode) #results.win #resultsScore {
-  left: 1.4%;
 }
 /* rubans des équipes (texte peint) et tableaux */
 body:not(.mobile-mode) #resultsTeams h3 {

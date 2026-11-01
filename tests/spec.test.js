@@ -380,4 +380,9 @@ assert.ok(
     'invité : message du sort raté'
   );
 }
+assert.ok(
+  read('src/ui/results.css').includes('--scy: 118.5;') &&
+    read('src/ui/results.css').includes('top: calc((var(--scy) - 14) * var(--u));'),
+  'score centré sur la plaque (victoire et défaite)'
+);
 console.log('OK - spécifications validées (docs/SPEC.md)');
