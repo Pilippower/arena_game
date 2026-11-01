@@ -42,4 +42,4 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 
 ## Cartes — `src/data/maps.js`, `src/render/environment.js`, `src/render/map_*.js`
 - « The Castle » : ne pas modifier sans demande. Le décor suit toujours la carte de gameplay (test dans `smoke.test.js`).
-- « The Bridge » : pont accessible par deux rampes à chaque extrémité.
+- « The Bridge » : pont accessible par deux rampes à chaque extrémité (de part et d'autre, perpendiculaires au pont) ; on peut lancer des sorts depuis le tablier ; pas de ligne de vue entre le tablier et le dessous du pont. 🧪 (`surfaceAt`, `groundAt`, `blockedBySurface`, `bridgeRail` dans `maps.js`)

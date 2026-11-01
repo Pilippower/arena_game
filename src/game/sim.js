@@ -48,11 +48,19 @@ function update(dt) {
     updateFearMovement(u, dt);
     updatePolyWander(u, dt);
     autoAttack(u, dt);
+    // sol variable (pont, rampes) : on suit la surface, ou on tombe si elle disparaît sous les pieds
+    const ground = groundAt(u);
+    if (u.grounded) {
+      if ((u.y || 0) > ground + 0.05) {
+        u.grounded = false;
+        u.vy = 0;
+      } else u.y = ground;
+    }
     if (!u.grounded) {
       u.vy -= 19 * dt;
       u.y += u.vy * dt;
-      if (u.y <= 0) {
-        u.y = 0;
+      if (u.y <= ground) {
+        u.y = ground;
         u.vy = 0;
         u.grounded = true;
         fx('ring', u.x, 0.04, u.z, [0.65, 0.58, 0.45], 0.35, 0.5);

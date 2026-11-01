@@ -104,7 +104,8 @@ function resetRound() {
   if (HF.enabled) hfSyncUnits();
   updateUI();
 }
-const d2 = (a, b) => (!a || !b ? 999 : Math.hypot(a.x - b.x, a.z - b.z));
+// distance 3D : une unité sur le pont n'est pas « au contact » d'une unité en dessous
+const d2 = (a, b) => (!a || !b ? 999 : Math.hypot(a.x - b.x, a.z - b.z, ((a.y || 0) - (b.y || 0)) * 0.8));
 function enemies(u) {
   return state.units.filter(v => v.team !== u.team && v.alive);
 }
@@ -129,12 +130,27 @@ function segmentCircle(ax, az, bx, bz, cx, cz, r) {
   return Math.hypot(ax + vx * t - cx, az + vz * t - cz) < r;
 }
 function los(a, b) {
-  return !!a && !!b && !arena.pillars.some(p => segmentCircle(a.x, a.z, b.x, b.z, p.x, p.z, p.r + 0.18));
+  if (!a || !b) return false;
+  // le tablier du pont cache une unité en dessous à une unité dessus
+  const B = arena.bridge;
+  if (B) {
+    const top = u => (u.y || 0) > B.y - 0.6,
+      under = u => !top(u) && Math.abs(u.z) < B.halfW + 0.2;
+    if ((top(a) && under(b)) || (top(b) && under(a))) return false;
+  }
+  const low = Math.min(a.y || 0, b.y || 0) + 1.2;
+  return !arena.pillars.some(p => p.h > low && segmentCircle(a.x, a.z, b.x, b.z, p.x, p.z, p.r + 0.18));
 }
 function resolveWalls(u) {
   u.x = clamp(u.x, -arena.halfX + 0.72, arena.halfX - 0.72);
   u.z = clamp(u.z, -arena.halfZ + 0.72, arena.halfZ - 0.72);
+  if (blockedBySurface(u) && u.prevX != null) {
+    u.x = u.prevX;
+    u.z = u.prevZ;
+  }
+  bridgeRail(u);
   for (const p of arena.pillars) {
+    if ((u.y || 0) > p.h) continue; // au-dessus de l'obstacle (sur le pont)
     let dx = u.x - p.x,
       dz = u.z - p.z,
       d = Math.hypot(dx, dz),

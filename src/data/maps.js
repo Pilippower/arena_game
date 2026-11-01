@@ -43,7 +43,9 @@ const MAPS = {
     health: [
       { x: 0, z: -17 },
       { x: 0, z: 17 }
-    ]
+    ],
+    // surfaces praticables en hauteur : le pont (tablier) et 4 rampes (2 à chaque extrémité, de part et d'autre)
+    bridge: { y: 5.0, halfW: 2.2, rampX: 27.5, rampW: 3, rampLen: 11 }
   }
 };
 let MAP_ID = (() => {
@@ -60,6 +62,7 @@ function applyMap(id) {
   arena.halfX = M.halfX;
   arena.halfZ = M.halfZ;
   arena.pillars = M.pillars.map(p => ({ ...p }));
+  arena.bridge = M.bridge || null;
   HEALTH_SPOTS.length = 0;
   HEALTH_SPOTS.push(...M.health);
   try {
@@ -73,3 +76,34 @@ function onMapChanged(id) {
   if (typeof hfRebuildOccluders === 'function') hfRebuildOccluders();
 }
 applyMap(MAP_ID);
+
+// ---------- Hauteur du terrain (pont + rampes) ----------
+// Hauteur de la rampe/du tablier au point (x, z), ou null hors des surfaces surélevées.
+function surfaceAt(x, z) {
+  const B = arena.bridge;
+  if (!B) return null;
+  if (Math.abs(x) <= arena.halfX && Math.abs(z) <= B.halfW) return { h: B.y, deck: true };
+  if (Math.abs(Math.abs(x) - B.rampX) <= B.rampW / 2) {
+    const along = Math.abs(z) - B.halfW;
+    if (along > 0 && along <= B.rampLen) return { h: B.y * (1 - along / B.rampLen), deck: false };
+  }
+  return null;
+}
+const STEP = 0.75; // hauteur franchissable d'un pas
+// Sol sous une unité : la surface si l'unité est dessus (ou presque), sinon le sable (0).
+function groundAt(u) {
+  const s = surfaceAt(u.x, u.z);
+  return s && s.h <= (u.y || 0) + STEP ? s.h : 0;
+}
+// Rampe pleine : on ne peut pas y entrer par le côté ou par-dessous si elle est plus haute qu'un pas.
+function blockedBySurface(u) {
+  const s = surfaceAt(u.x, u.z);
+  return !!s && !s.deck && s.h > (u.y || 0) + STEP;
+}
+// Garde-corps du pont : sur le tablier, on ne tombe pas sur les côtés, sauf aux ouvertures des rampes.
+function bridgeRail(u) {
+  const B = arena.bridge;
+  if (!B || (u.y || 0) < B.y - 0.5 || Math.abs(u.z) > B.halfW + 0.6) return;
+  const atRamp = Math.abs(Math.abs(u.x) - B.rampX) <= B.rampW / 2 - 0.3;
+  if (!atRamp && Math.abs(u.z) > B.halfW - 0.35) u.z = Math.sign(u.z) * (B.halfW - 0.35);
+}

@@ -42,4 +42,17 @@ assert.match(ctl, /if \(looking && state\?\.player\?\.alive\) state\.player\.yaw
 assert.match(read('src/game/ai.js'), /orbiting/, 'déplacement : base de trajectoire figée pendant le glisser au clic gauche');
 // Mobile : déviation franche du joystick = vitesse pleine
 assert.match(read('src/game/ai.js'), /mobileStickBoost/, 'joystick mobile : vitesse pleine');
+// The Bridge : tablier praticable, 2 rampes à chaque extrémité qui descendent jusqu'au sable
+vm.runInContext('var arena={};var HEALTH_SPOTS=[];', ctx);
+run('src/data/maps.js');
+ctx.applyMap('bridge');
+const B = ctx.arena.bridge;
+assert.equal(ctx.surfaceAt(0, 0).h, B.y, 'tablier à la hauteur du pont');
+for (const sx of [-1, 1])
+  for (const sz of [-1, 1]) {
+    assert.equal(ctx.surfaceAt(sx * B.rampX, sz * (B.halfW + 0.01)).h > B.y - 0.1, true, 'rampe raccordée au pont');
+    assert.ok(ctx.surfaceAt(sx * B.rampX, sz * (B.halfW + B.rampLen)).h < 0.01, 'rampe au niveau du sable');
+  }
+assert.equal(ctx.groundAt({ x: 0, z: 0, y: 0 }), 0, 'sous le pont : on reste au sol');
+assert.ok(ctx.blockedBySurface({ x: B.rampX, z: B.halfW + 1, y: 0 }), 'on ne traverse pas une rampe par le côté');
 console.log('OK - spécifications validées (docs/SPEC.md)');

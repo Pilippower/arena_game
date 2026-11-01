@@ -1429,7 +1429,7 @@
       const b = E.blobs[i];
       if (!b) return;
       b.visible = !!u.alive;
-      b.position.set(u.x, 0.03 + (u.y > 0 ? 0 : 0), u.z);
+      b.position.set(u.x, 0.03 + (u.grounded ? u.y || 0 : 0), u.z);
       const k = 1 / (1 + Math.max(0, u.y || 0) * 0.6);
       b.scale.setScalar(k);
     });

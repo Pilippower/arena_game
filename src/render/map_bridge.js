@@ -244,8 +244,26 @@
       W = 4.6;
     for (const sz of [-1, 1]) {
       add(new THREE.BoxGeometry(len, 0.5, 0.45), darkWood, 0, bridgeY - 0.15, sz * (W / 2 - 0.2));
-      add(new THREE.BoxGeometry(len, 0.18, 0.2), darkWood, 0, bridgeY + 1.15, sz * (W / 2 - 0.1)); // main courante
     }
+    // main courante en segments : ouverte au débouché de chaque rampe
+    const RB = arena.bridge,
+      opening = x => RB && Math.abs(Math.abs(x) - RB.rampX) < RB.rampW / 2 + 0.1;
+    const cuts = RB
+      ? [
+          -len / 2,
+          -RB.rampX - RB.rampW / 2,
+          -RB.rampX + RB.rampW / 2,
+          RB.rampX - RB.rampW / 2,
+          RB.rampX + RB.rampW / 2,
+          len / 2
+        ]
+      : [-len / 2, len / 2];
+    for (let k = 0; k < cuts.length - 1; k += 2)
+      for (const sz of [-1, 1]) {
+        const a = cuts[k],
+          b = cuts[k + 1];
+        add(new THREE.BoxGeometry(b - a, 0.18, 0.2), darkWood, (a + b) / 2, bridgeY + 1.15, sz * (W / 2 - 0.1));
+      }
     const plankG = new THREE.BoxGeometry(0.55, 0.16, W - 0.3),
       plankMats = [wood, darkWood];
     for (let x = -len / 2 + 0.3, k = 0; x < len / 2; x += 0.6, k++) {
@@ -255,7 +273,7 @@
     }
     for (let x = -len / 2 + 1.6; x < len / 2; x += 3.2) {
       for (const sz of [-1, 1]) {
-        add(new THREE.BoxGeometry(0.24, 1.2, 0.24), darkWood, x, bridgeY + 0.65, sz * (W / 2 - 0.1)); // balustre
+        if (!opening(x)) add(new THREE.BoxGeometry(0.24, 1.2, 0.24), darkWood, x, bridgeY + 0.65, sz * (W / 2 - 0.1)); // balustre
         strap(0.3, 0.6, x, bridgeY - 0.1, sz * (W / 2 + 0.03));
       }
       add(new THREE.BoxGeometry(0.12, 0.05, W - 0.2), iron, x, bridgeY + 0.24, 0, false); // sangle sur le tablier
@@ -276,6 +294,54 @@
         const br = add(new THREE.BoxGeometry(0.2, L, 0.26), darkWood, a.x, (bridgeY - 0.6) / 2 + 0.3, 0);
         br.rotation.x = s * Math.atan2(dz, bridgeY - 1.2);
       }
+    }
+    // rampes : 2 à chaque extrémité, de part et d'autre du pont (pente de planches, limons, poteaux de soutien)
+    if (RB) {
+      const L = RB.rampLen,
+        H = RB.y,
+        ang = Math.atan2(H, L),
+        hyp = Math.hypot(H, L);
+      for (const sx of [-1, 1])
+        for (const sz of [-1, 1]) {
+          const cx = sx * RB.rampX,
+            zMid = sz * (RB.halfW + L / 2);
+          const g = new THREE.Group();
+          g.position.set(cx, H / 2, zMid);
+          g.rotation.x = sz * ang; // monte vers le pont
+          S.add(g);
+          const deckR = new THREE.Mesh(new THREE.BoxGeometry(RB.rampW, 0.2, hyp), wood);
+          deckR.receiveShadow = deckR.castShadow = true;
+          g.add(deckR);
+          for (let t = -hyp / 2 + 0.4; t < hyp / 2; t += 0.65) {
+            const pl = new THREE.Mesh(new THREE.BoxGeometry(RB.rampW + 0.1, 0.06, 0.08), darkWood);
+            pl.position.set(0, 0.12, t);
+            g.add(pl);
+          }
+          for (const ex of [-1, 1]) {
+            const lim = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.45, hyp), darkWood);
+            lim.position.set((ex * RB.rampW) / 2, 0.15, 0);
+            lim.castShadow = true;
+            g.add(lim);
+          }
+          // poteaux de soutien sous la pente
+          for (const f of [0.25, 0.55, 0.85]) {
+            const h = H * f;
+            add(
+              new THREE.CylinderGeometry(0.16, 0.2, h, 8),
+              darkWood,
+              cx - (RB.rampW / 2 - 0.2),
+              h / 2,
+              sz * (RB.halfW + L * (1 - f))
+            );
+            add(
+              new THREE.CylinderGeometry(0.16, 0.2, h, 8),
+              darkWood,
+              cx + (RB.rampW / 2 - 0.2),
+              h / 2,
+              sz * (RB.halfW + L * (1 - f))
+            );
+          }
+        }
     }
     // remparts : falaise de blocs empilés, palissade de rondins taillés en pointe, grandes défenses d'os
     const wallH = 4.2;
