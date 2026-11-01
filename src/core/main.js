@@ -54,6 +54,7 @@ function loop() {
     if (steps === MAX_SIM_STEPS) simAccumulator = 0;
     renderAlpha = clamp(simAccumulator / SIM_DT, 0, 1);
     render();
+    hudCastFrame();
     perfFrame(rawDt, steps);
     requestAnimationFrame(loop);
   } catch (err) {

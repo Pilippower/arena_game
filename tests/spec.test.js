@@ -119,4 +119,6 @@ for (const k of ['function aiSteer', 'function aiCover', 'u.aiPeel', 'const ccRe
     'Polymorph : icône de l’utilisateur'
   );
 }
+assert.match(read('src/core/main.js'), /render\(\);\s*hudCastFrame\(\);/, "barre d'incantation fluide");
+assert.ok(read('index.html').includes('body.mobile-mode #partyFrames{left:4px!important'), 'mobile : équipe à gauche');
 console.log('OK - spécifications validées (docs/SPEC.md)');

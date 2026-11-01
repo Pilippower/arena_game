@@ -15,6 +15,7 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 ## Contrôles (mobile) — `src/ui/mobile.js`
 - Joystick : la déviation franche = vitesse pleine (pas de vitesse réduite à mi-course). 🧪
 - Toucher un personnage à l'écran = le cibler.
+- Cadres de son équipe (et le sien) collés au bord gauche de l'écran (4 px, sans la marge de l'encoche). 🧪
 - Pas de bande sombre sous l'arène (barre du bas transparente) — vérifié par `tests/browser/full.test.js`.
 
 ## Sorts et combat — `src/data/classes.js` (`SPELLS`, `SKILL_META`), `src/game/combat.js`
@@ -55,4 +56,5 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Caméra : le zoom à la molette glisse (≈ 0,2 s) au lieu de sauter ; derrière un pilier la caméra se rapproche immédiatement et se recule en douceur (`CAM_VIEW` dans `world.js`). Le personnage pivote vite mais sans claquer et s'incline légèrement dans les virages (visuel seulement, la simulation garde l'orientation exacte). 🧪
 - Combat : l'animation de frappe démarre juste avant l'impact (`ATTACK_HIT` dans `heroes3d.js`) pour que la lame touche avec les dégâts et le son, sans rien retarder. Chiffres de dégâts colorés par école (`SCHOOL_COLOR`), critiques en gros avec « ! ». Barre d'incantation des ennemis plus grande, lumineuse, avec le temps restant. 🧪
 - IA (déterministe, pas de mobilité aléatoire) : contourne les piliers (`aiSteer`) ; lanceur/soigneur ciblé et sous 40 % PV se met à couvert derrière un pilier jusqu'à 65 % (`aiCover`, pas en Easy) ; protège son soigneur frappé par une mêlée (`aiPeel`) ; enchaîne les contrôles au lieu de les superposer (`ccReady`). 🧪
+- Barres d'incantation (la sienne, cible, cadres d'arène) : progression mise à jour à chaque image (`hudCastFrame`), pas 12 fois/s. 🧪
 - **Refusé par l'utilisateur : pas de secousses de caméra, pas d'accélération/freinage progressifs, aucun délai ajouté (pas de micro-gel sur les coups).**

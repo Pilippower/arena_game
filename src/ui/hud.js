@@ -35,8 +35,8 @@ function unitRowHTML(u, enemy) {
 function castBarHTML(u) {
   const c = u.cast;
   if (!c) return '';
-  const k = clamp(1 - (c.end - now()) / c.dur, 0, 1);
-  return `<div class="castBar"><span class="cbIcon">${skillIconSVG(u.cls, c.i ?? 0)}</span><div class="cbTrack"><div class="cbFill" style="width:${(k * 100).toFixed(0)}%"></div><span class="cbName">${c.name}</span></div></div>`;
+  // largeur remplie à chaque image par hudCastFrame (pas ici : l'interface n'est reconstruite que 12 fois/s)
+  return `<div class="castBar"><span class="cbIcon">${skillIconSVG(u.cls, c.i ?? 0)}</span><div class="cbTrack"><div class="cbFill" data-u="${u.id}" style="width:${(castProgress(u) * 100).toFixed(1)}%"></div><span class="cbName">${c.name}</span></div></div>`;
 }
 function frameHTML(u, enemy = false) {
   const C = CLASS[u.cls];
@@ -104,13 +104,24 @@ function updateUI() {
       useTrinket(p);
     }
   };
+  hudCastFrame();
+}
+const castProgress = u => (u.cast ? clamp(1 - (u.cast.end - now()) / u.cast.dur, 0, 1) : 0);
+// Barres d'incantation (la sienne, cible, cadres d'arène) : progression mise à jour à chaque image, sans à-coups.
+function hudCastFrame() {
+  const p = state?.player;
+  if (!p) return;
   const cb = $('castBar');
   if (p.cast) {
-    cb.style.display = 'block';
-    const q = clamp(1 - (p.cast.end - now()) / p.cast.dur, 0, 1);
-    cb.querySelector('.castFill').style.width = `${q * 100}%`;
-    cb.querySelector('.castText').textContent = p.cast.name;
-  } else cb.style.display = 'none';
+    if (cb.style.display !== 'block') cb.style.display = 'block';
+    cb.querySelector('.castFill').style.width = `${(castProgress(p) * 100).toFixed(2)}%`;
+    const tx = cb.querySelector('.castText');
+    if (tx.textContent !== p.cast.name) tx.textContent = p.cast.name;
+  } else if (cb.style.display !== 'none') cb.style.display = 'none';
+  for (const e of document.querySelectorAll('.cbFill[data-u]')) {
+    const u = state.units.find(v => String(v.id) === e.dataset.u);
+    if (u?.cast) e.style.width = `${(castProgress(u) * 100).toFixed(2)}%`;
+  }
 }
 
 // Balayage circulaire de recharge (style MMO) : la partie sombre diminue en tournant ; chiffre si recharge longue.
