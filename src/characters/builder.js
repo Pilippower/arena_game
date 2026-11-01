@@ -2653,7 +2653,9 @@
     });
     root.updateMatrixWorld(true);
     const ws0 = rigid.map(o => o.getWorldScale(new THREE.Vector3()).x);
-    for (const [n, k] of Object.entries(kit.bones)) if (bones[n]) bones[n].scale.multiplyScalar(k);
+    for (const [n, k] of Object.entries(kit.bones))
+      if (bones[n])
+        Array.isArray(k) ? bones[n].scale.multiply(new THREE.Vector3(...k)) : bones[n].scale.multiplyScalar(k);
     root.updateMatrixWorld(true);
     const HERO_SIZE = { Hammer: 1.3, Axe: 1.3, Sword: 1.25, Runeblade: 1.2, Dagger: 1.35, Shield: 1.45 };
     rigid.forEach((o, i) => {

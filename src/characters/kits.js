@@ -263,14 +263,23 @@
       beard: true,
       hair: 'Hair_Buzzed',
       bigBeard: true,
+      // Proportions trapues : bassin large, cuisses épaisses et courtes, bras courts et massifs.
+      // Échelle [x, y, z] : y = longueur de l'os ; les enfants compensent pour garder mains et pieds non déformés.
       bones: {
-        spine_01: 1.2,
+        pelvis: [1.18, 1, 1.12],
+        spine_01: 1.05,
         spine_02: 1.05,
         neck_01: 0.9,
-        upperarm_l: 1.06,
-        upperarm_r: 1.06,
-        thigh_l: 0.78,
-        thigh_r: 0.78
+        upperarm_l: [1.22, 0.84, 1.22],
+        upperarm_r: [1.22, 0.84, 1.22],
+        lowerarm_l: [0.9, 0.9, 0.9],
+        lowerarm_r: [0.9, 0.9, 0.9],
+        hand_l: [0.85, 1.2, 0.85],
+        hand_r: [0.85, 1.2, 0.85],
+        thigh_l: [1.25, 0.78, 1.25],
+        thigh_r: [1.25, 0.78, 1.25],
+        foot_l: [0.8, 1.28, 0.8],
+        foot_r: [0.8, 1.28, 0.8]
       }
     },
     elf: {
@@ -381,9 +390,15 @@
     shade: [1, 0.32, 0.25],
     warlock: [0.55, 1, 0.3]
   };
+  // Combine des échelles d'os : nombre (uniforme) ou [x, y, z] (y = le long de l'os).
+  const vec3 = v => (Array.isArray(v) ? v : [v ?? 1, v ?? 1, v ?? 1]);
   function mergeBones(a, b) {
     const o = { ...(a || {}) };
-    for (const k in b || {}) o[k] = (o[k] || 1) * b[k];
+    for (const k in b || {}) {
+      const p = vec3(o[k]),
+        q = vec3(b[k]);
+      o[k] = Array.isArray(o[k]) || Array.isArray(b[k]) ? p.map((x, i) => x * q[i]) : (o[k] ?? 1) * b[k];
+    }
     return o;
   }
   const KITS = {};
