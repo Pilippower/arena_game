@@ -392,8 +392,7 @@ function useSpecialSkill(u, i) {
   } else if (k === 'sap') {
     if (!t || d > S.range || !los(u, t) || t.poly > 0) return false;
     face(u, t);
-    if (!control(t, 'poly', S.dur, u)) return false;
-    t.polyKind = 'sap';
+    if (control(t, 'poly', S.dur, u)) t.polyKind = 'sap';
     t.cast = null;
     action(u, 'melee');
   } else return false;

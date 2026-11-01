@@ -217,7 +217,11 @@ function heal(src, t, v) {
 }
 function control(t, type, dur, src = null) {
   const m = t.dr[type] ?? 1;
-  if (m <= 0) return false;
+  // rendements décroissants épuisés : le sort part quand même, sans effet, et « Immune » s'affiche
+  if (m <= 0) {
+    addFloat(t, 'Immune', '#ffffff');
+    return false;
+  }
   dur *= m;
   t[type] = Math.max(t[type] || 0, dur);
   t.dr[type] = m === 1 ? 0.5 : m === 0.5 ? 0.25 : 0;
@@ -657,7 +661,7 @@ function useSkill(u, i) {
       u.burst = S.burst;
       fx('ring', u.x, 0.1, u.z, c.accent, 1, 1.2);
       action(u, 'cast');
-    } else if (i === 5 && range && u.silence <= 0 && (t.dr.poly ?? 1) > 0) {
+    } else if (i === 5 && range && u.silence <= 0) {
       u.cast = castOf(u, i, t, 'poly', S.dur);
       action(u, 'cast');
     } else ok = false;
