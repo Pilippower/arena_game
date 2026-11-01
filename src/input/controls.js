@@ -114,23 +114,11 @@ window.addEventListener('blur', () => {
 });
 function pickTargetAt(sx, sy) {
   if (!state?.player?.alive) return false;
-  let best = null,
-    bestD = 1e9;
-  for (const u of state.units.filter(v => v.alive && !(v.stealth && v.team !== state.player.team))) {
-    const p = projectScreen(u.rx ?? u.x, (u.ry ?? u.y ?? 0) + 1.35, u.rz ?? u.z);
-    if (!p) continue;
-    const d = Math.hypot(sx - p.x, sy - p.y);
-    if (d < 62 && d < bestD) {
-      best = u;
-      bestD = d;
-    }
-  }
-  if (best) {
-    setTarget(state.player, best);
-    updateUI();
-    return true;
-  }
-  return false;
+  const best = unitAtScreen(sx, sy);
+  if (!best) return false;
+  setTarget(state.player, best);
+  updateUI();
+  return true;
 }
 // Souris style MMO :
 //  - clic gauche OU droit sans glisser = cibler l'unité sous le curseur ;

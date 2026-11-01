@@ -18,6 +18,7 @@ L'utilisateur communique en français : répondre en français.
   - `characters/` : `kits.js` (données des 35 kits, lu aussi par `tools/build_characters.js`), `builder.js` (assemblage three.js).
   - Musique : `audio/tracks.js` (lobby = `assets/audio/lobby.mp3` fourni par l'utilisateur ; musique de jeu = fichier choisi par le joueur dans ⚙, stocké en IndexedDB, jamais publié ; départ aléatoire, volume bas `TRACK_VOL`), repli `audio/music.js` (procédural). Ne jamais ajouter au dépôt de musique sous copyright (règle 9).
   - Thème visuel (couleurs, cadres, boutons, fond de prévisualisation) : `src/ui/theme.css` (surcharges, chargé après le CSS d'index.html).
+  - Curseurs (gantelet / épée sur ennemi / main verte sur allié) : `src/ui/cursor.js` (`unitAtScreen` sert aussi au ciblage au clic).
   - `ui/` (hud, skillbar, settings, mobile), `audio/` (music, sfx), `input/controls.js` (contrôles validés), `core/` (setup, webgl, main = boucle).
 - Mise en forme : `npm run format` (Prettier, `.prettierrc.json`). Les tests statiques ignorent les espaces.
 - `mobile.html` : simple redirection vers `index.html?mobile=1` (le jeu n'existe qu'en un exemplaire). Ne jamais y recopier le jeu.
