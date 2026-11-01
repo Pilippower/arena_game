@@ -278,11 +278,7 @@ function updateSelectPreview(selectedRace, selectedClass) {
   const rk = selectedRace || 'human',
     ck = selectedClass || 'sentinel';
   if (!$('preview3d'))
-    box.innerHTML = `<div class="pvHead"><span>Prévisualisation</span><span class="tiny">même rendu que dans l’arène</span></div><div class="pvArt"><canvas id="preview3d" aria-hidden="true"></canvas><div id="previewLoading" class="previewLoading">Chargement du personnage…</div></div><div class="pvMeta"><span id="previewRaceChip" class="previewChip"></span><span id="previewClassChip" class="previewChip"></span></div><div class="previewHint">Le panneau utilise exactement le même modèle 3D que celui chargé dans l’arène.</div>`;
-  const rc = $('previewRaceChip'),
-    cc = $('previewClassChip');
-  if (rc) rc.innerHTML = `${racePickIconSVG(rk)}<b>${RACE[rk].name}</b>`;
-  if (cc) cc.innerHTML = `${classPickIconSVG(ck)}<b>${CLASS[ck].name}</b>`;
+    box.innerHTML = `<div class="pvHead"><span>Prévisualisation</span><span class="tiny">même rendu que dans l’arène</span></div><div class="pvArt"><canvas id="preview3d" aria-hidden="true"></canvas><div id="previewLoading" class="previewLoading">Chargement du personnage…</div></div><div class="previewHint">Le panneau utilise exactement le même modèle 3D que celui chargé dans l’arène.</div>`;
   updateSelectPreview3D(rk, ck);
 }
 function chooseClass() {
