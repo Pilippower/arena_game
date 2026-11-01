@@ -162,7 +162,17 @@ function resolveWalls(u) {
     }
   }
 }
-function addFloat(u, text, color) {
+// Couleur des dégâts selon l'école (coups d'arme : rouge) ; un coup critique s'affiche en plus gros (big).
+const SCHOOL_COLOR = {
+  physical: '#ff7d88',
+  arcane: '#e59bff',
+  frost: '#8fdcff',
+  holy: '#ffe79a',
+  nature: '#d4ef6e',
+  shadow: '#b897ff',
+  unholy: '#a9e07a'
+};
+function addFloat(u, text, color, big = false) {
   if (!state) return;
   state.floaters.push({
     x: u.x,
@@ -170,6 +180,7 @@ function addFloat(u, text, color) {
     z: u.z,
     text,
     color,
+    big,
     life: 1,
     max: 1,
     off: (Math.random() - 0.5) * 0.5
@@ -222,7 +233,7 @@ function damage(src, t, v, crit = false, school = src.curSchool || 'physical') {
       addFloat(t, 'Nova broken', '#9de8ff');
     }
   }
-  addFloat(t, `-${v}`, crit ? '#ffd36b' : '#ff7d88');
+  addFloat(t, crit ? `-${v}!` : `-${v}`, SCHOOL_COLOR[school] || SCHOOL_COLOR.physical, crit);
   fx('burst', t.x, 1.15, t.z, [1, 0.18, 0.08], 0.42, 0.35);
   if (t.hp <= 0) {
     recordKill(src, t);

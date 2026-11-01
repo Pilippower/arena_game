@@ -783,13 +783,22 @@ function hfSetAnim(rec, u) {
     next.setLoop(THREE.LoopRepeat, Infinity);
     next.clampWhenFinished = false;
   }
-  next.fadeIn(key === 'air' ? 0.08 : 0.1).play();
+  next.fadeIn(key === 'air' ? 0.08 : key === 'attack' ? 0.05 : 0.1).play();
   next.timeScale = key === 'run' ? 1.12 : key === 'attack' ? 1.08 : key === 'land' ? 1.6 : 1;
+  // les dégâts tombent au début de l'action : on démarre le coup juste avant l'impact (lame au contact ≈ 80 ms après)
+  const hit = key === 'attack' && ATTACK_HIT[clip.name];
+  if (hit) {
+    next.time = hit.from;
+    next.timeScale = hit.speed;
+  }
   if (rec.action && rec.action !== next) rec.action.fadeOut(0.1);
   rec.action = next;
   rec.animKey = key;
   rec.footPhase = null;
 }
+// Animation de frappe : instant de départ dans le clip et vitesse, pour que l'impact (vitesse max de la main,
+// 0,38 s dans Sword_Attack) coïncide avec les dégâts et les sons au lieu d'arriver 0,35 s plus tard, coupé.
+const ATTACK_HIT = { Sword_Attack: { from: 0.26, speed: 1.5 } };
 function hfCreateRecord(u) {
   if (!HF.enabled || HF.records.has(u.id)) return;
   const group = new THREE.Group();

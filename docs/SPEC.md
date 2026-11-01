@@ -52,4 +52,5 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Tout ce qui suit un personnage (modèle, ombre, noms, effets) utilise la position interpolée, jamais la position brute de simulation. 🧪
 - The Bridge : la passe des silhouettes ne tourne que si le pont cache réellement quelqu'un (`hfBridgeHides`). 🧪
 - Caméra : le zoom à la molette glisse (≈ 0,2 s) au lieu de sauter ; derrière un pilier la caméra se rapproche immédiatement et se recule en douceur (`CAM_VIEW` dans `world.js`). Le personnage pivote vite mais sans claquer et s'incline légèrement dans les virages (visuel seulement, la simulation garde l'orientation exacte). 🧪
+- Combat : l'animation de frappe démarre juste avant l'impact (`ATTACK_HIT` dans `heroes3d.js`) pour que la lame touche avec les dégâts et le son, sans rien retarder. Chiffres de dégâts colorés par école (`SCHOOL_COLOR`), critiques en gros avec « ! ». Barre d'incantation des ennemis plus grande, lumineuse, avec le temps restant. 🧪
 - **Refusé par l'utilisateur : pas de secousses de caméra, pas d'accélération/freinage progressifs, aucun délai ajouté (pas de micro-gel sur les coups).**

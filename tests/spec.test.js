@@ -98,4 +98,11 @@ assert.ok(read('src/render/environment.js').includes('b.position.set(u.rx ?? u.x
 assert.match(h3, /if \(!groups\.size\) return;/, 'silhouettes : pas de passe inutile');
 assert.match(read('src/render/world.js'), /CAM_VIEW\.dist = [^;]*camera\.dist/, 'zoom lissé');
 assert.match(h3, /rotation\.set\(castLean, ryaw, deathTilt \|\| rec\.lean\)/, 'inclinaison dans les virages');
+assert.match(h3, /ATTACK_HIT = \{ Sword_Attack/, 'frappe synchronisée avec les dégâts');
+assert.match(
+  read('src/game/combat.js'),
+  /SCHOOL_COLOR\[school\][^;]*crit\)/,
+  'dégâts colorés par école, critiques en gros'
+);
+assert.ok(read('index.html').includes('.nameplate.enemy .npCast'), "barre d'incantation ennemie lisible");
 console.log('OK - spécifications validées (docs/SPEC.md)');

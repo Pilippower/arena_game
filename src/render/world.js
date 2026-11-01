@@ -1157,7 +1157,7 @@ function renderOverlayWorld() {
       e = document.createElement('div');
       e.className = 'nameplate';
       e.innerHTML =
-        '<div class="npName"></div><div class="npBar"><div class="npFill"></div></div><div class="npCast"><span class="npIcon"></span><div class="npTrack"><div></div><span></span></div></div>';
+        '<div class="npName"></div><div class="npBar"><div class="npFill"></div></div><div class="npCast"><span class="npIcon"></span><div class="npTrack"><div></div><span></span><b></b></div></div>';
       e.style.left = e.style.top = '0';
       np.appendChild(e);
       e._name = e.firstChild;
@@ -1165,7 +1165,8 @@ function renderOverlayWorld() {
       e._cast = e.children[2];
       e._castIcon = e._cast.firstChild;
       e._castFill = e._cast.lastChild.firstChild;
-      e._castName = e._cast.lastChild.lastChild;
+      e._castName = e._cast.lastChild.children[1];
+      e._castTime = e._cast.lastChild.children[2];
       e._k = {};
       OVERLAY.plates.set(u, e);
     }
@@ -1195,6 +1196,12 @@ function renderOverlayWorld() {
       e._fill.style.background = c;
       e._k.c = c;
     }
+    // ennemi : barre d'incantation plus grande et plus visible (pour interrompre au bon moment)
+    const foe = u.team !== state.player.team;
+    if (e._k.foe !== foe) {
+      e.classList.toggle('enemy', foe);
+      e._k.foe = foe;
+    }
     const t = u === state.player.target;
     if (e._k.t !== t) {
       e.classList.toggle('target', t);
@@ -1213,7 +1220,15 @@ function renderOverlayWorld() {
         e._k.ck = ck;
       }
     }
-    if (cs) e._castFill.style.width = (clamp(1 - (u.cast.end - now()) / u.cast.dur, 0, 1) * 100).toFixed(1) + '%';
+    if (cs) {
+      const left = Math.max(0, u.cast.end - now());
+      e._castFill.style.width = (clamp(1 - left / u.cast.dur, 0, 1) * 100).toFixed(1) + '%';
+      const lt = left.toFixed(1);
+      if (e._k.lt !== lt) {
+        e._castTime.textContent = lt;
+        e._k.lt = lt;
+      }
+    }
   }
   for (const [u, e] of OVERLAY.plates)
     if (!seen.has(u)) {
@@ -1240,7 +1255,14 @@ function renderOverlayWorld() {
       e.style.display = '';
       e._k.vis = true;
     }
-    e.style.transform = `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px) translate(-50%,-50%)`;
+    // critique : le chiffre apparaît gonflé puis se pose (0,15 s)
+    const age = f.max - f.life,
+      pop = f.big ? 1 + Math.max(0, 0.15 - age) * 4 : 1;
+    e.style.transform = `translate(${p.x.toFixed(1)}px,${p.y.toFixed(1)}px) translate(-50%,-50%) scale(${pop.toFixed(2)})`;
+    if (e._k.big !== f.big) {
+      e.classList.toggle('big', !!f.big);
+      e._k.big = f.big;
+    }
     e.style.opacity = clamp(f.life / f.max, 0, 1).toFixed(2);
     if (e._k.text !== f.text) {
       e.textContent = f.text;
