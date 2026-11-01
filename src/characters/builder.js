@@ -728,10 +728,54 @@
       sw.add(glow);
       inHand(sw, 'r', -0.11 * s, 0.4);
     } else if (kind === 'daggers') {
+      // Glaives en croissant (design original) : lame courbe émeraude lumineuse, dents sur le dos, poignée gainée de cuir sombre.
+      const fel = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(0x19c23e).convertSRGBToLinear(),
+        emissive: new THREE.Color(0x0f8a26).convertSRGBToLinear(),
+        emissiveIntensity: 1.3,
+        roughness: 0.25,
+        metalness: 0.1
+      });
+      const grip = new THREE.MeshStandardMaterial({ color: 0x1c1a1e, roughness: 0.6, metalness: 0.5 });
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0);
+      shape.quadraticCurveTo(0.2, 0.12, 0.22, 0.42); // tranchant extérieur
+      shape.lineTo(0.18, 0.38);
+      for (let k = 0; k < 3; k++)
+        shape.lineTo(0.15 - k * 0.04, 0.3 - k * 0.08).lineTo(0.12 - k * 0.04, 0.26 - k * 0.08); // dents
+      shape.quadraticCurveTo(0.05, 0.08, 0, 0.06);
+      shape.lineTo(0, 0);
       for (const side of ['l', 'r']) {
-        const d = sword(0.26, 0.04, steel, dark);
-        d.name = 'Dagger';
-        inHand(d, side, -0.11 * s, 0.15);
+        const g = new THREE.Group();
+        g.name = 'Dagger';
+        const blade = new THREE.Mesh(
+          new THREE.ExtrudeGeometry(shape, {
+            depth: 0.012,
+            bevelEnabled: true,
+            bevelSize: 0.006,
+            bevelThickness: 0.004,
+            bevelSegments: 1
+          }),
+          fel
+        );
+        blade.scale.set((side === 'l' ? -1 : 1) * s, s, s);
+        blade.position.set(0, 0.03 * s, -0.008 * s);
+        blade.rotation.y = Math.PI / 2;
+        g.add(blade);
+        const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.017 * s, 0.017 * s, 0.17 * s, 8), grip);
+        handle.position.y = -0.06 * s;
+        g.add(handle);
+        const guard = B(0.1, 0.03, 0.035, grip);
+        guard.position.y = 0.025 * s;
+        g.add(guard);
+        const stone = new THREE.Mesh(new THREE.OctahedronGeometry(0.022 * s, 0), fel);
+        stone.position.y = -0.16 * s;
+        g.add(stone);
+        const aura = glowSprite(THREE, new THREE.Color(0.3, 1, 0.4), 0.42 * s);
+        aura.position.set((side === 'l' ? -1 : 1) * 0.1 * s, 0.24 * s, 0);
+        aura.material.opacity = 0.55;
+        g.add(aura);
+        inHand(g, side, 0, 0.15);
       }
     }
   }
@@ -2599,7 +2643,7 @@
     const ws0 = rigid.map(o => o.getWorldScale(new THREE.Vector3()).x);
     for (const [n, k] of Object.entries(kit.bones)) if (bones[n]) bones[n].scale.multiplyScalar(k);
     root.updateMatrixWorld(true);
-    const HERO_SIZE = { Hammer: 1.3, Axe: 1.3, Sword: 1.25, Runeblade: 1.2, Dagger: 1.15, Shield: 1.45 };
+    const HERO_SIZE = { Hammer: 1.3, Axe: 1.3, Sword: 1.25, Runeblade: 1.2, Dagger: 1.35, Shield: 1.45 };
     rigid.forEach((o, i) => {
       const k = o.getWorldScale(new THREE.Vector3()).x / ws0[i];
       o.scale.multiplyScalar((HERO_SIZE[o.name] || 1) / k);
