@@ -342,18 +342,27 @@
       // Bouclier rond sanglé sur l'avant-bras gauche (face extérieure), épée longue en main droite
       const gold=new THREE.MeshStandardMaterial({color:0xe0b050,roughness:.3,metalness:.9}),gem=new THREE.MeshStandardMaterial({color:0x66ccff,emissive:0x3399ff,emissiveIntensity:2});
       const sh=new THREE.Group();sh.name='Shield';
-      // Pavois : plaque d'acier sombre aux angles arrondis, bordure dorée rivetée, ombon serti, pointes aux coins
-      const plateM=new THREE.MeshStandardMaterial({color:0x23252e,roughness:.4,metalness:.8,envMap:envMap(THREE),envMapIntensity:.7});
+      // Pavois bombé : plaque d'acier sombre, bordure dorée rivetée, ombon serti entouré d'une couronne de pointes, pointes le long des bords
+      const plateM=new THREE.MeshStandardMaterial({color:new THREE.Color(0x24262f).convertSRGBToLinear(),roughness:.45,metalness:.55});plateM.userData.stylized=true;
+      const bulge=(x,y)=>.07*(1-Math.min(1,(x/.24)**2))*(1-.45*Math.min(1,(y/.4)**2));
       const rr=(w,h,r)=>{const p=new THREE.Shape();p.moveTo(-w+r,-h);p.lineTo(w-r,-h);p.quadraticCurveTo(w,-h,w,-h+r);p.lineTo(w,h-r);p.quadraticCurveTo(w,h,w-r,h);p.lineTo(-w+r,h);p.quadraticCurveTo(-w,h,-w,h-r);p.lineTo(-w,-h+r);p.quadraticCurveTo(-w,-h,-w+r,-h);return p};
-      const ext=(sh,d,m)=>new THREE.Mesh(new THREE.ExtrudeGeometry(sh,{depth:d,bevelEnabled:true,bevelSize:.008,bevelThickness:.008,bevelSegments:2}),m);
-      const border=ext(rr(.22,.36,.05),.02,gold);border.scale.setScalar(s);border.position.z=-.015*s;sh.add(border);
-      const plate=ext(rr(.195,.335,.04),.02,plateM);plate.scale.setScalar(s);plate.position.z=-.005*s;sh.add(plate);
-      const ridge=B(.03,.6,.02,plateM);ridge.position.z=.022*s;sh.add(ridge);
-      const rivetG=new THREE.SphereGeometry(.011*s,8,6);for(const y of [-.31,.31])for(let k=-3;k<=3;k++){const rv=new THREE.Mesh(rivetG,gold);rv.position.set(k*.05*s,y*s,.022*s);sh.add(rv)}
-      const bossP=new THREE.Mesh(new THREE.CylinderGeometry(.075*s,.09*s,.03*s,8),gold);bossP.rotation.x=Math.PI/2;bossP.position.z=.03*s;sh.add(bossP);
-      for(const [x,y] of [[-.15,.26],[.15,.26],[-.15,-.26],[.15,-.26]]){const sp=new THREE.Mesh(new THREE.ConeGeometry(.02*s,.09*s,6),dark);sp.rotation.x=Math.PI/2;sp.position.set(x*s,y*s,.06*s);sh.add(sp)}
+      const ext=(sh2,d,m)=>{const g2=new THREE.ExtrudeGeometry(sh2,{depth:d,bevelEnabled:true,bevelSize:.008,bevelThickness:.008,bevelSegments:2,curveSegments:6}),p=g2.attributes.position;
+        // subdivision implicite : on bombe chaque sommet selon sa position
+        for(let i=0;i<p.count;i++)p.setZ(i,p.getZ(i)+bulge(p.getX(i),p.getY(i)));g2.computeVertexNormals();return new THREE.Mesh(g2,m)};
+      const W2=.24,H2=.4,at=(x,y,dz)=>new THREE.Vector3(x*s,y*s,(bulge(x,y)+dz)*s);
+      const border=ext(rr(W2,H2,.06),.02,gold);border.scale.setScalar(s);border.position.z=-.015*s;sh.add(border);
+      // la plaque est découpée en bandes pour que le bombé soit lisse
+      const plateGeo=new THREE.PlaneGeometry(W2*2-.05,H2*2-.05,16,20),pp=plateGeo.attributes.position;for(let i=0;i<pp.count;i++)pp.setZ(i,bulge(pp.getX(i),pp.getY(i))+.03);plateGeo.computeVertexNormals();
+      const plate=new THREE.Mesh(plateGeo,plateM);plate.scale.setScalar(s);sh.add(plate);
+      const rivetG=new THREE.SphereGeometry(.011*s,8,6);for(const y of [-.35,.35])for(let k=-3;k<=3;k++){const rv=new THREE.Mesh(rivetG,gold);rv.position.copy(at(k*.055,y,.034));sh.add(rv)}
+      const bossP=new THREE.Mesh(new THREE.CylinderGeometry(.08*s,.095*s,.035*s,8),gold);bossP.rotation.x=Math.PI/2;bossP.position.copy(at(0,0,.045));sh.add(bossP);
+      const spikeG=new THREE.ConeGeometry(.018*s,.1*s,6);spikeG.rotateX(Math.PI/2);spikeG.translate(0,0,.05*s);
+      const spike=(x,y,len=1,tilt=0)=>{const sp=new THREE.Mesh(spikeG,dark);sp.position.copy(at(x,y,.03));sp.scale.set(1,1,len);sp.rotation.set(-y*tilt,x*tilt,0);sh.add(sp)};
+      for(let k=0;k<8;k++){const a=k/8*Math.PI*2;spike(Math.sin(a)*.13,Math.cos(a)*.13,.9,1.2)}
+      for(const sx of [-1,1])for(let k=0;k<6;k++)spike(sx*.19,-.3+k*.12,.75,1.6);
+      for(const y of [-.26,.26])for(const x of [-.08,.08])spike(x,y,.7,.8);
       const rim=new THREE.Mesh(new THREE.TorusGeometry(.001,.001,3,3),steel);sh.add(rim);
-      const boss=new THREE.Mesh(new THREE.OctahedronGeometry(.045*s,0),gem);boss.scale.set(1,1.3,.7);boss.position.set(0,0,.055*s);sh.add(boss);
+      const boss=new THREE.Mesh(new THREE.OctahedronGeometry(.05*s,0),gem);boss.scale.set(1,1.3,.7);boss.position.set(0,0,(.07+.06)*s);sh.add(boss);
       const la=bones.lowerarm_l.getWorldPosition(new THREE.Vector3()),hl=bones.hand_l.getWorldPosition(new THREE.Vector3());
       sh.position.copy(la).lerp(hl,.5).add(new THREE.Vector3(0,.07*s,0));{const inner=new THREE.Group();[...sh.children].forEach(c=>inner.add(c));inner.rotation.z=Math.PI/2;sh.add(inner)}sh.rotation.x=-Math.PI/2;mount(THREE,body,bones.lowerarm_l,sh);
       if(kind==='hammerShield'){const w=new THREE.Group();w.name='Hammer';const hdl=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.022*s,.8*s,8),leather);hdl.position.y=.25*s;w.add(hdl);
@@ -1001,7 +1010,7 @@
     const rigid=[];root.traverse(o=>{if(/^(Hammer|Axe|Sword|Runeblade|Dagger|Shield|HandFx|Staff|Skull)$/.test(o.name)&&o.parent?.isBone)rigid.push(o)});
     root.updateMatrixWorld(true);const ws0=rigid.map(o=>o.getWorldScale(new THREE.Vector3()).x);
     for(const [n,k] of Object.entries(kit.bones))if(bones[n])bones[n].scale.multiplyScalar(k);
-    root.updateMatrixWorld(true);const HERO_SIZE={Hammer:1.3,Axe:1.3,Sword:1.25,Runeblade:1.2,Dagger:1.15,Shield:1.2};rigid.forEach((o,i)=>{const k=o.getWorldScale(new THREE.Vector3()).x/ws0[i];o.scale.multiplyScalar((HERO_SIZE[o.name]||1)/k)});
+    root.updateMatrixWorld(true);const HERO_SIZE={Hammer:1.3,Axe:1.3,Sword:1.25,Runeblade:1.2,Dagger:1.15,Shield:1.45};rigid.forEach((o,i)=>{const k=o.getWorldScale(new THREE.Vector3()).x/ws0[i];o.scale.multiplyScalar((HERO_SIZE[o.name]||1)/k)});
     // Jambes raccourcies : on abaisse tout le squelette pour garder les pieds au sol.
     const drop=wy(bones.foot_l)-foot0;
     if(Math.abs(drop)>1e-4){const rig=new THREE.Group();rig.name='Rig';[...root.children].forEach(c=>rig.add(c));root.add(rig);rig.position.y=-drop}
