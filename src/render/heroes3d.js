@@ -59,6 +59,39 @@ function hfAssetFor(u) {
   return hfAssetCandidatesFor(u)[0];
 }
 
+// Dessus du socle : dalles rayonnantes, joints sombres, lumière dorée au centre.
+function previewPedestalTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const g = c.getContext('2d'),
+    R = 128;
+  g.fillStyle = '#5a5047';
+  g.fillRect(0, 0, 256, 256);
+  g.strokeStyle = '#231d18';
+  g.lineWidth = 3;
+  for (const r of [R * 0.55, R * 0.8]) {
+    g.beginPath();
+    g.arc(R, R, r, 0, Math.PI * 2);
+    g.stroke();
+  }
+  for (let k = 0; k < 16; k++) {
+    const a = (k / 16) * Math.PI * 2 + (k % 2) * 0.1;
+    g.beginPath();
+    g.moveTo(R + Math.cos(a) * R * 0.8, R + Math.sin(a) * R * 0.8);
+    g.lineTo(R + Math.cos(a) * R, R + Math.sin(a) * R);
+    g.stroke();
+  }
+  const glow = g.createRadialGradient(R, R, 0, R, R, R);
+  glow.addColorStop(0, '#ffe3a0f0');
+  glow.addColorStop(0.45, '#e0a64ab0');
+  glow.addColorStop(0.75, '#8a5a2240');
+  glow.addColorStop(1, '#00000000');
+  g.fillStyle = glow;
+  g.fillRect(0, 0, 256, 256);
+  const t = new THREE.CanvasTexture(c);
+  t.encoding = THREE.sRGBEncoding;
+  return t;
+}
 function previewEnsure() {
   if (!window.THREE || !THREE.GLTFLoader) return false;
   const canvas = $('preview3d');
@@ -98,18 +131,15 @@ function previewEnsure() {
     const rim = new THREE.DirectionalLight(0x86b6ff, 0.95);
     rim.position.set(4, 5, -6);
     PREVIEW.scene.add(rim);
-    const floor = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.7, 1.95, 0.22, 48),
-      new THREE.MeshStandardMaterial({ color: 0x534432, roughness: 0.95, metalness: 0.02 })
-    );
-    floor.position.y = -0.12;
+    // socle de pierre du lobby (maquette de l'utilisateur) : flanc en blocs sombres, dessus éclairé d'un halo doré
+    const side = new THREE.MeshStandardMaterial({ color: 0x3e3833, roughness: 0.95, metalness: 0.02 });
+    const floor = new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.95, 0.32, 24), [
+      side,
+      new THREE.MeshBasicMaterial({ map: previewPedestalTexture() }),
+      side
+    ]);
+    floor.position.y = -0.17;
     PREVIEW.scene.add(floor);
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(1.45, 0.045, 10, 48),
-      new THREE.MeshBasicMaterial({ color: 0xd7a44b, transparent: true, opacity: 0.65 })
-    );
-    ring.rotation.x = Math.PI / 2;
-    PREVIEW.scene.add(ring);
     const loop = () => {
       if (!PREVIEW.renderer || PREVIEW.canvas !== $('preview3d')) return;
       const w = Math.max(1, canvas.clientWidth || 300),

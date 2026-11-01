@@ -79,6 +79,13 @@ async function run() {
         'desktop ne doit pas être en mode mobile'
       );
 
+      // Lobby (design de l'utilisateur) : tout tient dans la page en 1366×768, sans barre de défilement
+      const fit = await page.evaluate(() => {
+        const m = document.querySelector('#overlay .modal');
+        return { lobby: document.body.classList.contains('lobby'), scroll: m.scrollHeight - m.clientHeight };
+      });
+      assert.ok(fit.lobby, 'body.lobby pendant la sélection');
+      assert.ok(fit.scroll <= 1, `lobby : défilement inattendu (${fit.scroll}px)`);
       await page.click('#raceChoices button[data-r="orc"]');
       await page.click('#classChoices button[data-c="arcanist"]');
       assert.ok(await page.locator('#playBtn').isEnabled(), 'Jouer doit être actif après sélection');

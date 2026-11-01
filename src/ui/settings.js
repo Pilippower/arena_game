@@ -311,13 +311,13 @@ function chooseClass() {
   raceBox.innerHTML = Object.entries(RACE)
     .map(
       ([k, r]) =>
-        `<button class="racePick iconChoice" data-r="${k}" title="${r.name}" aria-label="${r.name}">${racePickIconSVG(k)}<span class="label">${r.name}</span></button>`
+        `<button class="racePick iconChoice" data-r="${k}" title="${r.name}" aria-label="${r.name}">${lobbyCardArt('race', k)}<span class="label">${r.name}</span></button>`
     )
     .join('');
   box.innerHTML = Object.entries(CLASS)
     .map(
       ([k, c]) =>
-        `<button class="classPick iconChoice" data-c="${k}" title="${c.name}" aria-label="${c.name}">${classPickIconSVG(k)}<span class="label">${c.name}</span></button>`
+        `<button class="classPick iconChoice" data-c="${k}" title="${c.name}" aria-label="${c.name}">${lobbyCardArt('class', k)}<span class="label">${c.name}</span></button>`
     )
     .join('');
   $('overlay').style.display = 'flex';
