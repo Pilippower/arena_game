@@ -172,9 +172,12 @@ function skillMotif(name) {
 // elles remplacent entièrement l'ancienne icône vectorielle ; les sorts sans illustration gardent celle-ci.
 const SPELL_ART = new Set(
   (
-    'arcane_bolt frost_nova blink polymorph arcane_power shadow_bolt fear power_shield flash_heal charge hamstring ' +
-    'mortal_strike death_grip obliterate shield_wall backstab kidney_shot shadowstep ambush sap cat_form bear_form ' +
-    'frenzied_regeneration shred maim'
+    'ambush angelic_step arcane_bolt arcane_power asphyxiate backstab barkskin bear_form blink cat_form ' +
+    'charge cloak counterspell dark_soul death_advance death_grip demonic_gate divine_hymn ' +
+    'entangling_roots fear flash_heal frenzied_regeneration frost_nova hamstring human_form kidney_shot ' +
+    'maim maul mortal_strike obliterate pillar_of_frost polymorph power_shield pummel rake sap ' +
+    'shadow_bolt shadowstep shield_wall shred silence spell_lock starfall stealth swipe vendetta ' +
+    'wild_charge wrath'
   ).split(' ')
 );
 const spellArtKey = n => n.toLowerCase().replace(/\W+/g, '_');
@@ -210,6 +213,10 @@ function skillIconSVG(cls, i, S) {
   return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><radialGradient id="${id}" cx="38%" cy="30%"><stop offset="0" stop-color="${a}"/><stop offset=".55" stop-color="${b}"/><stop offset="1" stop-color="#09070d"/></radialGradient></defs><rect width="48" height="48" rx="7" fill="url(#${id})"/><path d="M2 40C13 30 11 15 29 3" stroke="#fff" stroke-opacity=".10" stroke-width="7" fill="none"/>${motifs[m] || motifs.strike}<rect x="1" y="1" width="46" height="46" rx="6" fill="none" stroke="#fff" stroke-opacity=".22"/></svg>`;
 }
 function trinketIconSVG() {
+  return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><image href="assets/ui/spells/trinket.webp" width="48" height="48" preserveAspectRatio="xMidYMid slice"/></svg>`;
+}
+// ancienne icône vectorielle du bijou (plus utilisée en jeu, gardée comme référence)
+function trinketIconVector() {
   return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="trg"><stop stop-color="#ffe88b"/><stop offset=".55" stop-color="#80632b"/><stop offset="1" stop-color="#17100b"/></radialGradient></defs><rect width="48" height="48" rx="7" fill="url(#trg)"/><circle cx="24" cy="24" r="14" fill="none" stroke="#fff0a8" stroke-width="3"/><path d="M24 8l5 11 11 5-11 5-5 11-5-11-11-5 11-5z" fill="#fff1a0"/><circle cx="24" cy="24" r="4" fill="#9a6b24"/></svg>`;
 }
 
