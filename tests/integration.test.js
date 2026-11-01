@@ -26,3 +26,16 @@ for (const f of files) {
   assert.doesNotThrow(() => new Function(read(f)), `${f} : erreur de syntaxe`);
 }
 console.log(`OK - ${files.length} scripts locaux, logique validée unique (game_logic.js)`);
+// Le jeu est en anglais : aucun texte affiché ne doit contenir de mots français courants.
+{
+  const { scripts, read } = require('./sources.js');
+  const FR = /\b(Bouclier|Étourdi|Immobilisé|Ralenti|Vous|Jouer|Classe|Difficulté|Chargement|Musique|Raccourci|Fermer|Aucune cible|Ligne de vue)\b/;
+  for (const f of ['index.html', ...scripts().filter(s => s.startsWith('src/'))])
+    read(f)
+      .split('\n')
+      .forEach((l, i) => {
+        if (/^\s*\/\//.test(l) || /console\.(warn|log|error)/.test(l)) return;
+        for (const m of l.matchAll(/(['"`])((?:(?!\1).){2,})\1/g))
+          assert.doesNotMatch(m[2], FR, `${f}:${i + 1} texte français : ${m[2].slice(0, 60)}`);
+      });
+}
