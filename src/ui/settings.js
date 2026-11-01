@@ -314,6 +314,18 @@ function renderMapChoices() {
       })
   );
 }
+// Lobby : la barre de sorts de la classe choisie, comme en jeu (survol = infobulle du sort) pour découvrir le
+// personnage avant de jouer. Unité fictive : pas de recharge, ressource pleine.
+let LOBBY_UNIT = null;
+function lobbySkillBar(cls) {
+  const box = $('skills');
+  LOBBY_UNIT = cls ? { cls, cd: [], gcd: 0, trinket: 0, res: 100, burst: 0, form: null, stealth: false } : null;
+  if (LOBBY_UNIT) renderSkillBar(LOBBY_UNIT);
+  else {
+    box.innerHTML = '';
+    box._key = null;
+  }
+}
 function chooseClass() {
   playLobbyMusic();
   renderMapChoices();
@@ -347,6 +359,7 @@ function chooseClass() {
     raceBox.querySelectorAll('button').forEach(b => b.classList.toggle('selected', b.dataset.r === selectedRace));
     box.querySelectorAll('button').forEach(b => b.classList.toggle('selected', b.dataset.c === selectedClass));
     updateSelectPreview(selectedRace, selectedClass);
+    lobbySkillBar(selectedClass);
   };
   raceBox.querySelectorAll('button').forEach(
     b =>

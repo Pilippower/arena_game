@@ -287,4 +287,9 @@ assert.ok(
     read('src/audio/tracks.js').includes("el.closest('#skills, #mobileControls')"),
   'clic de souris sur l’interface, pas sur les sorts'
 );
+assert.match(
+  read('src/ui/settings.js'),
+  /updateSelectPreview\(selectedRace, selectedClass\);\s*lobbySkillBar\(selectedClass\);/,
+  'lobby : barre de sorts de la classe choisie'
+);
 console.log('OK - spécifications validées (docs/SPEC.md)');

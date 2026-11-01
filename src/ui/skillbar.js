@@ -112,15 +112,17 @@ document.addEventListener('pointermove', e => {
   const b = e.target.closest?.('#skills .skill[data-i]');
   const tip = $('skillTip');
   if (!tip) return;
-  if (!b || !state?.player) {
+  // au lobby, la barre montre la classe choisie (LOBBY_UNIT, settings.js)
+  const u = document.body.classList.contains('lobby') && LOBBY_UNIT ? LOBBY_UNIT : state?.player;
+  if (!b || !u) {
     tip.style.display = 'none';
     TIP_SLOT = null;
     return;
   }
   const i = +b.dataset.i;
-  if (TIP_SLOT !== i) {
-    TIP_SLOT = i;
-    tip.innerHTML = skillTooltip(state.player, i);
+  if (TIP_SLOT !== u.cls + i) {
+    TIP_SLOT = u.cls + i;
+    tip.innerHTML = skillTooltip(u, i);
   }
   tip.style.display = 'block';
   if (tip.parentNode !== document.body) document.body.appendChild(tip);
