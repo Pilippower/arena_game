@@ -213,9 +213,9 @@ body.lobby:not(.mobile-mode) .pickerLayout {
   --hc: 66px;
 }
 body.lobby:not(.mobile-mode) .pickLeft {
-  --hc: clamp(64px, 10.5vh, 124px);
+  --hc: clamp(58px, 8.6vh, 124px);
   display: grid;
-  grid-template-rows: auto minmax(64px, 1fr) auto var(--hc) auto calc(2 * var(--hc) + 8px);
+  grid-template-rows: auto minmax(96px, 1fr) auto var(--hc) auto calc(2 * var(--hc) + 8px);
   gap: 5px;
   min-height: 0;
 }
@@ -419,4 +419,218 @@ body.mobile-mode .pickRight .pvArt {
 }
 body.mobile-mode .torchFire {
   display: none;
+}
+/* ==========================================================================================================
+   2e design du lobby (maquette assets_src/ui/lobby_interface.png ; images assets/ui/lobby2/ découpées par
+   tools/build_lobby2_assets.js) : titre centré, ligne Mode | Difficulty, étiquettes de section de la panoplie,
+   arènes illustrées, récapitulatif sous l'aperçu et grand bouton PLAY.
+   ========================================================================================================== */
+#overlay .lobbyHead {
+  text-align: center;
+}
+#overlay .lobbyHead h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-size: clamp(22px, 2.5vw, 42px);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #fff3c2 0%, #ffd56a 45%, #c8841e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 2px #000) drop-shadow(0 0 10px #e3a83f55);
+}
+#overlay .lobbyHead h2::before,
+#overlay .lobbyHead h2::after {
+  content: '';
+  width: clamp(60px, 9vw, 150px);
+  height: 22px;
+  background: url(../../assets/ui/lobby2/orn_l.webp) right center / contain no-repeat;
+}
+#overlay .lobbyHead h2::after {
+  background-image: url(../../assets/ui/lobby2/orn_r.webp);
+  background-position: left center;
+}
+#overlay .lobbyHead p {
+  margin: 0 0 8px;
+}
+/* ligne Mode | Difficulty */
+#overlay .lobbyOpts {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+#overlay .lobbyOpts .diffs {
+  flex: none;
+  gap: 8px;
+}
+#overlay .lobbyOpts .diffs button {
+  flex: none;
+  min-width: clamp(60px, 6vw, 96px);
+}
+#overlay .optSep {
+  width: 2px;
+  height: 30px;
+  margin: 0 10px;
+  background: linear-gradient(180deg, transparent, #e3bf68, transparent);
+}
+/* étiquettes de section : images de la panoplie (texte peint, gardé pour l'accessibilité) */
+#overlay .selectorTitle[class*='tag-'] {
+  flex: none;
+  height: clamp(24px, 3.2vh, 32px);
+  margin: 2px 0 0 -4px;
+  padding: 0;
+  clip-path: none;
+  font-size: 0;
+  color: transparent !important;
+  text-shadow: none;
+  background: left center / contain no-repeat;
+}
+#overlay .selectorTitle[class*='tag-']::before,
+#overlay .selectorTitle[class*='tag-']::after {
+  display: none;
+}
+#overlay .tag-mode {
+  aspect-ratio: 132 / 34;
+  background-image: url(../../assets/ui/lobby2/tag_mode.webp) !important;
+}
+#overlay .tag-difficulty {
+  aspect-ratio: 174 / 34;
+  background-image: url(../../assets/ui/lobby2/tag_difficulty.webp) !important;
+}
+#overlay .tag-arena {
+  aspect-ratio: 130 / 34;
+  background-image: url(../../assets/ui/lobby2/tag_arena.webp) !important;
+}
+#overlay .tag-race {
+  aspect-ratio: 112 / 34;
+  background-image: url(../../assets/ui/lobby2/tag_race.webp) !important;
+}
+#overlay .tag-class {
+  aspect-ratio: 114 / 34;
+  background-image: url(../../assets/ui/lobby2/tag_class.webp) !important;
+}
+#overlay .tag-preview {
+  aspect-ratio: 132 / 34;
+  background-image: url(../../assets/ui/lobby2/tag_preview.webp) !important;
+}
+#overlay .pvHead {
+  display: none !important;
+}
+/* boutons de mode / difficulté : bleu nuit cerclé d'or ; choisi = or lumineux */
+#overlay .diffs button {
+  background: linear-gradient(180deg, #1d2c5e, #0e1638) !important;
+  border: 2px solid #b8893c !important;
+  border-radius: 9px !important;
+  color: #f3ead2 !important;
+  font-family: Georgia, 'Times New Roman', serif; /* Cinzel n'a pas de minuscules : « 1v1 » */
+  font-size: clamp(13px, 1.05vw, 18px);
+  outline: none !important;
+  box-shadow:
+    inset 0 1px #ffffff22,
+    0 3px 8px #000a !important;
+}
+#overlay .diffs button:hover {
+  border-color: #e9c46a !important;
+}
+#overlay .diffs button.selected {
+  color: #ffd56a !important;
+  border-color: #ffd36a !important;
+  box-shadow:
+    0 0 0 1px #ff9d2a,
+    0 0 14px #ffb43acc,
+    inset 0 0 10px #ffb43a55 !important;
+}
+/* arènes illustrées : nom et description par le jeu, losange doré sous la carte choisie */
+#overlay .mapCard {
+  overflow: visible;
+}
+#overlay .mapCard img {
+  border-radius: 6px;
+}
+#overlay .mapCard .mapLabel {
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(transparent, #000c 55%);
+}
+#overlay .mapCard .mapLabel b {
+  font-size: clamp(14px, 1.4vw, 24px);
+}
+#overlay .mapCard.selected::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%) rotate(45deg);
+  background: linear-gradient(135deg, #fff3c2, #e9a234);
+  box-shadow: 0 0 8px #ffb43a;
+}
+/* colonne de droite : aperçu, récapitulatif, PLAY */
+body.lobby:not(.mobile-mode) .pickRight {
+  gap: 6px;
+}
+#overlay .lobbyChips {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 10px;
+  padding: 2px 6px;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: clamp(11px, 0.95vw, 15px);
+  color: #f3ead2;
+}
+#overlay .lobbyChips span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#overlay .lobbyChips span:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+  justify-content: center;
+}
+#overlay .lobbyChips img,
+#overlay .lobbyChips svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 4px;
+  object-fit: cover;
+}
+#overlay .playRow {
+  justify-content: center;
+}
+#overlay #playBtn {
+  width: 100%;
+  max-width: 330px;
+  aspect-ratio: 450 / 125;
+  height: auto;
+  padding: 0;
+  font-size: 0;
+  color: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: url(../../assets/ui/lobby2/play.webp) center / 100% 100% no-repeat !important;
+  filter: drop-shadow(0 4px 8px #000a);
+  transition:
+    filter 0.15s,
+    transform 0.08s;
+}
+#overlay #playBtn:hover:not(:disabled) {
+  filter: brightness(1.12) drop-shadow(0 0 12px #ffc65aaa);
+}
+#overlay #playBtn:active:not(:disabled) {
+  transform: scale(0.97);
+  filter: brightness(1.25) drop-shadow(0 0 18px #ffd56a);
+}
+#overlay #playBtn:disabled {
+  opacity: 1;
+  filter: grayscale(1) brightness(0.55);
 }

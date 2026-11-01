@@ -296,14 +296,15 @@ function updateSelectPreview(selectedRace, selectedClass) {
     box.innerHTML = `<div class="pvHead"><span>Preview</span><span class="tiny">same model as in the arena</span></div><div class="pvArt"><canvas id="preview3d" aria-hidden="true"></canvas><div id="previewLoading" class="previewLoading">Loading hero…</div></div><div class="previewHint"></div>`;
   updateSelectPreview3D(rk, ck);
 }
-// Cartes : une vignette par carte (assets/ui/map_thumbs.js), clic = applyMap.
+// Cartes : illustration de l'utilisateur (assets/ui/lobby2/), sinon la capture du jeu (assets/ui/map_thumbs.js).
+const MAP_ART = { castle: 'assets/ui/lobby2/map_castle.webp', bridge: 'assets/ui/lobby2/map_bridge.webp' };
 function renderMapChoices() {
   const box = $('mapChoices');
   if (!box) return;
   box.innerHTML = Object.entries(MAPS)
     .map(
       ([id, M]) =>
-        `<button class="mapCard${id === MAP_ID ? ' selected' : ''}" data-map="${id}"><img src="${window.MAP_THUMBS?.[id] || ''}" alt=""><div class="mapLabel"><b>${M.name}</b><span>${M.desc}</span></div></button>`
+        `<button class="mapCard${id === MAP_ID ? ' selected' : ''}" data-map="${id}"><img src="${MAP_ART[id] || window.MAP_THUMBS?.[id] || ''}" alt=""><div class="mapLabel"><b>${M.name}</b><span>${M.desc}</span></div></button>`
     )
     .join('');
   box.querySelectorAll('[data-map]').forEach(
@@ -311,12 +312,32 @@ function renderMapChoices() {
       (b.onclick = () => {
         applyMap(b.dataset.map);
         renderMapChoices();
+        LOBBY_CHIPS?.();
       })
   );
 }
 // Lobby : la barre de sorts de la classe choisie, comme en jeu (survol = infobulle du sort) pour découvrir le
 // personnage avant de jouer. Unité fictive : pas de recharge, ressource pleine.
-let LOBBY_UNIT = null;
+let LOBBY_UNIT = null,
+  LOBBY_CHIPS = null;
+// Récapitulatif sous l'aperçu : race, classe, mode, difficulté, arène
+const CHIP_ICON = {
+  mode: '<svg viewBox="0 0 20 20"><path d="M3 3l8 8M3 3h4M3 3v4M17 3l-8 8M17 3h-4M17 3v4M6 14l-3 3M14 14l3 3" stroke="#e9c46a" stroke-width="2" fill="none"/></svg>',
+  diff: '<svg viewBox="0 0 20 20"><rect x="2" y="12" width="4" height="6" fill="#e9c46a"/><rect x="8" y="8" width="4" height="10" fill="#e9c46a"/><rect x="14" y="3" width="4" height="15" fill="#e9c46a"/></svg>',
+  map: '<svg viewBox="0 0 20 20"><path d="M10 19s6-6.5 6-11a6 6 0 0 0-12 0c0 4.5 6 11 6 11z" fill="#e9c46a"/><circle cx="10" cy="8" r="2.3" fill="#1a1d26"/></svg>'
+};
+function lobbyChipsHTML(race, cls) {
+  const diff = DIFFICULTY[0].toUpperCase() + DIFFICULTY.slice(1);
+  return [
+    race && `<span><img src="assets/ui/lobby/race_${race}.webp" alt="">${RACE[race].name}</span>`,
+    cls && `<span><img src="assets/ui/lobby/class_${cls}.webp" alt="">${CLASS[cls].name}</span>`,
+    `<span>${CHIP_ICON.mode}${TEAM_SIZE}v${TEAM_SIZE}</span>`,
+    `<span>${CHIP_ICON.diff}${diff}</span>`,
+    `<span>${CHIP_ICON.map}${MAPS[MAP_ID]?.name || ''}</span>`
+  ]
+    .filter(Boolean)
+    .join('');
+}
 function lobbySkillBar(cls) {
   const box = $('skills');
   LOBBY_UNIT = cls ? { cls, cd: [], gcd: 0, trinket: 0, res: 100, burst: 0, form: null, stealth: false } : null;
@@ -360,7 +381,9 @@ function chooseClass() {
     box.querySelectorAll('button').forEach(b => b.classList.toggle('selected', b.dataset.c === selectedClass));
     updateSelectPreview(selectedRace, selectedClass);
     lobbySkillBar(selectedClass);
+    LOBBY_CHIPS();
   };
+  LOBBY_CHIPS = () => ($('lobbyChips').innerHTML = lobbyChipsHTML(selectedRace, selectedClass));
   raceBox.querySelectorAll('button').forEach(
     b =>
       (b.onclick = () => {
@@ -379,6 +402,7 @@ function chooseClass() {
           localStorage.setItem('arenaDifficulty', DIFFICULTY);
         } catch (_) {}
         diffRefresh();
+        LOBBY_CHIPS();
       })
   );
   diffRefresh();
@@ -393,6 +417,7 @@ function chooseClass() {
           localStorage.setItem('arenaTeamSize', TEAM_SIZE);
         } catch (_) {}
         sizeRefresh();
+        LOBBY_CHIPS();
       })
   );
   sizeRefresh();

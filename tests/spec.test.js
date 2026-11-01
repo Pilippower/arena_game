@@ -292,4 +292,21 @@ assert.match(
   /updateSelectPreview\(selectedRace, selectedClass\);\s*lobbySkillBar\(selectedClass\);/,
   'lobby : barre de sorts de la classe choisie'
 );
+// Lobby, 2e design : étiquettes de la panoplie, arènes illustrées, récapitulatif, grand PLAY
+{
+  const fs = require('node:fs'),
+    html = read('index.html');
+  for (const k of ['mode', 'difficulty', 'arena', 'race', 'class', 'preview'])
+    assert.ok(
+      html.includes('tag-' + k) &&
+        fs.existsSync(require('node:path').join(__dirname, '..', 'assets/ui/lobby2/tag_' + k + '.webp')),
+      'étiquette ' + k
+    );
+  assert.ok(
+    html.indexOf('class="lobbyOpts"') < html.indexOf('class="pickerLayout"'),
+    'Mode | Difficulty sous le titre'
+  );
+  assert.ok(html.includes('id="lobbyChips"'), 'récapitulatif sous l’aperçu');
+  assert.match(read('src/ui/settings.js'), /MAP_ART\[id\] \|\| window\.MAP_THUMBS/, 'arènes illustrées');
+}
 console.log('OK - spécifications validées (docs/SPEC.md)');
