@@ -283,7 +283,7 @@ assert.match(
   'pas de nom sous les sorts'
 );
 assert.ok(
-  require('node:fs').existsSync(require('node:path').join(__dirname, '..', 'assets/audio/click.mp3')) &&
+  require('node:fs').existsSync(require('node:path').join(__dirname, '..', 'assets/audio/click.wav')) &&
     read('src/audio/tracks.js').includes("el.closest('#skills, #mobileControls')"),
   'clic de souris sur l’interface, pas sur les sorts'
 );
@@ -309,4 +309,5 @@ assert.match(
   assert.ok(html.includes('id="lobbyChips"'), 'récapitulatif sous l’aperçu');
   assert.match(read('src/ui/settings.js'), /MAP_ART\[id\] \|\| window\.MAP_THUMBS/, 'arènes illustrées');
 }
+assert.match(read('src/ui/lobby.css'), /#overlay \.mapCard \{\s*overflow: hidden;/, 'zoom des arènes dans le cadre doré');
 console.log('OK - spécifications validées (docs/SPEC.md)');

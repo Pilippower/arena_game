@@ -546,8 +546,9 @@ body.mobile-mode .torchFire {
     inset 0 0 10px #ffb43a55 !important;
 }
 /* arènes illustrées : nom et description par le jeu, losange doré sous la carte choisie */
+/* le zoom au survol reste dans le cadre doré (rognage) */
 #overlay .mapCard {
-  overflow: visible;
+  overflow: hidden;
 }
 #overlay .mapCard img {
   border-radius: 6px;
@@ -563,7 +564,7 @@ body.mobile-mode .torchFire {
   content: '';
   position: absolute;
   left: 50%;
-  bottom: -7px;
+  bottom: 3px;
   width: 12px;
   height: 12px;
   transform: translateX(-50%) rotate(45deg);

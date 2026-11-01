@@ -97,12 +97,17 @@ function refreshTrackVolumes() {
   const g = TRACKS.local;
   if (TRACKS.want === 'game' && g && !g.paused) g.volume = trackVolume('game');
 }
-// Clic de souris des options d'interface (lobby, réglages, résultats, boutons du haut) : assets/audio/click.mp3.
+// Clic de souris des options d'interface (lobby, réglages, résultats, boutons du haut) : assets/audio/click.wav.
+// Son de l'utilisateur recadré (son mp3 commençait par 0,56 s de silence : le clic semblait en retard) ;
+// préchargé dès le chargement pour partir à l'instant de l'appui.
 // Pas sur la barre de sorts ni sur les commandes mobiles (gameplay). Plusieurs lecteurs : clics rapprochés.
 const UI_CLICK = { pool: [], i: 0 };
+for (let k = 0; k < 4; k++) {
+  const a = new Audio('assets/audio/click.wav?v=' + (window.ASSET_V || 1));
+  a.preload = 'auto';
+  UI_CLICK.pool.push(a);
+}
 function uiClickSound() {
-  if (!UI_CLICK.pool.length)
-    for (let k = 0; k < 4; k++) UI_CLICK.pool.push(new Audio('assets/audio/click.mp3?v=' + (window.ASSET_V || 1)));
   const a = UI_CLICK.pool[UI_CLICK.i++ % UI_CLICK.pool.length];
   a.volume = clamp(0.5 * PREFS.volume, 0, 1);
   a.currentTime = 0;
