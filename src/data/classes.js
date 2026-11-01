@@ -402,7 +402,7 @@ function useSpecialSkill(u, i) {
   spellSfxKind(u, S);
   pay(u, i);
   u.cd[i] = S.cd;
-  if (!(k === 'stealth' && !u.stealth)) u.gcd = shift ? 1 : 1;
+  if (!(k === 'stealth' && !u.stealth)) u.gcd = u.gcdMax = 1;
   updateUI();
   return true;
 }

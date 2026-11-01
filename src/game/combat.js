@@ -506,6 +506,8 @@ function skillFailReason(u, i) {
 function tryPlayerSkill(i) {
   const p = state?.player;
   if (!p || !skillsOf(p)[i] || p.poly > 0) return false;
+  p.pressed = { i, t: now() }; // retour visuel d'appui (barre de sorts)
+  updateUI();
   if (useSkill(p, i)) {
     p.queuedSkill = null;
     return true;
@@ -766,7 +768,7 @@ function useSkill(u, i) {
   spellSfx(u, i, t);
   pay(u, i);
   u.cd[i] = S.cd;
-  u.gcd = i === 4 ? 0.35 : 1.05;
+  u.gcd = u.gcdMax = i === 4 ? 0.35 : 1.05;
   updateUI();
   return true;
 }

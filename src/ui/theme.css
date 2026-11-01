@@ -249,3 +249,68 @@ body.mobile-mode #bottom {
   border: 0 !important;
   box-shadow: none !important;
 }
+/* barre de sorts : illustration plein cadre, nom en bas, balayage circulaire GCD / recharge, appui */
+.skill {
+  padding: 0 !important;
+  overflow: hidden;
+}
+.skill .icon {
+  position: absolute !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  border-radius: 9px !important;
+}
+.skill .icon svg,
+.skill .icon img {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+.skill .skillName {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  padding: 10px 3px 3px;
+  text-align: center;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(transparent, #000c 70%);
+}
+.skill .cost,
+.skill .key {
+  z-index: 4;
+  text-shadow: 0 1px 2px #000, 0 0 4px #000;
+}
+.skill .cost {
+  top: 3px;
+  bottom: auto !important;
+}
+.skill .key {
+  top: 3px;
+  bottom: auto !important;
+}
+.skill .sweep {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: 9px;
+  background: conic-gradient(from 0deg, transparent 0 calc(100% - var(--p)), #000b calc(100% - var(--p)) 100%);
+  pointer-events: none;
+}
+.skill .cd {
+  z-index: 2 !important;
+  background: none !important;
+}
+.skill.pressed {
+  transform: scale(0.92);
+  filter: brightness(1.45);
+  box-shadow: 0 0 0 2px #fff6, 0 0 16px #ffd96f !important;
+}
+body.mobile-mode .skill .icon {
+  width: auto !important;
+  height: auto !important;
+}

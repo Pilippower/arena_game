@@ -80,10 +80,10 @@ function updateUI() {
     order
       .map((i, slot) => {
         const s = bar[i];
-        return `<button class="skill ${p.gcd > 0 ? 'gcding' : ''} ${p.queuedSkill?.i === i ? 'queued' : ''} ${SKILL_DRAG.from === slot ? 'dragFrom' : ''}" data-i="${i}" data-slot="${slot}"><span class="icon">${skillIconSVG(p.cls, i, s)}</span><span class="skillName">${s.n}</span><span class="cost">${s.c || ''}</span><span class="key">${keyLabel(PREFS.keybinds.skills[slot])}</span>${p.cd[i] > 0 ? `<span class="cd">${p.cd[i] < 10 ? p.cd[i].toFixed(1) : p.cd[i].toFixed(0)}</span>` : ''}</button>`;
+        return `<button class="skill ${p.queuedSkill?.i === i ? 'queued' : ''} ${p.pressed?.i === i && now() - p.pressed.t < 0.18 ? 'pressed' : ''} ${SKILL_DRAG.from === slot ? 'dragFrom' : ''}" data-i="${i}" data-slot="${slot}"><span class="icon">${skillIconSVG(p.cls, i, s)}</span>${cooldownHTML(p, i, s)}<span class="skillName">${s.n}</span><span class="cost">${s.c || ''}</span><span class="key">${keyLabel(PREFS.keybinds.skills[slot])}</span></button>`;
       })
       .join('') +
-    `<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(PREFS.keybinds.trinket)}</span>${p.trinket > 0 ? `<span class="cd">${p.trinket.toFixed(0)}</span>` : ''}</button>`;
+    `<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(PREFS.keybinds.trinket)}</span>${p.trinket > 0 ? sweepHTML(p.trinket / 90, p.trinket) : ''}</button>`;
   document.querySelectorAll('.skill[data-i]').forEach(b => {
     b.onclick = () => {
       if (!MOBILE.enabled) tryPlayerSkill(+b.dataset.i);
@@ -111,4 +111,16 @@ function updateUI() {
     cb.querySelector('.castFill').style.width = `${q * 100}%`;
     cb.querySelector('.castText').textContent = p.cast.name;
   } else cb.style.display = 'none';
+}
+
+// Balayage circulaire de recharge (style MMO) : la partie sombre diminue en tournant ; chiffre si recharge longue.
+function sweepHTML(frac, remain) {
+  const pct = (clamp(frac, 0, 1) * 100).toFixed(1);
+  return `<span class="sweep" style="--p:${pct}%"></span>${remain > 1.5 ? `<span class="cd">${remain < 10 ? remain.toFixed(1) : remain.toFixed(0)}</span>` : ''}`;
+}
+// Recharge propre au sort, sinon GCD (tous les sorts qui y sont soumis tournent ensemble).
+function cooldownHTML(p, i, S) {
+  if (p.cd[i] > 0) return sweepHTML(p.cd[i] / Math.max(S.cd || 0, p.cd[i] > (S.cd || 0) ? 4 : 0.01, 0.01), p.cd[i]);
+  if (p.gcd > 0) return sweepHTML(p.gcd / (p.gcdMax || 1), 0);
+  return '';
 }
