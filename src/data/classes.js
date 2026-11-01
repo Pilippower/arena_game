@@ -158,8 +158,8 @@ function skillMotif(name) {
   if (/stun|kidney|asphyx/.test(n)) return 'stun';
   if (/bolt/.test(n)) return 'bolt';
   if (/poly|morph/.test(n)) return 'sheep';
-  if (/cat form/.test(n)) return 'cat';
-  if (/bear form/.test(n)) return 'bear';
+  if (/cat form/.test(n)) return 'claws'; // félin = griffures (spec : docs/SPEC.md)
+  if (/bear form/.test(n)) return 'paw'; // ours = empreinte de patte
   if (/human form/.test(n)) return 'leaf';
   if (/stealth/.test(n)) return 'stealth';
   if (/sap|maim/.test(n)) return 'stun';
@@ -187,8 +187,8 @@ function skillIconSVG(cls, i, S) {
     grip: `<path d="M8 17c6-8 14-7 17-1s-2 10-7 9-6-7-2-10M40 31c-6 8-14 7-17 1s2-10 7-9 6 7 2 10" fill="none" stroke="#d5ecff" stroke-width="4"/><path d="M17 31l14-14" stroke="${a}" stroke-width="5"/>`,
     star: `<path d="M24 5l5 12 13 1-10 8 4 13-12-7-12 7 4-13-10-8 13-1z" fill="#fff2a8" stroke="${a}" stroke-width="2"/><circle cx="39" cy="8" r="3" fill="#fff"/>`,
     stun: `<path d="M9 26l8-8 5 6 7-12 10 8-7 8 7 6-11 8-5-8-8 7z" fill="#ffe27a" stroke="${a}" stroke-width="2"/><circle cx="15" cy="11" r="3" fill="#fff3a0"/>`,
-    cat: `<path d="M24 28c-6 0-11 4-11 9 0 3 3 5 6 4 2-1 3-2 5-2s3 1 5 2c3 1 6-1 6-4 0-5-5-9-11-9z" fill="#fff3d6"/><ellipse cx="12" cy="20" rx="4" ry="5.5" fill="#fff3d6"/><ellipse cx="20" cy="13" rx="4" ry="5.5" fill="#fff3d6"/><ellipse cx="28" cy="13" rx="4" ry="5.5" fill="#fff3d6"/><ellipse cx="36" cy="20" rx="4" ry="5.5" fill="#fff3d6"/><circle cx="24" cy="24" r="20" fill="none" stroke="${a}" stroke-width="2" opacity=".7"/>`,
-    bear: `<path d="M10 10c4 10 6 20 4 30M20 7c3 11 4 22 1 34M30 7c2 11 2 22-1 34M39 11c0 10-2 20-5 29" stroke="#ffd9a8" stroke-width="4.5" stroke-linecap="round" fill="none"/><path d="M10 10c4 10 6 20 4 30M20 7c3 11 4 22 1 34M30 7c2 11 2 22-1 34M39 11c0 10-2 20-5 29" stroke="${a}" stroke-width="1.5" fill="none"/>`,
+    paw: `<path d="M24 28c-6 0-11 4-11 9 0 3 3 5 6 4 2-1 3-2 5-2s3 1 5 2c3 1 6-1 6-4 0-5-5-9-11-9z" fill="#fff3d6"/><ellipse cx="12" cy="20" rx="4" ry="5.5" fill="#fff3d6"/><ellipse cx="20" cy="13" rx="4" ry="5.5" fill="#fff3d6"/><ellipse cx="28" cy="13" rx="4" ry="5.5" fill="#fff3d6"/><ellipse cx="36" cy="20" rx="4" ry="5.5" fill="#fff3d6"/><circle cx="24" cy="24" r="20" fill="none" stroke="${a}" stroke-width="2" opacity=".7"/>`,
+    claws: `<path d="M10 10c4 10 6 20 4 30M20 7c3 11 4 22 1 34M30 7c2 11 2 22-1 34M39 11c0 10-2 20-5 29" stroke="#ffd9a8" stroke-width="4.5" stroke-linecap="round" fill="none"/><path d="M10 10c4 10 6 20 4 30M20 7c3 11 4 22 1 34M30 7c2 11 2 22-1 34M39 11c0 10-2 20-5 29" stroke="${a}" stroke-width="1.5" fill="none"/>`,
     leaf: `<path d="M10 38C10 18 22 8 40 8c0 18-10 30-30 30z" fill="#c9f59a"/><path d="M12 36L36 12" stroke="${a}" stroke-width="2.5"/>`,
     stealth: `<path d="M5 24c6-9 13-13 19-13s13 4 19 13c-6 9-13 13-19 13S11 33 5 24z" fill="#2a2235" stroke="#d9c9ff" stroke-width="2"/><circle cx="24" cy="24" r="6" fill="${a}"/><path d="M8 40L40 8" stroke="#d9c9ff" stroke-width="3" opacity=".8"/>`,
     sheep: `<ellipse cx="25" cy="26" rx="14" ry="10" fill="#f4f0ff"/><circle cx="16" cy="20" r="6" fill="#fff"/><circle cx="28" cy="18" r="6" fill="#fff"/><ellipse cx="10" cy="27" rx="5" ry="6" fill="#3a3348"/><path d="M17 34v8M24 35v8M31 35v8M37 33v8" stroke="#3a3348" stroke-width="3" stroke-linecap="round"/><circle cx="24" cy="24" r="19" fill="none" stroke="${a}" stroke-width="2" opacity=".7"/>`,
