@@ -212,10 +212,10 @@ function updateSelectPreview3D(rk, ck) {
   const load = $('previewLoading');
   if (load) {
     load.style.display = 'block';
-    load.textContent = 'Chargement du personnage…';
+    load.textContent = 'Loading hero…';
   }
   if (!previewEnsure()) {
-    if (load) load.textContent = 'Prévisualisation 3D indisponible';
+    if (load) load.textContent = '3D preview unavailable';
     return;
   }
   const requestId = ++PREVIEW.requestId;
@@ -223,7 +223,7 @@ function updateSelectPreview3D(rk, ck) {
   if (PREVIEW.loadTimer) clearTimeout(PREVIEW.loadTimer);
   PREVIEW.loadTimer = setTimeout(() => {
     if (requestId === PREVIEW.requestId && !PREVIEW.loaded && load) {
-      load.textContent = 'Chargement lent — vérifie ta connexion';
+      load.textContent = 'Slow loading — check your connection';
     }
   }, 6500);
   const fake = makeUnit(ck || 'sentinel', 0, 0, 0, 'Preview', false, rk || 'human', 0),

@@ -8,9 +8,9 @@ function showSplash(t) {
 }
 function drText(u) {
   const a = [];
-  if (u.poly > 0) a.push(`${u.polyKind === 'sap' ? 'Assommé' : 'Mouton'} ${u.poly.toFixed(1)}`);
-  if (u.stealth) a.push('Camouflé');
-  if (u.form) a.push(u.form === 'cat' ? 'Félin' : 'Ours');
+  if (u.poly > 0) a.push(`${u.polyKind === 'sap' ? 'Sapped' : 'Sheep'} ${u.poly.toFixed(1)}`);
+  if (u.stealth) a.push('Stealthed');
+  if (u.form) a.push(u.form === 'cat' ? 'Cat' : 'Bear');
   if (u.stun > 0) a.push(`Stun ${u.stun.toFixed(1)}`);
   if (u.root > 0) a.push(`Root ${u.root.toFixed(1)}`);
   if (u.silence > 0) a.push(`Sil ${u.silence.toFixed(1)}`);
@@ -28,7 +28,7 @@ function unitRowHTML(u, enemy) {
     C = CLASS[u.cls],
     hp = (100 * u.hp) / u.maxHp,
     col = enemy ? '#e65360' : hp > 50 ? '#3fcf6a' : hp > 25 ? '#e6c13f' : '#e65360';
-  return `<div class="unitRow${u === p.target ? ' sel' : ''}${u.alive ? '' : ' dead'}" data-uid="${state.units.indexOf(u)}">${portraitHTML(u)}<div class="unitInfo"><div class="nm">${u === p ? 'Vous' : u.name}<span>${C.name}</span></div>
+  return `<div class="unitRow${u === p.target ? ' sel' : ''}${u.alive ? '' : ' dead'}" data-uid="${state.units.indexOf(u)}">${portraitHTML(u)}<div class="unitInfo"><div class="nm">${u === p ? 'You' : u.name}<span>${C.name}</span></div>
   <div class="hpb"><div style="width:${hp.toFixed(1)}%;background:${col}"></div></div><div class="rsb"><div style="width:${u.res}%"></div></div>${castBarHTML(u)}<div class="dr">${drText(u)}</div></div></div>`;
 }
 function castBarHTML(u) {
@@ -39,7 +39,7 @@ function castBarHTML(u) {
 }
 function frameHTML(u, enemy = false) {
   const C = CLASS[u.cls];
-  return `<div class="nameRow"><b>${u.name}</b><span>${Math.ceil(u.hp)} PV</span></div><div class="tiny">${RACE[u.race]?.name || ''} ${C.name} · ${C.role} · ${ARMOR[C.armor]?.label || ''}</div><div class="bar"><div class="fill ${enemy ? 'enemy' : ''}" style="width:${(100 * u.hp) / u.maxHp}%"></div></div><div class="bar resource"><div class="fill" style="width:${u.res}%"></div></div><div class="tiny">${C.res} ${Math.round(u.res)}/100${u.shield > 0 ? ` · Bouclier ${Math.ceil(u.shield)}` : ''}</div>`;
+  return `<div class="nameRow"><b>${u.name}</b><span>${Math.ceil(u.hp)} HP</span></div><div class="tiny">${RACE[u.race]?.name || ''} ${C.name} · ${C.role} · ${ARMOR[C.armor]?.label || ''}</div><div class="bar"><div class="fill ${enemy ? 'enemy' : ''}" style="width:${(100 * u.hp) / u.maxHp}%"></div></div><div class="bar resource"><div class="fill" style="width:${u.res}%"></div></div><div class="tiny">${C.res} ${Math.round(u.res)}/100${u.shield > 0 ? ` · Bouclier ${Math.ceil(u.shield)}` : ''}</div>`;
 }
 function setHTML(el) {
   if (el._html !== el._shown) {
@@ -58,8 +58,8 @@ function updateUI() {
   $('selfFrame')._html = frameHTML(p, false);
   $('targetFrame')._html = t
     ? frameHTML(t, true) +
-      `<div class="tiny">${los(p, t) ? '✓ Ligne de vue' : '⚠ Ligne de vue bloquée'}</div>${castBarHTML(t)}`
-    : '<b>Aucune cible</b>';
+      `<div class="tiny">${los(p, t) ? '✓ In line of sight' : '⚠ Line of sight blocked'}</div>${castBarHTML(t)}`
+    : '<b>No target</b>';
   $('arenaFrames')._html = state.units
     .filter(u => u.team !== p.team)
     .map(u => unitRowHTML(u, true))
@@ -69,7 +69,7 @@ function updateUI() {
     .map(u => unitRowHTML(u, false))
     .join('');
   $('status')._html =
-    `${CLASS[p.cls].tags.map(x => `<span class="tag">${x}</span>`).join('')}<br>${p.poly > 0 ? '🐑 Mouton ' : ''}${p.stun > 0 ? '🌀 Étourdi ' : ''}${p.root > 0 ? '⛓ Immobilisé ' : ''}${p.silence > 0 ? '⛔ Silence ' : ''}${p.fear > 0 ? '👁 Fear ' : ''}${p.slow > 0 ? `❄ Ralenti ${Math.round((p.slowPct || 0) * 100)}% ` : ''}${p.burst > 0 ? '🔥 Burst ' : ''}${p.trinket > 0 ? `· Trinket ${Math.ceil(p.trinket)}s` : ''}${state.dampening > 0 ? `<br>⚔ Dampening ${Math.round(state.dampening * 100)}%` : ''}`;
+    `${CLASS[p.cls].tags.map(x => `<span class="tag">${x}</span>`).join('')}<br>${p.poly > 0 ? '🐑 Sheep ' : ''}${p.stun > 0 ? '🌀 Stunned ' : ''}${p.root > 0 ? '⛓ Rooted ' : ''}${p.silence > 0 ? '⛔ Silence ' : ''}${p.fear > 0 ? '👁 Fear ' : ''}${p.slow > 0 ? `❄ Slowed ${Math.round((p.slowPct || 0) * 100)}% ` : ''}${p.burst > 0 ? '🔥 Burst ' : ''}${p.trinket > 0 ? `· Trinket ${Math.ceil(p.trinket)}s` : ''}${state.dampening > 0 ? `<br>⚔ Dampening ${Math.round(state.dampening * 100)}%` : ''}`;
   for (const id of ['selfFrame', 'targetFrame', 'arenaFrames', 'partyFrames', 'status']) setHTML($(id));
   const C = CLASS[p.cls],
     bar = skillsOf(p),

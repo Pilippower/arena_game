@@ -26,7 +26,7 @@ function loop() {
     fatal = true;
     console.error(err);
     $('bootError').style.display = 'block';
-    $('bootError').textContent = 'Erreur WebGL : ' + (err?.message || String(err));
+    $('bootError').textContent = 'WebGL error: ' + (err?.message || String(err));
     $('overlay').style.display = 'flex';
   }
 }
@@ -49,6 +49,6 @@ try {
 } catch (err) {
   console.error(err);
   $('bootError').style.display = 'block';
-  $('bootError').textContent = 'Erreur de démarrage : ' + (err?.message || String(err));
+  $('bootError').textContent = 'Startup error: ' + (err?.message || String(err));
   $('overlay').style.display = 'flex';
 }

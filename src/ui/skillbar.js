@@ -51,7 +51,7 @@ document.addEventListener(
         SKILL_DRAG.from = slot;
         SKILL_DRAG.armed = true;
         document.body.classList.add('skillDrag');
-        showError('Touche un autre sort pour échanger');
+        showError('Tap another spell to swap');
       }, 650);
     }
   },
@@ -81,7 +81,7 @@ document.addEventListener(
 );
 
 // Texte des sorts : valeurs exactes du code (dégâts multipliés par 1,35 sous Burst ; coups critiques x1,5).
-const fmtS = s => `${String(s).replace('.', ',')} s`;
+const fmtS = s => `${s} s`;
 function skillTooltip(u, i) {
   const S = skillsOf(u)[i];
   if (!S) return '';
@@ -93,18 +93,18 @@ function skillTooltip(u, i) {
   const range = S.range
     ? `${String(S.range).replace('.', ',')} m`
     : S.t === 'melee'
-      ? 'Corps à corps'
+      ? 'Melee'
       : S.t === 'ranged' || S.t === 'heal'
         ? '15 m'
         : S.t === 'charge'
           ? '2,8–15 m'
           : S.t === 'aoe'
-            ? 'Autour de vous'
-            : 'Personnel';
+            ? 'Around you'
+            : 'Self';
   const castT = S.cast;
-  return `<div class="tName">${S.n}</div><div class="tRow"><span>${S.c ? `${S.c} ${C.res}` : 'Gratuit'}</span><span>${range}</span></div>
-  <div class="tRow"><span>${castT ? `Incantation ${fmtS(castT)}` : 'Instantané'}</span><span>${S.cd ? `Recharge ${fmtS(S.cd)}` : 'Pas de recharge'}</span></div>
-  <div class="tDesc">${S.text ? S.text(S, D, H) : ''}</div>${burst > 1 ? '<div class="tNote">Burst actif : dégâts +35 % inclus</div>' : ''}${dmp < 1 ? `<div class="tNote">Dampening : soins -${Math.round((1 - dmp) * 100)} % inclus</div>` : ''}`;
+  return `<div class="tName">${S.n}</div><div class="tRow"><span>${S.c ? `${S.c} ${C.res}` : 'Free'}</span><span>${range}</span></div>
+  <div class="tRow"><span>${castT ? `${fmtS(castT)} cast` : 'Instant'}</span><span>${S.cd ? `${fmtS(S.cd)} cooldown` : 'No cooldown'}</span></div>
+  <div class="tDesc">${S.text ? S.text(S, D, H) : ''}</div>${burst > 1 ? '<div class="tNote">Burst active: damage +35% included</div>' : ''}${dmp < 1 ? `<div class="tNote">Dampening: healing -${Math.round((1 - dmp) * 100)}% included</div>` : ''}`;
 }
 let TIP_SLOT = null;
 document.addEventListener('pointermove', e => {

@@ -42,7 +42,7 @@ function endPoly(u, broken) {
   u.wanderX = null;
   u.polyKind = null;
   fx('blinkBurst', u.x, (u.y || 0) + 0.8, u.z, [0.95, 0.85, 1], 0.6, 0.6);
-  if (broken) addFloat(u, sap ? 'Assommer brisé' : 'Métamorphose brisée', '#d8a7ff');
+  if (broken) addFloat(u, sap ? 'Sap broken' : 'Polymorph broken', '#d8a7ff');
 }
 // Auto-attaque : les mêlées frappent avec leur arme dès qu'une cible ennemie est au contact (et devant eux pour le joueur).
 // [intervalle (s), dégâts] : le voleur frappe deux fois plus vite avec deux lames, même dégâts par seconde.

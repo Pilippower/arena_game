@@ -36,7 +36,7 @@ function renderBindGrid() {
 function assignCapturedBind(code) {
   if (!captureBind) return false;
   if (RESERVED_BIND_CODES.has(code)) {
-    $('bindStatus').textContent = `${keyLabel(code)} est réservée au déplacement/gameplay.`;
+    $('bindStatus').textContent = `${keyLabel(code)} is reserved for movement/gameplay.`;
     return true;
   }
   const kb = PREFS.keybinds,
@@ -56,7 +56,7 @@ function assignCapturedBind(code) {
     else kb.trinket = old;
   }
   savePrefs();
-  $('bindStatus').textContent = `Raccourci défini : ${keyLabel(code)}`;
+  $('bindStatus').textContent = `Keybind set: ${keyLabel(code)}`;
   captureBind = null;
   renderBindGrid();
   updateUI();
@@ -68,7 +68,7 @@ function resetBindings() {
   savePrefs();
   renderBindGrid();
   if (state) updateUI();
-  $('bindStatus').textContent = 'Raccourcis par défaut restaurés.';
+  $('bindStatus').textContent = 'Default keybinds restored.';
 }
 function frameIds() {
   return ['selfFrame', 'targetFrame', 'arenaFrames', 'partyFrames'];
@@ -106,12 +106,12 @@ function resetFramePositions() {
     el.style.right = '';
     el.style.bottom = '';
   }
-  $('bindStatus').textContent = 'Positions d’interface restaurées.';
+  $('bindStatus').textContent = 'Frame positions restored.';
 }
 function setUiEditMode(on) {
   uiEditMode = !!on;
   $('game').querySelector('.hud').classList.toggle('uiEdit', uiEditMode);
-  $('editUiBtn').textContent = uiEditMode ? '✓ Terminer le placement' : 'Déplacer les portraits';
+  $('editUiBtn').textContent = uiEditMode ? '✓ Terminer le placement' : 'Move frames';
   if (!uiEditMode && dragFrame) {
     dragFrame.el.classList.remove('dragging');
     dragFrame = null;
@@ -278,7 +278,7 @@ function updateSelectPreview(selectedRace, selectedClass) {
   const rk = selectedRace || 'human',
     ck = selectedClass || 'sentinel';
   if (!$('preview3d'))
-    box.innerHTML = `<div class="pvHead"><span>Prévisualisation</span><span class="tiny">même rendu que dans l’arène</span></div><div class="pvArt"><canvas id="preview3d" aria-hidden="true"></canvas><div id="previewLoading" class="previewLoading">Chargement du personnage…</div></div><div class="previewHint">Le panneau utilise exactement le même modèle 3D que celui chargé dans l’arène.</div>`;
+    box.innerHTML = `<div class="pvHead"><span>Preview</span><span class="tiny">same model as in the arena</span></div><div class="pvArt"><canvas id="preview3d" aria-hidden="true"></canvas><div id="previewLoading" class="previewLoading">Loading hero…</div></div><div class="previewHint"></div>`;
   updateSelectPreview3D(rk, ck);
 }
 function chooseClass() {
@@ -309,7 +309,7 @@ function chooseClass() {
     label.textContent =
       selectedClass && selectedRace
         ? `${RACE[selectedRace].name} ${CLASS[selectedClass].name}`
-        : 'Choisis une race et une classe';
+        : 'Choose a race and a class';
     raceBox.querySelectorAll('button').forEach(b => b.classList.toggle('selected', b.dataset.r === selectedRace));
     box.querySelectorAll('button').forEach(b => b.classList.toggle('selected', b.dataset.c === selectedClass));
     updateSelectPreview(selectedRace, selectedClass);

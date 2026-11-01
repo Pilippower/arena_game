@@ -87,7 +87,7 @@ function resetRound() {
     uiTick: 0
   };
   state.units = [
-    makeUnit(state.pcls, -26, -5, 0, 'Vous', false, state.prace, 0),
+    makeUnit(state.pcls, -26, -5, 0, 'You', false, state.prace, 0),
     makeUnit(allies[0], -26, 0, 0, 'Lyra', true, raceForClass(allies[0], 0, 1), 1),
     makeUnit(allies[1], -26, 5, 0, 'Torren', true, 'dwarf', 2),
     makeUnit('reaver', 26, -6, 1, 'Kargan', true, 'orc', 0),
@@ -191,14 +191,14 @@ function damage(src, t, v, crit = false, school = src.curSchool || 'physical') {
   if (t.fear > 0 && v >= t.maxHp * 0.08) {
     t.fear = 0;
     t.fearOwner = null;
-    addFloat(t, 'Fear brisé', '#d8a7ff');
+    addFloat(t, 'Fear broken', '#d8a7ff');
   }
   if (t.root > 0 && t.rootBreakDamage > 0) {
     t.rootBreakDamage -= v;
     if (t.rootMin <= 0 && t.rootBreakDamage <= 0) {
       t.root = 0;
       t.rootBreakDamage = 0;
-      addFloat(t, 'Nova brisée', '#9de8ff');
+      addFloat(t, 'Nova broken', '#9de8ff');
     }
   }
   addFloat(t, `-${v}`, crit ? '#ffd36b' : '#ff7d88');
@@ -254,12 +254,12 @@ function control(t, type, dur, src = null) {
   const label =
     type === 'poly'
       ? src?.cls === 'shade'
-        ? 'Assommé !'
-        : 'Mouton !'
+        ? 'Sapped!'
+        : 'Sheep!'
       : type === 'stun'
-        ? 'Étourdi'
+        ? 'Stunned'
         : type === 'root'
-          ? 'Immobilisé'
+          ? 'Rooted'
           : type === 'fear'
             ? 'Fear'
             : 'Silence';
@@ -270,7 +270,7 @@ function applySlow(t, pct = 0.5, dur = 8) {
   if (!t?.alive) return;
   t.slow = Math.max(t.slow || 0, dur);
   t.slowPct = Math.max(t.slowPct || 0, clamp(pct, 0, 0.8));
-  addFloat(t, `Ralenti ${Math.round(t.slowPct * 100)}%`, '#9ed7ff');
+  addFloat(t, `Slowed ${Math.round(t.slowPct * 100)}%`, '#9ed7ff');
 }
 function moveSpeed(u) {
   const buff = u.speedBuff > 0 ? 1.18 : 1,
@@ -298,7 +298,7 @@ function interrupt(u, t) {
     });
     t.lockout = { school: sch, until: now() + 4 };
   }
-  addFloat(t, 'Interrompu !', '#ff9f6b');
+  addFloat(t, 'Interrupted!', '#ff9f6b');
   fx('silence', t.x, (t.y || 0) + 1.3, t.z, [1, 0.55, 0.3], 0.6, 0.7);
   return true;
 }

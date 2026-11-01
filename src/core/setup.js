@@ -52,7 +52,7 @@ function keyLabel(code) {
   const m = {
     Space: 'Espace',
     Tab: 'TAB',
-    Escape: 'Échap',
+    Escape: 'Esc',
     ShiftLeft: 'Shift G',
     ShiftRight: 'Shift D',
     ControlLeft: 'Ctrl G',

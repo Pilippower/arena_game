@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
@@ -40,7 +40,7 @@ body.skillDrag .skill[data-slot]{outline:1px dashed #ffd96f88}.skill.dragFrom{ou
 #top .topControls{display:flex;gap:8px;align-items:center}.volumeMini{display:flex;align-items:center;gap:5px;font-size:10px;color:#dbc89c}.volumeMini input{width:88px;accent-color:#d6b15f}
 .fileBtn{display:inline-block;border:1px solid #8d6a35;border-radius:8px;padding:5px 9px;cursor:pointer;margin-top:4px}#results{position:absolute;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 30%,#1f2c5acc,#05070fee 75%)}.resPanel{width:min(760px,94%);max-height:92%;overflow:auto;background:linear-gradient(180deg,#1b2242,#0c1022);border:2px solid #c9a04a;border-radius:18px;padding:22px 26px;box-shadow:0 0 40px #4a6cff55,0 20px 60px #000c;text-align:center}#resultsTitle{font-size:44px;margin:0;letter-spacing:2px}#resultsTitle.win{color:#ffd96f;text-shadow:0 0 18px #ffb43a}#resultsTitle.loss{color:#ff7d88;text-shadow:0 0 18px #c0303f}#resultsScore{font-size:28px;font-weight:900;color:#eef;margin:4px 0 12px}.resTable{width:100%;border-collapse:collapse;margin-bottom:10px}.resTable th{font-size:11px;color:#b8c4ff;text-transform:uppercase;padding:5px;border-bottom:1px solid #c9a04a66}.resTable td{padding:6px;border-bottom:1px solid #ffffff14;font-size:13px}.resTable td.rName{font-weight:800;text-align:left}#resultsTeams h3{margin:10px 0 4px;text-align:left}#resultsTeams h3.ally{color:#7dc8ff}#resultsTeams h3.enemy{color:#ff8f9a}.resButtons{display:flex;gap:12px;justify-content:center;margin-top:14px}.resButtons button{font-size:16px;padding:10px 20px}
 #settingsPanel{display:none;position:absolute;right:16px;top:14px;z-index:20;width:min(390px,calc(100% - 32px));max-height:calc(100% - 28px);overflow:auto;background:linear-gradient(180deg,#2d2015f5,#15100cf5);border:1px solid #9b7740;border-radius:14px;padding:14px;box-shadow:0 16px 45px #000c,inset 0 1px #e7c97b44;pointer-events:auto}#settingsPanel.open{display:block}#settingsPanel h3{margin:0 0 10px;color:#ffe6ad}.settingRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0;padding:8px;border:1px solid #60492b;background:#1b140f;border-radius:9px}.settingRow input[type=range]{width:160px;accent-color:#d9b55d}.bindGrid{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center}.bindBtn{min-width:86px;padding:6px 9px}.bindBtn.capturing{outline:2px solid #ffd76a;box-shadow:0 0 12px #ffc85d88}.settingsActions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.settingsHint{font-size:10px;line-height:1.45;color:#cdbc95;margin-top:9px}#bindStatus{min-height:15px;color:#ffd77d;font-size:10px;margin-top:6px}
-.frame.uiMovable{transition:outline-color .15s,box-shadow .15s}.hud.uiEdit{pointer-events:auto}.hud.uiEdit .uiMovable{pointer-events:auto;cursor:move;outline:2px dashed #ffd76a;outline-offset:3px;box-shadow:0 0 18px #ffc85d55,inset 0 1px #d2aa6744}.hud.uiEdit .uiMovable:before{content:'↕ déplacer';position:absolute;right:6px;top:-18px;font-size:9px;color:#ffe094;background:#1b130de8;border:1px solid #75562f;border-radius:5px;padding:2px 5px}.hud.uiEdit .uiMovable.dragging{outline-style:solid;box-shadow:0 0 24px #ffd66b99}
+.frame.uiMovable{transition:outline-color .15s,box-shadow .15s}.hud.uiEdit{pointer-events:auto}.hud.uiEdit .uiMovable{pointer-events:auto;cursor:move;outline:2px dashed #ffd76a;outline-offset:3px;box-shadow:0 0 18px #ffc85d55,inset 0 1px #d2aa6744}.hud.uiEdit .uiMovable:before{content:'↕ move';position:absolute;right:6px;top:-18px;font-size:9px;color:#ffe094;background:#1b130de8;border:1px solid #75562f;border-radius:5px;padding:2px 5px}.hud.uiEdit .uiMovable.dragging{outline-style:solid;box-shadow:0 0 24px #ffd66b99}
 
 /* ---------- Mobile browser mode ---------- */
 #mobileControls{display:none;position:absolute;inset:0;z-index:7;pointer-events:none;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -97,7 +97,7 @@ body.mobile-mode #playBtn{font-size:14px!important;padding:9px 14px!important}
 </head>
 <body>
 <div id="app">
-<header id="top"><div><h1>⚔ Arena Ascendant</h1><div class="sub">3v3 · WebGL · arène MMO fantasy originale</div></div><div class="topControls"><label class="volumeMini" title="Volume audio">🔊 <input id="volumeMini" type="range" min="0" max="200" value="65"></label><button id="settingsBtn">⚙ Interface</button><button id="fullscreenBtn" title="Plein écran" aria-label="Plein écran">⛶</button><button id="musicBtn">♫ Musique : ON</button><button id="restartBtn">Changer de classe</button></div></header>
+<header id="top"><div><h1>⚔ Arena Ascendant</h1><div class="sub">3v3 · WebGL · original fantasy MMO arena</div></div><div class="topControls"><label class="volumeMini" title="Audio volume">🔊 <input id="volumeMini" type="range" min="0" max="200" value="65"></label><button id="settingsBtn">⚙ Settings</button><button id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">⛶</button><button id="musicBtn">♫ Music: ON</button><button id="restartBtn">Change class</button></div></header>
 <main id="game">
 <canvas id="env3d"></canvas><canvas id="c" tabindex="0"></canvas>
 <canvas id="character3d" aria-hidden="true"></canvas>
@@ -106,66 +106,66 @@ body.mobile-mode #playBtn{font-size:14px!important;padding:9px 14px!important}
   <div id="targetFrame" class="frame uiMovable"></div>
   <div id="arenaFrames" class="frame uiMovable"></div>
   <div id="partyFrames" class="frame uiMovable"></div>
-  <div id="help" class="frame"><b>Contrôles conservés</b><br>ZQSD : Z avancer · S reculer · Q gauche · D droite · Espace : saut<br><b>Clic droit maintenu</b> : caméra MMO<br>Molette : zoom<br>Clic gauche / TAB : ciblage<br>Raccourcis de sorts éditables via ⚙ Interface<br>Défaut : 1–6 · R : trinket PvP · Shift + glisser : réordonner les sorts</div>
-  <div id="reticle"></div><div id="errorMsg"></div><div id="skillTip"></div><div id="pointerHint">Clic gauche : cibler · Clic droit maintenu : tourner la caméra</div>
+  <div id="help" class="frame"><b>Controls</b><br>ZQSD: Z forward · S back · Q left · D right · Space: jump<br><b>Right-drag</b>: turn camera + hero · <b>Left-drag</b>: camera only<br>Left + right click: run forward · Wheel: zoom<br>Click / TAB: target<br>Keybinds editable in ⚙ Settings<br>Default: 1–6 · R: PvP trinket · Shift + drag: reorder spells</div>
+  <div id="reticle"></div><div id="errorMsg"></div><div id="skillTip"></div><div id="pointerHint">Click: target · Hold right click: turn camera</div>
   <div id="castBar"><div class="castFill"></div><div class="castText"></div></div>
   <div id="nameplates"></div><div id="floaters"></div><div id="roundSplash"></div>
 </div>
 <div id="mobileControls" aria-hidden="true">
-  <div id="mobileLookZone"><div id="mobileLookHint">glisser : caméra</div></div>
+  <div id="mobileLookZone"><div id="mobileLookHint">drag: camera</div></div>
   <div id="mobileJoystick"><div id="mobileStick"></div></div>
   <div id="mobileActions">
-    <button id="mobileTargetBtn" class="mobileAction" aria-label="Changer de cible"><span>◎<small>CIBLE</small></span></button>
-    <button id="mobileJumpBtn" class="mobileAction" aria-label="Sauter"><span>↑<small>SAUT</small></span></button>
+    <button id="mobileTargetBtn" class="mobileAction" aria-label="Next target"><span>◎<small>TARGET</small></span></button>
+    <button id="mobileJumpBtn" class="mobileAction" aria-label="Jump"><span>↑<small>JUMP</small></span></button>
   </div>
 </div>
-<div id="mobileOrientation">↻<br><br>Passe ton téléphone en mode paysage</div>
+<div id="mobileOrientation">↻<br><br>Rotate your phone to landscape</div>
 <div id="results"><div class="resPanel"><h2 id="resultsTitle"></h2><div id="resultsScore"></div><div id="resultsTeams"></div><div class="resButtons"><button id="resultsAgain">Play again</button><button id="resultsLobby">Back to lobby</button></div></div></div>
-<div id="overlay"><div class="modal"><h2>⚔ Arena Ascendant — 3v3</h2><p>Choose your race and class before entering the arena</p><div class="features"><div class="feature">3v3 avec healer / DPS</div><div class="feature">GCD + ressources</div><div class="feature">DR + trinket PvP</div><div class="feature">Personnages 3D artist-made CC0 + fallback</div></div><div class="pickerLayout"><div><div class="selectorTitle">Race</div><div id="raceChoices" class="races"></div><div class="selectorTitle">Classe</div><div id="classChoices" class="classes"></div><div class="selectorTitle">Difficulté</div><div id="diffChoices" class="diffs"><button data-d="easy">Easy</button><button data-d="medium">Medium</button><button data-d="hard">Hard</button></div><div style="display:flex;gap:10px;margin-top:14px;align-items:center"><button id="playBtn" style="font-size:16px;padding:11px 18px" disabled>Jouer</button><span id="selectedClass" class="tiny">Choisis une race et une classe</span></div><div id="bootError"></div></div><div id="selectPreview" class="previewPane"></div></div></div></div>
+<div id="overlay"><div class="modal"><h2>⚔ Arena Ascendant — 3v3</h2><p>Choose your race and class before entering the arena</p><div class="features"><div class="feature">3v3 with healer / DPS</div><div class="feature">GCD + resources</div><div class="feature">DR + trinket PvP</div><div class="feature">CC0 3D heroes</div></div><div class="pickerLayout"><div><div class="selectorTitle">Race</div><div id="raceChoices" class="races"></div><div class="selectorTitle">Class</div><div id="classChoices" class="classes"></div><div class="selectorTitle">Difficulty</div><div id="diffChoices" class="diffs"><button data-d="easy">Easy</button><button data-d="medium">Medium</button><button data-d="hard">Hard</button></div><div style="display:flex;gap:10px;margin-top:14px;align-items:center"><button id="playBtn" style="font-size:16px;padding:11px 18px" disabled>Play</button><span id="selectedClass" class="tiny">Choose a race and a class</span></div><div id="bootError"></div></div><div id="selectPreview" class="previewPane"></div></div></div></div>
 <div id="settingsPanel">
-  <h3>⚙ Interface & raccourcis</h3>
-  <div class="settingRow"><label for="musicVolume"><b>Volume musique / SFX</b></label><div><input id="musicVolume" type="range" min="0" max="200" value="65"> <span id="volumeValue">65%</span></div></div>
+  <h3>⚙ Settings & keybinds</h3>
+  <div class="settingRow"><label for="musicVolume"><b>Music / SFX volume</b></label><div><input id="musicVolume" type="range" min="0" max="200" value="65"> <span id="volumeValue">65%</span></div></div>
   <div class="settingRow"><label><b>In-game music</b></label><div><span id="gameTrackName">Procedural soundtrack</span><br><label class="fileBtn">Choose an audio file…<input id="gameTrackInput" type="file" accept="audio/*" hidden></label> <button id="gameTrackClear">Use procedural</button><div class="tiny">Stays on this device only (never uploaded). Each match starts at a random position.</div></div></div>
-  <div class="selectorTitle">Raccourcis des sorts</div>
+  <div class="selectorTitle">Spell keybinds</div>
   <div id="bindGrid" class="bindGrid"></div>
   <div id="bindStatus"></div>
   <div class="selectorTitle">Portraits / frames</div>
-  <div class="settingsActions"><button id="editUiBtn">Déplacer les portraits</button><button id="resetUiBtn">Réinitialiser positions</button><button id="resetBindsBtn">Touches par défaut</button></div>
-  <div class="settingsHint">En mode déplacement, glisse ton portrait, la cible ou les portraits d’arène. Les positions, touches et volume sont sauvegardés automatiquement. Z/Q/S/D, Espace, TAB et les flèches restent réservés au gameplay.</div>
-  <div class="settingsActions"><button id="closeSettingsBtn">Fermer</button></div>
+  <div class="settingsActions"><button id="editUiBtn">Move frames</button><button id="resetUiBtn">Reset positions</button><button id="resetBindsBtn">Default keys</button></div>
+  <div class="settingsHint">In move mode, drag your frame, the target frame or the arena frames. Positions, keys and volume are saved automatically. Z/Q/S/D, Space, TAB and the arrows stay reserved for gameplay.</div>
+  <div class="settingsActions"><button id="closeSettingsBtn">Close</button></div>
 </div>
 </main>
 <footer id="bottom"><div id="status" class="sideBottom"></div><div id="center"><div id="round">Round 1 · BO3</div><div id="timer">02:30</div><div id="score">0 - 0</div></div><div id="skills"></div></footer>
 </div>
-<script src="game_logic.js?v=202611010428"></script>
+<script src="game_logic.js?v=202611010430"></script>
 <!-- High-fidelity character renderer. The game remains playable with the built-in fallback if these fail to load. -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js" crossorigin="anonymous"></script>
 <!-- Personnages CC0 assemblés (assets emballés en .js dans assets/characters/ : fonctionne en double-clic). -->
-<script>window.ASSET_V="202611010428"</script>
-<script src="src/characters/kits.js?v=202611010428"></script>
-<script src="src/characters/builder.js?v=202611010428"></script>
-<script src="src/render/environment.js?v=202611010428"></script>
-<script src="src/render/effects.js?v=202611010428"></script>
-<script src="assets/ui/pick_icons.js?v=202611010428"></script>
-<script src="src/core/setup.js?v=202611010428"></script>
-<script src="src/render/heroes3d.js?v=202611010428"></script>
-<script src="src/data/classes.js?v=202611010428"></script>
-<script src="src/core/webgl.js?v=202611010428"></script>
-<script src="src/game/combat.js?v=202611010428"></script>
-<script src="src/game/ai.js?v=202611010428"></script>
-<script src="src/game/rules.js?v=202611010428"></script>
-<script src="src/ui/skillbar.js?v=202611010428"></script>
-<script src="src/game/match.js?v=202611010428"></script>
-<script src="src/game/sim.js?v=202611010428"></script>
-<script src="src/render/world.js?v=202611010428"></script>
-<script src="src/ui/hud.js?v=202611010428"></script>
-<script src="src/audio/music.js?v=202611010428"></script>
-<script src="src/audio/tracks.js?v=202611010428"></script>
-<script src="src/audio/sfx.js?v=202611010428"></script>
-<script src="src/ui/settings.js?v=202611010428"></script>
-<script src="src/ui/mobile.js?v=202611010428"></script>
-<script src="src/input/controls.js?v=202611010428"></script>
-<script src="src/core/main.js?v=202611010428"></script>
+<script>window.ASSET_V="202611010430"</script>
+<script src="src/characters/kits.js?v=202611010430"></script>
+<script src="src/characters/builder.js?v=202611010430"></script>
+<script src="src/render/environment.js?v=202611010430"></script>
+<script src="src/render/effects.js?v=202611010430"></script>
+<script src="assets/ui/pick_icons.js?v=202611010430"></script>
+<script src="src/core/setup.js?v=202611010430"></script>
+<script src="src/render/heroes3d.js?v=202611010430"></script>
+<script src="src/data/classes.js?v=202611010430"></script>
+<script src="src/core/webgl.js?v=202611010430"></script>
+<script src="src/game/combat.js?v=202611010430"></script>
+<script src="src/game/ai.js?v=202611010430"></script>
+<script src="src/game/rules.js?v=202611010430"></script>
+<script src="src/ui/skillbar.js?v=202611010430"></script>
+<script src="src/game/match.js?v=202611010430"></script>
+<script src="src/game/sim.js?v=202611010430"></script>
+<script src="src/render/world.js?v=202611010430"></script>
+<script src="src/ui/hud.js?v=202611010430"></script>
+<script src="src/audio/music.js?v=202611010430"></script>
+<script src="src/audio/tracks.js?v=202611010430"></script>
+<script src="src/audio/sfx.js?v=202611010430"></script>
+<script src="src/ui/settings.js?v=202611010430"></script>
+<script src="src/ui/mobile.js?v=202611010430"></script>
+<script src="src/input/controls.js?v=202611010430"></script>
+<script src="src/core/main.js?v=202611010430"></script>
 </body>
 </html>

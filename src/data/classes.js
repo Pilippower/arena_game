@@ -3,7 +3,7 @@
 const CLASS = {
   sentinel: {
     name: 'Warrior',
-    role: 'Tank / mêlée',
+    role: 'Tank / melee',
     color: [0.18, 0.46, 0.82],
     accent: [0.7, 0.86, 1],
     hp: 1600,
@@ -17,7 +17,7 @@ const CLASS = {
       { n: 'Shield Wall', cd: 22, c: 25 },
       { n: 'Charge', cd: 14, c: 18 }
     ],
-    tags: ['mêlée', 'interrupt', 'peel']
+    tags: ['melee', 'interrupt', 'peel']
   },
   arcanist: {
     name: 'Mage',
@@ -36,7 +36,7 @@ const CLASS = {
       { n: 'Blink', cd: 15, c: 10 },
       { n: 'Polymorph', cd: 0, c: 18 }
     ],
-    tags: ['burst', 'cast', 'contrôle']
+    tags: ['burst', 'cast', 'control']
   },
   oracle: {
     name: 'Priest',
@@ -54,7 +54,7 @@ const CLASS = {
       { n: 'Divine Hymn', cd: 30, c: 45 },
       { n: 'Angelic Step', cd: 14, c: 10 }
     ],
-    tags: ['soins', 'bouclier', 'support']
+    tags: ['heals', 'shields', 'support']
   },
   reaver: {
     name: 'Death Knight',
@@ -72,11 +72,11 @@ const CLASS = {
       { n: 'Pillar of Frost', cd: 24, c: 25 },
       { n: 'Death Advance', cd: 12, c: 18 }
     ],
-    tags: ['pression', 'grip', 'mêlée']
+    tags: ['pressure', 'grip', 'melee']
   },
   warden: {
     name: 'Druid',
-    role: 'Hybride',
+    role: 'Hybrid',
     color: [0.92, 0.48, 0.12],
     accent: [0.72, 1, 0.42],
     hp: 1250,
@@ -91,11 +91,11 @@ const CLASS = {
       { k: 'cat', n: 'Cat Form', cd: 0, c: 0 },
       { k: 'bear', n: 'Bear Form', cd: 0, c: 0 }
     ],
-    tags: ['hybride', 'roots', 'mobilité']
+    tags: ['hybrid', 'roots', 'shapeshift']
   },
   shade: {
     name: 'Rogue',
-    role: 'Contrôle',
+    role: 'Control',
     color: [0.34, 0.38, 0.46],
     accent: [1, 0.86, 0.38],
     hp: 1180,
@@ -110,7 +110,7 @@ const CLASS = {
       { n: 'Shadowstep', cd: 13, c: 18 },
       { k: 'stealth', n: 'Stealth', cd: 0, c: 0 }
     ],
-    tags: ['mobilité', 'stun', 'burst']
+    tags: ['mobility', 'stun', 'burst']
   },
   warlock: {
     name: 'Warlock',
@@ -458,7 +458,7 @@ const RACE = {
     bulk: 1.0,
     beard: false,
     helmBias: 0,
-    desc: 'Polyvalent et héroïque'
+    desc: 'Versatile and heroic'
   },
   dwarf: {
     name: 'Dwarf',
@@ -470,7 +470,7 @@ const RACE = {
     bulk: 1.18,
     beard: true,
     helmBias: 0,
-    desc: 'Petit, massif et barbu'
+    desc: 'Short, stout and bearded'
   },
   elf: {
     name: 'Elf',
@@ -482,7 +482,7 @@ const RACE = {
     bulk: 0.92,
     beard: false,
     helmBias: 0,
-    desc: 'Grand, fin et oreilles pointues'
+    desc: 'Tall, slender, pointed ears'
   },
   orc: {
     name: 'Orc',
@@ -494,7 +494,7 @@ const RACE = {
     bulk: 1.22,
     beard: false,
     helmBias: 0.15,
-    desc: 'Très large, peau verte et défenses'
+    desc: 'Huge, green skin and tusks'
   },
   undead: {
     name: 'Undead',
@@ -506,7 +506,7 @@ const RACE = {
     bulk: 0.95,
     beard: false,
     helmBias: -0.08,
-    desc: 'Silhouette pâle et yeux spectraux'
+    desc: 'Pale frame and spectral eyes'
   }
 };
 function raceForClass(cls, team = 0, slot = 0) {
@@ -594,35 +594,35 @@ function racePickIconSVG(rk) {
 // dmg/heal/shield : points ; crit : chance ; dur/stun/root : secondes ; cast : temps d'incantation ; dist/radius : mètres.
 // text(S, D, H) : D(x) affiche des dégâts (Burst inclus), H(x) des soins (Dampening inclus).
 const pct = x => `${Math.round(x * 100)} %`;
-const sec = x => `${String(x).replace('.', ',')} s`;
+const sec = x => `${x} s`;
 const SPELLS = {
   'Mortal Strike': {
     dmg: 175,
     crit: 0.18,
     antiheal: 0.25,
     text: (S, D) =>
-      `Frappe violente : ${D(S.dmg)} dégâts (${pct(S.crit)} de critique). Réduit les soins reçus par la cible de ${pct(S.antiheal)} (cumul max 50 %, se dissipe lentement).`
+      `Brutal strike: ${D(S.dmg)} damage (${pct(S.crit)} crit chance). Reduces healing taken by ${pct(S.antiheal)} (stacks to 50%, fades slowly).`
   },
   Hamstring: {
     dmg: 45,
     slow: 0.5,
     dur: 15,
-    text: (S, D) => `${D(S.dmg)} dégâts et ralentit la cible de ${pct(S.slow)} pendant ${sec(S.dur)}.`
+    text: (S, D) => `${D(S.dmg)} damage and slows the target by ${pct(S.slow)} for ${sec(S.dur)}.`
   },
-  Pummel: { text: () => `Coup qui interrompt l'incantation de la cible et bloque cette école de magie pendant 4 s.` },
+  Pummel: { text: () => `Interrupts the target’s cast and locks that school of magic for 4 s.` },
   'Shield Wall': {
     shield: 390,
-    text: S => `Vous gagne un bouclier absorbant <b class="tHeal">${S.shield}</b> dégâts.`
+    text: S => `Grants a shield absorbing <b class="tHeal">${S.shield}</b> damage.`
   },
   Charge: {
     dmg: 55,
     stun: 2,
-    text: (S, D) => `Fonce sur un ennemi entre 2,8 et 15 m : ${D(S.dmg)} dégâts et l'étourdit ${sec(S.stun)}.`
+    text: (S, D) => `Rush an enemy 2.8–15 m away: ${D(S.dmg)} damage and stuns for ${sec(S.stun)}.`
   },
   'Arcane Bolt': {
     cast: 1.35,
     dmg: 205,
-    text: (S, D) => `Incantation ${sec(S.cast)} : projectile arcanique infligeant ${D(S.dmg)} dégâts.`
+    text: (S, D) => `${sec(S.cast)} cast: arcane missile dealing ${D(S.dmg)} damage.`
   },
   'Frost Nova': {
     dmg: 90,
@@ -630,101 +630,101 @@ const SPELLS = {
     root: 2.5,
     radius: 8,
     text: (S, D) =>
-      `Gèle les ennemis à moins de ${S.radius} m : ${D(S.dmg)} dégâts à la cible, ${D(S.dmg2)} aux autres, immobilisés ${sec(S.root)} (brisé après 12 % des PV en dégâts).`
+      `Freezes enemies within ${S.radius} m: ${D(S.dmg)} damage to the target, ${D(S.dmg2)} to others, rooted ${sec(S.root)} (breaks after 12% HP of damage).`
   },
-  Counterspell: { text: () => `Interrompt l'incantation de la cible et bloque cette école de magie 4 s.` },
-  'Arcane Power': { burst: 8, text: S => `Augmente vos dégâts de 35 % pendant ${sec(S.burst)}.` },
-  Blink: { dist: 7, text: S => `Téléportation de ${S.dist} m droit devant ; libère des racines.` },
+  Counterspell: { text: () => `Interrupts the target’s cast and locks that school of magic for 4 s.` },
+  'Arcane Power': { burst: 8, text: S => `Increases your damage by 35% for ${sec(S.burst)}.` },
+  Blink: { dist: 7, text: S => `Teleports ${S.dist} m forward; breaks roots.` },
   Polymorph: {
     cast: 1.5,
     dur: 8,
     text: S =>
-      `Incantation ${sec(S.cast)} : transforme la cible en mouton pendant ${sec(S.dur)} (puis 4 s, 2 s, immunité ; remis à zéro après 20 s). Le moindre dégât rompt l'effet.`
+      `${sec(S.cast)} cast: turns the target into a sheep for ${sec(S.dur)} (then 4 s, 2 s, immune; resets after 20 s). Any damage breaks it.`
   },
   'Flash Heal': {
     cast: 1.15,
     heal: 220,
-    text: (S, D, H) => `Incantation ${sec(S.cast)} : rend ${H(S.heal)} points de vie à la cible amie (ou à vous).`
+    text: (S, D, H) => `${sec(S.cast)} cast: heals your friendly target (or you) for ${H(S.heal)}.`
   },
   'Power Shield': {
     shield: 300,
-    text: S => `Bouclier sur la cible amie absorbant <b class="tHeal">${S.shield}</b> dégâts.`
+    text: S => `Shields your friendly target, absorbing <b class="tHeal">${S.shield}</b> damage.`
   },
-  Silence: { dur: 2.8, text: S => `Réduit la cible au silence pendant ${sec(S.dur)}.` },
-  'Divine Hymn': { heal: 230, text: (S, D, H) => `Rend ${H(S.heal)} points de vie à tous vos alliés.` },
+  Silence: { dur: 2.8, text: S => `Silences the target for ${sec(S.dur)}.` },
+  'Divine Hymn': { heal: 230, text: (S, D, H) => `Heals all allies for ${H(S.heal)}.` },
   'Angelic Step': {
     dist: 4.2,
-    text: S => `Bond de ${String(S.dist).replace('.', ',')} m vers l'avant ; libère des racines.`
+    text: S => `Leaps ${S.dist} m forward; breaks roots.`
   },
   Obliterate: {
     dmg: 190,
     crit: 0.16,
     antiheal: 0.16,
     text: (S, D) =>
-      `Frappe runique : ${D(S.dmg)} dégâts (${pct(S.crit)} de critique), réduit les soins reçus de ${pct(S.antiheal)} (max 50 %).`
+      `Runic strike: ${D(S.dmg)} damage (${pct(S.crit)} crit chance), reduces healing taken by ${pct(S.antiheal)} (max 50%).`
   },
-  'Death Grip': { dmg: 50, text: (S, D) => `Attrape un ennemi à 15 m et le tire devant vous : ${D(S.dmg)} dégâts.` },
-  Asphyxiate: { dmg: 65, stun: 2.5, text: (S, D) => `À distance : ${D(S.dmg)} dégâts et étourdit ${sec(S.stun)}.` },
-  'Pillar of Frost': { burst: 7, text: S => `+35 % de dégâts et +18 % de vitesse pendant ${sec(S.burst)}.` },
-  'Death Advance': { dist: 6, text: S => `Bond de ${S.dist} m dans la direction regardée, puis +18 % de vitesse 3 s.` },
-  Wrath: { cast: 1.5, dmg: 175, text: (S, D) => `Incantation ${sec(S.cast)} : ${D(S.dmg)} dégâts de nature.` },
-  'Entangling Roots': { root: 5, text: S => `Des racines enserrent la cible : immobilisée ${sec(S.root)}.` },
-  Barkskin: { shield: 420, text: S => `Bouclier d'écorce absorbant <b class="tHeal">${S.shield}</b> dégâts.` },
+  'Death Grip': { dmg: 50, text: (S, D) => `Grabs an enemy within 15 m and pulls them in front of you: ${D(S.dmg)} damage.` },
+  Asphyxiate: { dmg: 65, stun: 2.5, text: (S, D) => `Ranged: ${D(S.dmg)} damage and stuns for ${sec(S.stun)}.` },
+  'Pillar of Frost': { burst: 7, text: S => `+35% damage and +18% speed for ${sec(S.burst)}.` },
+  'Death Advance': { dist: 6, text: S => `Leaps ${S.dist} m where you face, then +18% speed for 3 s.` },
+  Wrath: { cast: 1.5, dmg: 175, text: (S, D) => `${sec(S.cast)} cast: ${D(S.dmg)} nature damage.` },
+  'Entangling Roots': { root: 5, text: S => `Roots grip the target: rooted for ${sec(S.root)}.` },
+  Barkskin: { shield: 420, text: S => `Bark shield absorbing <b class="tHeal">${S.shield}</b> damage.` },
   Starfall: {
     dmg: 135,
     radius: 5.3,
     text: (S, D) =>
-      `Pluie d'étoiles : ${D(S.dmg)} dégâts à tous les ennemis à moins de ${String(S.radius).replace('.', ',')} m.`
+      `Falling stars: ${D(S.dmg)} damage to all enemies within ${S.radius} m.`
   },
   'Cat Form': {
-    text: (S, D) => `Forme de félin : +30 % de vitesse, attaques rapides au corps à corps (${D(42)} toutes les 1 s).`
+    text: (S, D) => `Cat form: +30% speed, fast melee attacks (${D(42)} every 1 s).`
   },
   'Bear Form': {
     text: (S, D) =>
-      `Forme d'ours : +40 % de points de vie, -30 % de dégâts subis, coups puissants (${D(58)} toutes les 2 s).`
+      `Bear form: +40% health, -30% damage taken, heavy blows (${D(58)} every 2 s).`
   },
-  'Human Form': { text: () => `Reprend votre forme normale.` },
-  Shred: { text: (S, D) => `Lacère la cible : ${D(S.dmg)} dégâts (18 % de critique).` },
-  Rake: { text: (S, D) => `Griffure : ${D(S.dmg)} dégâts et ralentit de 30 % pendant 6 s.` },
-  Maim: { text: (S, D) => `${D(60)} dégâts et étourdit la cible ${sec(S.stun)}.` },
-  'Wild Charge': { text: (S, D) => `Bondit sur un ennemi entre 2,8 et 15 m : ${D(55)} dégâts et l'immobilise 2 s.` },
-  Maul: { text: (S, D) => `Coup de patte : ${D(S.dmg)} dégâts (18 % de critique).` },
-  Swipe: { text: (S, D) => `Balayage : ${D(S.dmg)} dégâts à tous les ennemis à moins de ${S.r} m.` },
-  'Frenzied Regeneration': { text: (S, D, H) => `Rend ${H(S.heal)} points de vie.` },
-  Backstab: { dmg: 150, crit: 0.22, text: (S, D) => `${D(S.dmg)} dégâts (${pct(S.crit)} de critique).` },
+  'Human Form': { text: () => `Return to your normal form.` },
+  Shred: { text: (S, D) => `Shreds the target: ${D(S.dmg)} damage (18% crit chance).` },
+  Rake: { text: (S, D) => `Rake: ${D(S.dmg)} damage and slows by 30% for 6 s.` },
+  Maim: { text: (S, D) => `${D(60)} damage and stuns the target for ${sec(S.stun)}.` },
+  'Wild Charge': { text: (S, D) => `Pounce on an enemy 2.8–15 m away: ${D(55)} damage and roots for 2 s.` },
+  Maul: { text: (S, D) => `Paw strike: ${D(S.dmg)} damage (18% crit chance).` },
+  Swipe: { text: (S, D) => `Swipe: ${D(S.dmg)} damage to all enemies within ${S.r} m.` },
+  'Frenzied Regeneration': { text: (S, D, H) => `Heals you for ${H(S.heal)}.` },
+  Backstab: { dmg: 150, crit: 0.22, text: (S, D) => `${D(S.dmg)} damage (${pct(S.crit)} crit chance).` },
   Cloak: {
     shield: 220,
     text: S =>
-      `Absorbe <b class="tHeal">${S.shield}</b> dégâts, +18 % de vitesse 5 s, libère des racines, ralentissements et silences.`
+      `Absorbs <b class="tHeal">${S.shield}</b> damage, +18% speed for 5 s, removes roots, slows and silences.`
   },
-  'Kidney Shot': { dmg: 55, stun: 3, text: (S, D) => `${D(S.dmg)} dégâts et étourdit ${sec(S.stun)}.` },
-  Vendetta: { burst: 6.5, text: S => `+35 % de dégâts pendant ${sec(S.burst)}.` },
+  'Kidney Shot': { dmg: 55, stun: 3, text: (S, D) => `${D(S.dmg)} damage and stuns for ${sec(S.stun)}.` },
+  Vendetta: { burst: 6.5, text: S => `+35% damage for ${sec(S.burst)}.` },
   Shadowstep: {
     dmg: 55,
-    text: (S, D) => `Surgit jusqu'à 8 m devant la cible ; ${D(S.dmg)} dégâts si vous arrivez au contact.`
+    text: (S, D) => `Dash up to 8 m to the target; ${D(S.dmg)} damage if you reach melee range.`
   },
   Stealth: {
     text: () =>
-      `Vous camoufle (hors combat) : quasi invisible et impossible à cibler, -30 % de vitesse. Débloque Ambush et Sap.`
+      `Stealth (out of combat): nearly invisible and untargetable, -30% speed. Unlocks Ambush and Sap.`
   },
-  Ambush: { text: (S, D) => `Depuis le camouflage : ${D(S.dmg)} dégâts (30 % de critique). Rompt le camouflage.` },
+  Ambush: { text: (S, D) => `From stealth: ${D(S.dmg)} damage (30% crit chance). Breaks stealth.` },
   Sap: {
     text: S =>
-      `Depuis le camouflage, à ${S.range} m : assomme la cible ${sec(S.dur)} (mêmes rendements décroissants que la Métamorphose). Le moindre dégât rompt l'effet.`
+      `From stealth, within ${S.range} m: incapacitates the target for ${sec(S.dur)} (shares diminishing returns with Polymorph). Any damage breaks it.`
   },
-  'Shadow Bolt': { cast: 1.45, dmg: 195, text: (S, D) => `Incantation ${sec(S.cast)} : ${D(S.dmg)} dégâts d'ombre.` },
+  'Shadow Bolt': { cast: 1.45, dmg: 195, text: (S, D) => `${sec(S.cast)} cast: ${D(S.dmg)} shadow damage.` },
   Fear: {
     cast: 1.35,
     dur: 3.6,
-    text: S => `Incantation ${sec(S.cast)} : la cible fuit, terrorisée, pendant ${sec(S.dur)} (un gros coup la libère).`
+    text: S => `${sec(S.cast)} cast: the target flees in terror for ${sec(S.dur)} (a big hit breaks it).`
   },
-  'Spell Lock': { text: () => `Interrompt l'incantation de la cible et bloque cette école de magie 4 s.` },
+  'Spell Lock': { text: () => `Interrupts the target’s cast and locks that school of magic for 4 s.` },
   'Dark Soul': {
     burst: 8,
     shield: 180,
-    text: S => `+35 % de dégâts pendant ${sec(S.burst)} et bouclier de <b class="tHeal">${S.shield}</b>.`
+    text: S => `+35% damage for ${sec(S.burst)} and a <b class="tHeal">${S.shield}</b> shield.`
   },
-  'Demonic Gate': { dist: 5, text: S => `Téléportation de ${S.dist} m vers l'avant.` }
+  'Demonic Gate': { dist: 5, text: S => `Teleports ${S.dist} m forward.` }
 };
 // Fusionne valeurs et texte dans chaque sort (barres de base et barres de forme / camouflage).
 for (const C of Object.values(CLASS))

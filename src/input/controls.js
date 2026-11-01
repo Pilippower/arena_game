@@ -28,7 +28,7 @@ window.addEventListener('keydown', e => {
     e.preventDefault();
     if (e.code === 'Escape') {
       captureBind = null;
-      $('bindStatus').textContent = 'Modification annulée.';
+      $('bindStatus').textContent = 'Change cancelled.';
       renderBindGrid();
       return;
     }
