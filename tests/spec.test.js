@@ -325,4 +325,10 @@ assert.match(
   /function dwarfBeard[\s\S]*?Beard_Mass[\s\S]*?16, face \* 0\.2/,
   'barbe de nain tressée jusqu’à la ceinture'
 );
+assert.ok(
+  ['function beastLoft', 'function beastSmooth', 'croissant de lune', 'cristaux de glace'].every(k =>
+    read('src/render/heroes3d.js').includes(k)
+  ),
+  'druide : panthère d’ombre et ours de givre'
+);
 console.log('OK - spécifications validées (docs/SPEC.md)');
