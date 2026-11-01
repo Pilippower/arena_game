@@ -568,19 +568,19 @@ function useSkill(u, i) {
   let ok = true;
   if (i === 4) {
     if (u.cls === 'arcanist') {
-      blinkForward(u, 7.0);
+      blinkForward(u, S.dist);
       action(u, 'dash');
     } else if (u.cls === 'sentinel') {
       ok = beginCharge(u, t);
     } else if (u.cls === 'oracle') {
-      const b = blinkForward(u, 4.2);
+      const b = blinkForward(u, S.dist);
       u.root = 0;
       action(u, 'dash');
     } else if (u.cls === 'warlock') {
-      blinkForward(u, 5.0);
+      blinkForward(u, S.dist);
       action(u, 'dash');
     } else if (u.cls === 'reaver') {
-      const b = blinkForward(u, 6);
+      const b = blinkForward(u, S.dist);
       u.visualSnap = true;
       u.speedBuff = Math.max(u.speedBuff, 3);
       action(u, 'dash');
@@ -588,7 +588,7 @@ function useSkill(u, i) {
       if (!t || !range) ok = false;
       else {
         dashToward(u, t, 8);
-        if (d2(u, t) < 2.7) damage(u, t, 55);
+        if (d2(u, t) < 2.7) damage(u, t, S.dmg);
         action(u, 'dash');
       }
     }
@@ -598,50 +598,50 @@ function useSkill(u, i) {
     }
   } else if (u.cls === 'sentinel') {
     if (i === 0 && melee) {
-      damage(u, t, 175, Math.random() < 0.18);
-      t.antiheal = Math.min(0.5, t.antiheal + 0.25);
+      damage(u, t, S.dmg, Math.random() < S.crit);
+      t.antiheal = Math.min(0.5, t.antiheal + S.antiheal);
       action(u, 'melee');
     } else if (i === 1 && melee) {
-      applySlow(t, 0.5, 15);
-      damage(u, t, 45);
+      applySlow(t, S.slow, S.dur);
+      damage(u, t, S.dmg);
       action(u, 'melee');
     } else if (i === 2 && melee) {
       interrupt(u, t);
       action(u, 'melee');
     } else if (i === 3) {
-      u.shield += 390;
+      u.shield += S.shield;
       fx('ring', u.x, 0.5, u.z, c.accent, 0.8, 1);
       action(u, 'cast');
     } else ok = false;
   } else if (u.cls === 'reaver') {
     if (i === 0 && melee) {
-      damage(u, t, 190, Math.random() < 0.16);
-      t.antiheal = Math.min(0.5, t.antiheal + 0.16);
+      damage(u, t, S.dmg, Math.random() < S.crit);
+      t.antiheal = Math.min(0.5, t.antiheal + S.antiheal);
       action(u, 'melee');
     } else if (i === 1 && range) {
-      damage(u, t, 50);
+      damage(u, t, S.dmg);
       startGrip(u, t);
       action(u, 'cast');
     } else if (i === 2 && range) {
-      damage(u, t, 65);
-      control(t, 'stun', 2.5);
+      damage(u, t, S.dmg);
+      control(t, 'stun', S.stun);
       action(u, 'cast');
     } else if (i === 3) {
-      u.burst = 7;
-      u.speedBuff = 7;
+      u.burst = S.burst;
+      u.speedBuff = S.burst;
       fx('ring', u.x, 0.1, u.z, [1, 0.25, 0.05], 1, 1.15);
       action(u, 'cast');
     } else ok = false;
   } else if (u.cls === 'arcanist') {
     if (i === 0 && range && u.silence <= 0) {
-      u.cast = { i: 0, name: 'Arcane Bolt', target: t, end: now() + 1.35, dur: 1.35, type: 'damage', value: 205 };
+      u.cast = castOf(u, i, t, 'damage', S.dmg);
       action(u, 'cast');
     } else if (i === 1) {
-      const hit = enemies(u).filter(e => d2(u, e) < 8.0 && los(u, e));
+      const hit = enemies(u).filter(e => d2(u, e) < S.radius && los(u, e));
       if (!hit.length) return false;
       hit.forEach(e => {
-        damage(u, e, e === t ? 90 : 60);
-        if (control(e, 'root', 2.5, u)) {
+        damage(u, e, e === t ? S.dmg : S.dmg2);
+        if (control(e, 'root', S.root, u)) {
           e.rootBreakDamage = e.maxHp * 0.12;
           e.rootMin = 1.0;
           e.rootKind = 'ice';
@@ -654,82 +654,82 @@ function useSkill(u, i) {
       interrupt(u, t);
       action(u, 'cast');
     } else if (i === 3) {
-      u.burst = 8;
+      u.burst = S.burst;
       fx('ring', u.x, 0.1, u.z, c.accent, 1, 1.2);
       action(u, 'cast');
     } else if (i === 5 && range && u.silence <= 0 && (t.dr.poly ?? 1) > 0) {
-      u.cast = { i: 5, name: 'Polymorph', target: t, end: now() + 1.5, dur: 1.5, type: 'poly', value: 8 };
+      u.cast = castOf(u, i, t, 'poly', S.dur);
       action(u, 'cast');
     } else ok = false;
   } else if (u.cls === 'oracle') {
     const a = u.ai ? lowestAlly(u) : friendlyTarget(u);
     if (i === 0 && a && los(u, a) && u.silence <= 0) {
-      u.cast = { i: 0, name: 'Flash Heal', target: a, end: now() + 1.15, dur: 1.15, type: 'heal', value: 220 };
+      u.cast = castOf(u, i, a, 'heal', S.heal);
       action(u, 'cast');
     } else if (i === 1 && a) {
-      a.shield += 300;
+      a.shield += S.shield;
       fx('ring', a.x, 0.2, a.z, c.accent, 0.8, 0.8);
       action(u, 'cast');
     } else if (i === 2 && range) {
-      control(t, 'silence', 2.8);
+      control(t, 'silence', S.dur);
       action(u, 'cast');
     } else if (i === 3) {
-      allies(u).forEach(v => heal(u, v, 230));
+      allies(u).forEach(v => heal(u, v, S.heal));
       fx('ring', u.x, 0.1, u.z, c.accent, 1, 2);
       action(u, 'cast');
     } else ok = false;
   } else if (u.cls === 'warden') {
     if (i === 0 && range && u.silence <= 0) {
-      u.cast = { i: 0, name: 'Wrath', target: t, end: now() + 1.5, dur: 1.5, type: 'damage', value: 175 };
+      u.cast = castOf(u, i, t, 'damage', S.dmg);
       action(u, 'cast');
     } else if (i === 1 && range) {
-      if (control(t, 'root', 5, u)) t.rootKind = 'vines';
+      if (control(t, 'root', S.root, u)) t.rootKind = 'vines';
       fx('roots', t.x, 0.1, t.z, c.accent, 0.8, 0.7);
       action(u, 'cast');
     } else if (i === 2) {
-      u.shield += 420;
+      u.shield += S.shield;
       action(u, 'cast');
     } else if (i === 3) {
       enemies(u)
-        .filter(e => d2(u, e) < 5.3)
-        .forEach(e => damage(u, e, 135));
+        .filter(e => d2(u, e) < S.radius)
+        .forEach(e => damage(u, e, S.dmg));
       fx('ring', u.x, 0.1, u.z, c.accent, 0.85, 1.4);
       action(u, 'cast');
     } else ok = false;
   } else if (u.cls === 'shade') {
     if (i === 0 && melee) {
-      damage(u, t, 150, Math.random() < 0.22);
+      damage(u, t, S.dmg, Math.random() < S.crit);
       action(u, 'melee');
     } else if (i === 1) {
       u.root = 0;
       u.rootBreakDamage = 0;
       u.slow = 0;
       u.silence = 0;
-      u.shield += 220;
+      u.shield += S.shield;
       u.speedBuff = 5;
       fx('ring', u.x, 0.1, u.z, c.accent, 0.7, 0.9);
       action(u, 'cast');
     } else if (i === 2 && melee) {
-      damage(u, t, 55);
-      control(t, 'stun', 3);
+      damage(u, t, S.dmg);
+      control(t, 'stun', S.stun);
       action(u, 'melee');
     } else if (i === 3) {
-      u.burst = 6.5;
+      u.burst = S.burst;
       action(u, 'cast');
     } else ok = false;
   } else if (u.cls === 'warlock') {
     if (i === 0 && range && u.silence <= 0) {
-      u.cast = { i: 0, name: 'Shadow Bolt', target: t, end: now() + 1.45, dur: 1.45, type: 'damage', value: 195 };
+      u.cast = castOf(u, i, t, 'damage', S.dmg);
       action(u, 'cast');
     } else if (i === 1 && range && u.silence <= 0) {
-      u.cast = { i: 1, name: 'Fear', target: t, end: now() + 1.35, dur: 1.35, type: 'fear', value: 3.6 };
+      u.cast = castOf(u, i, t, 'fear', S.dur);
       action(u, 'cast');
     } else if (i === 2 && range) {
       interrupt(u, t);
       action(u, 'cast');
     } else if (i === 3) {
-      u.burst = 8;
-      u.shield += 180;
+      u.burst = S.burst;
+      u.shield += S.shield;
       fx('ring', u.x, 0.1, u.z, c.accent, 1, 1.15);
       action(u, 'cast');
     } else ok = false;

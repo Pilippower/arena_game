@@ -7,10 +7,17 @@ L'utilisateur communique en français : répondre en français.
 
 ## État réel du repo (vérifié au 31/10/2026, fait foi sur HANDOFF.md)
 
-- `index.html` : tout le jeu (HTML/CSS/JS monolithique, ~160 Ko). Desktop + auto-détection mobile.
+- `index.html` : HTML + CSS + liste ordonnée des scripts (~30 Ko). Tout le JS est dans `src/` (scripts classiques, pas de bundler : le jeu se lance en double-clic, `file://`). **L'ordre des balises <script> compte** (code exécuté au chargement).
+- `src/` (un fichier par rôle) :
+  - `data/classes.js` : classes, races, barres de forme/camouflage et **`SPELLS` = source unique des valeurs et textes de chaque sort** (dégâts, soins, durées, temps d'incantation, infobulle). Pour changer un sort : modifier `SPELLS` ; `game/combat.js` (effets, `useSkill`) et `ui/skillbar.js` (infobulles) lisent ces champs.
+  - `game/` : `combat.js` (dégâts, contrôles + DR, interruptions, ruées, sorts), `ai.js` (IA + difficulté), `rules.js` (mouton, auto-attaque, cibles), `sim.js` (pas de simulation 120 Hz).
+  - `render/` : `heroes3d.js` (personnages three.js, preview, portraits), `world.js` (décor + rendu de secours + noms), `environment.js` (décor), `effects.js` (effets de sorts).
+  - `characters/` : `kits.js` (données des 35 kits, lu aussi par `tools/build_characters.js`), `builder.js` (assemblage three.js).
+  - `ui/` (hud, skillbar, settings, mobile), `audio/` (music, sfx), `input/controls.js` (contrôles validés), `core/` (setup, webgl, main = boucle).
+- Mise en forme : `npm run format` (Prettier, `.prettierrc.json`). Les tests statiques ignorent les espaces.
 - `mobile.html` : simple redirection vers `index.html?mobile=1` (le jeu n'existe qu'en un exemplaire). Ne jamais y recopier le jeu.
-- `game_logic.js` : **source de vérité** de GameLogic (mouvement/caméra). La copie inline `<script id="game-logic-inline">` de `index.html` doit lui rester strictement identique (vérifié par `tests/integration.test.js`). Modifier les deux ensemble.
-- Les tests passent (`npm test`). Les problèmes « game_logic.js absent / tests stale » décrits en §4 du handoff sont **déjà résolus**.
+- `game_logic.js` : **source unique** de GameLogic (mouvement/caméra), chargé par `index.html` avant `src/` (plus de copie inline).
+- Cache navigateur (GitHub Pages garde 10 min) : chaque balise porte `?v=AAAAMMJJHHMM` + `window.ASSET_V` (bundles personnages). **Augmenter ce numéro à chaque publication** (`sed -i -E 's/?v=[0-9]+"/?v=NOUVEAU"/g; s/window.ASSET_V="[0-9]+"/window.ASSET_V="NOUVEAU"/' index.html`).
 - Personnages : `src/characters/kits.js` (données) + `src/characters/builder.js` (assemblage three.js) assemblent les packs CC0 Quaternius pour les 35 race+classe : CLASSES (tenue modulaire, palette, robe, arme, armure procédurale ajustée par os : plaques, épaulières, masque, feuilles) + RACES (peau, cheveux, oreilles/défenses/barbe, crâne du mort-vivant, échelles d'os). Un skin unique par race+classe. Sources brutes dans `assets_src/` (non versionné, ~480 Mo) → `node tools/build_characters.js` → `assets/characters/*.js` (GLB en base64, indispensable car le jeu est lancé en double-clic / `file://`). Sans kit pour une race+classe, ou si le kit échoue, le jeu garde les anciens modèles KayKit. Visualiseur de dev : `tools/char_viewer.html` + `tools/shoot.js` (servi par `tools/serve.js`).
 - Effets de sorts : `src/render/effects.js` (particules additives, anneaux runiques, bulles, éclairs) reçoit les appels `fx()` ; les types non gérés restent dessinés par le moteur WebGL historique.
 - Décor : `src/render/environment.js` (three.js, tout procédural) dessine sol pierre/herbe, herbe animée, piliers, remparts, château et ciel dans `#env3d`, sous le canevas WebGL du jeu (devenu transparent : effets de sorts + profondeur des piliers). Si le décor échoue, `renderArena()` retombe sur l'arène historique.
@@ -20,11 +27,12 @@ L'utilisateur communique en français : répondre en français.
 ## Tests
 
 ```bash
-npm install   # une fois : playwright-core (pilote le Edge/Chrome installé, aucun navigateur téléchargé)
-npm test      # lance tests/*.test.js
+npm install        # une fois : playwright-core (pilote le Edge/Chrome installé), prettier
+npm test           # ~15 s : tests de code (logique, intégration, pas) + partie lancée dans le navigateur (tests/browser/smoke.test.js)
+npm run test:all   # ~1 min 30 : + test navigateur complet (sélection, 35 kits, 7 classes, Polymorph/saut/pas chassé, mobile)
 ```
 
-À lancer après chaque modification. `tests/startup.test.js` ouvre le vrai jeu dans Edge headless : démarrage sans erreur JS, sélection race/classe + preview, round lancé pour les 7 classes, mode mobile paysage (joystick, timer, pas de bande vide). Les échecs réseau des CDN sont tolérés (fallback). Navigateur personnalisé : variable `BROWSER_PATH`.
+`npm test` après chaque modification ; `npm run test:all` avant de publier. Le navigateur utilise la carte graphique (`tests/browser/browser.js`) ; `SOFTWARE_GL=1` force le rendu logiciel, `BROWSER_PATH` choisit le navigateur. Captures de personnages : `tools/shoot.js` (même lanceur).
 
 ## Règles non négociables
 

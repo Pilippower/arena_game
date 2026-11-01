@@ -588,3 +588,150 @@ function racePickIconSVG(rk) {
   }[rk];
   return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><radialGradient id="rg_${rk}" cx="38%" cy="28%"><stop offset="0" stop-color="${data.a}"/><stop offset=".58" stop-color="${data.b}"/><stop offset="1" stop-color="#07080b"/></radialGradient><linearGradient id="rs_${rk}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".30"/><stop offset=".46" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><rect width="48" height="48" rx="10" fill="url(#rg_${rk})"/><path d="M3 39C13 25 11 12 31 3" stroke="url(#rs_${rk})" stroke-width="7" fill="none"/>${data.p}<rect x="1" y="1" width="46" height="46" rx="9" fill="none" stroke="#fff" stroke-opacity=".28"/></svg>`;
 }
+
+// ---------- Valeurs et textes des sorts : SOURCE UNIQUE ----------
+// Le combat (src/game/combat.js) et les infobulles (src/ui/skillbar.js) lisent ces champs.
+// dmg/heal/shield : points ; crit : chance ; dur/stun/root : secondes ; cast : temps d'incantation ; dist/radius : mètres.
+// text(S, D, H) : D(x) affiche des dégâts (Burst inclus), H(x) des soins (Dampening inclus).
+const pct = x => `${Math.round(x * 100)} %`;
+const sec = x => `${String(x).replace('.', ',')} s`;
+const SPELLS = {
+  'Mortal Strike': {
+    dmg: 175,
+    crit: 0.18,
+    antiheal: 0.25,
+    text: (S, D) =>
+      `Frappe violente : ${D(S.dmg)} dégâts (${pct(S.crit)} de critique). Réduit les soins reçus par la cible de ${pct(S.antiheal)} (cumul max 50 %, se dissipe lentement).`
+  },
+  Hamstring: {
+    dmg: 45,
+    slow: 0.5,
+    dur: 15,
+    text: (S, D) => `${D(S.dmg)} dégâts et ralentit la cible de ${pct(S.slow)} pendant ${sec(S.dur)}.`
+  },
+  Pummel: { text: () => `Coup qui interrompt l'incantation de la cible et bloque cette école de magie pendant 4 s.` },
+  'Shield Wall': {
+    shield: 390,
+    text: S => `Vous gagne un bouclier absorbant <b class="tHeal">${S.shield}</b> dégâts.`
+  },
+  Charge: {
+    dmg: 55,
+    stun: 2,
+    text: (S, D) => `Fonce sur un ennemi entre 2,8 et 15 m : ${D(S.dmg)} dégâts et l'étourdit ${sec(S.stun)}.`
+  },
+  'Arcane Bolt': {
+    cast: 1.35,
+    dmg: 205,
+    text: (S, D) => `Incantation ${sec(S.cast)} : projectile arcanique infligeant ${D(S.dmg)} dégâts.`
+  },
+  'Frost Nova': {
+    dmg: 90,
+    dmg2: 60,
+    root: 2.5,
+    radius: 8,
+    text: (S, D) =>
+      `Gèle les ennemis à moins de ${S.radius} m : ${D(S.dmg)} dégâts à la cible, ${D(S.dmg2)} aux autres, immobilisés ${sec(S.root)} (brisé après 12 % des PV en dégâts).`
+  },
+  Counterspell: { text: () => `Interrompt l'incantation de la cible et bloque cette école de magie 4 s.` },
+  'Arcane Power': { burst: 8, text: S => `Augmente vos dégâts de 35 % pendant ${sec(S.burst)}.` },
+  Blink: { dist: 7, text: S => `Téléportation de ${S.dist} m droit devant ; libère des racines.` },
+  Polymorph: {
+    cast: 1.5,
+    dur: 8,
+    text: S =>
+      `Incantation ${sec(S.cast)} : transforme la cible en mouton pendant ${sec(S.dur)} (puis 4 s, 2 s, immunité ; remis à zéro après 20 s). Le moindre dégât rompt l'effet.`
+  },
+  'Flash Heal': {
+    cast: 1.15,
+    heal: 220,
+    text: (S, D, H) => `Incantation ${sec(S.cast)} : rend ${H(S.heal)} points de vie à la cible amie (ou à vous).`
+  },
+  'Power Shield': {
+    shield: 300,
+    text: S => `Bouclier sur la cible amie absorbant <b class="tHeal">${S.shield}</b> dégâts.`
+  },
+  Silence: { dur: 2.8, text: S => `Réduit la cible au silence pendant ${sec(S.dur)}.` },
+  'Divine Hymn': { heal: 230, text: (S, D, H) => `Rend ${H(S.heal)} points de vie à tous vos alliés.` },
+  'Angelic Step': {
+    dist: 4.2,
+    text: S => `Bond de ${String(S.dist).replace('.', ',')} m vers l'avant ; libère des racines.`
+  },
+  Obliterate: {
+    dmg: 190,
+    crit: 0.16,
+    antiheal: 0.16,
+    text: (S, D) =>
+      `Frappe runique : ${D(S.dmg)} dégâts (${pct(S.crit)} de critique), réduit les soins reçus de ${pct(S.antiheal)} (max 50 %).`
+  },
+  'Death Grip': { dmg: 50, text: (S, D) => `Attrape un ennemi à 15 m et le tire devant vous : ${D(S.dmg)} dégâts.` },
+  Asphyxiate: { dmg: 65, stun: 2.5, text: (S, D) => `À distance : ${D(S.dmg)} dégâts et étourdit ${sec(S.stun)}.` },
+  'Pillar of Frost': { burst: 7, text: S => `+35 % de dégâts et +18 % de vitesse pendant ${sec(S.burst)}.` },
+  'Death Advance': { dist: 6, text: S => `Bond de ${S.dist} m dans la direction regardée, puis +18 % de vitesse 3 s.` },
+  Wrath: { cast: 1.5, dmg: 175, text: (S, D) => `Incantation ${sec(S.cast)} : ${D(S.dmg)} dégâts de nature.` },
+  'Entangling Roots': { root: 5, text: S => `Des racines enserrent la cible : immobilisée ${sec(S.root)}.` },
+  Barkskin: { shield: 420, text: S => `Bouclier d'écorce absorbant <b class="tHeal">${S.shield}</b> dégâts.` },
+  Starfall: {
+    dmg: 135,
+    radius: 5.3,
+    text: (S, D) =>
+      `Pluie d'étoiles : ${D(S.dmg)} dégâts à tous les ennemis à moins de ${String(S.radius).replace('.', ',')} m.`
+  },
+  'Cat Form': {
+    text: (S, D) => `Forme de félin : +30 % de vitesse, attaques rapides au corps à corps (${D(42)} toutes les 1 s).`
+  },
+  'Bear Form': {
+    text: (S, D) =>
+      `Forme d'ours : +40 % de points de vie, -30 % de dégâts subis, coups puissants (${D(58)} toutes les 2 s).`
+  },
+  'Human Form': { text: () => `Reprend votre forme normale.` },
+  Shred: { text: (S, D) => `Lacère la cible : ${D(S.dmg)} dégâts (18 % de critique).` },
+  Rake: { text: (S, D) => `Griffure : ${D(S.dmg)} dégâts et ralentit de 30 % pendant 6 s.` },
+  Maim: { text: (S, D) => `${D(60)} dégâts et étourdit la cible ${sec(S.stun)}.` },
+  'Wild Charge': { text: (S, D) => `Bondit sur un ennemi entre 2,8 et 15 m : ${D(55)} dégâts et l'immobilise 2 s.` },
+  Maul: { text: (S, D) => `Coup de patte : ${D(S.dmg)} dégâts (18 % de critique).` },
+  Swipe: { text: (S, D) => `Balayage : ${D(S.dmg)} dégâts à tous les ennemis à moins de ${S.r} m.` },
+  'Frenzied Regeneration': { text: (S, D, H) => `Rend ${H(S.heal)} points de vie.` },
+  Backstab: { dmg: 150, crit: 0.22, text: (S, D) => `${D(S.dmg)} dégâts (${pct(S.crit)} de critique).` },
+  Cloak: {
+    shield: 220,
+    text: S =>
+      `Absorbe <b class="tHeal">${S.shield}</b> dégâts, +18 % de vitesse 5 s, libère des racines, ralentissements et silences.`
+  },
+  'Kidney Shot': { dmg: 55, stun: 3, text: (S, D) => `${D(S.dmg)} dégâts et étourdit ${sec(S.stun)}.` },
+  Vendetta: { burst: 6.5, text: S => `+35 % de dégâts pendant ${sec(S.burst)}.` },
+  Shadowstep: {
+    dmg: 55,
+    text: (S, D) => `Surgit jusqu'à 8 m devant la cible ; ${D(S.dmg)} dégâts si vous arrivez au contact.`
+  },
+  Stealth: {
+    text: () =>
+      `Vous camoufle (hors combat) : quasi invisible et impossible à cibler, -30 % de vitesse. Débloque Ambush et Sap.`
+  },
+  Ambush: { text: (S, D) => `Depuis le camouflage : ${D(S.dmg)} dégâts (30 % de critique). Rompt le camouflage.` },
+  Sap: {
+    text: S =>
+      `Depuis le camouflage, à ${S.range} m : assomme la cible ${sec(S.dur)} (mêmes rendements décroissants que la Métamorphose). Le moindre dégât rompt l'effet.`
+  },
+  'Shadow Bolt': { cast: 1.45, dmg: 195, text: (S, D) => `Incantation ${sec(S.cast)} : ${D(S.dmg)} dégâts d'ombre.` },
+  Fear: {
+    cast: 1.35,
+    dur: 3.6,
+    text: S => `Incantation ${sec(S.cast)} : la cible fuit, terrorisée, pendant ${sec(S.dur)} (un gros coup la libère).`
+  },
+  'Spell Lock': { text: () => `Interrompt l'incantation de la cible et bloque cette école de magie 4 s.` },
+  'Dark Soul': {
+    burst: 8,
+    shield: 180,
+    text: S => `+35 % de dégâts pendant ${sec(S.burst)} et bouclier de <b class="tHeal">${S.shield}</b>.`
+  },
+  'Demonic Gate': { dist: 5, text: S => `Téléportation de ${S.dist} m vers l'avant.` }
+};
+// Fusionne valeurs et texte dans chaque sort (barres de base et barres de forme / camouflage).
+for (const C of Object.values(CLASS))
+  for (const bar of [C.skills, ...Object.values(C.bars || {})])
+    for (const S of bar) Object.assign(S, SPELLS[S.n] || {});
+// Incantation décrite par les données du sort (temps, valeur).
+function castOf(u, i, target, type, value) {
+  const S = skillsOf(u)[i];
+  return { i, name: S.n, target, end: now() + S.cast, dur: S.cast, type, value };
+}
