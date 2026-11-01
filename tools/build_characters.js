@@ -8,7 +8,7 @@ const sharp=require('sharp');
 const {NodeIO}=require('@gltf-transform/core');
 const {ALL_EXTENSIONS}=require('@gltf-transform/extensions');
 const {prune,dedup,resample,mergeDocuments,unpartition}=require('@gltf-transform/functions');
-const CharacterKit=require('../characters.js');
+const CharacterKit=require('../src/characters/kits.js');
 
 const ROOT=path.join(__dirname,'..');
 const OUT=path.join(ROOT,'assets','characters');
