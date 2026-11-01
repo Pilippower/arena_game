@@ -148,7 +148,8 @@ function netOnData(m) {
     }
     const u = state?.units?.find(v => v.remote);
     if (!u) return;
-    if (m.t === 'in') NET.remote = m;
+    if (m.t === 'ready') NET.guestReady = m.round === state.round;
+    else if (m.t === 'in') NET.remote = m;
     else if (m.t === 'skill') {
       // comme tryPlayerSkill : un sort appuyé juste avant la fin du GCD ou de sa recharge part dès que possible
       if (u.alive && !(u.poly > 0) && !useSkill(u, m.i)) {
@@ -186,6 +187,7 @@ function netRoster() {
 function netSendRoster() {
   if (NET.role !== 'host' || !state?.units) return;
   $('netPanel').style.display = 'none';
+  NET.guestReady = false;
   netSend({
     t: 'roster',
     map: MAP_ID,
@@ -316,6 +318,7 @@ function netGuestBuild(m) {
   if (HF.enabled) hfSyncUnits();
   if (typeof musicStart === 'function' && m.round === 1) musicStart();
   updateUI();
+  prepareMatch(); // prévient l'hôte une fois prêt (message « ready »)
 }
 const NET_COPY = u => s => {
   u.hp = s.hp;

@@ -77,6 +77,7 @@ try {
   const qm = new URLSearchParams(location.search).get('map');
   if (qm && MAPS[qm]) applyMap(qm);
   if (qd && AI_PROFILES[qd]) DIFFICULTY = qd;
+  if (!auto) warmPreview(); // prévisualisation : chaque classe préparée une fois, derrière l'écran de chargement
   if (auto && CLASS[auto]) {
     const ar = new URLSearchParams(location.search).get('race');
     state = { pcls: auto, prace: RACE[ar] ? ar : raceForClass(auto), scoreA: 0, scoreB: 0, round: 0 };

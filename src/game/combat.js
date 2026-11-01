@@ -140,6 +140,7 @@ function resetRound() {
   if (HF.enabled) hfSyncUnits();
   updateUI();
   if (state.online) netSendRoster();
+  prepareMatch(); // décor, personnages, shaders… derrière l'écran de chargement (src/core/loading.js)
 }
 // distance 3D : une unité sur le pont n'est pas « au contact » d'une unité en dessous
 const d2 = (a, b) => (!a || !b ? 999 : Math.hypot(a.x - b.x, a.z - b.z, ((a.y || 0) - (b.y || 0)) * 0.8));

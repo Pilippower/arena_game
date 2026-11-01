@@ -2,6 +2,7 @@
 // Pas de simulation (120 Hz) et état visuel.
 function update(dt) {
   if (!state) return;
+  if (state.loading) return; // écran de chargement : chrono, IA et déplacements arrêtés (src/core/loading.js)
   if (window.NET?.role === 'guest') return netGuestUpdate(dt); // en ligne : l'invité suit l'hôte (src/net/online.js)
   if (state.splash > 0) state.splash -= dt;
   if (state.ended) {

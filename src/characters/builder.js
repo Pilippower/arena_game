@@ -438,9 +438,8 @@
     crystal.scale.set(0.8, 1.5, 0.8);
     crystal.position.y = 0.86 * s;
     g.add(crystal);
-    const glow = new THREE.PointLight(cc, 1.4, 1.8 * s);
-    glow.position.y = 0.86 * s;
-    g.add(glow);
+    // pas de lumière ponctuelle : elle apparaissait et disparaissait avec le personnage, ce qui recompilait tous les
+    // matériaux de la scène (gel) ; l'éclat vient du cristal émissif et du halo ci-dessous
     // Halo magique pulsant autour du cristal
     const hc = cc.clone().multiplyScalar(0.85);
     hc.g *= 0.55; // halo plus saturé que le cristal
@@ -453,7 +452,6 @@
       const t = performance.now() / 1000,
         p = 1 + Math.sin(t * 3.1) * 0.12 + Math.sin(t * 7.3) * 0.05;
       halo.scale.set(0.42 * s * p, 0.42 * s * p, 1);
-      glow.intensity = 1.4 * p;
     };
     if (cfg.inHand) {
       const G = handGrip(THREE, bones, 'r');

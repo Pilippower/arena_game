@@ -390,4 +390,18 @@ assert.ok(
   /#overlay \.iconChoice \.cardArt \{\s*position: absolute;\s*top: 0;/.test(read('src/ui/lobby.css')),
   'cartes : illustration collée en haut (pas de bande vide)'
 );
+{
+  assert.match(read('src/game/sim.js'), /if \(state\.loading\) return;/, 'chargement : simulation arrêtée');
+  assert.match(read('src/game/combat.js'), /prepareMatch\(\);/, 'chargement à chaque manche');
+  assert.match(
+    read('src/render/world.js'),
+    /function render\(\) \{\s*if \(!gl\) return;[^]*?style\.display !== 'none'\) return;/,
+    'lobby : arène cachée non dessinée'
+  );
+  assert.ok(!/PointLight/.test(read('src/characters/builder.js')), 'pas de lumière ponctuelle sur les personnages');
+  assert.ok(
+    !/l\.visible = false|light\.l\.visible/.test(read('src/render/effects.js')),
+    'lumières d’effets toujours présentes'
+  );
+}
 console.log('OK - spécifications validées (docs/SPEC.md)');

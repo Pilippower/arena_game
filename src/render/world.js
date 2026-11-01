@@ -1104,6 +1104,8 @@ function interpolateUnits() {
 }
 function render() {
   if (!gl) return;
+  // lobby affiché : l'arène est entièrement cachée, on ne la dessine pas (aucun calcul ni compilation inutile)
+  if ($('overlay').style.display !== 'none') return;
   resize();
   interpolateUnits();
   gl.enable(gl.DEPTH_TEST);

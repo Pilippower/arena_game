@@ -13,6 +13,22 @@ const TORCHES = [
   { side: 'r', x: 192, y: 380 }
 ];
 // Feu animé : particules additives qui montent, ondulent et passent du blanc-jaune au rouge.
+// Chaque particule est une image de flamme pré-calculée (une par couleur) : pas de dégradé recalculé à chaque image.
+const FLAME_SPRITES = [
+  [255, 225, 150],
+  [255, 140, 35],
+  [210, 55, 12]
+].map(col => {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d'),
+    gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, `rgba(${col},1)`);
+  gr.addColorStop(1, `rgba(${col},0)`);
+  g.fillStyle = gr;
+  g.fillRect(0, 0, 64, 64);
+  return c;
+});
 function lobbyTorches(ov) {
   const fires = TORCHES.map(t => {
     const c = document.createElement('canvas');
@@ -42,9 +58,11 @@ function lobbyTorches(ov) {
   };
   new ResizeObserver(place).observe(ov);
   let last = performance.now();
+  // 30 images/s suffisent à une flamme (moitié moins de calcul qu'à 60)
   const frame = tNow => {
     requestAnimationFrame(frame);
-    const dt = Math.min(0.05, (tNow - last) / 1000);
+    if (tNow - last < 30) return;
+    const dt = Math.min(0.06, (tNow - last) / 1000);
     last = tNow;
     if (!document.body.classList.contains('lobby') || !ov.clientHeight) return;
     for (const f of fires) {
@@ -53,7 +71,7 @@ function lobbyTorches(ov) {
         h = c.height,
         bx = w / 2,
         by = h - 10 * s;
-      for (let k = 0; k < 6; k++)
+      for (let k = 0; k < 5; k++)
         parts.push({
           x: bx + (Math.random() - 0.5) * 46 * s,
           y: by - Math.random() * 6 * s,
@@ -61,7 +79,7 @@ function lobbyTorches(ov) {
           vy: -(110 + Math.random() * 80) * s,
           life: 0,
           max: 0.6 + Math.random() * 0.5,
-          r: (9 + Math.random() * 9) * s,
+          r: (11 + Math.random() * 10) * s,
           ph: Math.random() * 6.28
         });
       g.clearRect(0, 0, w, h);
@@ -70,6 +88,7 @@ function lobbyTorches(ov) {
       const glow = g.createRadialGradient(bx, by - 30 * s, 0, bx, by - 30 * s, 62 * s);
       glow.addColorStop(0, `rgba(255,150,40,${0.35 * fl})`);
       glow.addColorStop(1, 'rgba(255,90,10,0)');
+      g.globalAlpha = 1; // l'opacité des particules ne doit pas déteindre sur la lueur
       g.globalCompositeOperation = 'source-over';
       g.fillStyle = glow;
       g.fillRect(0, 0, w, h);
@@ -86,14 +105,9 @@ function lobbyTorches(ov) {
         p.vx += (bx - p.x) * 5 * dt;
         p.x += (p.vx + Math.sin(tNow / 120 + p.ph) * 10 * s) * dt;
         p.y += p.vy * dt;
-        const r = p.r * (1 - k * 0.75),
-          col = k < 0.18 ? [255, 225, 150] : k < 0.5 ? [255, 140, 35] : [210, 55, 12],
-          a = (k < 0.12 ? k / 0.12 : 1 - k) * 0.2;
-        const pg = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
-        pg.addColorStop(0, `rgba(${col},${a})`);
-        pg.addColorStop(1, `rgba(${col},0)`);
-        g.fillStyle = pg;
-        g.fillRect(p.x - r, p.y - r, r * 2, r * 2);
+        const r = p.r * (1 - k * 0.75);
+        g.globalAlpha = (k < 0.12 ? k / 0.12 : 1 - k) * 0.26;
+        g.drawImage(FLAME_SPRITES[k < 0.18 ? 0 : k < 0.5 ? 1 : 2], p.x - r, p.y - r, r * 2, r * 2);
       }
     }
   };

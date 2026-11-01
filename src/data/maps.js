@@ -72,7 +72,12 @@ function applyMap(id) {
 }
 // Le décor 3D et les occultants des personnages suivent la carte courante.
 function onMapChanged(id) {
-  if (typeof ENV !== 'undefined' && ENV.ok && window.ArenaEnv?.setMap) ArenaEnv.setMap(id, arena);
+  // au lobby, le décor (lourd) n'est reconstruit qu'au lancement, derrière l'écran de chargement (prepareMatch)
+  const inLobby = typeof $ === 'function' && !!$('overlay')?.style && $('overlay').style.display !== 'none';
+  if (typeof ENV !== 'undefined' && ENV.ok && window.ArenaEnv?.setMap) {
+    if (inLobby) ENV.pendingMap = id;
+    else ArenaEnv.setMap(id, arena);
+  }
   if (typeof hfRebuildOccluders === 'function') hfRebuildOccluders();
 }
 applyMap(MAP_ID);

@@ -109,8 +109,8 @@
     X.ringT = ringTex(THREE, false);
     X.runeT = ringTex(THREE, true);
     for (let i = 0; i < 3; i++) {
+      // toujours visibles (éteintes à intensité 0) : changer le nombre de lumières recompile tous les matériaux
       const l = new THREE.PointLight(0xffffff, 0, 7, 2);
-      l.visible = false;
       scene.add(l);
       X.lights.push({ l, life: 0, max: 1, power: 0 });
     }
@@ -438,7 +438,6 @@
           o.light = X.lights.reduce((a, b) => (a.life < b.life ? a : b));
           o.light.l.color.setRGB(o.c[0], o.c[1], o.c[2]);
         }
-        o.light.l.visible = true;
         o.light.l.position.set(px, py, pz);
         o.light.life = o.light.max = 0.12;
         o.light.power = 2.5;
@@ -472,7 +471,7 @@
     });
     for (const L of X.lights) {
       if (L.life <= 0) {
-        L.l.visible = false;
+        L.l.intensity = 0;
         continue;
       }
       L.life -= dt;

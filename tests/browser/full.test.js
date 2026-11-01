@@ -160,7 +160,9 @@ async function run() {
         const page = await ctx.newPage();
         const errors = watchErrors(page);
         await page.goto(url('index.html', `?autoplay=${cls}&race=orc`));
-        await page.waitForTimeout(1200);
+        // écran de chargement (shaders, personnages…) puis la manche démarre
+        await page.waitForFunction(() => state?.units && !state.loading, null, { timeout: 90000 });
+        await page.waitForTimeout(700);
         const s = await page.evaluate(() => ({
           pcls: state?.pcls,
           units: state?.units?.length,
