@@ -309,5 +309,15 @@ assert.match(
   assert.ok(html.includes('id="lobbyChips"'), 'récapitulatif sous l’aperçu');
   assert.match(read('src/ui/settings.js'), /MAP_ART\[id\] \|\| window\.MAP_THUMBS/, 'arènes illustrées');
 }
-assert.match(read('src/ui/lobby.css'), /#overlay \.mapCard \{\s*overflow: hidden;/, 'zoom des arènes dans le cadre doré');
+assert.match(
+  read('src/ui/lobby.css'),
+  /#overlay \.mapCard \{\s*overflow: hidden;/,
+  'zoom des arènes dans le cadre doré'
+);
+for (const f of ['frame', 'title', 'btn_leave', 'btn_stay'])
+  assert.ok(
+    require('node:fs').existsSync(require('node:path').join(__dirname, '..', 'assets/ui/leave', f + '.webp')),
+    'Leave : ' + f
+  );
+assert.ok(read('src/ui/results.css').includes('#leaveConfirm #leaveYes'), 'Leave : boutons de la maquette');
 console.log('OK - spécifications validées (docs/SPEC.md)');
