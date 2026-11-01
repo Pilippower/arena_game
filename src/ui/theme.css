@@ -1,0 +1,200 @@
+/* Thème visuel « arcane nocturne » (original) : bleus profonds, cadres dorés ciselés, boutons en relief façon gemme.
+   Chargé après les styles de index.html : ne contient que des surcharges de couleurs et de décor (aucune mise en page). */
+:root {
+  --ink: #070b1c;
+  --navy: #101a3c;
+  --navy2: #19275a;
+  --royal: #2c4290;
+  --gold: #e3bf68;
+  --gold-hi: #fff0b8;
+  --gold-lo: #8a6524;
+  --text: #eef0ff;
+  --muted: #a9b6e6;
+  --frame-border: 2px solid #b48a3c;
+  --frame-glow: 0 0 0 1px #2a1b06, 0 0 0 3px #6c5021, 0 10px 28px #000c, inset 0 1px #fff3c855;
+}
+html,
+body,
+#app {
+  background: radial-gradient(ellipse at 50% 0%, #1d2d66 0%, #0b1230 55%, #050816 100%) !important;
+  color: var(--text);
+}
+h1,
+h2,
+h3,
+.selectorTitle,
+#resultsTitle,
+#timer,
+#roundSplash,
+.pvHead {
+  font-family: 'Cinzel', 'Trajan Pro', Georgia, 'Times New Roman', serif;
+}
+/* barres du haut et du bas : bois bleu nuit cerclé d'or */
+#top,
+#bottom {
+  background: linear-gradient(180deg, #1b2a5e 0%, #0e1738 55%, #0a1029 100%) !important;
+  border-color: var(--gold) !important;
+  box-shadow: inset 0 1px #fff0b866, inset 0 -1px #00000088, 0 0 24px #000c !important;
+}
+h1 {
+  color: var(--gold-hi) !important;
+  text-shadow: 0 0 12px #f5c25a88, 0 2px 3px #000 !important;
+  letter-spacing: 0.04em;
+}
+.sub,
+.tiny {
+  color: var(--muted) !important;
+}
+/* boutons : gemme bleue sertie d'or, relief et reflet */
+button {
+  background: linear-gradient(180deg, #3a58b8 0%, #22377f 48%, #172659 52%, #1d2f6c 100%) !important;
+  border: 2px solid var(--gold) !important;
+  color: #fff8e2 !important;
+  border-radius: 12px !important;
+  text-shadow: 0 1px 2px #000a;
+  box-shadow: inset 0 1px #ffffff55, inset 0 -2px #0007, 0 0 0 1px #3a2708, 0 4px 12px #000a !important;
+  transition: filter 0.15s, transform 0.08s;
+}
+button:hover:not(:disabled) {
+  filter: brightness(1.18) saturate(1.1);
+}
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+#playBtn:not(:disabled) {
+  background: linear-gradient(180deg, #ffd56a 0%, #f2a92a 48%, #d68612 52%, #e9a234 100%) !important;
+  color: #3a1d00 !important;
+  text-shadow: 0 1px #ffeab0;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  box-shadow: inset 0 1px #fff7, 0 0 0 1px #3a2708, 0 0 18px #ffc65a99, 0 4px 14px #000a !important;
+}
+/* panneaux et cadres */
+.frame,
+.modal,
+#settingsPanel,
+.resPanel {
+  background: linear-gradient(180deg, #17245acc 0%, #0d1638ee 60%, #0a1129f2 100%) !important;
+  border: var(--frame-border) !important;
+  box-shadow: var(--frame-glow) !important;
+}
+.modal {
+  background: radial-gradient(ellipse at 50% -10%, #2b3f8a 0%, #121c47 45%, #0a1029 100%) !important;
+  border-radius: 22px !important;
+  position: relative;
+}
+.modal:before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid #e3bf6855;
+  border-radius: 17px;
+  pointer-events: none;
+}
+#overlay {
+  background: radial-gradient(circle at 50% 25%, #26357acc, #050816f2 72%) !important;
+}
+.feature {
+  background: #0e1840 !important;
+  border-color: #3d55a8 !important;
+  color: var(--muted) !important;
+}
+.selectorTitle {
+  color: var(--gold) !important;
+  text-shadow: 0 0 8px #e3bf6855;
+}
+.iconChoice {
+  background: linear-gradient(180deg, #1f2f6c, #0f1840) !important;
+  border-color: #6f5a2c !important;
+}
+.iconChoice.selected {
+  outline: 2px solid #ffd96f !important;
+  box-shadow: 0 0 18px #ffd96faa, inset 0 0 18px #ffd96f33 !important;
+}
+.racePick .label,
+.classPick .label {
+  color: #dfe5ff !important;
+}
+.diffs button.selected {
+  outline: 2px solid #ffd96f !important;
+  box-shadow: 0 0 14px #ffd96f99 !important;
+}
+/* barre de sorts */
+.skill {
+  background: linear-gradient(180deg, #24367a, #0f1840) !important;
+  border-color: var(--gold) !important;
+}
+.skill .icon {
+  border-color: var(--gold) !important;
+}
+.bar,
+.unitInfo .hpb,
+.unitInfo .rsb,
+.npBar {
+  background: #0a0f26 !important;
+}
+.tag {
+  background: #16245a !important;
+  border-color: #4c63b8 !important;
+  color: #dfe5ff !important;
+}
+/* prévisualisation : portail magique (nébuleuse, rayons, cercle de runes lumineux au sol) */
+.previewPane {
+  background: linear-gradient(180deg, #172457, #0a1029) !important;
+  border: var(--frame-border) !important;
+  box-shadow: var(--frame-glow) !important;
+}
+.pvHead {
+  color: var(--gold-hi) !important;
+}
+.pvArt {
+  border: 2px solid #c9a04a !important;
+  background:
+    radial-gradient(ellipse 60% 12% at 50% 90%, #8fd6ff66 0%, #4a7cff22 60%, transparent 100%),
+    radial-gradient(circle at 50% 38%, #b48cff55 0%, transparent 42%),
+    conic-gradient(from 200deg at 50% 0%, transparent 0 40deg, #ffffff10 45deg, transparent 52deg 70deg, #ffffff0c 76deg, transparent 84deg 360deg),
+    radial-gradient(circle at 20% 20%, #ffffff22 0 1px, transparent 2px),
+    radial-gradient(circle at 75% 30%, #ffffff1c 0 1px, transparent 2px),
+    radial-gradient(circle at 40% 12%, #ffffff18 0 1px, transparent 2px),
+    linear-gradient(180deg, #2a1f63 0%, #1a2a6a 40%, #0f173f 75%, #070b1c 100%) !important;
+  box-shadow: inset 0 0 40px #000a, inset 0 0 0 1px #ffe9a833 !important;
+}
+.pvArt:before {
+  content: '';
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 4%;
+  height: 22%;
+  border-radius: 50%;
+  border: 2px solid #9fdcff99;
+  box-shadow: 0 0 22px #6fb8ffaa, inset 0 0 22px #6fb8ff88;
+  background: repeating-conic-gradient(from 0deg, #9fdcff33 0deg 4deg, transparent 4deg 18deg);
+  animation: pvRune 14s linear infinite;
+  pointer-events: none;
+}
+.pvArt:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 110%, #6fb8ff33, transparent 55%);
+  pointer-events: none;
+}
+#preview3d {
+  position: relative;
+  z-index: 1;
+}
+@keyframes pvRune {
+  from {
+    transform: perspective(300px) rotateX(70deg) rotateZ(0deg);
+  }
+  to {
+    transform: perspective(300px) rotateX(70deg) rotateZ(360deg);
+  }
+}
+.mapCard {
+  border-color: #b48a3c !important;
+}
+#help {
+  background: #0d1638cc !important;
+}
