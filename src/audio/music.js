@@ -475,12 +475,13 @@ function setMusicVolume(v) {
     if (MUSIC.master) MUSIC.master.gain.setTargetAtTime(0.24 * PREFS.volume, MUSIC.ctx.currentTime, 0.025);
     if (MUSIC.sfxMaster) MUSIC.sfxMaster.gain.setTargetAtTime(0.7 * PREFS.volume, MUSIC.ctx.currentTime, 0.025);
   }
+  if (typeof refreshTrackVolumes === 'function') refreshTrackVolumes();
   const pct = Math.round(PREFS.volume * 100);
   if ($('musicVolume')) $('musicVolume').value = pct;
   if ($('volumeMini')) $('volumeMini').value = pct;
   if ($('volumeValue')) $('volumeValue').textContent = pct + '%';
 }
-function musicStart() {
+function musicStartProcedural() {
   const ctx = musicEnsure();
   if (!ctx) return;
   if (ctx.state === 'suspended') ctx.resume();
@@ -490,19 +491,27 @@ function musicStart() {
   MUSIC.step = 0;
   MUSIC.timer = setInterval(musicSchedule, 100);
   musicSchedule();
-  const b = $('musicBtn');
-  if (b) b.textContent = '♫ Musique : ON';
 }
-function musicStop() {
+function musicStopProcedural() {
   MUSIC.playing = false;
   if (MUSIC.timer) {
     clearInterval(MUSIC.timer);
     MUSIC.timer = null;
   }
-  const b = $('musicBtn');
-  if (b) b.textContent = '♫ Musique : OFF';
+}
+// Musique de l'écran courant (lobby ou partie) ; le bouton coupe / remet toute la musique (préférence mémorisée).
+function musicStart() {
+  playGameMusic();
 }
 function musicToggle() {
-  if (MUSIC.playing) musicStop();
-  else musicStart();
+  PREFS.musicOn = !PREFS.musicOn;
+  savePrefs();
+  updateMusicButton();
+  if (!PREFS.musicOn) stopAllMusic();
+  else if (TRACKS.want === 'lobby') playLobbyMusic();
+  else playGameMusic();
+}
+function updateMusicButton() {
+  const b = $('musicBtn');
+  if (b) b.textContent = PREFS.musicOn ? '♫ Music: ON' : '♫ Music: OFF';
 }

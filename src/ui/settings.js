@@ -282,6 +282,7 @@ function updateSelectPreview(selectedRace, selectedClass) {
   updateSelectPreview3D(rk, ck);
 }
 function chooseClass() {
+  playLobbyMusic();
   let selectedClass = state?.pcls || null,
     selectedRace = state?.prace || null;
   const raceBox = $('raceChoices'),
@@ -354,6 +355,9 @@ function chooseClass() {
   };
 }
 $('restartBtn').onclick = chooseClass;
+updateMusicButton();
+$('gameTrackInput').onchange = e => e.target.files[0] && saveGameTrack(e.target.files[0]);
+$('gameTrackClear').onclick = clearGameTrack;
 $('musicBtn').onclick = musicToggle;
 $('settingsBtn').onclick = openSettings;
 $('closeSettingsBtn').onclick = closeSettings;

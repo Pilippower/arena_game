@@ -19,6 +19,7 @@ MOBILE.enabled = detectMobileMode();
 if (MOBILE.enabled) document.body.classList.add('mobile-mode');
 const PREF_KEY = 'arenaAscendantPrefs_v1';
 const DEFAULT_PREFS = {
+  musicOn: true,
   volume: 0.65,
   keybinds: { skills: ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6'], trinket: 'KeyR' },
   ui: {}
@@ -37,6 +38,7 @@ function loadPrefs() {
       d.keybinds.skills = v.keybinds.skills.slice(0, 6).concat(v.keybinds.skills.length === 5 ? ['Digit6'] : []);
     if (typeof v.keybinds?.trinket === 'string') d.keybinds.trinket = v.keybinds.trinket;
     if (v.ui && typeof v.ui === 'object') d.ui = v.ui;
+    if (typeof v.musicOn === 'boolean') d.musicOn = v.musicOn;
   } catch (_) {}
   return d;
 }

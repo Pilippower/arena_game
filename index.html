@@ -38,7 +38,7 @@ body.skillDrag .skill[data-slot]{outline:1px dashed #ffd96f88}.skill.dragFrom{ou
 #bootError{display:none;margin-top:12px;padding:10px;border:1px solid #ff6573;border-radius:8px;color:#ffd6da;background:#3a1820}
 
 #top .topControls{display:flex;gap:8px;align-items:center}.volumeMini{display:flex;align-items:center;gap:5px;font-size:10px;color:#dbc89c}.volumeMini input{width:88px;accent-color:#d6b15f}
-#settingsPanel{display:none;position:absolute;right:16px;top:14px;z-index:20;width:min(390px,calc(100% - 32px));max-height:calc(100% - 28px);overflow:auto;background:linear-gradient(180deg,#2d2015f5,#15100cf5);border:1px solid #9b7740;border-radius:14px;padding:14px;box-shadow:0 16px 45px #000c,inset 0 1px #e7c97b44;pointer-events:auto}#settingsPanel.open{display:block}#settingsPanel h3{margin:0 0 10px;color:#ffe6ad}.settingRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0;padding:8px;border:1px solid #60492b;background:#1b140f;border-radius:9px}.settingRow input[type=range]{width:160px;accent-color:#d9b55d}.bindGrid{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center}.bindBtn{min-width:86px;padding:6px 9px}.bindBtn.capturing{outline:2px solid #ffd76a;box-shadow:0 0 12px #ffc85d88}.settingsActions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.settingsHint{font-size:10px;line-height:1.45;color:#cdbc95;margin-top:9px}#bindStatus{min-height:15px;color:#ffd77d;font-size:10px;margin-top:6px}
+.fileBtn{display:inline-block;border:1px solid #8d6a35;border-radius:8px;padding:5px 9px;cursor:pointer;margin-top:4px}#settingsPanel{display:none;position:absolute;right:16px;top:14px;z-index:20;width:min(390px,calc(100% - 32px));max-height:calc(100% - 28px);overflow:auto;background:linear-gradient(180deg,#2d2015f5,#15100cf5);border:1px solid #9b7740;border-radius:14px;padding:14px;box-shadow:0 16px 45px #000c,inset 0 1px #e7c97b44;pointer-events:auto}#settingsPanel.open{display:block}#settingsPanel h3{margin:0 0 10px;color:#ffe6ad}.settingRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0;padding:8px;border:1px solid #60492b;background:#1b140f;border-radius:9px}.settingRow input[type=range]{width:160px;accent-color:#d9b55d}.bindGrid{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center}.bindBtn{min-width:86px;padding:6px 9px}.bindBtn.capturing{outline:2px solid #ffd76a;box-shadow:0 0 12px #ffc85d88}.settingsActions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.settingsHint{font-size:10px;line-height:1.45;color:#cdbc95;margin-top:9px}#bindStatus{min-height:15px;color:#ffd77d;font-size:10px;margin-top:6px}
 .frame.uiMovable{transition:outline-color .15s,box-shadow .15s}.hud.uiEdit{pointer-events:auto}.hud.uiEdit .uiMovable{pointer-events:auto;cursor:move;outline:2px dashed #ffd76a;outline-offset:3px;box-shadow:0 0 18px #ffc85d55,inset 0 1px #d2aa6744}.hud.uiEdit .uiMovable:before{content:'↕ déplacer';position:absolute;right:6px;top:-18px;font-size:9px;color:#ffe094;background:#1b130de8;border:1px solid #75562f;border-radius:5px;padding:2px 5px}.hud.uiEdit .uiMovable.dragging{outline-style:solid;box-shadow:0 0 24px #ffd66b99}
 
 /* ---------- Mobile browser mode ---------- */
@@ -123,6 +123,7 @@ body.mobile-mode #playBtn{font-size:14px!important;padding:9px 14px!important}
 <div id="settingsPanel">
   <h3>⚙ Interface & raccourcis</h3>
   <div class="settingRow"><label for="musicVolume"><b>Volume musique / SFX</b></label><div><input id="musicVolume" type="range" min="0" max="200" value="65"> <span id="volumeValue">65%</span></div></div>
+  <div class="settingRow"><label><b>In-game music</b></label><div><span id="gameTrackName">Procedural soundtrack</span><br><label class="fileBtn">Choose an audio file…<input id="gameTrackInput" type="file" accept="audio/*" hidden></label> <button id="gameTrackClear">Use procedural</button><div class="tiny">Stays on this device only (never uploaded). Each match starts at a random position.</div></div></div>
   <div class="selectorTitle">Raccourcis des sorts</div>
   <div id="bindGrid" class="bindGrid"></div>
   <div id="bindStatus"></div>
@@ -134,33 +135,34 @@ body.mobile-mode #playBtn{font-size:14px!important;padding:9px 14px!important}
 </main>
 <footer id="bottom"><div id="status" class="sideBottom"></div><div id="center"><div id="round">Round 1 · BO3</div><div id="timer">02:30</div><div id="score">0 - 0</div></div><div id="skills"></div></footer>
 </div>
-<script src="game_logic.js?v=202611010423"></script>
+<script src="game_logic.js?v=202611010426"></script>
 <!-- High-fidelity character renderer. The game remains playable with the built-in fallback if these fail to load. -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js" crossorigin="anonymous"></script>
 <!-- Personnages CC0 assemblés (assets emballés en .js dans assets/characters/ : fonctionne en double-clic). -->
-<script>window.ASSET_V="202611010423"</script>
-<script src="src/characters/kits.js?v=202611010423"></script>
-<script src="src/characters/builder.js?v=202611010423"></script>
-<script src="src/render/environment.js?v=202611010423"></script>
-<script src="src/render/effects.js?v=202611010423"></script>
-<script src="assets/ui/pick_icons.js?v=202611010423"></script>
-<script src="src/core/setup.js?v=202611010423"></script>
-<script src="src/render/heroes3d.js?v=202611010423"></script>
-<script src="src/data/classes.js?v=202611010423"></script>
-<script src="src/core/webgl.js?v=202611010423"></script>
-<script src="src/game/combat.js?v=202611010423"></script>
-<script src="src/game/ai.js?v=202611010423"></script>
-<script src="src/game/rules.js?v=202611010423"></script>
-<script src="src/ui/skillbar.js?v=202611010423"></script>
-<script src="src/game/sim.js?v=202611010423"></script>
-<script src="src/render/world.js?v=202611010423"></script>
-<script src="src/ui/hud.js?v=202611010423"></script>
-<script src="src/audio/music.js?v=202611010423"></script>
-<script src="src/audio/sfx.js?v=202611010423"></script>
-<script src="src/ui/settings.js?v=202611010423"></script>
-<script src="src/ui/mobile.js?v=202611010423"></script>
-<script src="src/input/controls.js?v=202611010423"></script>
-<script src="src/core/main.js?v=202611010423"></script>
+<script>window.ASSET_V="202611010426"</script>
+<script src="src/characters/kits.js?v=202611010426"></script>
+<script src="src/characters/builder.js?v=202611010426"></script>
+<script src="src/render/environment.js?v=202611010426"></script>
+<script src="src/render/effects.js?v=202611010426"></script>
+<script src="assets/ui/pick_icons.js?v=202611010426"></script>
+<script src="src/core/setup.js?v=202611010426"></script>
+<script src="src/render/heroes3d.js?v=202611010426"></script>
+<script src="src/data/classes.js?v=202611010426"></script>
+<script src="src/core/webgl.js?v=202611010426"></script>
+<script src="src/game/combat.js?v=202611010426"></script>
+<script src="src/game/ai.js?v=202611010426"></script>
+<script src="src/game/rules.js?v=202611010426"></script>
+<script src="src/ui/skillbar.js?v=202611010426"></script>
+<script src="src/game/sim.js?v=202611010426"></script>
+<script src="src/render/world.js?v=202611010426"></script>
+<script src="src/ui/hud.js?v=202611010426"></script>
+<script src="src/audio/music.js?v=202611010426"></script>
+<script src="src/audio/tracks.js?v=202611010426"></script>
+<script src="src/audio/sfx.js?v=202611010426"></script>
+<script src="src/ui/settings.js?v=202611010426"></script>
+<script src="src/ui/mobile.js?v=202611010426"></script>
+<script src="src/input/controls.js?v=202611010426"></script>
+<script src="src/core/main.js?v=202611010426"></script>
 </body>
 </html>
