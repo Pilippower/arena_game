@@ -320,4 +320,9 @@ for (const f of ['frame', 'title', 'btn_leave', 'btn_stay'])
     'Leave : ' + f
   );
 assert.ok(read('src/ui/results.css').includes('#leaveConfirm #leaveYes'), 'Leave : boutons de la maquette');
+assert.match(
+  read('src/characters/builder.js'),
+  /function dwarfBeard[\s\S]*?Beard_Mass[\s\S]*?16, face \* 0\.2/,
+  'barbe de nain tressée jusqu’à la ceinture'
+);
 console.log('OK - spécifications validées (docs/SPEC.md)');

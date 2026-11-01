@@ -2384,53 +2384,158 @@
     return g;
   }
 
-  // Barbe de nain : la barbe du pack est allongée et élargie, puis deux tresses cerclées d'or.
+  // Barbe de nain (demande de l'utilisateur : longue barbe tressée de nain de fantasy, style générique) :
+  // masse épaisse des joues à la poitrine (s'écarte du torse en descendant), moustache tombante, grosse tresse
+  // centrale en chevrons jusqu'à la ceinture, deux tresses latérales ; anneaux dorés et pointes en pinceau.
+  // Tout est construit autour des repères du visage (L) puis attaché à l'os de la tête.
+  function hairStrandTexture(THREE) {
+    if (hairStrandTexture.tex) return hairStrandTexture.tex;
+    const c = document.createElement('canvas');
+    c.width = 128;
+    c.height = 256;
+    const g = c.getContext('2d');
+    g.fillStyle = '#d0d0d0';
+    g.fillRect(0, 0, 128, 256);
+    // mèches : traits verticaux ondulés, clairs et sombres
+    for (let k = 0; k < 220; k++) {
+      const x = Math.random() * 128,
+        l = Math.random() > 0.5 ? 255 : 40;
+      g.strokeStyle = `rgba(${l},${l},${l},${0.12 + Math.random() * 0.25})`;
+      g.lineWidth = 0.6 + Math.random() * 1.8;
+      g.beginPath();
+      g.moveTo(x, -10);
+      g.bezierCurveTo(x + 6 * Math.random() - 3, 80, x + 8 * Math.random() - 4, 170, x + 6 * Math.random() - 3, 266);
+      g.stroke();
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return (hairStrandTexture.tex = t);
+  }
   function dwarfBeard(THREE, root, bones, L, color) {
-    let beard = null;
+    const face = L.eye.y - L.chin, // hauteur œil → menton : unité de la barbe
+      top = L.mouthY + face * 0.15,
+      len = face * 2.7,
+      tint = color
+        .clone()
+        .lerp(new THREE.Color(0.5, 0.13, 0.02), 0.6)
+        .multiplyScalar(0.55), // roux cuivré profond
+      hair = new THREE.MeshStandardMaterial({ color: tint, roughness: 0.8, map: hairStrandTexture(THREE) }),
+      dark = new THREE.MeshStandardMaterial({ color: tint.clone().multiplyScalar(0.65), roughness: 0.9 }),
+      gold = new THREE.MeshStandardMaterial({ color: 0xd9aa4c, metalness: 0.9, roughness: 0.28 }),
+      g = new THREE.Group();
+    g.name = 'DwarfBeard';
+    // barbe du pack : gardée courte pour couvrir joues et favoris
     root.traverse(o => {
-      if (o.isMesh && /Beard/i.test(o.name)) beard = o;
+      if (o.isMesh && /Beard/i.test(o.name)) o.material = hair;
     });
-    if (!beard) return;
-    const geo = (beard.geometry = beard.geometry.clone()),
-      pos = geo.attributes.position,
-      v = new THREE.Vector3();
-    beard.updateMatrixWorld(true);
-    const toW = beard.matrixWorld,
-      toL = toW.clone().invert(),
-      anchor = L.mouthY + 0.01;
-    let bottom = Infinity;
-    for (let i = 0; i < pos.count; i++) {
-      v.fromBufferAttribute(pos, i).applyMatrix4(toW);
-      const dy = anchor - v.y;
-      if (dy > 0) {
-        v.y = anchor - dy * 2.4;
-        v.x = L.cx + (v.x - L.cx) * (1 + Math.min(dy, 0.08) * 5);
-        v.z += dy * 0.7;
+    // masse : anneaux elliptiques de haut en bas ; t = 0 sous le nez, 1 = pointe
+    const ROWS = 22,
+      COLS = 28,
+      pos = [],
+      uv = [],
+      idx = [];
+    const ring = t => {
+      // large et bombée sur les joues, en pointe arrondie vers la poitrine
+      const w = face * (0.95 + 0.3 * Math.sin(Math.min(1, t * 2.2) * Math.PI * 0.5)) * (1 - 0.78 * Math.pow(t, 2)),
+        d = face * (0.5 + 0.3 * Math.sin(t * Math.PI)) * (1 - 0.5 * t * t),
+        y = top - len * t,
+        z = L.mouthZ - face * 0.42 + face * (0.5 * Math.sqrt(t) + 0.55 * t * t);
+      return { w, d, y, z };
+    };
+    for (let r = 0; r <= ROWS; r++) {
+      const t = r / ROWS,
+        R = ring(t);
+      for (let c = 0; c <= COLS; c++) {
+        const a = (c / COLS) * Math.PI * 2,
+          wav = 1 + 0.06 * Math.sin(a * 7 + t * 9); // mèches en relief
+        pos.push(L.cx + Math.sin(a) * R.w * wav, R.y, R.z + Math.cos(a) * R.d * wav);
+        uv.push((c / COLS) * 3, t * 2);
       }
-      bottom = Math.min(bottom, v.y);
-      v.applyMatrix4(toL);
-      pos.setXYZ(i, v.x, v.y, v.z);
     }
-    pos.needsUpdate = true;
+    for (let r = 0; r < ROWS; r++)
+      for (let c = 0; c < COLS; c++) {
+        const a = r * (COLS + 1) + c,
+          b = a + COLS + 1;
+        idx.push(a, b, a + 1, a + 1, b, b + 1);
+      }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    geo.setIndex(idx);
     geo.computeVertexNormals();
-    const hair = new THREE.MeshStandardMaterial({ color, roughness: 0.85 }),
-      gold = new THREE.MeshStandardMaterial({ color: 0xd4a64a, metalness: 0.85, roughness: 0.3 });
-    for (const side of [-1, 1]) {
-      const b = new THREE.Group();
-      b.name = 'Braid';
-      for (let k = 0; k < 7; k++) {
-        const s = new THREE.Mesh(new THREE.SphereGeometry(0.02 - k * 0.0013, 10, 8), hair);
-        s.scale.set(1, 1.4, 0.9);
-        s.position.set(k % 2 ? 0.004 : -0.004, -k * 0.026, 0);
-        s.rotation.z = k % 2 ? 0.4 : -0.4;
-        b.add(s);
+    const mass = new THREE.Mesh(geo, hair);
+    mass.name = 'Beard_Mass';
+    g.add(mass);
+    // moustache : deux mèches épaisses qui tombent de part et d'autre de la bouche
+    const strand = (pts, r0, r1, mat) => {
+      const curve = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p))),
+        tube = new THREE.TubeGeometry(curve, 24, 1, 10, false),
+        tp = tube.attributes.position,
+        v = new THREE.Vector3(),
+        SEG = 25;
+      // rayon dégressif r0 → r1 le long de la mèche
+      for (let i = 0; i < tp.count; i++) {
+        const k = Math.floor(i / 11) / (SEG - 1),
+          c = curve.getPoint(Math.min(1, k));
+        v.fromBufferAttribute(tp, i)
+          .sub(c)
+          .multiplyScalar(r0 + (r1 - r0) * k);
+        tp.setXYZ(i, c.x + v.x, c.y + v.y, c.z + v.z);
       }
-      const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.018, 12), gold);
-      ring.position.y = -7 * 0.026 + 0.03;
-      b.add(ring);
-      b.position.set(L.cx + side * 0.028, bottom + 0.02, L.mouthZ + 0.03);
-      bones.Head.attach(b);
+      tube.computeVertexNormals();
+      return new THREE.Mesh(tube, mat);
+    };
+    const zf = t => ring(t).z + ring(t).d * 0.9;
+    for (const s of [-1, 1]) {
+      g.add(
+        strand(
+          [
+            [L.cx + s * face * 0.05, L.mouthY + face * 0.2, L.mouthZ + face * 0.12],
+            [L.cx + s * face * 0.42, L.mouthY + face * 0.12, L.mouthZ + face * 0.12],
+            [L.cx + s * face * 0.62, L.mouthY - face * 0.3, zf(0.12)],
+            [L.cx + s * face * 0.6, top - len * 0.42, zf(0.42)]
+          ],
+          face * 0.16,
+          face * 0.05,
+          hair
+        )
+      );
     }
+    // tresse : maillons en chevrons alternés, anneaux dorés, pointe en pinceau
+    const braid = (x, y0, z0, n, size, rings) => {
+      const b = new THREE.Group();
+      for (let k = 0; k < n; k++) {
+        const sz = size * (1 - (k / n) * 0.35),
+          y = y0 - k * sz * 1.25,
+          z = z0 + Math.min(k, 3) * sz * 0.35 - Math.max(0, k - 6) * sz * 0.12; // revient contre le ventre
+        for (const s of [-1, 1]) {
+          const m = new THREE.Mesh(new THREE.SphereGeometry(sz, 10, 8), k % 2 ? hair : dark);
+          m.scale.set(0.62, 1.15, 0.55);
+          m.position.set(x + s * sz * 0.36, y - (s > 0 ? sz * 0.6 : 0), z);
+          m.rotation.z = -s * 0.75;
+          b.add(m);
+        }
+        if (rings.includes(k)) {
+          const g2 = new THREE.Mesh(new THREE.CylinderGeometry(sz * 0.95, sz * 0.95, sz * 0.75, 14), gold);
+          g2.position.set(x, y - sz * 0.3, z);
+          b.add(g2);
+        }
+      }
+      const yEnd = y0 - n * size * 1.15,
+        tip = new THREE.Mesh(new THREE.ConeGeometry(size * 0.75, size * 2.6, 10), hair);
+      tip.rotation.x = Math.PI;
+      tip.position.set(x, yEnd - size * 0.9, z0 + 3 * size * 0.35 - Math.max(0, n - 7) * size * 0.1);
+      b.add(tip);
+      return b;
+    };
+    // grosse tresse centrale (part de la barbe, descend jusqu'à la ceinture) ; deux tresses latérales plus courtes
+    const tipR = ring(0.82);
+    g.add(braid(L.cx, tipR.y + face * 0.2, tipR.z + tipR.d * 0.5, 16, face * 0.2, [0, 5, 10, 14]));
+    for (const s of [-1, 1]) {
+      const R = ring(0.5);
+      g.add(braid(L.cx + s * face * 0.62, R.y, zf(0.5) - face * 0.05, 5, face * 0.13, [0]));
+    }
+    bones.Head.attach(g);
   }
 
   function buildArmor(THREE, root, body, bones, a, height, fit, L) {
