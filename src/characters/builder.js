@@ -786,6 +786,7 @@
         g.add(gem);
         const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.016 * s, 0.016 * s, 0.14 * s, 8), grip);
         g.add(handle);
+        g.rotation.y = Math.PI / 2; // tranchant orienté dans le sens de la frappe
         inHand(g, side, 0, 0.15);
       }
     }
