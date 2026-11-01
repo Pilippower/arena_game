@@ -121,7 +121,8 @@ function aiCover(u, foes) {
   return best;
 }
 // Contournement des piliers : si un pilier barre la route dans les 4 m, on vise sa tangente (côté le plus court)
-// au lieu de buter dessus et de glisser.
+// au lieu de buter dessus et de glisser. Le côté choisi est gardé tant que ce pilier gêne (sinon, cible pile
+// derrière, on hésitait d'un côté à l'autre).
 function aiSteer(u, a) {
   for (const p of arena.pillars) {
     if ((u.y || 0) > p.h) continue;
@@ -132,10 +133,65 @@ function aiSteer(u, a) {
       clear = p.r + 0.8;
     if (ahead <= 0 || ahead > 4 || Math.abs(side) >= clear) continue;
     const c = Math.atan2(side, ahead),
-      tg = Math.asin(Math.min(1, clear / Math.hypot(dx, dz)));
-    return a + (side > 0 ? c - tg : c + tg);
+      tg = Math.asin(Math.min(1, clear / Math.hypot(dx, dz))),
+      s = u.aiSteer?.p === p ? u.aiSteer.s : side > 0 ? 1 : -1;
+    u.aiSteer = { p, s };
+    return a + (s > 0 ? c - tg : c + tg);
   }
+  u.aiSteer = null;
   return a;
+}
+// Un pas dans la direction h. Contre un mur, un pilier ou le flanc d'une rampe, on longe l'obstacle (toujours du
+// même côté tant qu'il bloque) au lieu de courir sur place ; si rien ne passe, on s'arrête. Renvoie le cap suivi.
+function aiStep(u, h, step) {
+  const x0 = u.x,
+    z0 = u.z,
+    s = u.aiSlide || 1;
+  for (const off of [0, s * 0.8, s * 1.5, -s * 0.8, -s * 1.5]) {
+    u.x = x0 + Math.sin(h + off) * step;
+    u.z = z0 + Math.cos(h + off) * step;
+    resolveWalls(u);
+    if (Math.hypot(u.x - x0, u.z - z0) >= step * 0.55) {
+      if (off) u.aiSlide = Math.sign(off);
+      return h + off;
+    }
+  }
+  u.x = x0;
+  u.z = z0;
+  return null;
+}
+// The Bridge : passer du sable au tablier (ou l'inverse) se fait par une rampe. Renvoie le prochain point de
+// passage (pied puis haut de la rampe, ou l'inverse), ou goal si on est au même niveau. Rampe gardée en mémoire.
+const onDeck = v => !!arena.bridge && (v.y || 0) > arena.bridge.y - 0.6 && Math.abs(v.z) <= arena.bridge.halfW;
+function aiWaypoint(u, goal) {
+  const B = arena.bridge,
+    deck = onDeck;
+  if (!B || deck(u) === deck(goal)) {
+    u.aiRamp = null;
+    return goal;
+  }
+  const up = deck(goal),
+    end = (sx, sz, top) =>
+      top
+        ? { x: sx * B.rampX, y: B.y, z: sz * (B.halfW - 0.6) }
+        : { x: sx * B.rampX, y: 0, z: sz * (B.halfW + B.rampLen + 1) };
+  if (!u.aiRamp || u.aiRamp.up !== up) {
+    let bc = 1e9;
+    for (const sx of [-1, 1])
+      for (const sz of [-1, 1]) {
+        const a = end(sx, sz, !up),
+          c = end(sx, sz, up),
+          cost = Math.hypot(a.x - u.x, a.z - u.z) + Math.hypot(c.x - goal.x, c.z - goal.z);
+        if (cost < bc) {
+          bc = cost;
+          u.aiRamp = { sx, sz, up };
+        }
+      }
+  }
+  const { sx, sz } = u.aiRamp,
+    onRamp =
+      Math.abs(u.x - sx * B.rampX) < B.rampW / 2 && u.z * sz > B.halfW - 1 && u.z * sz < B.halfW + B.rampLen + 1.5;
+  return end(sx, sz, onRamp ? up : !up);
 }
 // Cible de l'équipe : les IA d'une même équipe se concentrent sur la même cible (recalculée régulièrement).
 function teamFocus(u) {
@@ -237,7 +293,10 @@ function ai(u, dt) {
   u.target = t;
   const d = d2(u, t),
     caster = !R.melee,
-    meleeOnMe = foes.filter(e => AI_ROLE[e.cls]?.melee && d2(e, u) < 3.2 && !ccd(e));
+    // un lanceur qui fuit une mêlée s'en écarte jusqu'à 5 m (sinon il hésitait pile au seuil : va-et-vient sur place)
+    kite = caster && u.aiKite ? 5 : 3.2,
+    meleeOnMe = foes.filter(e => AI_ROLE[e.cls]?.melee && d2(e, u) < kite && !ccd(e));
+  u.aiKite = caster && meleeOnMe.length > 0;
   if (think && Math.random() > P.idle) {
     // défensif quand on est en danger
     if (R.def != null && hpPct(u) < 0.45 && Math.random() < P.defensive && aiCanUse(u, R.def) && useSkill(u, R.def))
@@ -322,7 +381,9 @@ function ai(u, dt) {
     goal = t;
   if (healer) {
     const low = friends.slice().sort((a, b) => hpPct(a) - hpPct(b))[0];
-    if (low && low !== u && (d2(u, low) > 13 || !los(u, low))) {
+    // rejoindre un allié trop loin ou hors de vue ; une fois parti, on va jusqu'à 7 m (sinon va-et-vient au seuil)
+    u.aiRegroup = !!low && low !== u && (d2(u, low) > (u.aiRegroup ? 7 : 13) || !los(u, low));
+    if (u.aiRegroup) {
       goal = low;
       desired = 6;
     }
@@ -338,6 +399,15 @@ function ai(u, dt) {
     goal = cover;
     desired = 0.3;
   }
+  // autre niveau que le but (pont) : une mêlée passe par la rampe ; un lanceur au sol se place à côté du pont, à
+  // hauteur du but, jamais dessous (il hésitait sous le tablier en voyant puis perdant sa cible)
+  const wp = aiWaypoint(u, goal);
+  if (wp !== goal && caster && !onDeck(u))
+    goal = { x: goal.x, y: goal.y, z: (u.z < 0 ? -1 : 1) * (arena.bridge.halfW + 4) };
+  else if (wp !== goal && (!caster || !los(u, goal))) {
+    goal = wp;
+    desired = 0.3;
+  }
   const gd = d2(u, goal),
     ang = Math.atan2(goal.x - u.x, goal.z - u.z);
   let dir = aiMoveDir(u, gd, desired, caster);
@@ -351,13 +421,14 @@ function ai(u, dt) {
     let a = ang;
     if (dir < 0 && meleeOnMe.length) a = Math.atan2(meleeOnMe[0].x - u.x, meleeOnMe[0].z - u.z);
     // cap réel (recul = dos au danger), dévié autour des piliers ; en reculant on garde le regard vers la menace
-    const h = aiSteer(u, dir < 0 ? a + Math.PI : a);
-    u.x += Math.sin(h) * sp * dt;
-    u.z += Math.cos(h) * sp * dt;
-    u.yaw = dir < 0 ? a : h;
-    u.movePhase += dt * 8.5;
-    resolveWalls(u);
-  } else if (!u.cast) u.yaw = Math.atan2(t.x - u.x, t.z - u.z);
+    const h = aiStep(u, aiSteer(u, dir < 0 ? a + Math.PI : a), sp * dt);
+    if (h == null) u.moving = false;
+    else {
+      u.yaw = dir < 0 ? a : h;
+      u.movePhase += dt * 8.5;
+    }
+  }
+  if (!u.moving && !u.cast) u.yaw = Math.atan2(t.x - u.x, t.z - u.z);
 }
 // Joystick mobile : au-delà de 35 % de déviation, vitesse pleine (sinon on avançait à vitesse réduite).
 function mobileStickBoost(f, r) {

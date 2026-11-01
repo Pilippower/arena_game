@@ -68,6 +68,24 @@ for (const sx of [-1, 1])
   }
 assert.equal(ctx.groundAt({ x: 0, z: 0, y: 0 }), 0, 'sous le pont : on reste au sol');
 assert.ok(ctx.blockedBySurface({ x: B.rampX, z: B.halfW + 1, y: 0 }), 'on ne traverse pas une rampe par le côté');
+// IA sur The Bridge : sable → tablier par une rampe (pied, puis haut), pas en dessous de la cible
+vm.runInContext(read('src/game/combat.js').match(/function resolveWalls[\s\S]*?\n\}/)[0], ctx);
+run('src/game/ai.js');
+{
+  const goal = { x: 0, y: B.y, z: 0 },
+    foot = ctx.aiWaypoint({ x: 0, y: 0, z: 8 }, goal);
+  assert.ok(Math.abs(foot.x) === B.rampX && Math.abs(foot.z) > B.halfW + B.rampLen, 'IA : vers le pied de la rampe');
+  const top = ctx.aiWaypoint({ x: B.rampX, y: 1.5, z: 9 }, goal);
+  assert.ok(top.x === B.rampX && top.z > 0 && top.z < B.halfW, 'IA : sur la rampe, vers le tablier');
+  const same = { x: 0, y: 0, z: 9 };
+  assert.equal(ctx.aiWaypoint({ x: 3, y: 0, z: 9 }, same), same, 'IA : même niveau, tout droit');
+  // contre un mur : on longe au lieu de courir sur place
+  const u = { x: ctx.arena.halfX - 0.72, z: 0, y: 0 };
+  assert.notEqual(ctx.aiStep(u, Math.PI / 2 + 0.2, 0.05), null, 'IA : longe le mur');
+  assert.ok(Math.abs(u.z) > 0.02, 'IA : avance le long du mur');
+}
+assert.match(read('src/game/ai.js'), /u\.aiKite \? 5 : 3\.2/, 'IA : fuit une mêlée jusqu’à 5 m (pas de va-et-vient)');
+assert.match(read('src/game/ai.js'), /u\.aiRegroup \? 7 : 13/, 'IA : rejoint un allié jusqu’à 7 m');
 // Formats de match : 1v1, 2v2, 3v3
 {
   const ctx2 = {
