@@ -74,7 +74,8 @@ const TAGS = {
   };
   await save((await noDesc(47, 33, 569, 471)).resize(720), 'mapcard_castle', 86);
   await save((await noDesc(662, 33, 559, 471)).resize(720), 'mapcard_bridge', 86);
-  // cartes de race et de classe (illustration + nom peint), recadrées à l'intérieur de leur cadre doré
+  // cartes de race et de classe : l'illustration seule (sans le nom peint, trop petit : flou), à l'intérieur du cadre
+  // doré ; agrandie (lanczos) et renforcée, le nom est écrit par le jeu en texte net sur une bande fine
   const CARDS = {
     race_human: [717, 561, 98, 80],
     race_dwarf: [826, 561, 99, 80],
@@ -90,6 +91,13 @@ const TAGS = {
     class_warlock: [1070, 759, 129, 75]
   };
   for (const [k, [x, y, w, h]] of Object.entries(CARDS))
-    await save(crop('lobby_assets.png', x + 4, y + 4, w - 8, h - 8).resize(2 * (w - 8)), k, 88);
+    await save(
+      // à partir de la 9e rangée : l'ombre intérieure du cadre (rangées 2 à 8) faisait une bande sombre en haut
+      crop('lobby_assets.png', x + 4, y + 9, w - 8, Math.round((h - 8) * 0.66) - 5)
+        .resize(3 * (w - 8), null, { kernel: 'lanczos3' })
+        .sharpen({ sigma: 1.1 }),
+      k,
+      90
+    );
   console.log('Lobby 2 : ' + fs.readdirSync(OUT).join(' '));
 })();

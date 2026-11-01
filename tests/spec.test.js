@@ -386,4 +386,8 @@ assert.ok(
   'score centré sur la plaque (victoire et défaite)'
 );
 for (const m of Object.values(ctx.MAPS)) assert.ok(m.desc.length <= 40, 'description d’arène courte : ' + m.name);
+assert.ok(
+  /#overlay \.iconChoice \.cardArt \{\s*position: absolute;\s*top: 0;/.test(read('src/ui/lobby.css')),
+  'cartes : illustration collée en haut (pas de bande vide)'
+);
 console.log('OK - spécifications validées (docs/SPEC.md)');

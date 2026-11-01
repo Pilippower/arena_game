@@ -635,16 +635,33 @@ body.lobby:not(.mobile-mode) .pickRight {
   opacity: 1;
   filter: grayscale(1) brightness(0.55);
 }
-/* cartes de race et de classe : la carte de l'utilisateur (nom peint) remplit tout le bouton */
+/* cartes de race et de classe : illustration de l'utilisateur sur toute la hauteur, nom écrit par le jeu (net)
+   sur une bande fine et translucide par-dessus */
+#overlay .iconChoice {
+  --band: clamp(15px, 1.35vw, 24px);
+}
+/* collée en haut : un <button> centre son contenu verticalement (vide en haut sinon) */
 #overlay .iconChoice .cardArt {
-  height: 100% !important;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: calc(100% - var(--band)) !important;
 }
 #overlay .racePick .label,
 #overlay .classPick .label {
-  display: none;
+  height: var(--band) !important;
+  line-height: var(--band) !important;
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-size: calc(var(--band) * 0.6) !important;
+  padding: 0 2px;
+  text-overflow: clip;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: linear-gradient(180deg, #0b0f1ccc, #05070fee) !important;
+  border-top: 1px solid #c99a4a99 !important;
 }
 #overlay .iconChoice .cardArt {
-  object-position: 50% 100%; /* le nom peint en bas n'est jamais rogné */
+  object-position: 50% 35%; /* illustration au-dessus de la bande du nom, visage centré */
 }
 /* arènes : carte peinte de l'utilisateur (bandeau, blason, nom, description), cadrée sur le bandeau ; cadre doré
    et losange en haut ; carte choisie lumineuse avec un second losange en bas */
