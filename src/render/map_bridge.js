@@ -25,19 +25,62 @@
     g.putImageData(id, 0, 0);
     return c;
   }
-  function woodCanvas(w = 256, h = 512, base = [110, 70, 42]) {
+  // Bois « fantasy » peint à la main : planches séparées par des joints sombres, arêtes éclairées, fil du bois
+  // qui contourne les nœuds, aboutements et clous de fer. Le fil court le long de v (axe long des planches).
+  function woodCanvas(w = 256, h = 512, base = [134, 84, 46], boards = 2, seed = 3) {
     const c = canvas(w, h),
       g = c.getContext('2d'),
       id = g.createImageData(w, h),
-      d = id.data;
+      d = id.data,
+      r = rng(seed),
+      bw = w / boards;
+    const B = [];
+    for (let i = 0; i < boards; i++)
+      B.push({
+        tint: 0.82 + r() * 0.3,
+        warm: (r() - 0.5) * 0.12,
+        joint: Math.floor(r() * h),
+        knots: Array.from({ length: 1 + Math.floor(r() * 2) }, () => ({
+          x: 6 + r() * (bw - 12),
+          y: r() * h,
+          r: 3 + r() * 5
+        }))
+      });
     for (let y = 0; y < h; y++)
       for (let x = 0; x < w; x++) {
-        const grain = Math.sin(x * 0.35 + noise2((x / w) * 3, (y / h) * 12, 12, 3) * 9) * 0.5 + 0.5,
-          k = 0.62 + 0.3 * grain + 0.12 * noise((x / w) * 8, (y / h) * 8, 8, 2);
+        const bi = Math.floor(x / bw),
+          b = B[bi],
+          lx = x - bi * bw;
+        let gx = lx + noise2((x / w) * 3, (y / h) * 10, 10, 3) * 10,
+          knot = 1;
+        for (const kn of b.knots) {
+          let dy = y - kn.y;
+          if (dy > h / 2) dy -= h;
+          if (dy < -h / 2) dy += h;
+          const dd = Math.hypot(lx - kn.x, dy * 0.45);
+          gx += ((kn.r * 9) / (dd + kn.r)) * Math.sign(lx - kn.x || 1);
+          if (dd < kn.r) knot = 0.45 + 0.4 * (dd / kn.r) + 0.12 * Math.sin(dd * 2.4);
+        }
+        const line = Math.pow(Math.abs(Math.sin(gx * 0.42)), 8),
+          fine = noise((x / w) * 40, (y / h) * 6, 40, 2);
+        let k = (0.8 + 0.14 * noise((x / w) * 6, (y / h) * 3, 6, 2) - 0.28 * line + 0.08 * fine) * b.tint * knot;
+        k *= 0.92 + 0.14 * Math.sin((lx / bw) * Math.PI); // planche bombée, centre plus clair
+        if (lx < 1.5 || lx > bw - 2)
+          k *= 0.35; // joint entre planches
+        else if (lx < 4) k *= 1.18; // arête éclairée
+        const jd = Math.abs(y - b.joint);
+        if (jd < 1.5)
+          k *= 0.35; // aboutement
+        else if (jd < 4) k *= 1.12;
+        // clous de part et d'autre de l'aboutement
+        for (const nx of [bw * 0.28, bw * 0.72]) {
+          const nd = Math.hypot(lx - nx, jd - 7);
+          if (nd < 2.6) k = nd < 1.6 ? 0.25 : 1.35;
+        }
         const o = (y * w + x) * 4;
-        d[o] = base[0] * k;
-        d[o + 1] = base[1] * k;
-        d[o + 2] = base[2] * k;
+        d[o] = clamp(base[0] * k * (1 + b.warm), 0, 255);
+        d[o + 1] = clamp(base[1] * k, 0, 255);
+        d[o + 2] = clamp(base[2] * k * (1 - b.warm), 0, 255);
         d[o + 3] = 255;
       }
     g.putImageData(id, 0, 0);
@@ -144,7 +187,7 @@
     S.add(sand);
 
     const woodT = tex(THREE, woodCanvas()),
-      darkWoodT = tex(THREE, woodCanvas(256, 512, [70, 44, 28])),
+      darkWoodT = tex(THREE, woodCanvas(256, 512, [92, 56, 32], 1, 11)),
       rockT = tex(
         THREE,
         stoneCanvas({
@@ -159,8 +202,14 @@
           warp: 4
         })
       );
-    const wood = new THREE.MeshStandardMaterial({ map: woodT, roughness: 0.85 }),
-      darkWood = new THREE.MeshStandardMaterial({ map: darkWoodT, roughness: 0.9 }),
+    const wood = new THREE.MeshStandardMaterial({ map: woodT, bumpMap: woodT, bumpScale: 0.035, roughness: 0.78 }),
+      darkWood = new THREE.MeshStandardMaterial({
+        map: darkWoodT,
+        bumpMap: darkWoodT,
+        bumpScale: 0.035,
+        roughness: 0.82
+      }),
+      bronze = new THREE.MeshStandardMaterial({ color: 0xb8863a, roughness: 0.35, metalness: 0.85 }),
       rock = new THREE.MeshStandardMaterial({ map: rockT, roughness: 0.95 }),
       iron = new THREE.MeshStandardMaterial({ color: 0x2b2b30, roughness: 0.45, metalness: 0.8 }),
       bone = new THREE.MeshStandardMaterial({ color: 0xe8dcc0, roughness: 0.6 });
@@ -271,12 +320,44 @@
       pl.rotation.y = (r() - 0.5) * 0.04;
       pl.receiveShadow = true;
     }
+    const lanterns = [];
     for (let x = -len / 2 + 1.6; x < len / 2; x += 3.2) {
       for (const sz of [-1, 1]) {
-        if (!opening(x)) add(new THREE.BoxGeometry(0.24, 1.2, 0.24), darkWood, x, bridgeY + 0.65, sz * (W / 2 - 0.1)); // balustre
+        if (!opening(x)) {
+          const bz = sz * (W / 2 - 0.1);
+          add(new THREE.BoxGeometry(0.24, 1.2, 0.24), darkWood, x, bridgeY + 0.65, bz); // balustre
+          add(new THREE.ConeGeometry(0.2, 0.28, 4), bronze, x, bridgeY + 1.38, bz).rotation.y = Math.PI / 4; // chapeau de bronze
+          if (Math.round((x + len / 2) / 3.2) % 3 === 1) lanterns.push([x, bridgeY + 1.85, bz]);
+        }
         strap(0.3, 0.6, x, bridgeY - 0.1, sz * (W / 2 + 0.03));
       }
       add(new THREE.BoxGeometry(0.12, 0.05, W - 0.2), iron, x, bridgeY + 0.24, 0, false); // sangle sur le tablier
+    }
+    // lanternes sur les balustres : cage de bronze, flamme émissive, halo additif
+    const lanternGlow = new THREE.SpriteMaterial({
+      map: glowTexture(THREE),
+      color: 0xffb257,
+      transparent: true,
+      opacity: 0.75,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    const flameMat = new THREE.MeshStandardMaterial({ color: 0xffc070, emissive: 0xff9a2a, emissiveIntensity: 2 });
+    for (const [lx, ly, lz] of lanterns) {
+      add(new THREE.CylinderGeometry(0.03, 0.03, 0.3, 6), bronze, lx, ly - 0.32, lz, false);
+      add(new THREE.SphereGeometry(0.1, 10, 8), flameMat, lx, ly, lz, false);
+      for (const [dx, dz] of [
+        [-1, -1],
+        [1, -1],
+        [-1, 1],
+        [1, 1]
+      ])
+        add(new THREE.BoxGeometry(0.025, 0.36, 0.025), bronze, lx + dx * 0.11, ly, lz + dz * 0.11, false);
+      add(new THREE.ConeGeometry(0.2, 0.18, 4), bronze, lx, ly + 0.26, lz, false).rotation.y = Math.PI / 4;
+      const sp = new THREE.Sprite(lanternGlow);
+      sp.position.set(lx, ly, lz);
+      sp.scale.set(1.3, 1.3, 1);
+      S.add(sp);
     }
     // chevalets : traverses et croix de Saint-André entre les poteaux qui portent le pont
     const posts = arena.pillars.filter(p => p.kind === 'post');

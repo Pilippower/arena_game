@@ -80,5 +80,12 @@ assert.match(
   /#overlay \.classPick \{[^}]*width: var\(--cw\);[^}]*aspect-ratio: 1\.45;/,
   'cartes race/classe : même taille'
 );
-assert.ok(!lobbyCss.includes('border-image: url'), "cadre et rubans du lobby continus (pas de tranches d'image)");
+assert.ok(
+  lobbyCss.includes('lobby/frame.webp') && read('tools/build_lobby_assets.js').includes("'kit_18.png'"),
+  'cadre du lobby : panoplie, angles continus'
+);
+// The Bridge : personnages cachés par le tablier dessinés en silhouette translucide (pas les camouflés)
+const h3 = read('src/render/heroes3d.js');
+assert.match(h3, /function hfRenderGhosts[\s\S]*GreaterDepth/, 'silhouette des personnages sous le pont');
+assert.ok(h3.includes('(rec.opacity ?? 1) >= 1'), 'pas de silhouette pour les unités camouflées');
 console.log('OK - spécifications validées (docs/SPEC.md)');

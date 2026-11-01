@@ -1029,6 +1029,7 @@ function hfRender() {
   hfMakePortraits();
   if (window.SpellFX?.ok) SpellFX.update(dt, state.units, hfHandPos);
   HF.renderer.render(HF.scene, HF.camera);
+  hfRenderGhosts();
 }
 // Mouton de la Métamorphose : laine en boules, tête et pattes sombres ; les pattes s'animent quand il marche.
 // Bêtes du druide (designs originaux) : panthère runique élancée et ours gardien massif à plaques d'écorce.
@@ -1639,6 +1640,71 @@ function hfRebuildOccluders() {
   add(new THREE.BoxGeometry(0.3, 4.9, hz * 2 + 0.6), -hx - 0.15, 2.45, 0);
   add(new THREE.BoxGeometry(0.3, 4.9, hz * 2 + 0.6), hx + 0.15, 2.45, 0);
   HF.scene.add(g);
+  // tablier et rampes du pont : groupe à part, les personnages qu'ils cachent sont dessinés en silhouette (hfRenderGhosts)
+  if (HF.bridgeOcc) {
+    HF.scene.remove(HF.bridgeOcc);
+    HF.bridgeOcc.traverse(o => o.geometry?.dispose());
+    HF.bridgeOcc = null;
+  }
+  const B = arena.bridge;
+  if (!B) return;
+  const bg = (HF.bridgeOcc = new THREE.Group());
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(hx * 2 + 4, 0.4, B.halfW * 2 + 0.2), occMat);
+  deck.position.set(0, B.y - 0.25, 0);
+  bg.add(deck);
+  const ang = Math.atan2(B.y, B.rampLen),
+    hyp = Math.hypot(B.y, B.rampLen);
+  for (const sx of [-1, 1])
+    for (const sz of [-1, 1]) {
+      const ramp = new THREE.Mesh(new THREE.BoxGeometry(B.rampW, 0.2, hyp), occMat);
+      ramp.position.set(sx * B.rampX, B.y / 2 - 0.15, sz * (B.halfW + B.rampLen / 2));
+      ramp.rotation.x = sz * ang;
+      bg.add(ramp);
+    }
+  bg.traverse(o => (o.renderOrder = -10));
+  HF.scene.add(bg);
+}
+// Personnages cachés par le pont : silhouette translucide visible à travers le tablier (pas les camouflés).
+// Passe 1 : profondeur du pont seul ; passe 2 : personnages là où ils sont derrière (GreaterDepth), sans écrire la profondeur.
+function hfRenderGhosts() {
+  if (!HF.bridgeOcc) return;
+  const R = HF.renderer,
+    sc = HF.scene;
+  HF.ghostMat =
+    HF.ghostMat ||
+    new THREE.MeshBasicMaterial({
+      color: 0xa9c8ff,
+      transparent: true,
+      opacity: 0.3,
+      depthWrite: false,
+      depthFunc: THREE.GreaterDepth,
+      skinning: true
+    });
+  const groups = new Set();
+  for (const rec of HF.records.values()) if (rec.group && (rec.opacity ?? 1) >= 1) groups.add(rec.group);
+  const hidden = [];
+  const only = keep => {
+    for (const o of sc.children)
+      if (o.visible && !keep(o)) {
+        o.visible = false;
+        hidden.push(o);
+      }
+  };
+  const restore = () => hidden.splice(0).forEach(o => (o.visible = true));
+  R.autoClear = false;
+  try {
+    R.clearDepth();
+    only(o => o === HF.bridgeOcc);
+    R.render(sc, HF.camera);
+    restore();
+    only(o => groups.has(o));
+    sc.overrideMaterial = HF.ghostMat;
+    R.render(sc, HF.camera);
+  } finally {
+    sc.overrideMaterial = null;
+    restore();
+    R.autoClear = true;
+  }
 }
 
 function inMeleeGuard(u) {

@@ -8,6 +8,8 @@ const path = require('path');
 const fs = require('fs');
 
 const SRC = process.argv[2] || path.join(__dirname, '../assets_src/ui/interface_target.png');
+// panoplie d'éléments d'interface de l'utilisateur (fond transparent) : cadres dorés à angles continus
+const KIT = path.join(path.dirname(SRC), 'kit_18.png');
 const OUT = path.join(__dirname, '../assets/ui/lobby');
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -83,6 +85,9 @@ const CLASSES = {
   const crestRGB = await crop(620, 0, 566, 118).removeAlpha().toBuffer();
   const alpha = await sharp(mask).resize(566, 118).extractChannel('alpha').toBuffer();
   await save(sharp(crestRGB).joinChannel(alpha), 'crest', 88);
+  // cadres dorés (grand panneau et panneau carré de la panoplie), utilisés en border-image 9 tranches
+  await save(sharp(KIT).extract({ left: 47, top: 152, width: 986, height: 397 }), 'frame', 90);
+  await save(sharp(KIT).extract({ left: 1070, top: 161, width: 346, height: 383 }), 'frame_small', 90);
   // plaque du chrono, texte effacé
   const pl = await rawOf(crop(625, 742, 430, 128));
   patch(pl, 770 - 625, 762 - 742, 930 - 625, 850 - 742);
