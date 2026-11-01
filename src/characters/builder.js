@@ -728,53 +728,64 @@
       sw.add(glow);
       inHand(sw, 'r', -0.11 * s, 0.4);
     } else if (kind === 'daggers') {
-      // Glaives en croissant (design original) : lame courbe émeraude lumineuse, dents sur le dos, poignée gainée de cuir sombre.
+      // Glaives doubles (design original) : poignée au poing, une lame en croissant de chaque côté de la main
+      // (devant et derrière), dents sur le bord inférieur, garde ronde ornée d'un croissant de lune.
       const fel = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(0x19c23e).convertSRGBToLinear(),
-        emissive: new THREE.Color(0x0f8a26).convertSRGBToLinear(),
+        color: new THREE.Color(0x0c8a5c).convertSRGBToLinear(),
+        emissive: new THREE.Color(0x0a7a4a).convertSRGBToLinear(),
         emissiveIntensity: 1.3,
         roughness: 0.25,
         metalness: 0.1
       });
       const grip = new THREE.MeshStandardMaterial({ color: 0x1c1a1e, roughness: 0.6, metalness: 0.5 });
-      const shape = new THREE.Shape();
-      shape.moveTo(0, 0);
-      shape.quadraticCurveTo(0.2, 0.12, 0.22, 0.42); // tranchant extérieur
-      shape.lineTo(0.18, 0.38);
-      for (let k = 0; k < 3; k++)
-        shape.lineTo(0.15 - k * 0.04, 0.3 - k * 0.08).lineTo(0.12 - k * 0.04, 0.26 - k * 0.08); // dents
-      shape.quadraticCurveTo(0.05, 0.08, 0, 0.06);
-      shape.lineTo(0, 0);
+      const silver = new THREE.MeshStandardMaterial({ color: 0x9aa4b2, roughness: 0.3, metalness: 0.9 });
+      // profil d'une lame : a = le long de la lame (depuis le poing), b = vers le haut
+      const blade = () => {
+        const p = new THREE.Shape();
+        p.moveTo(0.07, -0.03);
+        p.quadraticCurveTo(0.32, -0.09, 0.5, 0.0);
+        p.quadraticCurveTo(0.6, 0.08, 0.62, 0.26); // pointe relevée
+        p.quadraticCurveTo(0.5, 0.06, 0.38, 0.05);
+        p.lineTo(0.33, 0.1).lineTo(0.29, 0.04); // dent
+        p.quadraticCurveTo(0.18, 0.05, 0.12, 0.1);
+        p.lineTo(0.07, 0.05);
+        p.lineTo(0.07, -0.03);
+        const geo = new THREE.ExtrudeGeometry(p, {
+          depth: 0.014,
+          bevelEnabled: true,
+          bevelSize: 0.006,
+          bevelThickness: 0.005,
+          bevelSegments: 1
+        });
+        geo.translate(0, 0, -0.007);
+        geo.rotateX(-Math.PI / 2); // (a,b,c) -> (a,c,-b)
+        geo.rotateZ(Math.PI / 2); // -> (-c,a,-b) : a le long de y, b vers -z (le haut)
+        return geo;
+      };
       for (const side of ['l', 'r']) {
         const g = new THREE.Group();
         g.name = 'Dagger';
-        const blade = new THREE.Mesh(
-          new THREE.ExtrudeGeometry(shape, {
-            depth: 0.012,
-            bevelEnabled: true,
-            bevelSize: 0.006,
-            bevelThickness: 0.004,
-            bevelSegments: 1
-          }),
-          fel
-        );
-        blade.scale.set((side === 'l' ? -1 : 1) * s, s, s);
-        blade.position.set(0, 0.03 * s, -0.008 * s);
-        blade.rotation.y = Math.PI / 2;
-        g.add(blade);
-        const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.017 * s, 0.017 * s, 0.17 * s, 8), grip);
-        handle.position.y = -0.06 * s;
-        g.add(handle);
-        const guard = B(0.1, 0.03, 0.035, grip);
-        guard.position.y = 0.025 * s;
+        for (const dir of [1, -1]) {
+          const m = new THREE.Mesh(blade(), fel);
+          m.scale.set(s, dir * s, s);
+          g.add(m);
+          const aura = glowSprite(THREE, new THREE.Color(0.25, 1, 0.65), 0.4 * s);
+          aura.position.set(0, dir * 0.38 * s, -0.08 * s);
+          aura.material.opacity = 0.5;
+          g.add(aura);
+        }
+        const guard = new THREE.Mesh(new THREE.CylinderGeometry(0.07 * s, 0.07 * s, 0.025 * s, 16), grip);
+        guard.rotation.z = Math.PI / 2;
         g.add(guard);
-        const stone = new THREE.Mesh(new THREE.OctahedronGeometry(0.022 * s, 0), fel);
-        stone.position.y = -0.16 * s;
-        g.add(stone);
-        const aura = glowSprite(THREE, new THREE.Color(0.3, 1, 0.4), 0.42 * s);
-        aura.position.set((side === 'l' ? -1 : 1) * 0.1 * s, 0.24 * s, 0);
-        aura.material.opacity = 0.55;
-        g.add(aura);
+        const moon = new THREE.Mesh(new THREE.TorusGeometry(0.045 * s, 0.01 * s, 6, 20, Math.PI * 1.3), silver);
+        moon.rotation.y = Math.PI / 2;
+        moon.position.x = 0.016 * s;
+        g.add(moon);
+        const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.018 * s, 0), fel);
+        gem.position.x = 0.02 * s;
+        g.add(gem);
+        const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.016 * s, 0.016 * s, 0.14 * s, 8), grip);
+        g.add(handle);
         inHand(g, side, 0, 0.15);
       }
     }
