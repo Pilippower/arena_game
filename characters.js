@@ -17,13 +17,13 @@
   const CLASSES={
     sentinel:{ // Guerrier : armure de plaques acier bordée d'or, grandes épaulières, épée et bouclier
       sex:'M',outfit:['Ranger_Body','Ranger_Arms','Ranger_Legs','Ranger_Feet'],
-      hair:{M:'Hair_Buzzed',F:'Hair_Buns'},hairColor:[.32,.20,.11],
+      hair:{M:'Hair_Long',F:'Hair_Long'},hairColor:[.06,.05,.05],
       palette:{dark:[.10,.10,.12],mid:[.36,.37,.40],trim:[.74,.56,.28],cloth:[.48,.50,.54]},
-      weapon:'swordShield',cape:{raceTint:1,trim:[.92,.72,.3],length:.62,emblem:1},tabard:{raceTint:1,trim:[.92,.72,.3],emblem:1},
+      weapon:'swordShield',cape:{raceTint:1,trim:[.92,.72,.3],length:.62,emblem:1},
       bones:{spine_03:1.08,clavicle_l:1.1,clavicle_r:1.1,upperarm_l:1.06,upperarm_r:1.06},
-      armor:{mat:{kind:'metal',style:{base:[.64,.66,.70],trim:[.95,.72,.3],lames:3,ridge:true,rivets:true,glow:[1,.62,.18]}},trim:[.95,.72,.3],thick:1.9,
-        shells:['cuirass','belt','rerebrace','vambrace','cuisse','greave'],pauldron:{layers:4,size:.17,spikes:2,cover:1.35},
-        helmet:{mat:{kind:'metal',style:{base:[.66,.68,.72],trim:[.80,.60,.26],rivets:true}}}}},
+      armor:{mat:{kind:'metal',style:{base:[.16,.18,.22],trim:[.88,.7,.32],diamonds:[.08,.3,.72],rivets:true,plain:true}},trim:[.92,.74,.32],thick:1.9,
+        shellMat:{belt:{kind:'metal',style:{base:[.55,.42,.2],trim:[.95,.78,.36],diamonds:[.08,.3,.72],plain:true}}},
+        shells:['cuirass','belt','rerebrace','vambrace','cuisse','greave'],pauldron:{layers:2,size:.16,bigSpikes:5,cover:1.3},mask:[.4,.43,.5],maskMetal:true}},
     arcanist:{ // Sorcière de bataille : robe violet profond / or, capuche, bâton à cristal arcane
       sex:'F',outfit:['Peasant_Body','Peasant_Arms','Peasant_Legs','Peasant_Feet','Ranger_Head_Hood'],
       hair:{F:'Hair_Long',M:'Hair_SimpleParted'},hairColor:[.92,.72,.38],
@@ -98,16 +98,20 @@
   function resolveKit(kitId){
     const [race,cls]=kitId.split('_'),R=RACES[race],C=CLASSES[cls];
     if(!R||!C)throw new Error('Kit inconnu : '+kitId);
-    const noHelm=race==='orc'||race==='elf',armor=C.armor&&noHelm&&C.armor.helmet?{...C.armor,helmet:null}:C.armor;
+    const noHelm=race==='orc'||race==='elf';let armor=C.armor&&noHelm&&C.armor.helmet?{...C.armor,helmet:null}:C.armor;
+    if(armor?.maskMetal&&(race==='orc'||race==='dwarf'))armor={...armor,mask:null};
     const sex=sexFor(race,cls),hair=armor?.helmet?[]:R.hairF&&sex==='F'?[R.hairF]:R.noHair?[]:[R.hair&&sex==='M'?R.hair:C.hair[sex]];if(R.beard)hair.push('Hair_Beard.gltf');
     return {...C,race,cls,sex,body:'Superhero_'+SEXNAME[sex]+'_FullBody.gltf',outfit:'outfit_'+cls+'_'+sex,
       hair:hair.map(h=>/\.gltf$/.test(h)?h:h+'.gltf'),hairColor:R.hairColor||C.hairColor,skin:R.skin||[1,1,1],
-      eyeGlow:R.eyeGlow||C.eyeGlow,ears:R.ears,tusks:R.tusks,skull:R.skull,bigBeard:R.bigBeard,bones:mergeBones(C.bones,R.bones),orbs:C.orbs,
+      eyeGlow:R.eyeGlow||C.eyeGlow,ears:R.ears,tusks:R.tusks,skull:R.skull,bigBeard:R.bigBeard,bones:mergeBones(mergeBones(HEROIC[sex],C.bones),R.bones),orbs:C.orbs,rim:RIM[cls],
       weapon:C.weapon==='swordShield'?({dwarf:'hammerShield',orc:'axeShield'}[race]||'swordShield'):C.weapon,
       cape:tint(C.cape,race),tabard:tint(C.tabard,race),armor};
   }
   const RACE_TINT={human:[.12,.2,.52],elf:[.1,.34,.16],dwarf:[.14,.22,.5],orc:[.5,.07,.05],undead:[.36,.05,.08]},RACE_EMBLEM={human:'sword',elf:'tree',dwarf:'hammer',orc:'axes',undead:'sword'};
   function tint(c,race){if(!c)return c;const o={...c};if(o.raceTint)o.color=RACE_TINT[race];if(o.emblem===1)o.emblem=RACE_EMBLEM[race];return o}
+  // Silhouette héroïque (épaules larges, grandes mains, tête un peu plus petite), puis liseré de lumière par classe.
+  const HEROIC={M:{clavicle_l:1.08,clavicle_r:1.08,upperarm_l:1.05,upperarm_r:1.05,hand_l:1.15,hand_r:1.15,Head:.93,spine_03:1.04},F:{hand_l:1.06,hand_r:1.06,Head:.95}};
+  const RIM={sentinel:[1,.72,.38],arcanist:[.72,.45,1],oracle:[1,.86,.5],reaver:[.4,.8,1],warden:[.5,1,.4],shade:[1,.32,.25],warlock:[.55,1,.3]};
   function mergeBones(a,b){const o={...(a||{})};for(const k in b||{})o[k]=(o[k]||1)*b[k];return o}
   const KITS={};for(const r in RACES)for(const c in CLASSES)KITS[r+'_'+c]={race:r,cls:c};
   // Pour le build : bundles de tenue (pièces fusionnées) et fichiers simples nécessaires.
@@ -320,8 +324,8 @@
   // Armes de mêlée, rangées comme le bâton : dans le dos ou aux hanches.
   function buildWeapon(THREE,body,bones,kind,height,fitMeshes){
     const s=height/1.8,M=backMount(THREE,body,bones,fitMeshes);
-    const steel=new THREE.MeshStandardMaterial({color:0xb8bec6,roughness:.28,metalness:.9});
-    const dark=new THREE.MeshStandardMaterial({color:0x2a2d33,roughness:.4,metalness:.8});
+    const steel=new THREE.MeshStandardMaterial({color:0xaeb6c2,roughness:.25,metalness:.85,envMap:envMap(THREE),envMapIntensity:1});
+    const dark=new THREE.MeshStandardMaterial({color:0x4a5260,roughness:.25,metalness:.85,envMap:envMap(THREE),envMapIntensity:1.4,emissive:0x0a2a44,emissiveIntensity:.6});
     const leather=new THREE.MeshStandardMaterial({color:0x3a2416,roughness:.85});
     const bronze=new THREE.MeshStandardMaterial({color:0xb0843c,roughness:.35,metalness:.85});
     const B=(w,h,d,m)=>new THREE.Mesh(new THREE.BoxGeometry(w*s,h*s,d*s),m);
@@ -332,32 +336,36 @@
       const grip=new THREE.Mesh(new THREE.CylinderGeometry(.016*s,.018*s,.2*s,8),leather);grip.position.y=-.11*s;w.add(grip);
       const pommel=new THREE.Mesh(new THREE.SphereGeometry(.028*s,10,8),guardMat);pommel.position.y=-.23*s;w.add(pommel);return w};
     // Armes tenues en main (les mêlées frappent avec) : poignée dans le poing, lame vers l'avant en T-pose (pouce devant).
-    const inHand=(w,side,gripY,tilt=.35)=>{const G=handGrip(THREE,bones,side),g=new THREE.Group();g.name=w.name;w.name='';w.position.y=-gripY;g.add(w);
+    const inHand=(w,side,gripY,tilt=.35)=>{const G=handGrip(THREE,bones,side),g=new THREE.Group();g.name=w.name;w.name='';w.position.y=-gripY;if(/Sword|Runeblade/.test(g.name))w.rotation.y=Math.PI/2;g.add(w);
       g.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(0,Math.sin(tilt),Math.cos(tilt)));g.position.copy(G.pos);mount(THREE,body,G.bone,g);return g};
     if(/Shield$/.test(kind)){
       // Bouclier rond sanglé sur l'avant-bras gauche (face extérieure), épée longue en main droite
+      const gold=new THREE.MeshStandardMaterial({color:0xe0b050,roughness:.3,metalness:.9}),gem=new THREE.MeshStandardMaterial({color:0x66ccff,emissive:0x3399ff,emissiveIntensity:2});
       const sh=new THREE.Group();sh.name='Shield';
-      const wood=new THREE.MeshStandardMaterial({color:0x6b1d16,roughness:.6,metalness:.1});
-      const disc=new THREE.Mesh(new THREE.CylinderGeometry(.27*s,.27*s,.03*s,32),wood);disc.rotation.x=Math.PI/2;sh.add(disc);
-      const rim=new THREE.Mesh(new THREE.TorusGeometry(.27*s,.018*s,8,40),steel);sh.add(rim);
-      const boss=new THREE.Mesh(new THREE.SphereGeometry(.07*s,16,10,0,Math.PI*2,0,Math.PI/2),steel);boss.rotation.x=Math.PI/2;boss.position.z=.015*s;sh.add(boss);
-      for(const a of [0,Math.PI/2]){const band=B(.04,.5,.01,bronze);band.rotation.z=a;band.position.z=.018*s;sh.add(band)}
+      const wood=new THREE.MeshStandardMaterial({color:0xc88a2c,roughness:.35,metalness:.75,envMap:envMap(THREE),envMapIntensity:1.2});
+      const ks=new THREE.Shape();ks.moveTo(0,.36);ks.quadraticCurveTo(.2,.34,.2,.12);ks.quadraticCurveTo(.18,-.2,0,-.42);ks.quadraticCurveTo(-.18,-.2,-.2,.12);ks.quadraticCurveTo(-.2,.34,0,.36);
+      const kite=new THREE.Mesh(new THREE.ExtrudeGeometry(ks,{depth:.025,bevelEnabled:true,bevelSize:.012,bevelThickness:.01,bevelSegments:2}),wood);kite.scale.setScalar(s);kite.position.z=-.012*s;sh.add(kite);
+      for(let k=0;k<6;k++){const t=k/5,y=(.3-t*.62)*s,x=(.2-t*t*.17)*s;for(const sx of [-1,1]){const sp=new THREE.Mesh(new THREE.ConeGeometry(.015*s,.07*s,5),dark);sp.position.set(sx*x,y,0);sp.rotation.z=-sx*Math.PI/2;sh.add(sp)}}
+      const rim=new THREE.Mesh(new THREE.TorusGeometry(.001,.001,3,3),steel);sh.add(rim);
+      const boss=new THREE.Mesh(new THREE.OctahedronGeometry(.045*s,0),gem);boss.position.set(0,.04*s,.03*s);sh.add(boss);
       const la=bones.lowerarm_l.getWorldPosition(new THREE.Vector3()),hl=bones.hand_l.getWorldPosition(new THREE.Vector3());
       sh.position.copy(la).lerp(hl,.5).add(new THREE.Vector3(0,.07*s,0));sh.rotation.x=-Math.PI/2;mount(THREE,body,bones.lowerarm_l,sh);
-      const gold=new THREE.MeshStandardMaterial({color:0xe0b050,roughness:.3,metalness:.9}),gem=new THREE.MeshStandardMaterial({color:0x66ccff,emissive:0x3399ff,emissiveIntensity:2});
       if(kind==='hammerShield'){const w=new THREE.Group();w.name='Hammer';const hdl=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.022*s,.8*s,8),leather);hdl.position.y=.25*s;w.add(hdl);
-        const head=B(.22,.12,.12,steel);head.position.y=.68*s;w.add(head);for(const x of [-.14,.14]){const cap2=new THREE.Mesh(new THREE.CylinderGeometry(.075*s,.06*s,.04*s,6),steel);cap2.rotation.z=Math.PI/2;cap2.position.set(x*s*.93,.68*s,0);w.add(cap2)}for(const x of [-.07,.07]){const band=B(.025,.135,.135,gold);band.position.set(x*s,.68*s,0);w.add(band)}
+        const head=B(.16,.09,.09,steel);head.position.y=.68*s;w.add(head);for(const x of [-.1,.1]){const cap2=new THREE.Mesh(new THREE.CylinderGeometry(.055*s,.045*s,.03*s,6),steel);cap2.rotation.z=Math.PI/2;cap2.position.set(x*s*.93,.68*s,0);w.add(cap2)}for(const x of [-.05,.05]){const band=B(.02,.1,.1,gold);band.position.set(x*s,.68*s,0);w.add(band)}
         const g2=new THREE.Mesh(new THREE.OctahedronGeometry(.035*s,0),gem);g2.position.set(0,.68*s,.09*s);w.add(g2);inHand(w,'r',.05*s,.35)}
       else if(kind==='axeShield'){const w=new THREE.Group();w.name='Axe';const hdl=new THREE.Mesh(new THREE.CylinderGeometry(.022*s,.025*s,.9*s,8),leather);hdl.position.y=.3*s;w.add(hdl);
         const sh2=new THREE.Shape();sh2.moveTo(0,.12);sh2.quadraticCurveTo(.3,.26,.34,0);sh2.quadraticCurveTo(.3,-.26,0,-.12);sh2.lineTo(0,.12);
-        const blade=new THREE.Mesh(new THREE.ExtrudeGeometry(sh2,{depth:.02,bevelEnabled:true,bevelSize:.008,bevelThickness:.006,bevelSegments:1}),steel);blade.scale.setScalar(s);blade.position.set(.02*s,.68*s,-.01*s);w.add(blade);
+        const blade=new THREE.Mesh(new THREE.ExtrudeGeometry(sh2,{depth:.02,bevelEnabled:true,bevelSize:.008,bevelThickness:.006,bevelSegments:1}),steel);blade.scale.setScalar(s*.7);blade.material=dark;blade.position.set(.02*s,.68*s,-.01*s);w.add(blade);
         const back=new THREE.Mesh(new THREE.ConeGeometry(.04*s,.14*s,4),dark);back.rotation.z=Math.PI/2;back.position.set(-.07*s,.68*s,0);w.add(back);
         const cap=B(.06,.08,.06,gold);cap.position.y=.76*s;w.add(cap);inHand(w,'r',.05*s,.35)}
-      else{const sw=sword(.95,.07,steel,gold);sw.name='Sword';const g2=new THREE.Mesh(new THREE.OctahedronGeometry(.03*s,0),gem);g2.position.set(0,0,.025*s);sw.add(g2);inHand(sw,'r',-.11*s,.3)}
+      else{const ice=new THREE.MeshStandardMaterial({color:0x4a9cff,emissive:0x1a50ff,emissiveIntensity:1.1,metalness:.2,roughness:.1,transparent:true,opacity:.92});
+        const sw=sword(.9,.065,ice,gold);sw.name='Sword';const g2=new THREE.Mesh(new THREE.OctahedronGeometry(.03*s,0),gem);g2.position.set(0,0,.025*s);sw.add(g2);
+        const aura=glowSprite(THREE,new THREE.Color(.35,.6,1),.5*s);aura.scale.set(.35*s,1.1*s,1);aura.position.y=.45*s;aura.material.opacity=.7;sw.add(aura);
+        aura.onBeforeRender=()=>{aura.material.opacity=.55+Math.sin(performance.now()/90)*.15};inHand(sw,'r',-.11*s,.3)}
     }else if(kind==='runeblade'){
-      const sw=sword(1.0,.09,dark,dark);sw.name='Runeblade';
+      const sw=sword(1.0,.075,dark,dark);sw.name='Runeblade';
       const rc=new THREE.Color(.45,.85,1),rune=new THREE.MeshStandardMaterial({color:rc,emissive:rc,emissiveIntensity:2.2});
-      for(let i=0;i<5;i++){const r=B(.035,.05,.016,rune);r.position.y=(.15+i*.17)*s;sw.add(r)}
+      for(let i=0;i<5;i++){const r=B(.022,.06,.016,rune);r.position.y=(.15+i*.17)*s;sw.add(r)}
       const glow=glowSprite(THREE,rc,.35*s);glow.position.y=.5*s;glow.scale.set(.25*s,1.1*s,1);glow.material.opacity=.35;sw.add(glow);
       inHand(sw,'r',-.11*s,.4);
     }else if(kind==='daggers'){
@@ -537,6 +545,37 @@
       mount(THREE,body,bones['clavicle_'+side],sk)}}
   }
 
+  // ---- Rendu « illustration » : liseré de lumière, couleurs saturées, contour sombre ----
+  // Chaque matériau du personnage reçoit un éclairage de bord (fresnel) teinté et un léger gain de saturation/contraste ;
+  // un contour (coque inversée) dessine la silhouette comme un trait d'encre.
+  function stylizeMaterial(THREE,m,rim){
+    if(!m||m.userData.stylized||!(m.isMeshStandardMaterial))return;m.userData.stylized=true;
+    const prev=m.onBeforeCompile,u={rimColor:{value:new THREE.Color(...rim)},rimStr:{value:1.7}};
+    m.onBeforeCompile=(sh,r)=>{if(prev)prev(sh,r);Object.assign(sh.uniforms,u);
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nuniform vec3 rimColor;uniform float rimStr;')
+        .replace('#include <output_fragment>',`{float fr=pow(1.-clamp(dot(normalize(normal),normalize(vViewPosition)),0.,1.),2.2);
+          outgoingLight+=rimColor*fr*rimStr;
+          float l=dot(outgoingLight,vec3(.299,.587,.114));outgoingLight=mix(vec3(l),outgoingLight,1.4);
+          outgoingLight=(outgoingLight-.5*l)*1.06+.5*l*.94;}
+          #include <output_fragment>`)};
+    m.needsUpdate=true;
+  }
+  const OUTLINE_MAT=new Map();
+  function outlineMaterial(THREE,skinned,thick){const k=skinned+':'+thick;if(OUTLINE_MAT.has(k))return OUTLINE_MAT.get(k);
+    const m=new THREE.MeshBasicMaterial({color:0x0b0710,side:THREE.BackSide,skinning:skinned});
+    m.onBeforeCompile=sh=>{sh.vertexShader=sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ntransformed+=normalize(normal)*'+thick.toFixed(4)+';')};
+    OUTLINE_MAT.set(k,m);return m}
+  function stylize(THREE,root,rim,{outline=globalThis.CHAR_OUTLINE??true}={}){
+    const list=[];root.traverse(o=>{if(o.isMesh&&!o.isSprite&&o.material&&!o.userData.isOutline)list.push(o)});
+    for(const o of list){for(const m of [].concat(o.material))stylizeMaterial(THREE,m,rim);
+      if(!outline||o.material.transparent||/^(Eyes|Eyebrows|Mask)$/.test(o.name)||!o.geometry.attributes.normal)continue;
+      const thick=/Hair|Beard/i.test(o.name)?.007:.014;
+      if(o.isSkinnedMesh){const ol=new THREE.SkinnedMesh(o.geometry,outlineMaterial(THREE,true,thick));ol.userData.isOutline=true;ol.frustumCulled=false;ol.renderOrder=-1;
+        o.parent.add(ol);ol.position.copy(o.position);ol.quaternion.copy(o.quaternion);ol.scale.copy(o.scale);ol.bind(o.skeleton,o.bindMatrix)}
+      else{const ol=new THREE.Mesh(o.geometry,outlineMaterial(THREE,false,thick*.8));ol.userData.isOutline=true;ol.frustumCulled=false;
+        o.parent.add(ol);ol.position.copy(o.position);ol.quaternion.copy(o.quaternion);ol.scale.copy(o.scale)}}
+  }
+
   // Couleur moyenne d'une texture (pour teinter les pièces procédurales comme la peau).
   function averageColor(THREE,tex){
     const c=new THREE.Color(.8,.6,.5);if(!tex||!tex.image)return c;
@@ -573,11 +612,27 @@
     const n=st.lames||1;
     for(let k=1;k<n;k++){const y=k*H/n;g.fillStyle='rgba(0,0,0,.6)';g.fillRect(0,y-2,W,3);g.fillStyle='rgba(255,255,255,.22)';g.fillRect(0,y+1,W,2)}
     if(st.ridge){const gr=g.createLinearGradient(W/2-12,0,W/2+12,0);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(.45,'rgba(255,255,255,.35)');gr.addColorStop(.55,'rgba(0,0,0,.35)');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(W/2-12,0,24,H)}
-    if(st.trim){g.fillStyle=col(st.trim);g.fillRect(0,0,W,10);g.fillRect(0,H-10,W,10);g.fillStyle='rgba(0,0,0,.45)';g.fillRect(0,10,W,2);g.fillRect(0,H-12,W,2);
+    if(st.diamonds){const cw=W/4,ch=H/3,tc=col(st.trim||[.85,.68,.3]),ic=st.diamonds;
+      for(let r=0;r<3;r++)for(let q=0;q<4;q++){const cx=cw*q+cw/2+(r%2?cw/2:0),cy=ch*r+ch/2;
+        for(const dx of [0,-W]){const x=cx+(cx>W?dx:0);
+          g.beginPath();g.moveTo(x,cy-ch*.42);g.lineTo(x+cw*.42,cy);g.lineTo(x,cy+ch*.42);g.lineTo(x-cw*.42,cy);g.closePath();g.fillStyle=tc;g.fill();
+          const gr=g.createLinearGradient(x,cy-ch*.3,x,cy+ch*.3);gr.addColorStop(0,col(ic.map(v=>Math.min(1,v*1.5))));gr.addColorStop(1,col(ic.map(v=>v*.45)));
+          g.beginPath();g.moveTo(x,cy-ch*.3);g.lineTo(x+cw*.3,cy);g.lineTo(x,cy+ch*.3);g.lineTo(x-cw*.3,cy);g.closePath();g.fillStyle=gr;g.fill();
+          g.fillStyle='rgba(255,255,255,.55)';g.beginPath();g.moveTo(x,cy-ch*.3);g.lineTo(x+cw*.12,cy-ch*.18);g.lineTo(x,cy-ch*.06);g.lineTo(x-cw*.12,cy-ch*.18);g.fill()}}}
+    if(st.trim){g.fillStyle=col(st.trim);g.fillRect(0,0,W,18);g.fillRect(0,H-18,W,18);g.fillStyle='rgba(255,255,255,.35)';g.fillRect(0,2,W,3);g.fillRect(0,H-16,W,3);g.fillStyle='rgba(0,0,0,.5)';g.fillRect(0,18,W,3);g.fillRect(0,H-21,W,3);
       if(st.rivets)for(let x=6;x<W;x+=16)for(const y of [5,H-5]){g.fillStyle='rgba(255,255,255,.75)';g.beginPath();g.arc(x,y,2,0,7);g.fill()}}
+    if(st.trim&&!st.plain){const tc=col(st.trim.map(v=>Math.min(1,v*1.25)));g.strokeStyle=tc;g.lineWidth=2;
+      for(const [y,dir] of [[24,1],[H-24,-1]])for(let x=0;x<W;x+=32){g.beginPath();g.moveTo(x,y);g.bezierCurveTo(x+8,y-10*dir,x+16,y-10*dir,x+16,y);g.bezierCurveTo(x+16,y+8*dir,x+24,y+8*dir,x+32,y);g.stroke();
+        g.beginPath();g.arc(x+16,y-5*dir,2.5,0,7);g.fillStyle=tc;g.fill()}
+      if(st.kindMetal!==false){g.save();g.translate(W/2,H/2);g.strokeStyle=tc;g.lineWidth=3;g.beginPath();g.moveTo(0,-28);g.lineTo(18,0);g.lineTo(0,28);g.lineTo(-18,0);g.closePath();g.stroke();
+        g.lineWidth=1.5;for(const sx of [-1,1]){g.beginPath();g.moveTo(sx*18,0);g.bezierCurveTo(sx*40,-18,sx*58,6,sx*76,-10);g.stroke();g.beginPath();g.moveTo(sx*18,0);g.bezierCurveTo(sx*40,18,sx*58,-6,sx*76,10);g.stroke()}
+        g.fillStyle='rgba(120,200,255,.9)';g.beginPath();g.arc(0,0,6,0,7);g.fill();g.restore()}}
     if(st.stitch){g.strokeStyle=col(st.stitch);g.lineWidth=2;g.setLineDash([5,4]);for(const y of [16,H-16]){g.beginPath();g.moveTo(0,y);g.lineTo(W,y);g.stroke()}g.setLineDash([])}
     let emissiveMap=null;
-    if(st.glow&&!st.rune){const e=document.createElement('canvas');e.width=W;e.height=H;const ge=e.getContext('2d');ge.fillStyle='#000';ge.fillRect(0,0,W,H);ge.fillStyle='#fff';
+    if(st.diamonds){const e=document.createElement('canvas');e.width=W;e.height=H;const ge=e.getContext('2d');ge.fillStyle='#000';ge.fillRect(0,0,W,H);ge.fillStyle='#fff';const cw=W/4,ch=H/3;
+      for(let r=0;r<3;r++)for(let q=0;q<5;q++){const x=cw*q+cw/2+(r%2?cw/2:0)-(q===4?W:0),cy=ch*r+ch/2;ge.beginPath();ge.moveTo(x,cy-ch*.3);ge.lineTo(x+cw*.3,cy);ge.lineTo(x,cy+ch*.3);ge.lineTo(x-cw*.3,cy);ge.fill()}
+      ge.fillRect(0,2,W,5);ge.fillRect(0,H-7,W,5);emissiveMap=new THREE.CanvasTexture(e)}
+    if(st.glow&&!st.rune&&!st.diamonds){const e=document.createElement('canvas');e.width=W;e.height=H;const ge=e.getContext('2d');ge.fillStyle='#000';ge.fillRect(0,0,W,H);ge.fillStyle='#fff';
       if(st.trim){ge.fillRect(0,2,W,6);ge.fillRect(0,H-8,W,6)}
       if(st.stitch){ge.strokeStyle='#fff';ge.lineWidth=2;ge.setLineDash([5,4]);for(const y of [16,H-16]){ge.beginPath();ge.moveTo(0,y);ge.lineTo(W,y);ge.stroke()}ge.setLineDash([])}
       if(st.ridge){ge.fillRect(W/2-2,0,4,H)}
@@ -593,7 +648,7 @@
     const t=armorTexture(THREE,a.style),metal=a.kind==='metal';
     const m=new THREE.MeshStandardMaterial({map:t.map,metalness:metal?.82:.04,roughness:metal?.3:a.kind==='cloth'?.88:.72,side:THREE.DoubleSide});
     if(metal){m.envMap=envMap(THREE);m.envMapIntensity=1.2}
-    if(t.emissiveMap){m.emissiveMap=t.emissiveMap;m.emissive=new THREE.Color(...(a.style.rune||a.style.glow));m.emissiveIntensity=a.style.rune?2.4:1.6}
+    if(t.emissiveMap){m.emissiveMap=t.emissiveMap;m.emissive=new THREE.Color(...(a.style.rune||a.style.glow||a.style.diamonds));m.emissiveIntensity=a.style.rune?2.4:a.style.diamonds?.55:1.6}
     return m;
   }
 
@@ -681,6 +736,11 @@
           const a=(k-(p.spikes-1)/2)*.45;sp.position.set(Math.sin(a)*r*.35,r*.62,Math.cos(a)*r*.35*0+(k-(p.spikes-1)/2)*.045*s);sp.rotation.z=-out*.35;cap.add(sp);
         }
       }
+      if(p.bigSpikes){const spikeMat=trimMat?new THREE.MeshStandardMaterial({color:0xd8dde6,metalness:.9,roughness:.2,envMap:envMap(THREE),envMapIntensity:1.5}):mat;
+        for(let k=0;k<p.bigSpikes;k++){const f=k/(p.bigSpikes-1),len=(.2+.16*Math.sin(f*Math.PI))*s,cone=new THREE.Mesh(new THREE.ConeGeometry(.032*s,len,6),spikeMat);
+          cone.geometry.translate(0,len/2,0);const a=-1.1+f*2.2;cone.position.set(out*.02*s,base*.4,a*base*.55);
+          cone.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(out*(.55+.25*Math.cos(a)),.9,Math.sin(a)*.55).normalize());g.add(cone)}
+        const plate=new THREE.Mesh(new THREE.SphereGeometry(base*1.08,24,10,0,Math.PI*2,0,1.25),mat);plate.scale.set(1.25,.55,1.2);plate.position.y=-.03*s;g.add(plate)}
       if(p.leaves){
         const leafMat=c=>new THREE.MeshStandardMaterial({map:leafTexture(THREE),color:new THREE.Color(...c),alphaTest:.5,side:THREE.DoubleSide,roughness:.7});
         const greens=[[.30,.55,.16],[.42,.62,.18],[.22,.42,.12],[.55,.62,.20]].map(leafMat);
@@ -704,7 +764,7 @@
   }
 
   // Masque de tissu sur le bas du visage (voleur) : copie skinnée du bas du visage, légèrement gonflée.
-  function faceMask(THREE,body,L,color){
+  function faceMask(THREE,body,L,color,metal){
     const geo=body.geometry.clone(),pos=geo.attributes.position,nor=geo.attributes.normal,idx=geo.index,v=new THREE.Vector3();
     const inZone=i=>{v.fromBufferAttribute(pos,i);return v.y<L.eye.y-.028&&v.y>L.chin-.06&&v.z>L.eye.z-.085+Math.max(0,L.eye.y-.06-v.y)*.4};
     const out=[];for(let i=0;i<idx.count;i+=3){const a=idx.getX(i),b=idx.getX(i+1),c=idx.getX(i+2);if(inZone(a)+inZone(b)+inZone(c)>=2)out.push(a,b,c)}
@@ -716,7 +776,7 @@
       pos.setXYZ(i,v.x,v.y,v.z)}
     geo.computeVertexNormals();
     geo.setIndex(out);
-    const mask=new THREE.SkinnedMesh(geo,new THREE.MeshStandardMaterial({color:new THREE.Color(...color),roughness:.9,skinning:true}));
+    const mask=new THREE.SkinnedMesh(geo,metal?new THREE.MeshStandardMaterial({color:new THREE.Color(...color),metalness:.9,roughness:.22,envMap:envMap(THREE),envMapIntensity:1.5,skinning:true}):new THREE.MeshStandardMaterial({color:new THREE.Color(...color),roughness:.9,skinning:true}));
     mask.name='Mask';mask.frustumCulled=false;body.parent.add(mask);mask.bind(body.skeleton,body.bindMatrix);return mask;
   }
 
@@ -842,7 +902,7 @@
     const mat=armorMaterial(THREE,a.mat),trim=a.trim?new THREE.MeshStandardMaterial({color:new THREE.Color(...a.trim),metalness:.85,roughness:.3,envMap:envMap(THREE),envMapIntensity:1.2}):null;
     for(const n of a.shells||[])for(const k of [n,n+'_l',n+'_r'])if(SHELLS[k])fitShell(THREE,bones,fit,a.thick?{...SHELLS[k],margin:SHELLS[k].margin*a.thick}:SHELLS[k],a.shellMat&&a.shellMat[n]?armorMaterial(THREE,a.shellMat[n]):mat,'Armor_'+k);
     if(a.pauldron)buildPauldrons(THREE,bones,a.pauldron,height,a.pauldron.mat?armorMaterial(THREE,a.pauldron.mat):mat,trim);
-    if(a.mask)faceMask(THREE,body,L,a.mask);
+    if(a.mask)faceMask(THREE,body,L,a.mask,a.maskMetal);
     if(a.helmet)buildHelmet(THREE,bones,L,a.helmet,armorMaterial(THREE,a.helmet.mat||a.mat),trim);
   }
 
@@ -881,7 +941,7 @@
   }
 
   // Construit un personnage. Résout { root, height, clips }.
-  async function build(THREE,kitId,{baseUrl='',loader=new THREE.GLTFLoader(),withAnims=true}={}){
+  async function build(THREE,kitId,{baseUrl='',loader=new THREE.GLTFLoader(),withAnims=true,outline=globalThis.CHAR_OUTLINE??true}={}){
     const kit=resolveKit(kitId);
     const load=f=>loadAsset(THREE,loader,assetName(f),baseUrl).then(g=>({scene:cloneSkinned(g.scene),animations:g.animations}));
     const [bodyG,outfitG,...rest]=await Promise.all([
@@ -931,7 +991,11 @@
     // Morphologie raciale : échelles uniformes d'os (les animations ne pilotent que les rotations).
     const wy=b=>{root.updateMatrixWorld(true);return new THREE.Vector3().setFromMatrixPosition(b.matrixWorld).y};
     const head0=wy(bones.Head),foot0=wy(bones.foot_l);
+    // les objets rigides portés (armes, bouclier, effets de main, crânes) gardent leur taille quand on agrandit les os
+    const rigid=[];root.traverse(o=>{if(/^(Hammer|Axe|Sword|Runeblade|Dagger|Shield|HandFx|Staff|Skull)$/.test(o.name)&&o.parent?.isBone)rigid.push(o)});
+    root.updateMatrixWorld(true);const ws0=rigid.map(o=>o.getWorldScale(new THREE.Vector3()).x);
     for(const [n,k] of Object.entries(kit.bones))if(bones[n])bones[n].scale.multiplyScalar(k);
+    root.updateMatrixWorld(true);const HERO_SIZE={Hammer:1.3,Axe:1.3,Sword:1.25,Runeblade:1.2,Dagger:1.15,Shield:1.2};rigid.forEach((o,i)=>{const k=o.getWorldScale(new THREE.Vector3()).x/ws0[i];o.scale.multiplyScalar((HERO_SIZE[o.name]||1)/k)});
     // Jambes raccourcies : on abaisse tout le squelette pour garder les pieds au sol.
     const drop=wy(bones.foot_l)-foot0;
     if(Math.abs(drop)>1e-4){const rig=new THREE.Group();rig.name='Rig';[...root.children].forEach(c=>rig.add(c));root.add(rig);rig.position.y=-drop}
@@ -941,6 +1005,7 @@
     if(merge){root.updateMatrixWorld(true);const groups=[];root.traverse(o=>{if(o.isGroup&&/^(Pauldron|Helmet|Shield|Sword|Runeblade|Dagger|Staff|Antler|Braid|Hammer|Axe|Skull)$/.test(o.name))groups.push(o)});
       for(const g of groups){const meshes=[];g.traverse(o=>{if(o.isMesh&&!o.isSkinnedMesh&&!o.material.transparent)meshes.push(o)});
         for(const m of merge(THREE,meshes,new THREE.Matrix4().copy(g.matrixWorld).invert())){m.frustumCulled=false;g.add(m)}}}
+    stylize(THREE,root,kit.rim||[.8,.8,1],{outline});
     return {root,height,clips:animG?animG.animations:[]};
   }
 
