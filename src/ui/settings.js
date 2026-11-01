@@ -1,0 +1,75 @@
+'use strict';
+// Interface : raccourcis, déplacement des cadres, sélection race/classe/difficulté.
+// ---------- Persistent UI customization ----------
+let settingsOpen=false,captureBind=null,uiEditMode=false,dragFrame=null;
+function renderBindGrid(){const box=$('bindGrid');if(!box)return;const names=state?.player?CLASS[state.player.cls].skills.map(s=>s.n):['Sort 1','Sort 2','Sort 3','Sort 4','Sort 5'];box.innerHTML=names.map((n,i)=>`<span>${i+1}. ${n}</span><button class="bindBtn ${captureBind?.type==='skill'&&captureBind.i===i?'capturing':''}" data-bind-skill="${i}">${captureBind?.type==='skill'&&captureBind.i===i?'Appuie sur une touche…':keyLabel(PREFS.keybinds.skills[i])}</button>`).join('')+`<span>Trinket PvP</span><button class="bindBtn ${captureBind?.type==='trinket'?'capturing':''}" data-bind-trinket="1">${captureBind?.type==='trinket'?'Appuie sur une touche…':keyLabel(PREFS.keybinds.trinket)}</button>`;box.querySelectorAll('[data-bind-skill]').forEach(b=>b.onclick=()=>{captureBind={type:'skill',i:+b.dataset.bindSkill};$('bindStatus').textContent='Appuie sur la nouvelle touche…';renderBindGrid()});box.querySelector('[data-bind-trinket]').onclick=()=>{captureBind={type:'trinket'};$('bindStatus').textContent='Appuie sur la nouvelle touche…';renderBindGrid()}}
+function assignCapturedBind(code){if(!captureBind)return false;if(RESERVED_BIND_CODES.has(code)){$('bindStatus').textContent=`${keyLabel(code)} est réservée au déplacement/gameplay.`;return true}const kb=PREFS.keybinds,old=captureBind.type==='skill'?kb.skills[captureBind.i]:kb.trinket;let otherType=null,otherIdx=-1;if(kb.trinket===code){otherType='trinket'}else{otherIdx=kb.skills.indexOf(code);if(otherIdx>=0)otherType='skill'}if(captureBind.type==='skill')kb.skills[captureBind.i]=code;else kb.trinket=code;if(otherType){if(otherType==='skill')kb.skills[otherIdx]=old;else kb.trinket=old}savePrefs();$('bindStatus').textContent=`Raccourci défini : ${keyLabel(code)}`;captureBind=null;renderBindGrid();updateUI();return true}
+function resetBindings(){PREFS.keybinds=cloneDefaults().keybinds;captureBind=null;savePrefs();renderBindGrid();if(state)updateUI();$('bindStatus').textContent='Raccourcis par défaut restaurés.'}
+function frameIds(){return['selfFrame','targetFrame','arenaFrames','partyFrames']}
+function applyFramePositions(){const game=$('game'),gr=game.getBoundingClientRect();for(const id of frameIds()){const el=$(id),v=PREFS.ui[id];if(!el||!v)continue;const maxX=Math.max(0,gr.width-el.offsetWidth),maxY=Math.max(0,gr.height-el.offsetHeight);el.style.left=`${clamp(v.x,0,1)*maxX}px`;el.style.top=`${clamp(v.y,0,1)*maxY}px`;el.style.right='auto';el.style.bottom='auto'}}
+function saveFramePosition(el){const gr=$('game').getBoundingClientRect(),er=el.getBoundingClientRect(),maxX=Math.max(1,gr.width-er.width),maxY=Math.max(1,gr.height-er.height);PREFS.ui[el.id]={x:clamp((er.left-gr.left)/maxX,0,1),y:clamp((er.top-gr.top)/maxY,0,1)};savePrefs()}
+function resetFramePositions(){PREFS.ui={};savePrefs();for(const id of frameIds()){const el=$(id);el.style.left='';el.style.top='';el.style.right='';el.style.bottom=''}$('bindStatus').textContent='Positions d’interface restaurées.'}
+function setUiEditMode(on){uiEditMode=!!on;$('game').querySelector('.hud').classList.toggle('uiEdit',uiEditMode);$('editUiBtn').textContent=uiEditMode?'✓ Terminer le placement':'Déplacer les portraits';if(!uiEditMode&&dragFrame){dragFrame.el.classList.remove('dragging');dragFrame=null}}
+function footstepNoiseLayer(u,{dur=.09,vol=.05,freq=900,q=.8,delay=0,kind='bandpass',rate=1}={}){
+ const ctx=sfxCtx();if(!ctx||!MUSIC.noise)return;const a=sfxSpatial(u),t=ctx.currentTime+delay,n=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();
+ n.buffer=MUSIC.noise;n.playbackRate.value=rate;f.type=kind;f.frequency.value=freq;f.Q.value=q;
+ g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,vol*a.level),t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+ n.connect(f);f.connect(g);const out=audioPan(g,a.pan);out.connect(MUSIC.sfxMaster);if(MUSIC.reverb){const rg=ctx.createGain();rg.gain.value=.035;out.connect(rg);rg.connect(MUSIC.reverb)}n.start(t);n.stop(t+dur+.025);
+}
+function footstepSfx(u,side=0){
+ if(!u?.alive)return;const heavy=(u.cls==='sentinel'||u.cls==='reaver'),edge=Math.max(Math.abs(u.x)/(arena.halfX||1),Math.abs(u.z)/(arena.halfZ||1)),grass=edge>.63;
+ const jitter=.92+Math.random()*.16,lr=side?1.025:.975;
+ if(grass){
+   // Soft turf: low body impact + dry vegetation rustle, no oscillator/beep.
+   footstepNoiseLayer(u,{dur:.115,vol:heavy?.070:.052,freq:heavy?250:330,q:.65,kind:'lowpass',rate:jitter*lr});
+   footstepNoiseLayer(u,{dur:.085,vol:heavy?.040:.032,freq:1550,q:1.0,kind:'bandpass',rate:(1.05+Math.random()*.18)*lr,delay:.006});
+ }else{
+   // Stone: broad heel impact, short sole slap and a tiny high-frequency scuff.
+   footstepNoiseLayer(u,{dur:.095,vol:heavy?.082:.060,freq:heavy?300:390,q:.72,kind:'lowpass',rate:jitter*lr});
+   footstepNoiseLayer(u,{dur:.060,vol:heavy?.050:.038,freq:980,q:1.15,kind:'bandpass',rate:(.96+Math.random()*.12)*lr,delay:.008});
+   footstepNoiseLayer(u,{dur:.032,vol:heavy?.026:.018,freq:2900,q:1.6,kind:'bandpass',rate:(1.10+Math.random()*.18)*lr,delay:.012});
+ }
+}
+function spellFlavorLayer(u,i){const a=sfxSpatial(u),L=a.level,P=a.pan;if(!u)return;const c=u.cls;
+ if(c==='arcanist'){sfxTone(1720,.11,'sine',.028*L,1180,0,P,5200,.22);if(i===1||i===4)sfxNoise(.14,.035*L,6200,0,P,'highpass');}
+ else if(c==='sentinel'){sfxNoise(.06,.04*L,1500,0,P);if(i===4)sfxTone(160,.15,'sawtooth',.04*L,78,0,P,900,.08);}
+ else if(c==='oracle'){sfxChord([659.25,783.99,987.77],.22,'sine',.028*L,P,.01)}
+ else if(c==='warlock'){sfxNoise(.10,.030*L,700,0,P,'lowpass');sfxTone(132,.12,'sawtooth',.025*L,72,0,P,800,.12)}
+ else if(c==='reaver'){sfxTone(118,.14,'sawtooth',.028*L,62,0,P,650,.10)}
+}
+
+function openSettings(){if(state)state.keys={};settingsOpen=true;$('settingsPanel').classList.add('open');setMusicVolume(PREFS.volume);renderBindGrid();applyFramePositions()}
+function closeSettings(){settingsOpen=false;captureBind=null;setUiEditMode(false);$('settingsPanel').classList.remove('open');canvas.focus()}
+for(const id of frameIds()){$(id).addEventListener('pointerdown',e=>{if(!uiEditMode)return;e.preventDefault();const el=e.currentTarget,gr=$('game').getBoundingClientRect(),er=el.getBoundingClientRect();dragFrame={el,dx:e.clientX-er.left,dy:e.clientY-er.top};el.classList.add('dragging');el.setPointerCapture?.(e.pointerId)});}
+window.addEventListener('pointermove',e=>{if(!dragFrame)return;const {el,dx,dy}=dragFrame,gr=$('game').getBoundingClientRect();const x=clamp(e.clientX-gr.left-dx,0,Math.max(0,gr.width-el.offsetWidth)),y=clamp(e.clientY-gr.top-dy,0,Math.max(0,gr.height-el.offsetHeight));el.style.left=x+'px';el.style.top=y+'px';el.style.right='auto';el.style.bottom='auto'});
+window.addEventListener('pointerup',()=>{if(!dragFrame)return;saveFramePosition(dragFrame.el);dragFrame.el.classList.remove('dragging');dragFrame=null});
+window.addEventListener('resize',()=>requestAnimationFrame(applyFramePositions));
+function updateSelectPreview(selectedRace,selectedClass){
+ const box=$('selectPreview');if(!box)return;const rk=selectedRace||'human',ck=selectedClass||'sentinel';
+ if(!$('preview3d'))box.innerHTML=`<div class="pvHead"><span>Prévisualisation</span><span class="tiny">même rendu que dans l’arène</span></div><div class="pvArt"><canvas id="preview3d" aria-hidden="true"></canvas><div id="previewLoading" class="previewLoading">Chargement du personnage…</div></div><div class="pvMeta"><span id="previewRaceChip" class="previewChip"></span><span id="previewClassChip" class="previewChip"></span></div><div class="previewHint">Le panneau utilise exactement le même modèle 3D que celui chargé dans l’arène.</div>`;
+ const rc=$('previewRaceChip'),cc=$('previewClassChip');if(rc)rc.innerHTML=`${racePickIconSVG(rk)}<b>${RACE[rk].name}</b>`;if(cc)cc.innerHTML=`${classPickIconSVG(ck)}<b>${CLASS[ck].name}</b>`;
+ updateSelectPreview3D(rk,ck);
+}
+function chooseClass(){
+ let selectedClass=state?.pcls||null,selectedRace=state?.prace||null;
+ const raceBox=$('raceChoices'),box=$('classChoices'),play=$('playBtn'),label=$('selectedClass');
+ raceBox.innerHTML=Object.entries(RACE).map(([k,r])=>`<button class="racePick iconChoice" data-r="${k}" title="${r.name}" aria-label="${r.name}">${racePickIconSVG(k)}<span class="label">${r.name}</span></button>`).join('');
+ box.innerHTML=Object.entries(CLASS).map(([k,c])=>`<button class="classPick iconChoice" data-c="${k}" title="${c.name}" aria-label="${c.name}">${classPickIconSVG(k)}<span class="label">${c.name}</span></button>`).join('');
+ $('overlay').style.display='flex';$('reticle').style.display='none';play.disabled=true;
+ const refresh=()=>{
+   play.disabled=!(selectedClass&&selectedRace);
+   label.textContent=selectedClass&&selectedRace?`${RACE[selectedRace].name} ${CLASS[selectedClass].name}`:'Choisis une race et une classe';
+   raceBox.querySelectorAll('button').forEach(b=>b.classList.toggle('selected',b.dataset.r===selectedRace));
+   box.querySelectorAll('button').forEach(b=>b.classList.toggle('selected',b.dataset.c===selectedClass));
+   updateSelectPreview(selectedRace,selectedClass);
+ };
+ raceBox.querySelectorAll('button').forEach(b=>b.onclick=()=>{selectedRace=b.dataset.r;refresh()});
+ const diffs=$('diffChoices'),diffRefresh=()=>diffs.querySelectorAll('button').forEach(b=>b.classList.toggle('selected',b.dataset.d===DIFFICULTY));
+ diffs.querySelectorAll('button').forEach(b=>b.onclick=()=>{DIFFICULTY=b.dataset.d;try{localStorage.setItem('arenaDifficulty',DIFFICULTY)}catch(_){}diffRefresh()});diffRefresh();
+ box.querySelectorAll('button').forEach(b=>b.onclick=()=>{selectedClass=b.dataset.c;refresh()});
+ refresh();
+ play.onclick=()=>{if(!selectedClass||!selectedRace)return;if(MOBILE.enabled)mobileRequestFullscreen();state={pcls:selectedClass,prace:selectedRace,scoreA:0,scoreB:0,round:0};$('overlay').style.display='none';resetRound();musicStart();canvas.focus();requestAnimationFrame(mobileViewportSync)};
+}
+$('restartBtn').onclick=chooseClass;$('musicBtn').onclick=musicToggle;$('settingsBtn').onclick=openSettings;$('closeSettingsBtn').onclick=closeSettings;$('editUiBtn').onclick=()=>setUiEditMode(!uiEditMode);$('resetUiBtn').onclick=resetFramePositions;$('resetBindsBtn').onclick=resetBindings;$('musicVolume').oninput=e=>setMusicVolume(e.target.value/100);$('volumeMini').oninput=e=>setMusicVolume(e.target.value/100);setMusicVolume(PREFS.volume);requestAnimationFrame(applyFramePositions);
+
+

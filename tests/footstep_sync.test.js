@@ -1,5 +1,5 @@
-const fs=require('fs');
-const html=fs.readFileSync(require('path').join(__dirname,'..','index.html'),'utf8');
+const {all}=require('./sources.js');
+const html=all();
 function ok(cond,msg){if(!cond)throw new Error(msg)}
 ok(html.includes("rec.footPhase=null"),'foot phase reset missing');
 ok(html.includes("crossed(.16)")&&html.includes("crossed(.66)"),'foot contacts not tied to animation phase');
