@@ -104,7 +104,7 @@ const CLASS = {
     regen: 17,
     skills: [
       { n: 'Backstab', cd: 2.5, c: 15 },
-      { n: 'Cloak', cd: 13, c: 20 },
+      { n: 'Cloak', cd: 30, c: 20 },
       { n: 'Kidney Shot', cd: 11, c: 22 },
       { n: 'Vendetta', cd: 24, c: 25 },
       { n: 'Shadowstep', cd: 13, c: 18 },
@@ -663,7 +663,10 @@ const SPELLS = {
     text: (S, D) =>
       `Runic strike: ${D(S.dmg)} damage (${pct(S.crit)} crit chance), reduces healing taken by ${pct(S.antiheal)} (max 50%).`
   },
-  'Death Grip': { dmg: 50, text: (S, D) => `Grabs an enemy within 15 m and pulls them in front of you: ${D(S.dmg)} damage.` },
+  'Death Grip': {
+    dmg: 50,
+    text: (S, D) => `Grabs an enemy within 15 m and pulls them in front of you: ${D(S.dmg)} damage.`
+  },
   Asphyxiate: { dmg: 65, stun: 2.5, text: (S, D) => `Ranged: ${D(S.dmg)} damage and stuns for ${sec(S.stun)}.` },
   'Pillar of Frost': { burst: 7, text: S => `+35% damage and +18% speed for ${sec(S.burst)}.` },
   'Death Advance': { dist: 6, text: S => `Leaps ${S.dist} m where you face, then +18% speed for 3 s.` },
@@ -673,15 +676,13 @@ const SPELLS = {
   Starfall: {
     dmg: 135,
     radius: 5.3,
-    text: (S, D) =>
-      `Falling stars: ${D(S.dmg)} damage to all enemies within ${S.radius} m.`
+    text: (S, D) => `Falling stars: ${D(S.dmg)} damage to all enemies within ${S.radius} m.`
   },
   'Cat Form': {
     text: (S, D) => `Cat form: +30% speed, fast melee attacks (${D(42)} every 1 s).`
   },
   'Bear Form': {
-    text: (S, D) =>
-      `Bear form: +40% health, -30% damage taken, heavy blows (${D(58)} every 2 s).`
+    text: (S, D) => `Bear form: +40% health, -30% damage taken, heavy blows (${D(58)} every 2 s).`
   },
   'Human Form': { text: () => `Return to your normal form.` },
   Shred: { text: (S, D) => `Shreds the target: ${D(S.dmg)} damage (18% crit chance).` },
@@ -693,9 +694,9 @@ const SPELLS = {
   'Frenzied Regeneration': { text: (S, D, H) => `Heals you for ${H(S.heal)}.` },
   Backstab: { dmg: 150, crit: 0.22, text: (S, D) => `${D(S.dmg)} damage (${pct(S.crit)} crit chance).` },
   Cloak: {
-    shield: 220,
+    dur: 5,
     text: S =>
-      `Absorbs <b class="tHeal">${S.shield}</b> damage, +18% speed for 5 s, removes roots, slows and silences.`
+      `Cloak of shadows: immune to spells (not to weapon attacks) for ${sec(S.dur)}. Removes magical roots and slows.`
   },
   'Kidney Shot': { dmg: 55, stun: 3, text: (S, D) => `${D(S.dmg)} damage and stuns for ${sec(S.stun)}.` },
   Vendetta: { burst: 6.5, text: S => `+35% damage for ${sec(S.burst)}.` },
@@ -704,8 +705,7 @@ const SPELLS = {
     text: (S, D) => `Dash up to 8 m to the target; ${D(S.dmg)} damage if you reach melee range.`
   },
   Stealth: {
-    text: () =>
-      `Stealth (out of combat): nearly invisible and untargetable, -30% speed. Unlocks Ambush and Sap.`
+    text: () => `Stealth (out of combat): nearly invisible and untargetable, -30% speed. Unlocks Ambush and Sap.`
   },
   Ambush: { text: (S, D) => `From stealth: ${D(S.dmg)} damage (30% crit chance). Breaks stealth.` },
   Sap: {

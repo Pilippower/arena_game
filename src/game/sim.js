@@ -23,6 +23,7 @@ function update(dt) {
     u.gcd = Math.max(0, u.gcd - dt);
     u.trinket = Math.max(0, u.trinket - dt);
     u.stun = Math.max(0, u.stun - dt);
+    u.spellImmune = Math.max(0, (u.spellImmune || 0) - dt);
     u.poly = Math.max(0, (u.poly || 0) - dt);
     if (u.poly <= 0) u.polyOwner = null;
     u.root = Math.max(0, u.root - dt);

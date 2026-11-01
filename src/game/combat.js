@@ -171,6 +171,11 @@ function fx(type, x, y, z, color, life = 0.55, size = 0.4, to = null, extra = nu
 // school : 'physical' ou école du sort ; par défaut l'école du sort en cours du lanceur (src.curSchool).
 function damage(src, t, v, crit = false, school = src.curSchool || 'physical') {
   if (!t?.alive) return;
+  // Cloak of Shadows : insensible aux sorts (pas aux coups d'arme)
+  if (t.spellImmune > 0 && school !== 'physical' && src.team !== t.team) {
+    addFloat(t, 'Immune', '#d9c9ff');
+    return;
+  }
   v *= 1 - armorReduction(t, school);
   if (t.poly > 0) endPoly(t, true);
   src.lastCombat = t.lastCombat = now();
@@ -224,6 +229,10 @@ function heal(src, t, v) {
   fx('burst', t.x, 1.2, t.z, [0.15, 1, 0.5], 0.52, 0.42);
 }
 function control(t, type, dur, src = null) {
+  if (t.spellImmune > 0 && src && src.team !== t.team && (src.curSchool || 'physical') !== 'physical') {
+    addFloat(t, 'Immune', '#d9c9ff');
+    return false;
+  }
   const m = t.dr[type] ?? 1;
   // rendements décroissants épuisés : le sort part quand même, sans effet, et « Immune » s'affiche
   if (m <= 0) {
@@ -232,6 +241,7 @@ function control(t, type, dur, src = null) {
   }
   dur *= m;
   t[type] = Math.max(t[type] || 0, dur);
+  if (type === 'root') t.rootSchool = src?.curSchool || 'magic';
   t.dr[type] = m === 1 ? 0.5 : m === 0.5 ? 0.25 : 0;
   t.drT[type] = 20;
   if (type === 'stun' || type === 'fear' || type === 'silence' || type === 'poly') t.cast = null;
@@ -266,8 +276,9 @@ function control(t, type, dur, src = null) {
   addFloat(t, label, '#f3d078');
   return true;
 }
-function applySlow(t, pct = 0.5, dur = 8) {
+function applySlow(t, pct = 0.5, dur = 8, magic = false) {
   if (!t?.alive) return;
+  t.slowMagic = magic;
   t.slow = Math.max(t.slow || 0, dur);
   t.slowPct = Math.max(t.slowPct || 0, clamp(pct, 0, 0.8));
   addFloat(t, `Slowed ${Math.round(t.slowPct * 100)}%`, '#9ed7ff');
@@ -714,12 +725,15 @@ function useSkill(u, i) {
       damage(u, t, S.dmg, Math.random() < S.crit);
       action(u, 'melee');
     } else if (i === 1) {
-      u.root = 0;
-      u.rootBreakDamage = 0;
-      u.slow = 0;
-      u.silence = 0;
-      u.shield += S.shield;
-      u.speedBuff = 5;
+      // Cloak of Shadows : immunité aux sorts, libère des racines et ralentissements magiques
+      u.spellImmune = S.dur;
+      if (u.root > 0 && u.rootSchool !== 'physical') {
+        u.root = 0;
+        u.rootBreakDamage = 0;
+      }
+      if (u.slow > 0 && u.slowMagic) u.slow = 0;
+      u.cast = null;
+      fx('cloak', u.x, (u.y || 0) + 1, u.z, [0.6, 0.4, 0.9], 0.9, 0.7);
       fx('ring', u.x, 0.1, u.z, c.accent, 0.7, 0.9);
       action(u, 'cast');
     } else if (i === 2 && melee) {

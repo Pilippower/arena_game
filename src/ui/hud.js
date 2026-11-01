@@ -10,6 +10,7 @@ function drText(u) {
   const a = [];
   if (u.poly > 0) a.push(`${u.polyKind === 'sap' ? 'Sapped' : 'Sheep'} ${u.poly.toFixed(1)}`);
   if (u.stealth) a.push('Stealthed');
+  if (u.spellImmune > 0) a.push(`Cloak ${u.spellImmune.toFixed(1)}`);
   if (u.form) a.push(u.form === 'cat' ? 'Cat' : 'Bear');
   if (u.stun > 0) a.push(`Stun ${u.stun.toFixed(1)}`);
   if (u.root > 0) a.push(`Root ${u.root.toFixed(1)}`);
