@@ -854,7 +854,7 @@
     const store=globalThis.CHAR_ASSETS||{};
     if(store[name])return Promise.resolve(store[name]);
     if(!scriptLoads.has(name))scriptLoads.set(name,new Promise((res,rej)=>{
-      const sc=document.createElement('script');sc.src=baseUrl+'assets/characters/'+name+'.js';sc.async=true;
+      const sc=document.createElement('script');sc.src=baseUrl+'assets/characters/'+name+'.js'+(globalThis.ASSET_V?'?v='+globalThis.ASSET_V:'');sc.async=true;
       sc.onload=()=>globalThis.CHAR_ASSETS?.[name]?res(globalThis.CHAR_ASSETS[name]):rej(new Error('Asset vide : '+name));
       sc.onerror=()=>{scriptLoads.delete(name);rej(new Error('Asset introuvable : '+name))};
       document.head.appendChild(sc);
