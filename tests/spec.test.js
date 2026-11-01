@@ -121,4 +121,9 @@ for (const k of ['function aiSteer', 'function aiCover', 'u.aiPeel', 'const ccRe
 }
 assert.match(read('src/core/main.js'), /render\(\);\s*hudCastFrame\(\);/, "barre d'incantation fluide");
 assert.ok(read('index.html').includes('body.mobile-mode #partyFrames{left:4px!important'), 'mobile : équipe à gauche');
+assert.match(ctx.skillIconSVG('arcanist', 5), /preserveAspectRatio="xMidYMid slice"/, 'icône plein bouton');
+assert.ok(
+  read('index.html').includes('.nameplate.enemy .npCast{width:140px;position:absolute'),
+  'barre de vie de la cible stable'
+);
 console.log('OK - spécifications validées (docs/SPEC.md)');

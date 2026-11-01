@@ -186,7 +186,7 @@ function skillIconSVG(cls, i, S) {
   S = S || C.skills[i];
   const art = spellArtKey(S.n);
   if (SPELL_ART.has(art))
-    return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><image href="assets/ui/spells/${art}.webp" width="48" height="48" preserveAspectRatio="xMidYMid slice"/></svg>`;
+    return `<svg viewBox="0 0 48 48" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><image href="assets/ui/spells/${art}.webp" width="48" height="48" preserveAspectRatio="xMidYMid slice"/></svg>`;
   const a = rgbHex(C.accent),
     b = rgbHex(C.color),
     id = `g_${cls}_${S.n.replace(/\W/g, '')}`,
@@ -213,7 +213,7 @@ function skillIconSVG(cls, i, S) {
   return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><radialGradient id="${id}" cx="38%" cy="30%"><stop offset="0" stop-color="${a}"/><stop offset=".55" stop-color="${b}"/><stop offset="1" stop-color="#09070d"/></radialGradient></defs><rect width="48" height="48" rx="7" fill="url(#${id})"/><path d="M2 40C13 30 11 15 29 3" stroke="#fff" stroke-opacity=".10" stroke-width="7" fill="none"/>${motifs[m] || motifs.strike}<rect x="1" y="1" width="46" height="46" rx="6" fill="none" stroke="#fff" stroke-opacity=".22"/></svg>`;
 }
 function trinketIconSVG() {
-  return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><image href="assets/ui/spells/trinket.webp" width="48" height="48" preserveAspectRatio="xMidYMid slice"/></svg>`;
+  return `<svg viewBox="0 0 48 48" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><image href="assets/ui/spells/trinket.webp" width="48" height="48" preserveAspectRatio="xMidYMid slice"/></svg>`;
 }
 // ancienne icône vectorielle du bijou (plus utilisée en jeu, gardée comme référence)
 function trinketIconVector() {
