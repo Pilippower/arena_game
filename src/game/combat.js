@@ -235,6 +235,8 @@ function fx(type, x, y, z, color, life = 0.55, size = 0.4, to = null, extra = nu
 // school : 'physical' ou école du sort ; par défaut l'école du sort en cours du lanceur (src.curSchool).
 function damage(src, t, v, crit = false, school = src.curSchool || 'physical') {
   if (!t?.alive) return;
+  // mage : ses sorts sont toujours critiques sur une cible gelée par sa Frost Nova
+  if (src.cls === 'arcanist' && school !== 'physical' && t.root > 0 && t.rootKind === 'ice') crit = true;
   // Cloak of Shadows : insensible aux sorts (pas aux coups d'arme)
   if (t.spellImmune > 0 && school !== 'physical' && src.team !== t.team) {
     addFloat(t, 'Immune', '#d9c9ff');
@@ -557,7 +559,8 @@ function skillFailReason(u, i) {
     return u.lockout && now() < u.lockout.until && S.s === u.lockout.school
       ? 'That school is locked'
       : "That ability isn't ready yet";
-  if (u.gcd > 0 || u.cast) return '';
+  if (u.cast) return 'Not ready yet'; // une autre incantation est en cours (sauter ou bouger l'interrompt)
+  if (u.gcd > 0) return '';
   if (S.s && u.silence > 0) return "I can't do that while silenced";
   if (!canPay(u, i)) return `I don't have enough ${C.res.toLowerCase()}`;
   const t = hostileTarget(u);
@@ -750,11 +753,8 @@ function useSkill(u, i) {
       if (!hit.length) return false;
       hit.forEach(e => {
         damage(u, e, e === t ? S.dmg : S.dmg2);
-        if (control(e, 'root', S.root, u)) {
-          e.rootBreakDamage = e.maxHp * 0.12;
-          e.rootMin = 1.0;
-          e.rootKind = 'ice';
-        }
+        // gel de 6 s qui ne casse pas sous les coups (demande de l'utilisateur)
+        if (control(e, 'root', S.root, u)) e.rootKind = 'ice';
         fx('nova', e.x, 0.1, e.z, c.accent, 0.72, 0.75);
       });
       fx('nova', u.x, 0.1, u.z, c.accent, 1.15, 1.8);

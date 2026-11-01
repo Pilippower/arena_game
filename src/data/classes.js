@@ -643,10 +643,10 @@ const SPELLS = {
   'Frost Nova': {
     dmg: 90,
     dmg2: 60,
-    root: 2.5,
+    root: 6,
     radius: 8,
     text: (S, D) =>
-      `Freezes enemies within ${S.radius} m: ${D(S.dmg)} damage to the target, ${D(S.dmg2)} to others, rooted ${sec(S.root)} (breaks after 12% HP of damage).`
+      `Freezes enemies within ${S.radius} m: ${D(S.dmg)} damage to the target, ${D(S.dmg2)} to others, frozen ${sec(S.root)}. Your spells always crit frozen targets.`
   },
   Counterspell: { text: () => `Interrupts the target’s cast and locks that school of magic for 4 s.` },
   'Arcane Power': { burst: 8, text: S => `Increases your damage by 35% for ${sec(S.burst)}.` },
@@ -669,7 +669,7 @@ const SPELLS = {
   // icônes : celles des sorts remplacés (Silence, Angelic Step)
   'Holy Terror': {
     radius: 10,
-    dur: 3,
+    dur: 6,
     art: 'silence',
     text: S => `Instant: every enemy within ${S.radius} m flees in terror for ${sec(S.dur)}.`
   },

@@ -31,6 +31,14 @@ assert.equal(skill('oracle', 'Holy Terror').radius, 10);
 assert.match(ctx.skillIconSVG('oracle', 2), /spells\/silence\.webp/, 'Holy Terror : icône de Silence');
 assert.match(ctx.skillIconSVG('oracle', 4), /spells\/angelic_step\.webp/, 'Smite : icône d’Angelic Step');
 assert.ok(!C.reaver.skills.some(s => s.n === 'Death Advance'), 'chevalier de la mort sans Death Advance');
+assert.equal(skill('oracle', 'Holy Terror').dur, 6, 'Holy Terror : 6 s');
+assert.equal(skill('arcanist', 'Frost Nova').root, 6, 'Frost Nova : 6 s');
+assert.match(
+  read('src/game/combat.js'),
+  /src\.cls === 'arcanist'.*t\.rootKind === 'ice'\) crit = true/,
+  'mage : critique sur cible gelée'
+);
+assert.match(read('src/game/combat.js'), /if \(u\.cast\) return 'Not ready yet'/, 'incantation en cours : message');
 // Formes / camouflage
 assert.equal(ctx.FORM_INFO.cat.speed, 1.3, 'félin +30 % de vitesse');
 assert.equal(ctx.FORM_INFO.bear.hp, 1.4, 'ours +40 % PV');
