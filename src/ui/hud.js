@@ -19,7 +19,8 @@ function drText(u) {
   if (u.slow > 0) a.push(`Slow ${Math.round((u.slowPct || 0) * 100)}% ${u.slow.toFixed(1)}`);
   return a.join(' · ');
 }
-// Buffs à côté de la barre de vie : icône du sort, temps restant (ou absorption restante d'un bouclier).
+// Auras au-dessus des personnages (barre de nom) : buffs à gauche de la barre de vie, débuffs à droite ;
+// icône du sort, temps restant (ou absorption restante d'un bouclier).
 // Lus dans l'état de l'unité, seule source de vérité : rien à tenir à jour dans le combat.
 const BURST_SPELL = { reaver: 'Pillar of Frost', arcanist: 'Arcane Power', shade: 'Vendetta', warlock: 'Dark Soul' };
 function buffList(u) {
@@ -37,11 +38,23 @@ function buffList(u) {
   if (u.form) b.push({ n: u.form === 'cat' ? 'Cat Form' : 'Bear Form' });
   return b;
 }
+// Débuffs : effets posés par les adversaires, avec le sort qui les a posés (debuffSpell, noté par le combat).
+const DEBUFF_KEYS = ['poly', 'stun', 'fear', 'silence', 'root', 'slow'];
+function debuffList(u) {
+  const src = u.debuffSpell || {},
+    b = [];
+  for (const k of DEBUFF_KEYS) if (u[k] > 0 && src[k]) b.push({ n: src[k], t: u[k] });
+  if (u.lockout?.until > now() && src.lockout) b.push({ n: src.lockout, t: u.lockout.until - now() });
+  if (u.antiheal > 0.01 && src.antiheal) b.push({ n: src.antiheal, t: u.antiheal / 0.025 });
+  return b;
+}
 function buffsHTML(u) {
-  const b = u.alive ? buffList(u) : [];
+  return aurasHTML(u.alive ? buffList(u) : [], 'buffs');
+}
+function aurasHTML(b, cls) {
   if (!b.length) return '';
   const time = t => (t < 3 ? t.toFixed(1) : Math.ceil(t) + 's');
-  return `<div class="buffs">${b
+  return `<div class="${cls}">${b
     .map(
       x =>
         `<span class="buff" title="${x.n}"><img src="assets/ui/spells/${spellArtKey(x.n)}.webp" alt="">${x.t != null ? `<b>${time(x.t)}</b>` : ''}${x.v != null ? `<i>${x.v}</i>` : ''}</span>`
@@ -59,7 +72,7 @@ function unitRowHTML(u, enemy) {
     hp = (100 * u.hp) / u.maxHp,
     col = enemy ? '#e65360' : hp > 50 ? '#3fcf6a' : hp > 25 ? '#e6c13f' : '#e65360';
   return `<div class="unitRow${enemy ? ' foe' : ''}${u === p.target ? ' sel' : ''}${u.alive ? '' : ' dead'}" data-uid="${state.units.indexOf(u)}">${portraitHTML(u)}${badgeHTML(u)}<div class="unitInfo"><div class="nm">${u === p ? 'You' : u.name}<span>${C.name}</span></div>
-  <div class="hpb"><div style="width:${hp.toFixed(1)}%;background:${col}"></div></div><div class="rsb"><div style="width:${u.res}%"></div></div>${castBarHTML(u)}<div class="dr">${drText(u)}</div></div>${buffsHTML(u)}</div>`;
+  <div class="hpb"><div style="width:${hp.toFixed(1)}%;background:${col}"></div></div><div class="rsb"><div style="width:${u.res}%"></div></div>${castBarHTML(u)}<div class="dr">${drText(u)}</div></div></div>`;
 }
 function castBarHTML(u) {
   const c = u.cast;
@@ -74,7 +87,7 @@ function badgeHTML(u) {
 // Cadre du joueur / de la cible. Portrait et emblème ne s'affichent que dans l'interface PC (hud.css).
 function frameHTML(u, enemy = false) {
   const C = CLASS[u.cls];
-  return `${portraitHTML(u)}${badgeHTML(u)}<div class="nameRow"><b>${u.name}</b><span>${Math.ceil(u.hp)} HP</span></div><div class="tiny fClass">${RACE[u.race]?.name || ''} ${C.name} · ${C.role} · ${ARMOR[C.armor]?.label || ''}</div><div class="bar fHp"><div class="fill ${enemy ? 'enemy' : ''}" style="width:${(100 * u.hp) / u.maxHp}%"></div></div><div class="bar resource fRes"><div class="fill" style="width:${u.res}%"></div></div><div class="tiny fInfo">${C.res} ${Math.round(u.res)}/100${u.shield > 0 ? ` · Shield ${Math.ceil(u.shield)}` : ''}</div>${buffsHTML(u)}`;
+  return `${portraitHTML(u)}${badgeHTML(u)}<div class="nameRow"><b>${u.name}</b><span>${Math.ceil(u.hp)} HP</span></div><div class="tiny fClass">${RACE[u.race]?.name || ''} ${C.name} · ${C.role} · ${ARMOR[C.armor]?.label || ''}</div><div class="bar fHp"><div class="fill ${enemy ? 'enemy' : ''}" style="width:${(100 * u.hp) / u.maxHp}%"></div></div><div class="bar resource fRes"><div class="fill" style="width:${u.res}%"></div></div><div class="tiny fInfo">${C.res} ${Math.round(u.res)}/100${u.shield > 0 ? ` · Shield ${Math.ceil(u.shield)}` : ''}</div>`;
 }
 function setHTML(el) {
   if (el._html !== el._shown) {

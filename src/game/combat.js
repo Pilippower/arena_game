@@ -282,6 +282,10 @@ function heal(src, t, v) {
   addFloat(t, `+${v}`, '#6ff395');
   fx('burst', t.x, 1.2, t.z, [0.15, 1, 0.5], 0.52, 0.42);
 }
+// Sort en train d'agir (lancement, fin d'incantation, impact d'une charge) : control / applySlow / interrupt
+// notent sur la cible le sort qui a posé chaque effet (icônes des débuffs au-dessus des personnages).
+let SPELL_NOW = null;
+const markDebuff = (t, k) => SPELL_NOW && ((t.debuffSpell = t.debuffSpell || {})[k] = SPELL_NOW);
 function control(t, type, dur, src = null) {
   if (t.spellImmune > 0 && src && src.team !== t.team && (src.curSchool || 'physical') !== 'physical') {
     addFloat(t, 'Immune', '#d9c9ff');
@@ -295,6 +299,7 @@ function control(t, type, dur, src = null) {
   }
   dur *= m;
   t[type] = Math.max(t[type] || 0, dur);
+  markDebuff(t, type);
   if (type === 'root') t.rootSchool = src?.curSchool || 'magic';
   t.dr[type] = m === 1 ? 0.5 : m === 0.5 ? 0.25 : 0;
   t.drT[type] = 20;
@@ -335,6 +340,7 @@ function applySlow(t, pct = 0.5, dur = 8, magic = false) {
   t.slowMagic = magic;
   t.slow = Math.max(t.slow || 0, dur);
   t.slowPct = Math.max(t.slowPct || 0, clamp(pct, 0, 0.8));
+  markDebuff(t, 'slow');
   addFloat(t, `Slowed ${Math.round(t.slowPct * 100)}%`, '#9ed7ff');
 }
 function moveSpeed(u) {
@@ -362,6 +368,7 @@ function interrupt(u, t) {
       if (k.s === sch) t.cd[j] = Math.max(t.cd[j], 4);
     });
     t.lockout = { school: sch, until: now() + 4 };
+    markDebuff(t, 'lockout');
   }
   addFloat(t, 'Interrupted!', '#ff9f6b');
   fx('silence', t.x, (t.y || 0) + 1.3, t.z, [1, 0.55, 0.3], 0.6, 0.7);
@@ -438,6 +445,7 @@ function finishCharge(u, hit = true) {
   u.mobility = null;
   u.moving = false;
   if (hit && t?.alive && d2(u, t) < 2.15) {
+    SPELL_NOW = m.cc?.cc === 'root' ? 'Wild Charge' : 'Charge';
     damage(u, t, 55);
     control(t, m.cc?.cc || 'stun', m.cc?.dur || 2, u);
     if (m.cc?.cc === 'root') t.rootKind = 'vines';
@@ -638,6 +646,7 @@ function useSkill(u, i) {
   const c = CLASS[u.cls],
     S = skillsOf(u)[i];
   u.curSchool = S.s || 'physical';
+  SPELL_NOW = S.n;
   const selfMobility = i === 4 && ['arcanist', 'oracle', 'warlock'].includes(u.cls),
     selfCC = u.cls === 'arcanist' && i === 1;
   if (!t && u.cls !== 'oracle' && !selfMobility && !selfCC) return false;
@@ -680,6 +689,7 @@ function useSkill(u, i) {
     if (i === 0 && melee) {
       damage(u, t, S.dmg, Math.random() < S.crit);
       t.antiheal = Math.min(0.5, t.antiheal + S.antiheal);
+      markDebuff(t, 'antiheal');
       action(u, 'melee');
     } else if (i === 1 && melee) {
       applySlow(t, S.slow, S.dur);
@@ -698,6 +708,7 @@ function useSkill(u, i) {
     if (i === 0 && melee) {
       damage(u, t, S.dmg, Math.random() < S.crit);
       t.antiheal = Math.min(0.5, t.antiheal + S.antiheal);
+      markDebuff(t, 'antiheal');
       action(u, 'melee');
     } else if (i === 1 && range) {
       damage(u, t, S.dmg);

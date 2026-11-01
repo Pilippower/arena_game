@@ -357,6 +357,7 @@ function useSpecialSkill(u, i) {
   if (!S || !u.alive || u.stun > 0 || u.fear > 0 || u.poly > 0 || u.mobility || u.cast || u.cd[i] > 0 || !canPay(u, i))
     return false;
   u.curSchool = S.s || 'physical';
+  SPELL_NOW = S.n;
   const shift = ['cat', 'bear', 'human'].includes(S.k) || S.k === 'stealth';
   if (u.gcd > 0 && !(S.k === 'stealth' && u.stealth)) return false;
   let t = hostileTarget(u);

@@ -1157,7 +1157,7 @@ function renderOverlayWorld() {
       e = document.createElement('div');
       e.className = 'nameplate';
       e.innerHTML =
-        '<div class="npName"></div><div class="npBar"><div class="npFill"></div></div><div class="npCast"><span class="npIcon"></span><div class="npTrack"><div></div><span></span><b></b></div></div>';
+        '<div class="npName"></div><div class="npBar"><div class="npFill"></div></div><div class="npCast"><span class="npIcon"></span><div class="npTrack"><div></div><span></span><b></b></div></div><div class="npAuras"></div>';
       e.style.left = e.style.top = '0';
       np.appendChild(e);
       e._name = e.firstChild;
@@ -1167,6 +1167,7 @@ function renderOverlayWorld() {
       e._castFill = e._cast.lastChild.firstChild;
       e._castName = e._cast.lastChild.children[1];
       e._castTime = e._cast.lastChild.children[2];
+      e._auras = e.children[3];
       e._k = {};
       OVERLAY.plates.set(u, e);
     }
@@ -1220,6 +1221,9 @@ function renderOverlayWorld() {
         e._k.ck = ck;
       }
     }
+    // buffs à gauche de la barre de vie, débuffs à droite (src/ui/hud.js)
+    const au = buffsHTML(u) + aurasHTML(debuffList(u), 'buffs debuffs');
+    if (e._k.au !== au) e._auras.innerHTML = e._k.au = au;
     if (cs) {
       const left = Math.max(0, u.cast.end - now());
       e._castFill.style.width = (clamp(1 - left / u.cast.dur, 0, 1) * 100).toFixed(1) + '%';

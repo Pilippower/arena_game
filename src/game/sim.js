@@ -75,6 +75,7 @@ function update(dt) {
     }
     if (u.cast && now() >= u.cast.end) {
       const ca = u.cast;
+      SPELL_NOW = ca.name;
       if (!(ca.target?.alive && los(u, ca.target))) {
         refundCast(u, ca);
         if (u === state.player) showError(ca.target?.alive ? 'Target not in line of sight' : 'Invalid target');

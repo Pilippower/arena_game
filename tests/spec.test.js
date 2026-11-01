@@ -177,7 +177,24 @@ run('src/ui/hud.js');
   assert.deepEqual([b[0].n, b[0].t, b[0].v], ['Dark Soul', 4, 90]);
   const html = ctx.buffsHTML({ alive: true, cls: 'shade', spellImmune: 2.2, burst: 0, shield: 0 });
   assert.ok(html.includes('spells/cloak.webp') && html.includes('2.2'), 'Cloak : icône + temps restant');
-  assert.match(read('src/ui/hud.js'), /drText\(u\)}<\/div><\/div>\$\{buffsHTML\(u\)}/, 'buffs des cadres d’équipe');
+  assert.ok(!read('src/ui/hud.js').includes('</div>${buffsHTML(u)}'), 'pas de buffs dans les cadres latéraux');
+  assert.equal(
+    ctx
+      .debuffList({ stun: 2, slow: 0, debuffSpell: { stun: 'Kidney Shot', slow: 'Hamstring' } })
+      .map(x => x.n)
+      .join(),
+    'Kidney Shot',
+    'débuff : sort qui l’a posé, tant qu’il dure'
+  );
+  assert.ok(
+    read('src/render/world.js').includes("aurasHTML(debuffList(u), 'buffs debuffs')"),
+    'auras au-dessus des personnages'
+  );
+  assert.match(
+    read('src/game/combat.js'),
+    /t\[type\] = Math\.max\(t\[type\] \|\| 0, dur\);\s*markDebuff\(t, type\)/,
+    'contrôle : sort noté'
+  );
 }
 // Interface en jeu PC : panoplie de l'utilisateur (assets/ui/hud), mobile et lobby inchangés
 {

@@ -440,7 +440,3 @@ body:not(.mobile-mode) .unitRow .dr {
 body:not(.mobile-mode) .unitRow .dr:empty {
   display: none;
 }
-body:not(.mobile-mode) #selfFrame > .buffs,
-body:not(.mobile-mode) #targetFrame > .buffs {
-  top: 38%;
-}
