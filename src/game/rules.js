@@ -45,7 +45,8 @@ function endPoly(u, broken) {
   if (broken) addFloat(u, sap ? 'Assommer brisé' : 'Métamorphose brisée', '#d8a7ff');
 }
 // Auto-attaque : les mêlées frappent avec leur arme dès qu'une cible ennemie est au contact (et devant eux pour le joueur).
-const SWING = { sentinel: [2.2, 52], reaver: [2.4, 58], shade: [1.3, 30] };
+// [intervalle (s), dégâts] : le voleur frappe deux fois plus vite avec deux lames, même dégâts par seconde.
+const SWING = { sentinel: [2.2, 52], reaver: [2.4, 58], shade: [0.65, 15] };
 function autoAttack(u, dt) {
   const sw = u.cls === 'warden' ? FORM_INFO[u.form]?.swing : SWING[u.cls];
   if (!sw || !u.alive || u.stealth) return;
@@ -58,7 +59,7 @@ function autoAttack(u, dt) {
     rel = Math.atan2(Math.sin(rel), Math.cos(rel));
     if (Math.abs(rel) > 1.6) return;
   } else face(u, t);
-  damage(u, t, sw[1] * (0.9 + Math.random() * 0.2), Math.random() < 0.12);
+  damage(u, t, sw[1] * (0.9 + Math.random() * 0.2), Math.random() < 0.12, 'physical');
   action(u, 'melee');
   u.swing = sw[0];
   SFX.swing(u, false);

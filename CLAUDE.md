@@ -10,6 +10,7 @@ L'utilisateur communique en français : répondre en français.
 - `index.html` : HTML + CSS + liste ordonnée des scripts (~30 Ko). Tout le JS est dans `src/` (scripts classiques, pas de bundler : le jeu se lance en double-clic, `file://`). **L'ordre des balises <script> compte** (code exécuté au chargement).
 - `src/` (un fichier par rôle) :
   - `data/classes.js` : classes, races, barres de forme/camouflage et **`SPELLS` = source unique des valeurs et textes de chaque sort** (dégâts, soins, durées, temps d'incantation, infobulle). Pour changer un sort : modifier `SPELLS` ; `game/combat.js` (effets, `useSkill`) et `ui/skillbar.js` (infobulles) lisent ces champs.
+  - Armures (`ARMOR`, `CLASS_ARMOR` dans `data/classes.js`) : plaque/cuir/tissu réduisent les dégâts physiques/magiques (`armorReduction`, appliqué dans `damage()` selon `src.curSchool`). PV par classe : `hp` dans `CLASS`. Cadence des auto-attaques : `SWING` (`game/rules.js`).
   - `game/` : `combat.js` (dégâts, contrôles + DR, interruptions, ruées, sorts), `ai.js` (IA + difficulté), `rules.js` (mouton, auto-attaque, cibles), `sim.js` (pas de simulation 120 Hz).
   - `render/` : `heroes3d.js` (personnages three.js, preview, portraits), `world.js` (décor + rendu de secours + noms), `environment.js` (décor), `effects.js` (effets de sorts).
   - `characters/` : `kits.js` (données des 35 kits, lu aussi par `tools/build_characters.js`), `builder.js` (assemblage three.js).

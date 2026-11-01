@@ -165,8 +165,10 @@ function fx(type, x, y, z, color, life = 0.55, size = 0.4, to = null, extra = nu
   } catch (_) {}
   state.fx.push(f);
 }
-function damage(src, t, v, crit = false) {
+// school : 'physical' ou école du sort ; par défaut l'école du sort en cours du lanceur (src.curSchool).
+function damage(src, t, v, crit = false, school = src.curSchool || 'physical') {
   if (!t?.alive) return;
+  v *= 1 - armorReduction(t, school);
   if (t.poly > 0) endPoly(t, true);
   src.lastCombat = t.lastCombat = now();
   if (t.stealth) setStealth(t, false);
@@ -561,8 +563,9 @@ function useSkill(u, i) {
   if (u.ai) u.target = t;
   else if (t && !u.target?.alive) setTarget(u, t);
   const c = CLASS[u.cls],
-    S = skillsOf(u)[i],
-    selfMobility = i === 4 && ['arcanist', 'oracle', 'warlock'].includes(u.cls),
+    S = skillsOf(u)[i];
+  u.curSchool = S.s || 'physical';
+  const selfMobility = i === 4 && ['arcanist', 'oracle', 'warlock'].includes(u.cls),
     selfCC = u.cls === 'arcanist' && i === 1;
   if (!t && u.cls !== 'oracle' && !selfMobility && !selfCC) return false;
   const d = t ? d2(u, t) : 999,

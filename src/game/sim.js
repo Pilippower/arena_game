@@ -77,6 +77,7 @@ function update(dt) {
             (ca.target.y || 0) + 1.2,
             ca.target.z
           ]);
+          u.curSchool = CLASS[u.cls].skills[ca.i]?.s || 'magic';
           damage(u, ca.target, ca.value);
           spellImpactSfx(u, 'damage');
         } else if (ca.type === 'poly') {

@@ -39,7 +39,7 @@ function castBarHTML(u) {
 }
 function frameHTML(u, enemy = false) {
   const C = CLASS[u.cls];
-  return `<div class="nameRow"><b>${u.name}</b><span>${Math.ceil(u.hp)} PV</span></div><div class="tiny">${RACE[u.race]?.name || ''} ${C.name} · ${C.role}</div><div class="bar"><div class="fill ${enemy ? 'enemy' : ''}" style="width:${(100 * u.hp) / u.maxHp}%"></div></div><div class="bar resource"><div class="fill" style="width:${u.res}%"></div></div><div class="tiny">${C.res} ${Math.round(u.res)}/100${u.shield > 0 ? ` · Bouclier ${Math.ceil(u.shield)}` : ''}</div>`;
+  return `<div class="nameRow"><b>${u.name}</b><span>${Math.ceil(u.hp)} PV</span></div><div class="tiny">${RACE[u.race]?.name || ''} ${C.name} · ${C.role} · ${ARMOR[C.armor]?.label || ''}</div><div class="bar"><div class="fill ${enemy ? 'enemy' : ''}" style="width:${(100 * u.hp) / u.maxHp}%"></div></div><div class="bar resource"><div class="fill" style="width:${u.res}%"></div></div><div class="tiny">${C.res} ${Math.round(u.res)}/100${u.shield > 0 ? ` · Bouclier ${Math.ceil(u.shield)}` : ''}</div>`;
 }
 function setHTML(el) {
   if (el._html !== el._shown) {

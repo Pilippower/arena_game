@@ -6,7 +6,7 @@ const CLASS = {
     role: 'Tank / mêlée',
     color: [0.18, 0.46, 0.82],
     accent: [0.7, 0.86, 1],
-    hp: 1500,
+    hp: 1600,
     speed: 6.0,
     res: 'Rage',
     regen: 9,
@@ -24,7 +24,7 @@ const CLASS = {
     role: 'Caster',
     color: [0.38, 0.28, 0.92],
     accent: [0.78, 0.68, 1],
-    hp: 1030,
+    hp: 980,
     speed: 5.5,
     res: 'Mana',
     regen: 12,
@@ -43,7 +43,7 @@ const CLASS = {
     role: 'Healer',
     color: [0.92, 0.82, 0.58],
     accent: [1, 0.95, 0.76],
-    hp: 1120,
+    hp: 1080,
     speed: 5.6,
     res: 'Mana',
     regen: 6,
@@ -61,7 +61,7 @@ const CLASS = {
     role: 'Bruiser',
     color: [0.28, 0.4, 0.52],
     accent: [0.52, 0.88, 1],
-    hp: 1300,
+    hp: 1450,
     speed: 5.9,
     res: 'Runic Power',
     regen: 10,
@@ -79,7 +79,7 @@ const CLASS = {
     role: 'Hybride',
     color: [0.92, 0.48, 0.12],
     accent: [0.72, 1, 0.42],
-    hp: 1240,
+    hp: 1250,
     speed: 6.15,
     res: 'Nature',
     regen: 11,
@@ -98,7 +98,7 @@ const CLASS = {
     role: 'Contrôle',
     color: [0.34, 0.38, 0.46],
     accent: [1, 0.86, 0.38],
-    hp: 1080,
+    hp: 1180,
     speed: 6.65,
     res: 'Energy',
     regen: 17,
@@ -336,6 +336,7 @@ function useSpecialSkill(u, i) {
   const S = skillsOf(u)[i];
   if (!S || !u.alive || u.stun > 0 || u.fear > 0 || u.poly > 0 || u.mobility || u.cast || u.cd[i] > 0 || !canPay(u, i))
     return false;
+  u.curSchool = S.s || 'physical';
   const shift = ['cat', 'bear', 'human'].includes(S.k) || S.k === 'stealth';
   if (u.gcd > 0 && !(S.k === 'stealth' && u.stealth)) return false;
   let t = hostileTarget(u);
@@ -733,4 +734,28 @@ for (const C of Object.values(CLASS))
 function castOf(u, i, target, type, value) {
   const S = skillsOf(u)[i];
   return { i, name: S.n, target, end: now() + S.cast, dur: S.cast, type, value };
+}
+
+// ---------- Armures : réduction des dégâts selon le type d'armure de la classe ----------
+// physical = coups d'arme (sorts sans école + auto-attaques) ; magic = sorts avec école (arcane, ombre, nature…).
+const ARMOR = {
+  plate: { label: 'Plate', physical: 0.3, magic: 0.05 },
+  leather: { label: 'Leather', physical: 0.15, magic: 0.08 },
+  cloth: { label: 'Cloth', physical: 0, magic: 0.1 }
+};
+const CLASS_ARMOR = {
+  sentinel: 'plate',
+  reaver: 'plate',
+  warden: 'leather',
+  shade: 'leather',
+  arcanist: 'cloth',
+  oracle: 'cloth',
+  warlock: 'cloth'
+};
+for (const k in CLASS_ARMOR) CLASS[k].armor = CLASS_ARMOR[k];
+// Réduction appliquée à un coup de l'école donnée ('physical' ou nom d'école magique).
+function armorReduction(t, school) {
+  const A = ARMOR[CLASS[t.cls]?.armor];
+  if (!A) return 0;
+  return school && school !== 'physical' ? A.magic : A.physical;
 }
