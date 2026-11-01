@@ -3,7 +3,7 @@
 // seulement quand on clique « Online » ; le service public PeerJS ne sert qu'à se trouver).
 // L'hôte fait autorité : il simule la partie (dégâts, sorts, contrôles, manches) et envoie l'état 20 fois/s.
 // L'invité se déplace en local avec les mêmes contrôles (pas de latence) et envoie sa position ; ses sorts, sa cible
-// et son trinket partent chez l'hôte. Pendant un déplacement imposé par l'hôte (ruée, blink, peur, étourdissement,
+// et son trinket partent chez l'hôte, qui lui renvoie les mêmes messages d'erreur que hors ligne (unitError). Pendant un déplacement imposé par l'hôte (ruée, blink, peur, étourdissement,
 // mouton) ou en cas d'écart > 3 m, l'invité reprend la position de l'hôte.
 // Points d'accroche : update() (sim.js), resetRound / tryPlayerSkill / useTrinket (combat.js), setTarget (rules.js),
 // showResults (match.js), bouton Play du lobby (settings.js).
@@ -155,6 +155,7 @@ function netOnData(m) {
         const W = SPELL_QUEUE_WINDOW;
         if ((u.gcd > 0 && u.gcd <= W) || (u.cd[m.i] > 0 && u.cd[m.i] <= W))
           u.queuedSkill = { i: m.i, until: now() + 0.35 };
+        else unitError(u, skillFailReason(u, m.i)); // même message que hors ligne (portée, recharge, ressource…)
       }
     } else if (m.t === 'trinket') useTrinket(u);
     else if (m.t === 'target') setTarget(u, state.units[m.i] || null);
@@ -163,6 +164,7 @@ function netOnData(m) {
   // invité
   if (m.t === 'roster') netGuestBuild(m);
   else if (m.t === 's') NET.snap = m;
+  else if (m.t === 'err') showError(m.text);
   else if (m.t === 'results' && state?.units) {
     state.stats = m.stats;
     const me = state.player.team;

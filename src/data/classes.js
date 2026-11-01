@@ -367,7 +367,7 @@ function useSpecialSkill(u, i) {
   else if (k === 'stealth') {
     if (u.stealth) setStealth(u, false);
     else if (inCombat(u)) {
-      if (u === state.player) showError("I can't do that while in combat");
+      unitError(u, "I can't do that while in combat");
       return false;
     } else setStealth(u, true);
   } else if (k === 'shred' || k === 'maul') {

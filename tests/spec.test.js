@@ -364,4 +364,12 @@ assert.ok(
     'lobby : bouton Online'
   );
 }
+{
+  const all = ['src/game/sim.js', 'src/game/combat.js', 'src/data/classes.js'].map(read).join(' ');
+  assert.ok(!/u === state\.player\) showError/.test(all), 'erreurs d’unité : unitError (aussi pour l’ami en ligne)');
+  assert.ok(
+    read('src/net/online.js').includes('unitError(u, skillFailReason(u, m.i))'),
+    'invité : message du sort raté'
+  );
+}
 console.log('OK - spécifications validées (docs/SPEC.md)');

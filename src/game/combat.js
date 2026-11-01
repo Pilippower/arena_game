@@ -575,6 +575,11 @@ function skillFailReason(u, i) {
   if (S.kick && !t?.cast) return 'Target is not casting';
   return "I can't do that right now";
 }
+// Message d'erreur pour le joueur qui contrôle l'unité : à l'écran ici, ou chez l'ami en ligne (src/net/online.js).
+function unitError(u, text) {
+  if (u === state?.player) showError(text);
+  else if (u?.remote) netSend({ t: 'err', text });
+}
 function tryPlayerSkill(i) {
   const p = state?.player;
   if (!p || !skillsOf(p)[i] || p.poly > 0) return false;

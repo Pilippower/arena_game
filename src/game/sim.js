@@ -92,7 +92,7 @@ function update(dt) {
       SPELL_NOW = ca.name;
       if (!(ca.target?.alive && los(u, ca.target))) {
         refundCast(u, ca);
-        if (u === state.player) showError(ca.target?.alive ? 'Target not in line of sight' : 'Invalid target');
+        unitError(u, ca.target?.alive ? 'Target not in line of sight' : 'Invalid target');
       } else {
         if (ca.type === 'damage') {
           const proj = u.cls === 'warlock' ? 'shadowProjectile' : 'arcaneProjectile';
