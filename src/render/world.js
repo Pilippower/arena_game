@@ -32,20 +32,26 @@ function cameraSafe(target, desired) {
       break;
     }
   }
-  return [lerp(target[0], desired[0], safe), lerp(target[1], desired[1], safe), lerp(target[2], desired[2], safe)];
+  return safe;
 }
+// Caméra affichée : le zoom glisse vers camera.dist (molette par crans) ; derrière un pilier elle se rapproche
+// tout de suite (jamais de mur entre elle et le joueur) et ne se recule ensuite qu'en douceur.
+const CAM_VIEW = { dist: null, safe: 1, t: 0 };
 function setupCamera() {
-  const p = state?.player || { x: 0, y: 0, z: 0 },
+  const t = now(),
+    dt = clamp(t - CAM_VIEW.t, 0, 0.1);
+  CAM_VIEW.t = t;
+  CAM_VIEW.dist = CAM_VIEW.dist == null ? camera.dist : lerp(CAM_VIEW.dist, camera.dist, 1 - Math.exp(-14 * dt));
+  const dist = CAM_VIEW.dist,
+    p = state?.player || { x: 0, y: 0, z: 0 },
     target = [p.rx ?? p.x, (p.ry ?? p.y ?? 0) + 1.25, p.rz ?? p.z],
     cp = Math.cos(camera.pitch),
     sp = Math.sin(camera.pitch),
-    h = cp * camera.dist,
-    desired = [
-      target[0] - Math.sin(camera.yaw) * h,
-      target[1] + sp * camera.dist + 1.0,
-      target[2] - Math.cos(camera.yaw) * h
-    ];
-  camPos = cameraSafe(target, desired);
+    h = cp * dist,
+    desired = [target[0] - Math.sin(camera.yaw) * h, target[1] + sp * dist + 1.0, target[2] - Math.cos(camera.yaw) * h],
+    safe = cameraSafe(target, desired);
+  CAM_VIEW.safe = safe < CAM_VIEW.safe ? safe : lerp(CAM_VIEW.safe, safe, 1 - Math.exp(-6 * dt));
+  camPos = [0, 1, 2].map(i => lerp(target[i], desired[i], CAM_VIEW.safe));
   viewProj = mul(perspective(Math.PI / 3, canvas.width / canvas.height, 0.08, 130), lookAt(camPos, target));
   gl.uniformMatrix4fv(loc.vp, false, viewProj);
   gl.uniform3fv(loc.cam, camPos);

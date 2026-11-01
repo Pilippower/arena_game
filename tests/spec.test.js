@@ -96,4 +96,6 @@ assert.match(
 );
 assert.ok(read('src/render/environment.js').includes('b.position.set(u.rx ?? u.x'), 'ombre au sol interpolée');
 assert.match(h3, /if \(!groups\.size\) return;/, 'silhouettes : pas de passe inutile');
+assert.match(read('src/render/world.js'), /CAM_VIEW\.dist = [^;]*camera\.dist/, 'zoom lissé');
+assert.match(h3, /rotation\.set\(castLean, ryaw, deathTilt \|\| rec\.lean\)/, 'inclinaison dans les virages');
 console.log('OK - spécifications validées (docs/SPEC.md)');

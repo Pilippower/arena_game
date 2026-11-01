@@ -51,4 +51,5 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Qualité adaptative : sous 50 images/s en partie, la résolution des canevas baisse par paliers (55 % minimum) ; si la baisse ne fait rien gagner, la résolution d'avant est rendue et ne bouge plus. 🧪
 - Tout ce qui suit un personnage (modèle, ombre, noms, effets) utilise la position interpolée, jamais la position brute de simulation. 🧪
 - The Bridge : la passe des silhouettes ne tourne que si le pont cache réellement quelqu'un (`hfBridgeHides`). 🧪
+- Caméra : le zoom à la molette glisse (≈ 0,2 s) au lieu de sauter ; derrière un pilier la caméra se rapproche immédiatement et se recule en douceur (`CAM_VIEW` dans `world.js`). Le personnage pivote vite mais sans claquer et s'incline légèrement dans les virages (visuel seulement, la simulation garde l'orientation exacte). 🧪
 - **Refusé par l'utilisateur : pas de secousses de caméra, pas d'accélération/freinage progressifs, aucun délai ajouté (pas de micro-gel sur les coups).**
