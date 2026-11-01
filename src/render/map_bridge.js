@@ -290,6 +290,7 @@
       logTipG = new THREE.ConeGeometry(0.4, 0.9, 8);
     for (const [x, z, w, d, vert] of sides) {
       const len2 = vert ? d : w,
+        th = vert ? w : d, // épaisseur du rempart
         inward = vert ? -Math.sign(x) : -Math.sign(z);
       // blocs de falaise sur 2 rangées
       for (let t = -len2 / 2; t < len2 / 2;) {
@@ -298,7 +299,7 @@
           const bh = wallH / 2 + r() * 0.4,
             cx = vert ? x : x + t + bw / 2,
             cz = vert ? z + t + bw / 2 : z;
-          stoneBlock(vert ? d : bw, bh, vert ? bw : d, cx, row * (wallH / 2) + bh / 2, cz, rock, 0.18);
+          stoneBlock(vert ? th : bw, bh, vert ? bw : th, cx, row * (wallH / 2) + bh / 2, cz, rock, 0.18);
         }
         t += bw;
       }
@@ -329,7 +330,7 @@
       }
       // porte grillagée au milieu des grands côtés
       if (!vert) {
-        const gz = z + inward * (d / 2 + 0.02);
+        const gz = z + inward * (th / 2 + 0.02);
         add(
           new THREE.BoxGeometry(4.2, 3.4, 0.2),
           new THREE.MeshStandardMaterial({ color: 0x0c0806, roughness: 1 }),
@@ -348,10 +349,10 @@
         if (k === 0) continue;
         const b = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 3.2, 4, 8), bannerMat);
         if (vert) {
-          b.position.set(x + inward * (d / 2 + 0.05), wallH - 1.2, k * (d / 6));
+          b.position.set(x + inward * (th / 2 + 0.05), wallH - 1.2, k * (len2 / 6));
           b.rotation.y = (inward * Math.PI) / 2;
         } else {
-          b.position.set(k * (w / 6), wallH - 1.2, z + inward * (d / 2 + 0.05));
+          b.position.set(k * (len2 / 6), wallH - 1.2, z + inward * (th / 2 + 0.05));
           if (inward < 0) b.rotation.y = Math.PI;
         }
         b.castShadow = true;

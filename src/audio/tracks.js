@@ -69,6 +69,12 @@ function localGameTrack() {
   return TRACKS.local;
 }
 function playGameMusic() {
+  // le fichier de jeu est lourd : on attend la fin du chargement de la page avant de le demander
+  if (document.readyState !== 'complete') {
+    TRACKS.want = 'game';
+    window.addEventListener('load', () => TRACKS.want === 'game' && playGameMusic(), { once: true });
+    return;
+  }
   TRACKS.want = 'game';
   if (TRACKS.lobby) fadeTo(TRACKS.lobby, 0, 1);
   if (!PREFS.musicOn) return;
