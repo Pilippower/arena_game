@@ -54,8 +54,26 @@ const TAGS = {
   await save(crop('maps_lobby_assets.png', 56, 42, 540, 292).resize(640), 'map_castle', 84);
   await save(crop('maps_lobby_assets.png', 667, 38, 550, 300).resize(640), 'map_bridge', 84);
   // cartes d'arène complètes (illustration + blason + nom + description peints), sans le cadre de la planche
-  await save(crop('maps_lobby_assets.png', 47, 33, 569, 471).resize(720), 'mapcard_castle', 86);
-  await save(crop('maps_lobby_assets.png', 662, 33, 559, 471).resize(720), 'mapcard_bridge', 86);
+  // la description peinte (rangées 427-453) est effacée : le jeu écrit une phrase courte à sa place
+  const noDesc = async (x, y, w, h) => {
+    const { data, info } = await crop('maps_lobby_assets.png', x, y, w, h)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const x0 = 30,
+      x1 = info.width - 30;
+    for (let r = 427; r < 454; r++)
+      for (let c = x0; c < x1; c++) {
+        const t = (c - x0) / (x1 - x0),
+          a = (r * info.width + x0 - 1) * 4,
+          b = (r * info.width + x1) * 4,
+          o = (r * info.width + c) * 4;
+        for (let k = 0; k < 3; k++) data[o + k] = data[a + k] * (1 - t) + data[b + k] * t;
+      }
+    return sharp(data, { raw: { width: info.width, height: info.height, channels: 4 } });
+  };
+  await save((await noDesc(47, 33, 569, 471)).resize(720), 'mapcard_castle', 86);
+  await save((await noDesc(662, 33, 559, 471)).resize(720), 'mapcard_bridge', 86);
   // cartes de race et de classe (illustration + nom peint), recadrées à l'intérieur de leur cadre doré
   const CARDS = {
     race_human: [717, 561, 98, 80],

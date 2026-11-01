@@ -651,8 +651,34 @@ body.lobby:not(.mobile-mode) .pickRight {
 #overlay .mapCard.painted img {
   object-position: 50% 100%;
 }
+/* carte peinte : le nom est dans l'image, la description courte est écrite par le jeu à la place de la phrase
+   peinte (effacée), à la même hauteur : position en % de la largeur (cqw), l'image étant calée en bas */
+#overlay .mapCard.painted {
+  container-type: inline-size;
+}
 #overlay .mapCard.painted .mapLabel {
+  top: auto;
+  bottom: 4.2cqw;
+  padding: 0 6%;
+  background: none;
+  text-align: center;
+  z-index: 1;
+}
+#overlay .mapCard.painted .mapLabel b {
   display: none;
+}
+#overlay .mapCard.painted .mapLabel span {
+  display: block;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-size: 3.3cqw;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 1;
+  color: #f3ead2;
+  text-shadow: 0 1px 2px #000;
 }
 #overlay .mapCard::before {
   content: '';

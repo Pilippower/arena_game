@@ -5,7 +5,7 @@
 const MAPS = {
   castle: {
     name: 'The Castle',
-    desc: 'Moonlit ruins, rune pillars and a castle on the horizon.',
+    desc: 'Moonlit ruins and rune pillars.',
     halfX: 34,
     halfZ: 25,
     pillars: [
@@ -25,7 +25,7 @@ const MAPS = {
   },
   bridge: {
     name: 'The Bridge',
-    desc: 'A sandy pit under a timber bridge, ringed by spiked palisades at dusk.',
+    desc: 'A sandy pit under a timber bridge.',
     halfX: 32,
     halfZ: 22,
     // blocs de roche sous le pont, poteaux du pont, rochers latéraux

@@ -385,4 +385,5 @@ assert.ok(
     read('src/ui/results.css').includes('top: calc((var(--scy) - 14) * var(--u));'),
   'score centré sur la plaque (victoire et défaite)'
 );
+for (const m of Object.values(ctx.MAPS)) assert.ok(m.desc.length <= 40, 'description d’arène courte : ' + m.name);
 console.log('OK - spécifications validées (docs/SPEC.md)');
