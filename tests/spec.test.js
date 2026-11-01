@@ -147,4 +147,5 @@ assert.ok(
   read('index.html').includes('.nameplate.enemy .npCast{width:140px;position:absolute'),
   'barre de vie de la cible stable'
 );
+assert.ok(read('index.html').includes('grid-template-rows:58px 1fr 84px;'), 'PC : bande du bas fine');
 console.log('OK - spécifications validées (docs/SPEC.md)');
