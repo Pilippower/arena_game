@@ -54,7 +54,7 @@ function updateUI() {
   $('timer').textContent =
     `${String(Math.floor(state.t / 60)).padStart(2, '0')}:${String(Math.floor(state.t % 60)).padStart(2, '0')}`;
   $('score').textContent = `${state.scoreA} - ${state.scoreB}`;
-  $('round').textContent = `Round ${state.round} · BO3`;
+  $('round').textContent = `Round ${state.round} / ${MATCH_ROUNDS}`;
   $('selfFrame')._html = frameHTML(p, false);
   $('targetFrame')._html = t
     ? frameHTML(t, true) +

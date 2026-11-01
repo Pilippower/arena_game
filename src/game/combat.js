@@ -73,6 +73,8 @@ function resetRound() {
     scoreA: o.scoreA || 0,
     scoreB: o.scoreB || 0,
     round: (o.round || 0) + 1,
+    stats: o.stats && o.round ? o.stats : [],
+    map: o.map,
     t: 150,
     elapsed: 0,
     dampening: 0,
@@ -92,6 +94,7 @@ function resetRound() {
     makeUnit('arcanist', 26, 0, 1, 'Nyx', true, 'elf', 1),
     makeUnit('oracle', 26, 6, 1, 'Seris', true, 'dwarf', 2)
   ];
+  state.units.forEach((u, i) => (u.slotIndex = i));
   state.player = state.units[0];
   setTarget(state.player, state.units[3]);
   applyDifficulty();
@@ -181,6 +184,7 @@ function damage(src, t, v, crit = false, school = src.curSchool || 'physical') {
     v -= q;
   }
   v = Math.round(v * (crit ? 1.5 : 1));
+  recordDamage(src, t, Math.min(v, t.hp));
   t.hp = Math.max(0, t.hp - v);
   t.flash = 0.14;
   src.res = clamp(src.res + 6, 0, 100);
@@ -200,6 +204,7 @@ function damage(src, t, v, crit = false, school = src.curSchool || 'physical') {
   addFloat(t, `-${v}`, crit ? '#ffd36b' : '#ff7d88');
   fx('burst', t.x, 1.15, t.z, [1, 0.18, 0.08], 0.42, 0.35);
   if (t.hp <= 0) {
+    recordKill(src, t);
     t.alive = false;
     t.cast = null;
     t.mobility = null;
@@ -213,6 +218,7 @@ function heal(src, t, v) {
   const damp = state?.dampening || 0;
   v = Math.round(v * (1 - clamp(t.antiheal, 0, 0.6)) * (1 - damp));
   if (v <= 0) return;
+  recordHeal(src, Math.min(v, t.maxHp - t.hp));
   t.hp = Math.min(t.maxHp, t.hp + v);
   addFloat(t, `+${v}`, '#6ff395');
   fx('burst', t.x, 1.2, t.z, [0.15, 1, 0.5], 0.52, 0.42);

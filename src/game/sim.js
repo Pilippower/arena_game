@@ -121,20 +121,10 @@ function update(dt) {
   const aliveA = state.units.some(u => u.team === 0 && u.alive),
     aliveB = state.units.some(u => u.team === 1 && u.alive);
   if (!aliveA || !aliveB || state.t <= 0) {
-    state.ended = true;
     const ah = state.units.filter(u => u.team === 0).reduce((s, u) => s + u.hp / u.maxHp, 0),
       bh = state.units.filter(u => u.team === 1).reduce((s, u) => s + u.hp / u.maxHp, 0),
       win = (aliveA && !aliveB) || (state.t <= 0 && ah > bh);
-    if (win) state.scoreA++;
-    else state.scoreB++;
-    showSplash(win ? 'Round gagné !' : 'Round perdu');
-    setTimeout(() => {
-      if (state.scoreA >= 2 || state.scoreB >= 2) {
-        showSplash(state.scoreA > state.scoreB ? 'VICTOIRE 2 manches' : 'DÉFAITE');
-        state.scoreA = state.scoreB = state.round = 0;
-      }
-      resetRound();
-    }, 1500);
+    endRound(win);
   }
   state.uiTick -= dt;
   if (state.uiTick <= 0) {
