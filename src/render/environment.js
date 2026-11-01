@@ -1399,7 +1399,12 @@
       t = performance.now() / 1000;
     E.time.value = t;
     const cw = Math.max(1, Math.floor(w)),
-      ch = Math.max(1, Math.floor(h));
+      ch = Math.max(1, Math.floor(h)),
+      pr = Math.min(E.mobile ? 1 : 1.5, devicePixelRatio || 1) * (window.PERF ? PERF.scale : 1);
+    if (R.getPixelRatio() !== pr) {
+      R.setPixelRatio(pr);
+      E.w = 0;
+    }
     if (E.w !== cw || E.h !== ch) {
       R.setSize(cw, ch, false);
       E.camera.aspect = cw / ch;
@@ -1429,7 +1434,7 @@
       const b = E.blobs[i];
       if (!b) return;
       b.visible = !!u.alive;
-      b.position.set(u.x, 0.03 + (u.grounded ? u.y || 0 : 0), u.z);
+      b.position.set(u.rx ?? u.x, 0.03 + (u.grounded ? u.y || 0 : 0), u.rz ?? u.z);
       const k = 1 / (1 + Math.max(0, u.y || 0) * 0.6);
       b.scale.setScalar(k);
     });

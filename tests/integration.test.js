@@ -29,7 +29,8 @@ console.log(`OK - ${files.length} scripts locaux, logique validée unique (game_
 // Le jeu est en anglais : aucun texte affiché ne doit contenir de mots français courants.
 {
   const { scripts, read } = require('./sources.js');
-  const FR = /\b(Bouclier|Étourdi|Immobilisé|Ralenti|Vous|Jouer|Classe|Difficulté|Chargement|Musique|Raccourci|Fermer|Aucune cible|Ligne de vue)\b/;
+  const FR =
+    /\b(Bouclier|Étourdi|Immobilisé|Ralenti|Vous|Jouer|Classe|Difficulté|Chargement|Musique|Raccourci|Fermer|Aucune cible|Ligne de vue)\b/;
   for (const f of ['index.html', ...scripts().filter(s => s.startsWith('src/'))])
     read(f)
       .split('\n')

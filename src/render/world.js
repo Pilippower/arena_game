@@ -4,7 +4,7 @@
 function resize() {
   if (!gl) return;
   const r = canvas.getBoundingClientRect(),
-    d = Math.min(1.8, devicePixelRatio || 1),
+    d = Math.min(1.8, devicePixelRatio || 1) * PERF.scale,
     w = Math.max(1, Math.floor(r.width * d)),
     h = Math.max(1, Math.floor(r.height * d));
   if (canvas.width !== w || canvas.height !== h) {
@@ -1110,20 +1110,24 @@ function render() {
   if (envOn) {
     const p = state?.player || { x: 0, y: 0, z: 0 },
       r = canvas.getBoundingClientRect();
-    ArenaEnv.render(camPos, [p.rx ?? p.x, (p.ry ?? p.y ?? 0) + 1.25, p.rz ?? p.z], state?.units, r.width, r.height);
+    perfTime('env', () =>
+      ArenaEnv.render(camPos, [p.rx ?? p.x, (p.ry ?? p.y ?? 0) + 1.25, p.rz ?? p.z], state?.units, r.width, r.height)
+    );
   }
   if (typeof renderArena !== 'function') throw Error('renderArena manquant');
-  renderArena();
-  renderPersistentCC();
   const hfOn = hfEnsureInit();
-  if (state?.units)
-    for (const u of state.units) {
-      const rec = hfOn ? HF.records.get(u.id) : null;
-      if (!hfOn || (rec && rec.failed)) renderCharacter(u);
-    }
-  renderFx();
-  renderOverlayWorld();
-  if (hfOn) hfRender();
+  perfTime('world', () => {
+    renderArena();
+    renderPersistentCC();
+    if (state?.units)
+      for (const u of state.units) {
+        const rec = hfOn ? HF.records.get(u.id) : null;
+        if (!hfOn || (rec && rec.failed)) renderCharacter(u);
+      }
+    renderFx();
+    renderOverlayWorld();
+  });
+  if (hfOn) perfTime('heroes', hfRender);
 }
 function projectScreen(x, y, z) {
   if (!viewProj) return null;

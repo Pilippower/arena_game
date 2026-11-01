@@ -45,3 +45,10 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - « The Castle » : ne pas modifier sans demande. Le décor suit toujours la carte de gameplay (test dans `smoke.test.js`).
 - « The Bridge » : pont accessible par deux rampes à chaque extrémité (de part et d'autre, perpendiculaires au pont) ; on peut lancer des sorts depuis le tablier ; pas de ligne de vue entre le tablier et le dessous du pont. 🧪
 - « The Bridge » : bois « fantasy » (planches peintes, joints, nœuds, clous, chapeaux de bronze, lanternes). Un personnage caché par le pont (vu du dessus ou du dessous) apparaît en **silhouette translucide**, jamais en clair par-dessus le tablier ; pas de silhouette pour un camouflé. 🧪 (`hfRenderGhosts` dans `heroes3d.js`) (`surfaceAt`, `groundAt`, `blockedBySurface`, `bridgeRail` dans `maps.js`)
+
+## Fluidité et performances — `src/core/perf.js`, `src/render/*`
+- `?fps=1` affiche un compteur (images/s, temps CPU par couche de rendu, pas de simulation par image).
+- Qualité adaptative : sous 50 images/s en partie, la résolution des canevas baisse par paliers (55 % minimum) ; si la baisse ne fait rien gagner, la résolution d'avant est rendue et ne bouge plus. 🧪
+- Tout ce qui suit un personnage (modèle, ombre, noms, effets) utilise la position interpolée, jamais la position brute de simulation. 🧪
+- The Bridge : la passe des silhouettes ne tourne que si le pont cache réellement quelqu'un (`hfBridgeHides`). 🧪
+- **Refusé par l'utilisateur : pas de secousses de caméra, pas d'accélération/freinage progressifs, aucun délai ajouté (pas de micro-gel sur les coups).**

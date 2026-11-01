@@ -41,7 +41,8 @@ function loop() {
   if (fatal) return;
   try {
     const n = now(),
-      frameDt = Math.min(0.05, n - last);
+      rawDt = n - last,
+      frameDt = Math.min(0.05, rawDt);
     last = n;
     simAccumulator += frameDt;
     let steps = 0;
@@ -53,6 +54,7 @@ function loop() {
     if (steps === MAX_SIM_STEPS) simAccumulator = 0;
     renderAlpha = clamp(simAccumulator / SIM_DT, 0, 1);
     render();
+    perfFrame(rawDt, steps);
     requestAnimationFrame(loop);
   } catch (err) {
     fatal = true;

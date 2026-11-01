@@ -5,7 +5,12 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const full = process.argv.includes('--all');
-const list = dir => fs.readdirSync(path.join(__dirname, dir)).filter(f => f.endsWith('.test.js')).sort().map(f => path.join(dir, f));
+const list = dir =>
+  fs
+    .readdirSync(path.join(__dirname, dir))
+    .filter(f => f.endsWith('.test.js'))
+    .sort()
+    .map(f => path.join(dir, f));
 const files = [...list('.'), ...list('browser').filter(f => full || !f.endsWith('full.test.js'))];
 const t0 = Date.now();
 for (const f of files) {

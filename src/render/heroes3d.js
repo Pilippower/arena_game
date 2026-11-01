@@ -362,6 +362,11 @@ function updateSelectPreview3D(rk, ck) {
     );
   else tryCandidate(0);
 }
+function hfPixelRatio() {
+  return (
+    Math.min(document.body.classList.contains('mobile-mode') ? 1.5 : 2.0, window.devicePixelRatio || 1) * PERF.scale
+  );
+}
 function hfInit() {
   if (!window.THREE || !THREE.GLTFLoader || !characterCanvas) return false;
   try {
@@ -373,9 +378,7 @@ function hfInit() {
       premultipliedAlpha: true
     });
     HF.renderer.setClearColor(0x000000, 0);
-    HF.renderer.setPixelRatio(
-      Math.min(document.body.classList.contains('mobile-mode') ? 1.5 : 2.0, window.devicePixelRatio || 1)
-    );
+    HF.renderer.setPixelRatio(hfPixelRatio());
     HF.renderer.outputEncoding = THREE.sRGBEncoding;
     HF.renderer.shadowMap.enabled = false;
     HF.scene = new THREE.Scene();
@@ -887,6 +890,7 @@ function hfRender() {
   const r = canvas.getBoundingClientRect(),
     w = Math.max(1, Math.floor(r.width)),
     h = Math.max(1, Math.floor(r.height));
+  if (HF.renderer.getPixelRatio() !== hfPixelRatio()) HF.renderer.setPixelRatio(hfPixelRatio());
   HF.renderer.setSize(w, h, false);
   HF.camera.aspect = w / h;
   HF.camera.updateProjectionMatrix();
@@ -1664,6 +1668,27 @@ function hfRebuildOccluders() {
   bg.traverse(o => (o.renderOrder = -10));
   HF.scene.add(bg);
 }
+// Le pont (tablier ou rampe) passe-t-il entre la caméra et l'unité ? Segment échantillonné : changement de côté
+// de la surface du pont entre deux points consécutifs situés au-dessus d'elle.
+function hfBridgeHides(u) {
+  const ux = u.rx ?? u.x,
+    uy = u.ry ?? (u.y || 0),
+    uz = u.rz ?? u.z;
+  for (const hh of [0.3, 1.1, 1.9]) {
+    let prev = null;
+    for (let i = 0; i <= 20; i++) {
+      const t = i / 20,
+        x = lerp(camPos[0], ux, t),
+        y = lerp(camPos[1], uy + hh, t),
+        z = lerp(camPos[2], uz, t),
+        s = surfaceAt(x, z),
+        side = s ? Math.sign(y - (s.deck ? s.h - 0.25 : s.h)) : 0;
+      if (side && prev && side !== prev) return true;
+      prev = side || null;
+    }
+  }
+  return false;
+}
 // Personnages cachés par le pont : silhouette translucide visible à travers le tablier (pas les camouflés).
 // Passe 1 : profondeur du pont seul ; passe 2 : personnages là où ils sont derrière (GreaterDepth), sans écrire la profondeur.
 function hfRenderGhosts() {
@@ -1681,7 +1706,12 @@ function hfRenderGhosts() {
       skinning: true
     });
   const groups = new Set();
-  for (const rec of HF.records.values()) if (rec.group && (rec.opacity ?? 1) >= 1) groups.add(rec.group);
+  for (const u of state.units) {
+    const rec = HF.records.get(u.id);
+    if (rec?.group && (rec.opacity ?? 1) >= 1 && hfBridgeHides(u)) groups.add(rec.group);
+  }
+  // personne n'est caché par le pont : pas de seconde passe (économise un rendu complet des personnages)
+  if (!groups.size) return;
   const hidden = [];
   const only = keep => {
     for (const o of sc.children)
