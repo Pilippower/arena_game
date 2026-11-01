@@ -64,6 +64,8 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 
 - Nains : longue barbe roux cuivré façon fantasy (demande de l'utilisateur, d'après sa photo de référence) : masse ample bombée sur les joues, moustache tombante, grosse tresse centrale en chevrons jusqu'à la ceinture avec anneaux dorés, deux tresses latérales (`dwarfBeard` dans `builder.js`). 🧪
 
+- Nain guerrier : masse runique plus grosse, plus lumineuse et un peu plus courte (manche 0,62 au lieu de 0,8) : six ailettes d'acier autour d'un cœur de rune bleu lumineux, anneaux et collier dorés, couronne en pointe, pommeau à gemme, halo bleu (`hammerShield` dans `builder.js`). 🧪
+
 ## Formats de match — `src/game/combat.js` (`TEAM_SIZE`, `teamsFor`), lobby « Mode »
 - Le joueur choisit **1v1, 2v2 ou 3v3** au lobby (mémorisé ; `?size=1|2|3` pour les tests). 3v3 par défaut, inchangé.
 - 2v2 : vous + un soigneur (ou un guerrier si vous êtes prêtre) contre chevalier de la mort + prêtre. 1v1 : contre un chevalier de la mort (un guerrier si vous jouez chevalier de la mort), jamais un soigneur seul. 🧪

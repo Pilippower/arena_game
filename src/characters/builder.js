@@ -630,28 +630,101 @@
       sh.rotation.x = -Math.PI / 2;
       mount(THREE, body, bones.lowerarm_l, sh);
       if (kind === 'hammerShield') {
+        // Masse runique du nain (demande de l'utilisateur : plus grosse, plus lumineuse, un peu plus courte) :
+        // manche gainé de cuir et cerclé d'or, tête à six ailettes d'acier autour d'un cœur de rune bleu lumineux,
+        // couronne en pointe, pommeau à gemme.
         const w = new THREE.Group();
         w.name = 'Hammer';
-        const hdl = new THREE.Mesh(new THREE.CylinderGeometry(0.02 * s, 0.022 * s, 0.8 * s, 8), leather);
-        hdl.position.y = 0.25 * s;
+        const glowM = new THREE.MeshStandardMaterial({
+          color: 0x7fe0ff,
+          emissive: 0x2fa8ff,
+          emissiveIntensity: 3.2,
+          roughness: 0.2
+        });
+        const hdl = new THREE.Mesh(new THREE.CylinderGeometry(0.022 * s, 0.025 * s, 0.62 * s, 10), leather);
+        hdl.position.y = 0.17 * s;
         w.add(hdl);
-        const head = B(0.16, 0.09, 0.09, steel);
-        head.position.y = 0.68 * s;
-        w.add(head);
-        for (const x of [-0.1, 0.1]) {
-          const cap2 = new THREE.Mesh(new THREE.CylinderGeometry(0.055 * s, 0.045 * s, 0.03 * s, 6), steel);
-          cap2.rotation.z = Math.PI / 2;
-          cap2.position.set(x * s * 0.93, 0.68 * s, 0);
-          w.add(cap2);
-        }
-        for (const x of [-0.05, 0.05]) {
-          const band = B(0.02, 0.1, 0.1, gold);
-          band.position.set(x * s, 0.68 * s, 0);
+        for (const y of [-0.1, 0.12, 0.36]) {
+          const band = new THREE.Mesh(new THREE.CylinderGeometry(0.029 * s, 0.029 * s, 0.025 * s, 12), gold);
+          band.position.y = y * s;
           w.add(band);
         }
-        const g2 = new THREE.Mesh(new THREE.OctahedronGeometry(0.035 * s, 0), gem);
-        g2.position.set(0, 0.68 * s, 0.09 * s);
-        w.add(g2);
+        const pommel = new THREE.Mesh(new THREE.OctahedronGeometry(0.04 * s, 0), gold);
+        pommel.position.y = -0.16 * s;
+        w.add(pommel);
+        const pg = new THREE.Mesh(new THREE.OctahedronGeometry(0.022 * s, 0), glowM);
+        pg.position.y = -0.2 * s;
+        w.add(pg);
+        const HY = 0.58 * s; // centre de la tête
+        const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.05 * s, 0.035 * s, 0.07 * s, 12), gold);
+        collar.position.y = HY - 0.13 * s;
+        w.add(collar);
+        const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.085 * s, 1), dark);
+        core.scale.y = 1.25;
+        core.position.y = HY;
+        w.add(core);
+        // fentes de rune lumineuses entre les ailettes
+        for (let k = 0; k < 6; k++) {
+          const a = (k / 6) * Math.PI * 2 + Math.PI / 6,
+            slit = new THREE.Mesh(new THREE.BoxGeometry(0.018 * s, 0.16 * s, 0.018 * s), glowM);
+          slit.position.set(Math.sin(a) * 0.083 * s, HY, Math.cos(a) * 0.083 * s);
+          w.add(slit);
+        }
+        // six ailettes en trapèze, biseautées
+        const fin = new THREE.Shape();
+        fin.moveTo(0, -0.11);
+        fin.lineTo(0.085, -0.06);
+        fin.lineTo(0.1, 0.06);
+        fin.lineTo(0, 0.13);
+        fin.lineTo(0, -0.11);
+        const finGeo = new THREE.ExtrudeGeometry(fin, {
+          depth: 0.016,
+          bevelEnabled: true,
+          bevelThickness: 0.006,
+          bevelSize: 0.006,
+          bevelSegments: 1
+        });
+        finGeo.translate(0, 0, -0.008);
+        finGeo.scale(s, s, s);
+        for (let k = 0; k < 6; k++) {
+          const f = new THREE.Mesh(finGeo, steel),
+            a = (k / 6) * Math.PI * 2;
+          f.position.set(Math.sin(a) * 0.06 * s, HY, Math.cos(a) * 0.06 * s);
+          f.rotation.y = a - Math.PI / 2;
+          w.add(f);
+        }
+        for (const dy of [-0.095, 0.11]) {
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(0.075 * s, 0.012 * s, 6, 18), gold);
+          ring.rotation.x = Math.PI / 2;
+          ring.position.y = HY + dy * s;
+          w.add(ring);
+        }
+        const crown = new THREE.Mesh(new THREE.ConeGeometry(0.035 * s, 0.13 * s, 6), steel);
+        crown.position.y = HY + 0.19 * s;
+        w.add(crown);
+        const cg = new THREE.Mesh(new THREE.OctahedronGeometry(0.028 * s, 0), glowM);
+        cg.position.y = HY + 0.125 * s;
+        w.add(cg);
+        // halo de rune autour de la tête (additif, ne masque rien)
+        const halo = new THREE.Mesh(
+          new THREE.SphereGeometry(0.13 * s, 16, 12),
+          new THREE.MeshBasicMaterial({
+            color: 0x3fb4ff,
+            transparent: true,
+            opacity: 0.22,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+          })
+        );
+        halo.scale.y = 1.3;
+        halo.position.y = HY;
+        w.add(halo);
+        // tête plus grosse : tout ce qui est au-dessus du manche est agrandi autour du centre de la tête
+        for (const c of w.children)
+          if (c.position.y > HY - 0.16 * s) {
+            c.position.y = HY + (c.position.y - HY) * 1.35;
+            c.scale.multiplyScalar(1.35);
+          }
         inHand(w, 'r', 0.05 * s, 0.35);
       } else if (kind === 'axeShield') {
         const w = new THREE.Group();

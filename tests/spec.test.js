@@ -336,4 +336,8 @@ assert.ok(
     read('src/ui/settings.js').includes('mapcard_castle'),
   'lobby : cartes peintes de l’utilisateur'
 );
+assert.ok(
+  /Masse runique du nain[\s\S]*?0\.62 \* s[\s\S]*?AdditiveBlending/.test(read('src/characters/builder.js')),
+  'masse du nain : grosse, lumineuse, plus courte'
+);
 console.log('OK - spécifications validées (docs/SPEC.md)');
