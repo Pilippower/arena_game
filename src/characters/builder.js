@@ -730,12 +730,20 @@
     } else if (kind === 'daggers') {
       // Glaives doubles (design original) : poignée au poing, une lame en croissant de chaque côté de la main
       // (devant et derrière), dents sur le bord inférieur, garde ronde ornée d'un croissant de lune.
+      // enchantement vert vif : lame entièrement lumineuse + halo additif autour de la lame
       const fel = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(0x0c8a5c).convertSRGBToLinear(),
-        emissive: new THREE.Color(0x0a7a4a).convertSRGBToLinear(),
-        emissiveIntensity: 1.3,
-        roughness: 0.25,
-        metalness: 0.1
+        color: new THREE.Color(0x1f8a12).convertSRGBToLinear(),
+        emissive: new THREE.Color(0x2fc80f).convertSRGBToLinear(),
+        emissiveIntensity: 0.9,
+        roughness: 0.3,
+        metalness: 0
+      });
+      const felHalo = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(0.18, 0.75, 0.06),
+        transparent: true,
+        opacity: 0.3,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
       });
       const grip = new THREE.MeshStandardMaterial({ color: 0x1c1a1e, roughness: 0.6, metalness: 0.5 });
       const silver = new THREE.MeshStandardMaterial({ color: 0x9aa4b2, roughness: 0.3, metalness: 0.9 });
@@ -769,10 +777,15 @@
           const m = new THREE.Mesh(blade(), fel);
           m.scale.set(s, dir * s, s);
           g.add(m);
-          const aura = glowSprite(THREE, new THREE.Color(0.25, 1, 0.65), 0.4 * s);
-          aura.position.set(0, dir * 0.38 * s, -0.08 * s);
-          aura.material.opacity = 0.5;
-          g.add(aura);
+          const halo = new THREE.Mesh(m.geometry, felHalo);
+          halo.scale.set(s * 1.25, dir * s * 1.08, s * 1.18);
+          g.add(halo);
+          for (const t of [0.22, 0.4, 0.56]) {
+            const aura = glowSprite(THREE, new THREE.Color(0.35, 1, 0.15), 0.28 * s);
+            aura.position.set(0, dir * t * s, -0.06 * s);
+            aura.material.opacity = 0.55;
+            g.add(aura);
+          }
         }
         const guard = new THREE.Mesh(new THREE.CylinderGeometry(0.07 * s, 0.07 * s, 0.025 * s, 16), grip);
         guard.rotation.z = Math.PI / 2;
@@ -786,7 +799,8 @@
         g.add(gem);
         const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.016 * s, 0.016 * s, 0.14 * s, 8), grip);
         g.add(handle);
-        g.rotation.y = Math.PI / 2; // tranchant orienté dans le sens de la frappe
+        // tranchant dans le sens de la frappe ; les repères des deux mains sont symétriques → rotation opposée
+        g.rotation.y = side === 'l' ? Math.PI / 2 : -Math.PI / 2;
         inHand(g, side, 0, 0.15);
       }
     }
