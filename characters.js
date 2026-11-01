@@ -20,26 +20,27 @@
       hair:{M:'Hair_Buzzed',F:'Hair_Buns'},hairColor:[.32,.20,.11],
       palette:{dark:[.10,.10,.12],mid:[.36,.37,.40],trim:[.74,.56,.28],cloth:[.48,.50,.54]},
       weapon:'swordShield',
-      armor:{mat:{kind:'metal',style:{base:[.64,.66,.70],trim:[.80,.60,.26],lames:3,ridge:true,rivets:true}},trim:[.80,.60,.26],
-        shells:['cuirass','belt','rerebrace','vambrace','cuisse','greave'],pauldron:{layers:3,size:.135},
+      bones:{spine_03:1.08,clavicle_l:1.1,clavicle_r:1.1,upperarm_l:1.06,upperarm_r:1.06},
+      armor:{mat:{kind:'metal',style:{base:[.64,.66,.70],trim:[.95,.72,.3],lames:3,ridge:true,rivets:true,glow:[1,.62,.18]}},trim:[.95,.72,.3],thick:1.9,
+        shells:['cuirass','belt','rerebrace','vambrace','cuisse','greave'],pauldron:{layers:4,size:.17,spikes:2,cover:1.35},
         helmet:{mat:{kind:'metal',style:{base:[.66,.68,.72],trim:[.80,.60,.26],rivets:true}}}}},
     arcanist:{ // Sorcière de bataille : robe violet profond / or, capuche, bâton à cristal arcane
       sex:'F',outfit:['Peasant_Body','Peasant_Arms','Peasant_Legs','Peasant_Feet','Ranger_Head_Hood'],
       hair:{F:'Hair_Long',M:'Hair_SimpleParted'},hairColor:[.92,.72,.38],
       palette:{dark:[.13,.05,.20],mid:[.36,.14,.55],trim:[.86,.66,.26],cloth:[.93,.89,.80]},
       robe:{color:[.30,.11,.47],trim:[.86,.66,.26],length:.86,flare:1.7},
-      staff:{crystal:[.78,.55,1.0]},eyeGlow:[.55,.30,1.0],
+      staff:{crystal:[.78,.55,1.0]},eyeGlow:[.55,.30,1.0],orbs:{color:[.7,.45,1],n:3},
       // mantelet de tissu brodé d'or, ceinture et brassards assortis
-      armor:{mat:{kind:'cloth',style:{base:[.30,.11,.46],trim:[.86,.66,.26],stitch:[.86,.66,.26],grain:.05}},trim:[.86,.66,.26],
+      armor:{mat:{kind:'cloth',style:{base:[.30,.11,.46],trim:[.86,.66,.26],stitch:[.86,.66,.26],grain:.05,glow:[.75,.45,1]}},trim:[.86,.66,.26],
         shells:['belt','vambrace'],pauldron:{layers:2,size:.105,cover:1.3}}},
     oracle:{ // Prêtresse : robe blanche et or, bâton solaire
       sex:'F',outfit:['Peasant_Body','Peasant_Arms','Peasant_Legs','Peasant_Feet'],
       hair:{F:'Hair_Buns',M:'Hair_SimpleParted'},hairColor:[.45,.27,.14],
       palette:{dark:[.40,.30,.16],mid:[.86,.82,.72],trim:[.90,.72,.30],cloth:[.97,.95,.90]},
       robe:{color:[.90,.88,.82],trim:[.88,.68,.25],length:.9,flare:1.6},
-      staff:{crystal:[1.0,.82,.40],wood:0xe8dcc0,metal:0xd9b55a},
+      staff:{crystal:[1.0,.82,.40],wood:0xe8dcc0,metal:0xd9b55a},orbs:{color:[1,.85,.4],n:3},
       // mantelet blanc à larges bordures dorées, ceinture d'or
-      armor:{mat:{kind:'cloth',style:{base:[.93,.91,.85],trim:[.88,.68,.25],stitch:[.88,.68,.25],lames:2,grain:.04}},trim:[.92,.72,.28],
+      armor:{mat:{kind:'cloth',style:{base:[.93,.91,.85],trim:[.88,.68,.25],stitch:[.88,.68,.25],lames:2,grain:.04,glow:[1,.8,.35]}},trim:[.92,.72,.28],
         shellMat:{belt:{kind:'metal',style:{base:[.88,.68,.28],lames:1,rivets:true,trim:[.95,.85,.5]}}},
         shells:['belt','vambrace'],pauldron:{layers:2,size:.11,cover:1.35}}},
     reaver:{ // Chevalier runique : plaques d'acier noirci à runes de givre, épaulières à pointes, grande lame runique
@@ -47,21 +48,21 @@
       hair:{M:'Hair_Long',F:'Hair_Long'},hairColor:[.78,.80,.82],
       palette:{dark:[.05,.06,.08],mid:[.20,.24,.30],trim:[.55,.74,.88],cloth:[.26,.30,.36]},
       weapon:'runeblade',eyeGlow:[.40,.80,1.0],
-      armor:{mat:{kind:'metal',style:{base:[.17,.19,.22],trim:[.30,.34,.40],lames:3,ridge:true,rune:[.45,.85,1]}},trim:[.34,.38,.46],
-        shells:['cuirass','belt','rerebrace','vambrace','cuisse','greave'],pauldron:{layers:3,size:.145,spikes:3}}},
+      armor:{mat:{kind:'metal',style:{base:[.17,.19,.22],trim:[.30,.34,.40],lames:3,ridge:true,rune:[.45,.85,1]}},trim:[.34,.38,.46],thick:1.6,bones:null,
+        shells:['cuirass','belt','rerebrace','vambrace','cuisse','greave'],pauldron:{layers:4,size:.165,spikes:3,cover:1.3}}},
     warden:{ // Druide : cuir et lin naturels, bois de cerf, bâton noueux à cristal vert
       sex:'M',outfit:['Ranger_Body','Ranger_Arms','Peasant_Legs','Ranger_Feet'],
       hair:{M:'Hair_Long',F:'Hair_Long'},hairColor:[.36,.22,.10],
       palette:{dark:[.16,.10,.05],mid:[.40,.27,.13],trim:[.52,.60,.24],cloth:[.66,.58,.40]},
       staff:{crystal:[.45,1.0,.35],wood:0x4a3018,metal:0x8a7a40,inHand:true},antlers:true,
-      armor:{mat:{kind:'leather',style:{base:[.32,.21,.11],trim:[.22,.34,.12],stitch:[.6,.5,.3]}},shells:['vambrace','greave'],
+      armor:{mat:{kind:'leather',style:{base:[.32,.21,.11],trim:[.22,.34,.12],stitch:[.6,.5,.3],glow:[.35,1,.3]}},shells:['vambrace','greave'],
         pauldron:{layers:2,size:.125,leaves:true,mat:{kind:'leather',style:{base:[.30,.20,.11],lames:4,grain:.16}}}}},
     shade:{ // Voleuse : armure de cuir noir et rouge, masque, capuche, deux dagues aux hanches
       sex:'F',outfit:['Ranger_Body','Ranger_Arms','Ranger_Legs','Ranger_Feet','Ranger_Head_Hood'],
       hair:{F:'Hair_Long',M:'Hair_Buzzed'},hairColor:[.10,.07,.06],
       palette:{dark:[.04,.04,.05],mid:[.14,.14,.17],trim:[.50,.12,.10],cloth:[.24,.24,.27]},
       weapon:'daggers',
-      armor:{mat:{kind:'leather',style:{base:[.075,.065,.07],trim:[.46,.07,.06],stitch:[.7,.13,.1],lames:2,grain:.08}},
+      armor:{mat:{kind:'leather',style:{base:[.075,.065,.07],trim:[.46,.07,.06],stitch:[.7,.13,.1],lames:2,grain:.08,glow:[1,.12,.08]}},
         shellMat:{belt:{kind:'leather',style:{base:[.48,.07,.06],stitch:[.15,.02,.02],grain:.1}}},
         shells:['chest','belt','vambrace','greave'],pauldron:{layers:2,size:.1},mask:[.025,.02,.025]}},
     warlock:{ // Occultiste : robe noire et verte, capuche, bâton à flamme verte
@@ -69,7 +70,7 @@
       hair:{M:'Hair_SimpleParted',F:'Hair_Long'},hairColor:[.12,.10,.10],
       palette:{dark:[.06,.04,.07],mid:[.22,.10,.24],trim:[.40,.80,.22],cloth:[.30,.26,.24]},
       robe:{color:[.12,.07,.13],trim:[.38,.78,.20],length:.9,flare:1.5},
-      staff:{crystal:[.40,1.0,.25],wood:0x1c1418,metal:0x50604a},eyeGlow:[.40,1.0,.25],
+      staff:{crystal:[.40,1.0,.25],wood:0x1c1418,metal:0x50604a},eyeGlow:[.40,1.0,.25],orbs:{color:[.4,1,.25],n:3},
       // mantelet sombre aux runes vertes et cornes d'os
       armor:{mat:{kind:'cloth',style:{base:[.09,.06,.10],trim:[.38,.78,.20],rune:[.40,1.0,.25],grain:.06}},trim:[.20,.24,.18],
         shells:['belt','vambrace'],pauldron:{layers:2,size:.115,cover:1.3,spikes:2,spikeColor:0xe6dcc0}}}
@@ -96,8 +97,9 @@
     const sex=sexFor(race,cls),hair=R.noHair||C.armor?.helmet?[]:[R.hair&&sex==='M'?R.hair:C.hair[sex]];if(R.beard)hair.push('Hair_Beard.gltf');
     return {...C,race,cls,sex,body:'Superhero_'+SEXNAME[sex]+'_FullBody.gltf',outfit:'outfit_'+cls+'_'+sex,
       hair:hair.map(h=>/\.gltf$/.test(h)?h:h+'.gltf'),hairColor:R.hairColor||C.hairColor,skin:R.skin||[1,1,1],
-      eyeGlow:R.eyeGlow||C.eyeGlow,ears:R.ears,tusks:R.tusks,skull:R.skull,bigBeard:R.bigBeard,bones:R.bones||{}};
+      eyeGlow:R.eyeGlow||C.eyeGlow,ears:R.ears,tusks:R.tusks,skull:R.skull,bigBeard:R.bigBeard,bones:mergeBones(C.bones,R.bones),orbs:C.orbs};
   }
+  function mergeBones(a,b){const o={...(a||{})};for(const k in b||{})o[k]=(o[k]||1)*b[k];return o}
   const KITS={};for(const r in RACES)for(const c in CLASSES)KITS[r+'_'+c]={race:r,cls:c};
   // Pour le build : bundles de tenue (pièces fusionnées) et fichiers simples nécessaires.
   function buildManifest(){
@@ -392,6 +394,18 @@
     }
   }
 
+  // Orbes lumineux qui gravitent autour de la taille d'un lanceur de sorts (ils suivent le personnage, pas ses os).
+  function buildOrbs(THREE,root,bones,cfg,height){
+    const s=height/1.8,g=new THREE.Group();g.name='Orbs';const c=new THREE.Color(...cfg.color),hy=bones.spine_01.getWorldPosition(new THREE.Vector3()).y;
+    const mat=new THREE.MeshStandardMaterial({color:c,emissive:c,emissiveIntensity:1.3,roughness:.2});const hc=c.clone();hc.offsetHSL(0,.2,-.1);const list=[];
+    for(let i=0;i<cfg.n;i++){const o=new THREE.Group(),core=new THREE.Mesh(new THREE.IcosahedronGeometry(.06*s,1),mat),halo=glowSprite(THREE,hc,.55*s),trail=glowSprite(THREE,hc,.28*s);
+      trail.material.opacity=.5;o.add(core,halo,trail);g.add(o);list.push({o,trail,ph:i/cfg.n*Math.PI*2})}
+    let last=-1;const update=()=>{const t=performance.now()/1000;if(t===last)return;last=t;
+      for(const L of list){const a=t*1.6+L.ph,r=.48*s,y=hy+.12*s+Math.sin(t*2.2+L.ph)*.14*s;L.o.position.set(Math.sin(a)*r,y,Math.cos(a)*r);
+        L.trail.position.set(-Math.cos(a)*.07*s,0,Math.sin(a)*.07*s);L.o.children[1].material.opacity=.75+Math.sin(t*5+L.ph)*.2}};
+    update();for(const L of list)L.o.children[1].onBeforeRender=update;root.add(g);
+  }
+
   // Couleur moyenne d'une texture (pour teinter les pièces procédurales comme la peau).
   function averageColor(THREE,tex){
     const c=new THREE.Color(.8,.6,.5);if(!tex||!tex.image)return c;
@@ -432,6 +446,11 @@
       if(st.rivets)for(let x=6;x<W;x+=16)for(const y of [5,H-5]){g.fillStyle='rgba(255,255,255,.75)';g.beginPath();g.arc(x,y,2,0,7);g.fill()}}
     if(st.stitch){g.strokeStyle=col(st.stitch);g.lineWidth=2;g.setLineDash([5,4]);for(const y of [16,H-16]){g.beginPath();g.moveTo(0,y);g.lineTo(W,y);g.stroke()}g.setLineDash([])}
     let emissiveMap=null;
+    if(st.glow&&!st.rune){const e=document.createElement('canvas');e.width=W;e.height=H;const ge=e.getContext('2d');ge.fillStyle='#000';ge.fillRect(0,0,W,H);ge.fillStyle='#fff';
+      if(st.trim){ge.fillRect(0,2,W,6);ge.fillRect(0,H-8,W,6)}
+      if(st.stitch){ge.strokeStyle='#fff';ge.lineWidth=2;ge.setLineDash([5,4]);for(const y of [16,H-16]){ge.beginPath();ge.moveTo(0,y);ge.lineTo(W,y);ge.stroke()}ge.setLineDash([])}
+      if(st.ridge){ge.fillRect(W/2-2,0,4,H)}
+      emissiveMap=new THREE.CanvasTexture(e)}
     if(st.rune){const e=document.createElement('canvas');e.width=W;e.height=H;const ge=e.getContext('2d');ge.fillStyle='#000';ge.fillRect(0,0,W,H);
       for(const ctx of [g,ge]){ctx.strokeStyle=col(st.rune);ctx.lineWidth=3;
         for(let x=14;x<W;x+=42){const y0=H*.32,y1=H*.68,ym=(y0+y1)/2;ctx.beginPath();ctx.moveTo(x,y0);ctx.lineTo(x+9,ym);ctx.lineTo(x,y1);ctx.moveTo(x+9,ym);ctx.lineTo(x+19,ym-11);ctx.stroke()}}
@@ -443,7 +462,7 @@
     const t=armorTexture(THREE,a.style),metal=a.kind==='metal';
     const m=new THREE.MeshStandardMaterial({map:t.map,metalness:metal?.82:.04,roughness:metal?.3:a.kind==='cloth'?.88:.72,side:THREE.DoubleSide});
     if(metal){m.envMap=envMap(THREE);m.envMapIntensity=1.2}
-    if(t.emissiveMap){m.emissiveMap=t.emissiveMap;m.emissive=new THREE.Color(...a.style.rune);m.emissiveIntensity=1.8}
+    if(t.emissiveMap){m.emissiveMap=t.emissiveMap;m.emissive=new THREE.Color(...(a.style.rune||a.style.glow));m.emissiveIntensity=a.style.rune?2.4:1.6}
     return m;
   }
 
@@ -690,7 +709,7 @@
 
   function buildArmor(THREE,root,body,bones,a,height,fit,L){
     const mat=armorMaterial(THREE,a.mat),trim=a.trim?new THREE.MeshStandardMaterial({color:new THREE.Color(...a.trim),metalness:.85,roughness:.3,envMap:envMap(THREE),envMapIntensity:1.2}):null;
-    for(const n of a.shells||[])for(const k of [n,n+'_l',n+'_r'])if(SHELLS[k])fitShell(THREE,bones,fit,SHELLS[k],a.shellMat&&a.shellMat[n]?armorMaterial(THREE,a.shellMat[n]):mat,'Armor_'+k);
+    for(const n of a.shells||[])for(const k of [n,n+'_l',n+'_r'])if(SHELLS[k])fitShell(THREE,bones,fit,a.thick?{...SHELLS[k],margin:SHELLS[k].margin*a.thick}:SHELLS[k],a.shellMat&&a.shellMat[n]?armorMaterial(THREE,a.shellMat[n]):mat,'Armor_'+k);
     if(a.pauldron)buildPauldrons(THREE,bones,a.pauldron,height,a.pauldron.mat?armorMaterial(THREE,a.pauldron.mat):mat,trim);
     if(a.mask)faceMask(THREE,body,L,a.mask);
     if(a.helmet)buildHelmet(THREE,bones,L,a.helmet,armorMaterial(THREE,a.helmet.mat||a.mat),trim);
@@ -769,6 +788,7 @@
     if(kit.staff)buildStaff(THREE,body,bones,kit.staff,height,fit);
     if(kit.weapon)buildWeapon(THREE,body,bones,kit.weapon,height,fit);
     headFeatures(THREE,kit,root,body,bones,skinColor||new THREE.Color(.6,.45,.35));
+    if(kit.orbs)buildOrbs(THREE,root,bones,kit.orbs,height);
     if(kit.eyeGlow){const inv=new THREE.Matrix4().copy(body.matrixWorld).invert(),col=new THREE.Color(...kit.eyeGlow);root.traverse(o=>{if(o.isMesh&&o.name==='Eyes')glowEyes(THREE,o,col,bones.Head,inv)})}
     const L=headLandmarks(THREE,root,body);
     if(kit.bigBeard)dwarfBeard(THREE,root,bones,L,hairColor);

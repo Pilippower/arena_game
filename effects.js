@@ -8,7 +8,7 @@
   // appel de dessin, anneaux au sol, bulles, éclairs de lumière. Reçoit les mêmes appels que fx() du jeu.
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t,rnd=(a=1)=>(Math.random()*2-1)*a;
   const X={ok:false};
-  const MAXP=2200;
+  const MAXP=3600,GROW=1.5,DENSE=1.5;
 
   function glowTex(THREE){
     const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d'),gr=g.createRadialGradient(32,32,0,32,32,32);
@@ -17,7 +17,7 @@
   }
   function ringTex(THREE,runes){
     const S=256,c=document.createElement('canvas');c.width=c.height=S;const g=c.getContext('2d'),C=S/2;
-    const gr=g.createRadialGradient(C,C,C*.62,C,C,C);gr.addColorStop(0,'rgba(255,255,255,0)');gr.addColorStop(.55,'rgba(255,255,255,.9)');gr.addColorStop(.7,'rgba(255,255,255,.35)');gr.addColorStop(1,'rgba(255,255,255,0)');
+    const gr=g.createRadialGradient(C,C,C*.62,C,C,C);gr.addColorStop(0,'rgba(255,255,255,0)');gr.addColorStop(.38,'rgba(255,255,255,.25)');gr.addColorStop(.6,'rgba(255,255,255,1)');gr.addColorStop(.78,'rgba(255,255,255,.5)');gr.addColorStop(1,'rgba(255,255,255,0)');
     g.fillStyle=gr;g.fillRect(0,0,S,S);
     if(runes){g.strokeStyle='rgba(255,255,255,.8)';g.lineWidth=3;g.beginPath();g.arc(C,C,C*.5,0,Math.PI*2);g.stroke();
       g.lineWidth=2;g.beginPath();for(let k=0;k<=10;k++){const a=k/10*Math.PI*2*3,r=C*.48;g.lineTo(C+Math.sin(a)*r,C+Math.cos(a)*r)}g.stroke();
@@ -40,7 +40,7 @@
       uniforms:{map:{value:glowTex(THREE)},scale:X.uScale},
       vertexShader:`attribute float size;attribute float alpha;attribute vec3 color;varying vec3 vC;varying float vA;uniform float scale;
         void main(){vC=color;vA=alpha;vec4 mv=modelViewMatrix*vec4(position,1.);gl_PointSize=size*scale/max(.1,-mv.z);gl_Position=projectionMatrix*mv;}`,
-      fragmentShader:`uniform sampler2D map;varying vec3 vC;varying float vA;void main(){vec4 t=texture2D(map,gl_PointCoord);gl_FragColor=vec4(vC*t.rgb*vA*1.6,t.a*vA);}`});
+      fragmentShader:`uniform sampler2D map;varying vec3 vC;varying float vA;void main(){vec4 t=texture2D(map,gl_PointCoord);vec3 hot=mix(vC,vec3(1.),smoothstep(.55,1.,t.r)*.6);gl_FragColor=vec4(hot*t.rgb*vA*2.4,t.a*vA);}`});
     X.points=new THREE.Points(geo,mat);X.points.frustumCulled=false;X.points.renderOrder=20;scene.add(X.points);
     X.parts=[];X.meshes=[];X.lights=[];X.casting=new Map();
     X.glow=glowTex(THREE);X.ringT=ringTex(THREE,false);X.runeT=ringTex(THREE,true);
@@ -49,10 +49,10 @@
   }
 
   // ---- primitives ----
-  function emit(o){if(X.parts.length>=MAXP)X.parts.shift();X.parts.push(Object.assign({x:0,y:0,z:0,vx:0,vy:0,vz:0,g:0,drag:0,size:.2,size1:null,life:.6,age:0,r:1,gg:1,b:1,a:1},o))}
+  function emit(o){if(X.parts.length>=MAXP)X.parts.shift();const p=Object.assign({x:0,y:0,z:0,vx:0,vy:0,vz:0,g:0,drag:0,size:.2,size1:null,life:.6,age:0,r:1,gg:1,b:1,a:1},o);p.size*=GROW;if(p.size1!=null)p.size1*=GROW;X.parts.push(p)}
   const C3=c=>({r:c[0],gg:c[1],b:c[2]});
   function burst(x,y,z,c,n,speed,size,life,{up=0,g=-2,spread=1,white=.25}={}){
-    for(let i=0;i<n;i++){const th=Math.random()*Math.PI*2,ph=Math.acos(rnd()),s=speed*(.4+Math.random()*.8);
+    n=Math.round(n*DENSE);for(let i=0;i<n;i++){const th=Math.random()*Math.PI*2,ph=Math.acos(rnd()),s=speed*(.4+Math.random()*.8);
       const w=Math.random()<white;emit({x,y,z,vx:Math.sin(ph)*Math.cos(th)*s*spread,vy:Math.cos(ph)*s+up,vz:Math.sin(ph)*Math.sin(th)*s*spread,g,drag:2.2,
         size:size*(.6+Math.random()*.8),size1:0,life:life*(.6+Math.random()*.6),...(w?{r:1,gg:1,b:1}:C3(c))})}
   }
@@ -79,7 +79,7 @@
     const c=f.color||[1,1,1],x=f.x,y=f.y,z=f.z,s=f.size||.4,L=f.life||.6,t=f.type;
     switch(t){
       case 'arcaneProjectile':case 'shadowProjectile':case 'projectile':if(f.to){orb([x,y,z],f.to,c,s,L);return true}return false;
-      case 'arcaneImpact':case 'shadowImpact':case 'burst':burst(x,y,z,c,t==='burst'?14:34,t==='burst'?2.2:4.2,t==='burst'?.22:.32,.55,{g:-1});if(t!=='burst')flash(x,y,z,c,2.6,.35);return true;
+      case 'arcaneImpact':case 'shadowImpact':case 'burst':burst(x,y,z,c,t==='burst'?14:34,t==='burst'?2.2:4.2,t==='burst'?.22:.32,.55,{g:-1});if(t!=='burst')flash(x,y,z,c,4,.45);return true;
       case 'nova':case 'frostAura':ring(x,.06,z,c,.4,s*4.2,L*1.1,{runes:true,rot:.8});burst(x,.3,z,c,60,6,.3,.7,{up:1.5,spread:1.3,g:-3});flash(x,1,z,c,3,.45);return true;
       case 'holyBurst':ring(x,.06,z,c,.3,s*3.6,L,{runes:true,rot:-.6});burst(x,.5,z,c,50,3.5,.3,1,{up:3,g:.5,white:.4});flash(x,1.2,z,c,3,.5);return true;
       case 'aura':case 'darkAura':ring(x,.06,z,c,.6,s*2.6,L,{runes:true,rot:1.4});burst(x,.4,z,c,30,1.8,.26,1.1,{up:2.5,g:.6});return true;
@@ -106,7 +106,7 @@
     for(const u of units){if(!u.alive||!u.cast)continue;const h=handPos(u);if(!h)continue;const c=u.castColor||[.7,.6,1];
       const k=clamp(1-(u.cast.end-performance.now()/1000)/u.cast.dur,0,1);
       for(let e=0;e<Math.ceil(dt*90);e++){const a=Math.random()*Math.PI*2,r=.5+Math.random()*.4;emit({x:h.x+Math.sin(a)*r,y:h.y+rnd(.4),z:h.z+Math.cos(a)*r,vx:-Math.sin(a)*r*2.2,vy:rnd(.3),vz:-Math.cos(a)*r*2.2,size:.14,size1:.02,life:.42,...C3(c)})}
-      emit({x:h.x,y:h.y,z:h.z,size:.6+k*.8,size1:.6+k*.8,life:.05,...C3(c)});emit({x:h.x,y:h.y,z:h.z,size:.18+k*.2,size1:.18+k*.2,life:.05,r:1,gg:1,b:1});
+      emit({x:h.x,y:h.y,z:h.z,size:.55+k*.75,size1:.55+k*.75,life:.05,...C3(c),a:.6});emit({x:h.x,y:h.y,z:h.z,size:.1+k*.12,size1:.1+k*.12,life:.05,r:1,gg:1,b:1,a:.7});
     }
   }
 
@@ -119,8 +119,9 @@
       if(o.kind==='ring'){const r=lerp(o.r0,o.r1,1-Math.pow(1-k,2.2));o.m.scale.set(r*2,r*2,1);o.m.rotation.z+=o.spin*dt;o.m.material.opacity=Math.pow(1-k,1.3)}
       else if(o.kind==='bubble'){o.m.material.uniforms.a.value=Math.min(1,o.life*3)*(.8+Math.sin(k*20)*.08)}
       else if(o.kind==='orb'){const q=k,px=lerp(o.from[0],o.to[0],q),py=lerp(o.from[1],o.to[1],q)+Math.sin(q*Math.PI)*.35,pz=lerp(o.from[2],o.to[2],q);
-        emit({x:px,y:py,z:pz,size:o.size*1.5,size1:o.size*1.5,life:.03,...C3(o.c)});emit({x:px,y:py,z:pz,size:o.size*.6,size1:o.size*.6,life:.03,r:1,gg:1,b:1});
-        for(let i=0;i<3;i++)emit({x:px+rnd(.06),y:py+rnd(.06),z:pz+rnd(.06),vx:rnd(.4),vy:rnd(.4),vz:rnd(.4),size:o.size*.7,size1:0,life:.35,...C3(o.c)});
+        emit({x:px,y:py,z:pz,size:o.size*2.4,size1:o.size*2.4,life:.03,...C3(o.c),a:.8});emit({x:px,y:py,z:pz,size:o.size*.9,size1:o.size*.9,life:.03,r:1,gg:1,b:1});
+        if(!o.light){o.light=X.lights.reduce((a,b)=>a.life<b.life?a:b);o.light.l.color.setRGB(o.c[0],o.c[1],o.c[2])}o.light.l.visible=true;o.light.l.position.set(px,py,pz);o.light.life=o.light.max=.12;o.light.power=2.5;
+        for(let i=0;i<6;i++)emit({x:px+rnd(.06),y:py+rnd(.06),z:pz+rnd(.06),vx:rnd(.4),vy:rnd(.4),vz:rnd(.4),size:o.size*.7,size1:0,life:.35,...C3(o.c)});
         if(o.life<=0){burst(o.to[0],o.to[1],o.to[2],o.c,30,3.8,.3,.5,{g:-1});flash(o.to[0],o.to[1],o.to[2],o.c,2.2,.3)}}
     }
     X.meshes=X.meshes.filter(o=>{if(o.life>0)return true;if(o.m){X.scene.remove(o.m);o.m.geometry.dispose();o.m.material.dispose()}return false});
