@@ -2,7 +2,8 @@
 // Lobby (design de l'utilisateur, docs/SPEC.md) : images découpées de sa maquette par tools/build_lobby_assets.js.
 // body.lobby suit la visibilité de #overlay : les barres du haut et du bas prennent alors le décor du lobby.
 function lobbyCardArt(kind, key) {
-  return `<img class="cardArt" src="assets/ui/lobby/${kind}_${key}.webp" alt="">`;
+  // carte de la panoplie de l'utilisateur (illustration + nom peint) : remplit tout le bouton
+  return `<img class="cardArt" src="assets/ui/lobby2/${kind}_${key}.webp" alt="">`;
 }
 // Vasques des torches dans wall_l / wall_r (images de 690 px de haut, calées en hauteur sur #overlay) :
 // x = centre de la vasque dans l'image, y = bord de la vasque. Les flammes figées y ont été effacées.

@@ -53,5 +53,25 @@ const TAGS = {
   // illustrations des arènes (grandes cartes, au-dessus du bandeau du titre)
   await save(crop('maps_lobby_assets.png', 56, 42, 540, 292).resize(640), 'map_castle', 84);
   await save(crop('maps_lobby_assets.png', 667, 38, 550, 300).resize(640), 'map_bridge', 84);
+  // cartes d'arène complètes (illustration + blason + nom + description peints), sans le cadre de la planche
+  await save(crop('maps_lobby_assets.png', 47, 33, 569, 471).resize(720), 'mapcard_castle', 86);
+  await save(crop('maps_lobby_assets.png', 662, 33, 559, 471).resize(720), 'mapcard_bridge', 86);
+  // cartes de race et de classe (illustration + nom peint), recadrées à l'intérieur de leur cadre doré
+  const CARDS = {
+    race_human: [717, 561, 98, 80],
+    race_dwarf: [826, 561, 99, 80],
+    race_elf: [936, 561, 99, 80],
+    race_orc: [1046, 561, 99, 80],
+    race_undead: [1156, 561, 100, 80],
+    class_sentinel: [743, 666, 114, 80],
+    class_arcanist: [870, 667, 113, 78],
+    class_oracle: [995, 666, 114, 80],
+    class_reaver: [1121, 666, 116, 80],
+    class_warden: [786, 758, 128, 76],
+    class_shade: [928, 759, 129, 75],
+    class_warlock: [1070, 759, 129, 75]
+  };
+  for (const [k, [x, y, w, h]] of Object.entries(CARDS))
+    await save(crop('lobby_assets.png', x + 4, y + 4, w - 8, h - 8).resize(2 * (w - 8)), k, 88);
   console.log('Lobby 2 : ' + fs.readdirSync(OUT).join(' '));
 })();

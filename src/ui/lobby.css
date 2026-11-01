@@ -213,7 +213,7 @@ body.lobby:not(.mobile-mode) .pickerLayout {
   --hc: 66px;
 }
 body.lobby:not(.mobile-mode) .pickLeft {
-  --hc: clamp(58px, 8.6vh, 124px);
+  --hc: clamp(52px, 7.6vh, 108px);
   display: grid;
   grid-template-rows: auto minmax(96px, 1fr) auto var(--hc) auto calc(2 * var(--hc) + 8px);
   gap: 5px;
@@ -634,4 +634,48 @@ body.lobby:not(.mobile-mode) .pickRight {
 #overlay #playBtn:disabled {
   opacity: 1;
   filter: grayscale(1) brightness(0.55);
+}
+/* cartes de race et de classe : la carte de l'utilisateur (nom peint) remplit tout le bouton */
+#overlay .iconChoice .cardArt {
+  height: 100% !important;
+}
+#overlay .racePick .label,
+#overlay .classPick .label {
+  display: none;
+}
+#overlay .iconChoice .cardArt {
+  object-position: 50% 100%; /* le nom peint en bas n'est jamais rogné */
+}
+/* arènes : carte peinte de l'utilisateur (bandeau, blason, nom, description), cadrée sur le bandeau ; cadre doré
+   et losange en haut ; carte choisie lumineuse avec un second losange en bas */
+#overlay .mapCard.painted img {
+  object-position: 50% 100%;
+}
+#overlay .mapCard.painted .mapLabel {
+  display: none;
+}
+#overlay .mapCard::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: -6px;
+  width: 11px;
+  height: 11px;
+  transform: translateX(-50%) rotate(45deg);
+  background: linear-gradient(135deg, #fff3c2, #c98a2a);
+  box-shadow: 0 0 0 1.5px #3a2708;
+}
+#overlay .mapCard {
+  overflow: visible !important;
+}
+/* le zoom au survol reste dans le cadre doré : l'image est rognée par son conteneur */
+.mapCard .mapArt {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 6px;
+}
+#overlay .mapCard.selected::after {
+  bottom: -6px;
 }

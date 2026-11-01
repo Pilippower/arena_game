@@ -297,14 +297,15 @@ function updateSelectPreview(selectedRace, selectedClass) {
   updateSelectPreview3D(rk, ck);
 }
 // Cartes : illustration de l'utilisateur (assets/ui/lobby2/), sinon la capture du jeu (assets/ui/map_thumbs.js).
-const MAP_ART = { castle: 'assets/ui/lobby2/map_castle.webp', bridge: 'assets/ui/lobby2/map_bridge.webp' };
+// cartes complètes (nom et description peints, bandeau à blason) : le texte du jeu est alors masqué (.painted)
+const MAP_ART = { castle: 'assets/ui/lobby2/mapcard_castle.webp', bridge: 'assets/ui/lobby2/mapcard_bridge.webp' };
 function renderMapChoices() {
   const box = $('mapChoices');
   if (!box) return;
   box.innerHTML = Object.entries(MAPS)
     .map(
       ([id, M]) =>
-        `<button class="mapCard${id === MAP_ID ? ' selected' : ''}" data-map="${id}"><img src="${MAP_ART[id] || window.MAP_THUMBS?.[id] || ''}" alt=""><div class="mapLabel"><b>${M.name}</b><span>${M.desc}</span></div></button>`
+        `<button class="mapCard${id === MAP_ID ? ' selected' : ''}${MAP_ART[id] ? ' painted' : ''}" data-map="${id}" aria-label="${M.name}"><span class="mapArt"><img src="${MAP_ART[id] || window.MAP_THUMBS?.[id] || ''}" alt=""></span><div class="mapLabel"><b>${M.name}</b><span>${M.desc}</span></div></button>`
     )
     .join('');
   box.querySelectorAll('[data-map]').forEach(

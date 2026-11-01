@@ -311,7 +311,7 @@ assert.match(
 }
 assert.match(
   read('src/ui/lobby.css'),
-  /#overlay \.mapCard \{\s*overflow: hidden;/,
+  /\.mapCard \.mapArt \{[^}]*overflow: hidden;/,
   'zoom des arènes dans le cadre doré'
 );
 for (const f of ['frame', 'title', 'btn_leave', 'btn_stay'])
@@ -330,5 +330,10 @@ assert.ok(
     read('src/render/heroes3d.js').includes(k)
   ),
   'druide : panthère d’ombre et ours de givre'
+);
+assert.ok(
+  read('src/ui/lobby.js').includes('assets/ui/lobby2/${kind}_${key}.webp') &&
+    read('src/ui/settings.js').includes('mapcard_castle'),
+  'lobby : cartes peintes de l’utilisateur'
 );
 console.log('OK - spécifications validées (docs/SPEC.md)');
