@@ -29,6 +29,8 @@ function endRound(win) {
   if (win) state.scoreA++;
   else state.scoreB++;
   showSplash(win ? 'Round won!' : 'Round lost');
+  if (win) SFX.victory(false);
+  else SFX.defeat();
   setTimeout(() => {
     if (state.round >= MATCH_ROUNDS) showResults();
     else resetRound();
@@ -52,6 +54,7 @@ function showResults() {
   $('resultsTeams').innerHTML =
     `<h3 class="ally">Your team</h3>${table(0)}<h3 class="enemy">Enemy team</h3>${table(1)}`;
   $('results').style.display = 'flex';
+  if (win) setTimeout(() => SFX.victory(true), 300);
 }
 function hideResults() {
   $('results').style.display = 'none';

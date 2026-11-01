@@ -47,6 +47,17 @@ function sfxMetal(vol, pan, delay = 0, base = 420) {
   );
 }
 const SFX = {
+  // Jingle de victoire original, bref (~1,4 s) : arpège majeur montant + accord tenu, volume modéré.
+  victory(big = false) {
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((f, i) => sfxTone(f, 0.22, 'triangle', 0.07, null, i * 0.09, 0, 0, 0.3));
+    [523.25, 659.25, 783.99, big ? 1318.5 : 1046.5].forEach(f =>
+      sfxTone(f, big ? 1.1 : 0.8, 'sine', 0.045, null, 0.38, 0, 0, 0.45)
+    );
+  },
+  defeat() {
+    [392, 349.23, 311.13].forEach((f, i) => sfxTone(f, 0.35, 'triangle', 0.05, f * 0.97, i * 0.16, 0, 1800, 0.35));
+  },
   swing(u, heavy) {
     const a = sfxSpatial(u);
     sfxSweep(heavy ? 0.2 : 0.15, (heavy ? 0.16 : 0.12) * a.level, 600, 3200, 0, a.pan, 'bandpass', 1.5);
