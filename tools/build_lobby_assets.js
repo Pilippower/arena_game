@@ -43,8 +43,13 @@ const CLASSES = {
 
 (async () => {
   // murs de bois et torches de chaque côté, bois des barres du haut et du bas, panneau intérieur
-  await save(crop(0, 55, 330, 690), 'wall_l');
-  await save(crop(1478, 55, 328, 690), 'wall_r');
+  // flammes figées des torches effacées : le jeu dessine un vrai feu animé (src/ui/lobby.js, TORCHES)
+  const wl = await rawOf(crop(0, 55, 330, 690));
+  patch(wl, 84, 258, 192, 380);
+  await save(fromRaw(wl).blur(0.6), 'wall_l');
+  const wr = await rawOf(crop(1478, 55, 328, 690));
+  patch(wr, 138, 258, 246, 380);
+  await save(fromRaw(wr).blur(0.6), 'wall_r');
   await save(crop(372, 0, 250, 54), 'wood_top');
   await save(crop(250, 752, 370, 112), 'wood_bottom');
   await save(crop(1070, 210, 350, 90), 'panel');
@@ -78,38 +83,6 @@ const CLASSES = {
   const crestRGB = await crop(620, 0, 566, 118).removeAlpha().toBuffer();
   const alpha = await sharp(mask).resize(566, 118).extractChannel('alpha').toBuffer();
   await save(sharp(crestRGB).joinChannel(alpha), 'crest', 88);
-  // cadre doré : 9 tranches (coin haut-gauche + bords), symétrisées pour les autres côtés
-  const S = 48,
-    E = 40;
-  const corner = await crop(328, 78, S, S).png().toBuffer();
-  const top = await crop(1000, 78, E, S).png().toBuffer();
-  const left = await crop(328, 300, S, E).png().toBuffer();
-  const pngOf = img => img.png().toBuffer();
-  const N = S * 2 + E;
-  await save(
-    sharp({ create: { width: N, height: N, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).composite([
-      { input: corner, left: 0, top: 0 },
-      { input: await pngOf(sharp(corner).flop()), left: S + E, top: 0 },
-      { input: await pngOf(sharp(corner).flip()), left: 0, top: S + E },
-      { input: await pngOf(sharp(corner).flip().flop()), left: S + E, top: S + E },
-      { input: top, left: S, top: 0 },
-      { input: await pngOf(sharp(top).flip()), left: S, top: S + E },
-      { input: left, left: 0, top: S },
-      { input: await pngOf(sharp(left).flop()), left: S + E, top: S }
-    ]),
-    'frame',
-    92
-  );
-  // ruban de titre de section : embout gauche (gemme), milieu sans texte, embout droit
-  await save(
-    sharp({ create: { width: 82, height: 32, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).composite([
-      { input: await crop(392, 208, 28, 32).png().toBuffer(), left: 0, top: 0 },
-      { input: await crop(486, 208, 24, 32).png().toBuffer(), left: 28, top: 0 },
-      { input: await crop(512, 208, 30, 32).png().toBuffer(), left: 52, top: 0 }
-    ]),
-    'ribbon',
-    92
-  );
   // plaque du chrono, texte effacé
   const pl = await rawOf(crop(625, 742, 430, 128));
   patch(pl, 770 - 625, 762 - 742, 930 - 625, 850 - 742);

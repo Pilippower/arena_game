@@ -39,6 +39,7 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Le joueur ne choisit pas la musique : lobby = `assets/audio/lobby.mp3`, jeu = `assets/audio/game.mp3`.
 - Icônes de sorts : l'illustration remplit tout le carré, le nom en bas par-dessus ; GCD et recharges affichés par un balayage circulaire ; retour visuel à l'appui.
 - Lobby : design de l'utilisateur (`interface_target.png`) — murs de bois et torches, blason en haut, cadre doré, titres en ruban, cartes de race/classe illustrées, prévisualisation devant les voûtes du donjon sur un socle de pierre, plaque du chrono. Bande du bas plus fine sur PC. Tout tient dans la page en 1366×768 (vérifié par `full.test.js`) ; si la fenêtre est trop petite, défilement **dans le cadre** avec une barre au style de l'UI. Le même design sera appliqué en jeu ensuite.
+- Lobby (suite) : les deux torches ont un **vrai feu animé** (pas d'image figée) ; le cadre doré et les rubans sont continus (aucun raccord aux angles, pas de ligne sous les titres) ; pas de petites phrases (« same model as in the arena », « Choose a race and a class ») ; toutes les cartes de race et de classe ont **la même taille** (classes centrées 4 + 3). 🧪
 
 ## Cartes — `src/data/maps.js`, `src/render/environment.js`, `src/render/map_*.js`
 - « The Castle » : ne pas modifier sans demande. Le décor suit toujours la carte de gameplay (test dans `smoke.test.js`).

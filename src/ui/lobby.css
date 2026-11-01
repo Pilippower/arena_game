@@ -2,7 +2,12 @@
    Images : assets/ui/lobby/ (découpées de la maquette par tools/build_lobby_assets.js).
    body.lobby est posé par src/ui/lobby.js tant que #overlay est visible. Chargé après theme.css. */
 :root {
-  --lobby-frame: clamp(26px, 2.7vw, 48px);
+  --lobby-frame: clamp(12px, 1.2vw, 20px);
+  /* cadre doré continu (dégradé métallique + filets), coins arrondis sans raccord */
+  --lobby-gold-metal: linear-gradient(180deg, #d6a64e, #9a6a26 45%, #7a5018 55%, #b07f34);
+  --lobby-frame-rings:
+    inset 0 0 0 2px #2a1806, inset 0 0 0 3px #f3d688, inset 0 0 0 5px #5a3a12, inset 0 0 16px #000c, 0 0 0 2px #f6dc92,
+    0 0 0 4px #9c6c26, 0 0 0 5px #f0cf7a88, 0 0 0 7px #2a1806;
   --lobby-gold: #ffd56a;
 }
 /* ---------- barres du haut et du bas : bois sombre, blason, plaque du chrono ---------- */
@@ -78,13 +83,14 @@ body.lobby #overlay {
 /* ---------- cadre doré du panneau ---------- */
 #overlay .modal {
   border: var(--lobby-frame) solid transparent !important;
-  border-image: url(../../assets/ui/lobby/frame.webp) 48 / var(--lobby-frame) stretch !important;
-  border-radius: 0 !important;
+  border-radius: calc(var(--lobby-frame) * 0.9) !important;
   background:
-    url(../../assets/ui/lobby/panel.webp) center / cover,
-    #121c2e !important;
-  background-clip: padding-box !important;
-  box-shadow: 0 18px 50px #000d !important;
+    url(../../assets/ui/lobby/panel.webp) center / cover padding-box,
+    linear-gradient(#121c2e, #121c2e) padding-box,
+    var(--lobby-gold-metal) border-box !important;
+  box-shadow:
+    var(--lobby-frame-rings),
+    0 18px 50px #000d !important;
 }
 #overlay .modal:before {
   display: none;
@@ -148,22 +154,52 @@ body.lobby:not(.mobile-mode) #overlay .modal {
   padding: 4px 16px;
   font-size: 12px;
 }
-/* ---------- titres de section en ruban ---------- */
-#overlay .selectorTitle {
+/* ---------- titres de section en ruban (plaque de bois cerclée d'or, gemme à gauche) ---------- */
+#overlay .selectorTitle,
+#overlay .pvHead > span:first-child {
+  position: relative;
+  isolation: isolate;
   justify-self: start;
   align-self: start;
   display: inline-block;
   height: 24px;
   line-height: 24px;
-  margin: 2px 0 0 -8px;
-  padding: 0 6px;
-  border-style: solid;
-  border-width: 0 26px 0 24px;
-  border-image: url(../../assets/ui/lobby/ribbon.webp) 0 30 0 28 fill / 0 26px 0 24px stretch;
+  margin: 2px 0 0 -6px;
+  padding: 0 22px 0 30px;
+  border: 0 !important;
+  background: linear-gradient(180deg, #ffe9a0, #c99236 45%, #7a5018 100%);
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%);
   font-size: 13px;
   font-weight: 800;
   color: #ffe7a0 !important;
   text-shadow: 0 1px 2px #000;
+}
+#overlay .selectorTitle::before,
+#overlay .pvHead > span:first-child::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  z-index: -1;
+  background: linear-gradient(180deg, #7a4623, #4e2a12 55%, #643719);
+  clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 50%, calc(100% - 9px) 100%, 9px 100%, 0 50%);
+}
+#overlay .selectorTitle::after,
+#overlay .pvHead > span:first-child::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff 0 10%, #8c95a8 28%, #1a1d26 72%);
+  box-shadow: 0 0 0 1.5px #e9bd5c;
+}
+/* petites phrases retirées (demande de l'utilisateur) ; #selectedClass reste lu par les tests */
+#overlay #selectedClass,
+#overlay .pvHead .tiny {
+  display: none;
 }
 /* ---------- grille : sélection à gauche, départ + prévisualisation à droite ---------- */
 body.lobby:not(.mobile-mode) .pickerLayout {
@@ -173,9 +209,15 @@ body.lobby:not(.mobile-mode) .pickerLayout {
   gap: 14px;
   align-items: stretch;
 }
+/* --hc : hauteur d'une rangée de cartes ; toutes les cartes de race et de classe ont la même taille */
+.pickLeft {
+  container-type: inline-size;
+  --hc: 66px;
+}
 body.lobby:not(.mobile-mode) .pickLeft {
+  --hc: clamp(64px, 10.5vh, 124px);
   display: grid;
-  grid-template-rows: auto minmax(70px, 1.15fr) auto minmax(62px, 0.95fr) auto minmax(110px, 2fr);
+  grid-template-rows: auto minmax(64px, 1fr) auto var(--hc) auto calc(2 * var(--hc) + 8px);
   gap: 5px;
   min-height: 0;
 }
@@ -226,25 +268,27 @@ body.lobby:not(.mobile-mode) .pickLeft > div:not(.selectorTitle) {
 #overlay .mapCard .mapLabel span {
   font-size: 11px;
 }
-#overlay .races {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+#overlay .races,
+#overlay .classes {
+  --cw: min(calc(var(--hc) * 1.45), calc((100cqw - 40px) / 5));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  gap: 8px 10px;
 }
 #overlay .classes {
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: 1fr 1fr;
-  gap: 8px;
-}
-#overlay .classPick {
-  grid-column: span 3;
-}
-#overlay .classPick:nth-child(n + 5) {
-  grid-column: span 4;
+  max-width: calc(4 * var(--cw) + 31px);
+  margin: 0 auto;
 }
 #overlay .racePick,
 #overlay .classPick {
   position: relative;
   display: block;
+  flex: none;
+  width: var(--cw);
+  height: auto !important;
+  aspect-ratio: 1.45;
   min-height: 0;
   padding: 0;
   overflow: hidden;
@@ -265,7 +309,7 @@ body.lobby:not(.mobile-mode) .pickLeft > div:not(.selectorTitle) {
     transform 0.2s,
     filter 0.2s;
 }
-#overlay .racePick .cardArt {
+#overlay .iconChoice .cardArt {
   height: calc(100% - 22px);
 }
 #overlay .racePick .label,
@@ -274,25 +318,18 @@ body.lobby:not(.mobile-mode) .pickLeft > div:not(.selectorTitle) {
   left: 0;
   right: 0;
   bottom: 0;
-  margin: 0;
-  font-family: 'Cinzel', Georgia, serif;
-  font-weight: 800;
-  color: #fff6e0 !important;
-  text-shadow:
-    0 2px 3px #000,
-    0 0 6px #000;
-  white-space: nowrap;
-}
-#overlay .racePick .label {
   height: 22px;
   line-height: 22px;
-  font-size: clamp(11px, 0.95vw, 15px);
+  margin: 0;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: clamp(10px, 0.9vw, 15px);
+  font-weight: 800;
+  color: #fff6e0 !important;
+  text-shadow: 0 1px 2px #000;
+  white-space: nowrap;
+  overflow: hidden;
   background: linear-gradient(180deg, #1a1d26, #0b0d13);
-}
-#overlay .classPick .label {
-  padding: 10px 0 3px;
-  font-size: clamp(12px, 1.1vw, 18px);
-  background: linear-gradient(180deg, transparent, #000b 55%);
+  border-top: 1px solid #8a6a3a;
 }
 #overlay .iconChoice:hover .cardArt,
 #overlay .mapCard:hover img {
@@ -312,13 +349,15 @@ body.lobby:not(.mobile-mode) .pickLeft > div:not(.selectorTitle) {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 4px;
-  border: 14px solid transparent !important;
-  border-image: url(../../assets/ui/lobby/frame.webp) 48 / 14px stretch !important;
-  border-radius: 0 !important;
-  background: #0d1424 !important;
-  background-clip: padding-box !important;
-  box-shadow: 0 8px 22px #000b !important;
+  padding: 6px;
+  border: 10px solid transparent !important;
+  border-radius: 10px !important;
+  background:
+    linear-gradient(#0d1424, #0d1424) padding-box,
+    var(--lobby-gold-metal) border-box !important;
+  box-shadow:
+    var(--lobby-frame-rings),
+    0 8px 22px #000b !important;
 }
 #overlay .pvHead {
   margin-bottom: 4px;
@@ -331,17 +370,7 @@ body.lobby:not(.mobile-mode) .pickLeft > div:not(.selectorTitle) {
   text-overflow: ellipsis;
 }
 #overlay .pvHead > span:first-child {
-  display: inline-block;
-  height: 26px;
-  line-height: 26px;
-  padding: 0 8px;
-  border-style: solid;
-  border-width: 0 24px 0 4px;
-  border-image: url(../../assets/ui/lobby/ribbon.webp) 0 30 0 28 fill / 0 24px 0 4px stretch;
-  font-size: 17px;
-  font-weight: 800;
-  color: var(--lobby-gold) !important;
-  text-shadow: 0 1px 2px #000;
+  font-size: 15px;
 }
 #overlay .pvArt {
   flex: 1;
@@ -371,25 +400,28 @@ body.mobile-mode #overlay .selectorTitle {
 body.mobile-mode #overlay .mapCard {
   height: 70px;
 }
-body.mobile-mode #overlay .racePick {
-  height: 58px;
+body.mobile-mode #overlay .iconChoice .cardArt {
+  height: calc(100% - 16px);
 }
-body.mobile-mode #overlay .classPick {
-  height: 50px;
-}
-body.mobile-mode #overlay .racePick .label {
+body.mobile-mode #overlay .racePick .label,
+body.mobile-mode #overlay .classPick .label {
   height: 16px;
   line-height: 16px;
   font-size: 9px;
 }
-body.mobile-mode #overlay .racePick .cardArt {
-  height: calc(100% - 16px);
-}
-body.mobile-mode #overlay .classPick .label {
-  font-size: 10px;
-  padding-top: 6px;
-}
 body.mobile-mode .pickRight .pvArt {
   height: 240px;
   flex: none;
+}
+/* feu animé des torches (src/ui/lobby.js) : sous le cadre, au-dessus des murs */
+.torchFire {
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+#overlay .modal {
+  z-index: 1;
+}
+body.mobile-mode .torchFire {
+  display: none;
 }

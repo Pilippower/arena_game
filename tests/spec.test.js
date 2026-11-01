@@ -30,16 +30,29 @@ assert.match(read('src/game/combat.js'), /u\.stealth \? 0\.7 : 1/, 'camouflé -3
 assert.equal(C.sentinel.armor, 'plate');
 assert.equal(C.shade.armor, 'leather');
 assert.equal(C.arcanist.armor, 'cloth');
-assert.ok(ctx.ARMOR.plate.physical > ctx.ARMOR.leather.physical && ctx.ARMOR.leather.physical > ctx.ARMOR.cloth.physical);
+assert.ok(
+  ctx.ARMOR.plate.physical > ctx.ARMOR.leather.physical && ctx.ARMOR.leather.physical > ctx.ARMOR.cloth.physical
+);
 // Voleur : 2× plus rapide, même DPS que le guerrier (rapport dégâts / intervalle)
 const sw = read('src/game/rules.js').match(/const SWING = \{[^}]*\}/)[0];
 const SW = vm.runInNewContext('(' + sw.replace('const SWING = ', '') + ')');
-assert.ok(Math.abs(SW.shade[1] / SW.shade[0] - SW.sentinel[1] / SW.sentinel[0]) < 1.5, 'voleur : même DPS que le guerrier');
+assert.ok(
+  Math.abs(SW.shade[1] / SW.shade[0] - SW.sentinel[1] / SW.sentinel[0]) < 1.5,
+  'voleur : même DPS que le guerrier'
+);
 assert.ok(SW.shade[0] <= SW.sentinel[0] / 2 + 0.01, 'voleur : frappe 2× plus vite');
 // Contrôles : glisser au clic gauche = caméra seule (la trajectoire ne suit pas la caméra)
 const ctl = read('src/input/controls.js');
-assert.match(ctl, /if \(looking && state\?\.player\?\.alive\) state\.player\.yaw = camera\.yaw/, 'seul le clic droit oriente le personnage');
-assert.match(read('src/game/ai.js'), /orbiting/, 'déplacement : base de trajectoire figée pendant le glisser au clic gauche');
+assert.match(
+  ctl,
+  /if \(looking && state\?\.player\?\.alive\) state\.player\.yaw = camera\.yaw/,
+  'seul le clic droit oriente le personnage'
+);
+assert.match(
+  read('src/game/ai.js'),
+  /orbiting/,
+  'déplacement : base de trajectoire figée pendant le glisser au clic gauche'
+);
 // Mobile : déviation franche du joystick = vitesse pleine
 assert.match(read('src/game/ai.js'), /mobileStickBoost/, 'joystick mobile : vitesse pleine');
 // The Bridge : tablier praticable, 2 rampes à chaque extrémité qui descendent jusqu'au sable
@@ -55,4 +68,17 @@ for (const sx of [-1, 1])
   }
 assert.equal(ctx.groundAt({ x: 0, z: 0, y: 0 }), 0, 'sous le pont : on reste au sol');
 assert.ok(ctx.blockedBySurface({ x: B.rampX, z: B.halfW + 1, y: 0 }), 'on ne traverse pas une rampe par le côté');
+// Lobby : feu animé des torches, petites phrases masquées, cartes de race et de classe de même taille
+const lobbyCss = read('src/ui/lobby.css').replace(/\s+/g, ' ');
+assert.match(read('src/ui/lobby.js'), /TORCHES[\s\S]*requestAnimationFrame/, 'torches du lobby animées');
+assert.ok(
+  lobbyCss.includes('#overlay #selectedClass, #overlay .pvHead .tiny { display: none;'),
+  'petites phrases du lobby masquées'
+);
+assert.match(
+  lobbyCss,
+  /#overlay \.classPick \{[^}]*width: var\(--cw\);[^}]*aspect-ratio: 1\.45;/,
+  'cartes race/classe : même taille'
+);
+assert.ok(!lobbyCss.includes('border-image: url'), "cadre et rubans du lobby continus (pas de tranches d'image)");
 console.log('OK - spécifications validées (docs/SPEC.md)');
