@@ -346,3 +346,7 @@ body.mobile-mode .skill .icon {
   width: auto !important;
   height: auto !important;
 }
+/* pas de nom sous les sorts (l'infobulle au survol le donne) */
+.skill .skillName {
+  display: none !important;
+}

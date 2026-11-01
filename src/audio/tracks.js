@@ -97,3 +97,24 @@ function refreshTrackVolumes() {
   const g = TRACKS.local;
   if (TRACKS.want === 'game' && g && !g.paused) g.volume = trackVolume('game');
 }
+// Clic de souris des options d'interface (lobby, réglages, résultats, boutons du haut) : assets/audio/click.mp3.
+// Pas sur la barre de sorts ni sur les commandes mobiles (gameplay). Plusieurs lecteurs : clics rapprochés.
+const UI_CLICK = { pool: [], i: 0 };
+function uiClickSound() {
+  if (!UI_CLICK.pool.length)
+    for (let k = 0; k < 4; k++) UI_CLICK.pool.push(new Audio('assets/audio/click.mp3?v=' + (window.ASSET_V || 1)));
+  const a = UI_CLICK.pool[UI_CLICK.i++ % UI_CLICK.pool.length];
+  a.volume = clamp(0.5 * PREFS.volume, 0, 1);
+  a.currentTime = 0;
+  a.play().catch(() => {});
+}
+document.addEventListener(
+  'pointerdown',
+  e => {
+    if (e.button !== 0) return;
+    const el = e.target.closest?.('button, .iconChoice, .mapCard, [data-sort], input[type=range]');
+    if (!el || el.disabled || el.closest('#skills, #mobileControls')) return;
+    uiClickSound();
+  },
+  true
+);

@@ -276,4 +276,15 @@ assert.match(
   assert.match(read('src/ui/results.js'), /requestAnimationFrame/, 'résultats : rien de figé');
   assert.match(read('src/ui/results.css'), /cqh/, 'résultats : tient dans la hauteur');
 }
+assert.ok(!read('index.html').includes('class="features"'), 'lobby : pas de bulles');
+assert.match(
+  read('src/ui/theme.css'),
+  /\.skill \.skillName \{\s*display: none !important;/,
+  'pas de nom sous les sorts'
+);
+assert.ok(
+  require('node:fs').existsSync(require('node:path').join(__dirname, '..', 'assets/audio/click.mp3')) &&
+    read('src/audio/tracks.js').includes("el.closest('#skills, #mobileControls')"),
+  'clic de souris sur l’interface, pas sur les sorts'
+);
 console.log('OK - spécifications validées (docs/SPEC.md)');
