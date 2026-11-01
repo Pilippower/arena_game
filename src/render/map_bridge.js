@@ -4,7 +4,7 @@
 // Les obstacles de jeu (cercles) sont dans MAPS.bridge (src/data/maps.js) ; ce fichier ne fait que les habiller.
 (function () {
   if (!window.ArenaEnv?.registerMap) return;
-  const { rng, noise, noise2, canvas, tex, glowTexture, flameTexture, clamp } = ArenaEnv.helpers;
+  const { rng, noise, noise2, canvas, tex, glowTexture, flameTexture, clamp, stoneCanvas } = ArenaEnv.helpers;
 
   function sandCanvas(size = 512) {
     const c = canvas(size),
@@ -134,8 +134,10 @@
       new THREE.MeshStandardMaterial({ map: sandT, roughness: 1 })
     );
     const sp = sand.geometry.attributes.position;
-    for (let i = 0; i < sp.count; i++)
-      sp.setZ(i, (noise2(sp.getX(i) * 0.08 + 9, sp.getY(i) * 0.08, 256, 3) - 0.5) * 0.35);
+    for (let i = 0; i < sp.count; i++) {
+      const out = Math.max(Math.abs(sp.getX(i)) - hx, Math.abs(sp.getY(i)) - hz, 0);
+      sp.setZ(i, out > 0 ? noise2(sp.getX(i) * 0.08 + 9, sp.getY(i) * 0.08, 256, 3) * 0.5 * Math.min(1, out / 3) : 0);
+    }
     sand.geometry.computeVertexNormals();
     sand.rotation.x = -Math.PI / 2;
     sand.receiveShadow = true;
@@ -143,10 +145,23 @@
 
     const woodT = tex(THREE, woodCanvas()),
       darkWoodT = tex(THREE, woodCanvas(256, 512, [70, 44, 28])),
-      rockT = tex(THREE, rockCanvas());
+      rockT = tex(
+        THREE,
+        stoneCanvas({
+          size: 512,
+          rows: 4,
+          minW: 0.22,
+          maxW: 0.42,
+          base: [0.62, 0.48, 0.38],
+          vary: 0.18,
+          grout: [0.18, 0.12, 0.1],
+          seed: 7,
+          warp: 4
+        })
+      );
     const wood = new THREE.MeshStandardMaterial({ map: woodT, roughness: 0.85 }),
       darkWood = new THREE.MeshStandardMaterial({ map: darkWoodT, roughness: 0.9 }),
-      rock = new THREE.MeshStandardMaterial({ map: rockT, roughness: 0.95, flatShading: true }),
+      rock = new THREE.MeshStandardMaterial({ map: rockT, roughness: 0.95 }),
       iron = new THREE.MeshStandardMaterial({ color: 0x2b2b30, roughness: 0.45, metalness: 0.8 }),
       bone = new THREE.MeshStandardMaterial({ color: 0xe8dcc0, roughness: 0.6 });
     const add = (geo, mat, x, y, z, cast = true) => {
@@ -325,8 +340,18 @@
       for (let t = -len2 / 2 + 3; t < len2 / 2 - 2; t += 6) {
         const sx = vert ? x + inward * 0.9 : x + t,
           sz = vert ? z + t : z + inward * 0.9,
-          s = add(new THREE.ConeGeometry(0.5, 3.2, 8), bone, sx, wallH + 0.6, sz);
-        s.rotation.set(vert ? 0 : -inward * 0.9, 0, vert ? inward * 0.9 : 0);
+          tusk = new THREE.ConeGeometry(0.42, 3, 10, 1, true);
+        tusk.translate(0, 1.5, 0); // base à l'origine, pointe vers +y
+        const s = add(tusk, bone, sx - (vert ? inward * 0.6 : 0), wallH + 0.9, sz - (vert ? 0 : inward * 0.6));
+        s.rotation.set(vert ? 0 : inward * 1.0, 0, vert ? -inward * 1.0 : 0);
+        const collar = add(
+          new THREE.CylinderGeometry(0.5, 0.5, 0.45, 12),
+          iron,
+          s.position.x,
+          s.position.y,
+          s.position.z
+        );
+        collar.rotation.copy(s.rotation);
       }
       // porte grillagée au milieu des grands côtés
       if (!vert) {
@@ -416,7 +441,7 @@
       new THREE.MeshStandardMaterial({ color: 0x8a4e38, roughness: 1 })
     );
     ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.05;
+    ground.position.y = -0.4; // sous le sable : plus de scintillement (z-fighting)
     S.add(ground);
     const spireMat = new THREE.MeshStandardMaterial({ color: 0x6e4a46, roughness: 1, flatShading: true });
     for (let k = 0; k < (mobile ? 30 : 60); k++) {
