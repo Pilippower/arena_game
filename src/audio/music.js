@@ -513,5 +513,5 @@ function musicToggle() {
 }
 function updateMusicButton() {
   const b = $('musicBtn');
-  if (b) b.textContent = PREFS.musicOn ? '♫ Music: ON' : '♫ Music: OFF';
+  if (b) b.innerHTML = `<i class="ico music"></i>Music: ${PREFS.musicOn ? 'ON' : 'OFF'}`;
 }

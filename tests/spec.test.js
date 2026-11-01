@@ -176,4 +176,28 @@ run('src/ui/hud.js');
   assert.ok(html.includes('spells/cloak.webp') && html.includes('2.2'), 'Cloak : icône + temps restant');
   assert.match(read('src/ui/hud.js'), /drText\(u\)}<\/div><\/div>\$\{buffsHTML\(u\)}/, 'buffs des cadres d’équipe');
 }
+// Interface en jeu PC : panoplie de l'utilisateur (assets/ui/hud), mobile et lobby inchangés
+{
+  const fs = require('node:fs'),
+    css = read('src/ui/hud.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.ok(read('index.html').includes('src/ui/hud.css'), 'interface PC chargée');
+  for (const f of [
+    'frame_self',
+    'frame_target',
+    'frame_party',
+    'frame_enemy',
+    'slot',
+    'plaque',
+    'top_bar',
+    'bottom_bar'
+  ])
+    assert.ok(fs.existsSync(require('node:path').join(__dirname, '..', 'assets/ui/hud', f + '.webp')), 'HUD : ' + f);
+  assert.ok(!css.replace(/:not\(\.mobile-mode\)/g, '').includes('.mobile-mode'), 'HUD PC : rien pour le mobile');
+  assert.ok(css.includes('.unitInfo:has(.castBar) .nm'), 'incantation adverse à la place du nom');
+  assert.match(
+    read('src/ui/hud.js'),
+    /function frameHTML[^`]*`\$\{portraitHTML\(u\)\}\$\{badgeHTML\(u\)\}/,
+    'portrait + emblème'
+  );
+}
 console.log('OK - spécifications validées (docs/SPEC.md)');

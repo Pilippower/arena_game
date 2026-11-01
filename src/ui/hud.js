@@ -58,7 +58,7 @@ function unitRowHTML(u, enemy) {
     C = CLASS[u.cls],
     hp = (100 * u.hp) / u.maxHp,
     col = enemy ? '#e65360' : hp > 50 ? '#3fcf6a' : hp > 25 ? '#e6c13f' : '#e65360';
-  return `<div class="unitRow${u === p.target ? ' sel' : ''}${u.alive ? '' : ' dead'}" data-uid="${state.units.indexOf(u)}">${portraitHTML(u)}<div class="unitInfo"><div class="nm">${u === p ? 'You' : u.name}<span>${C.name}</span></div>
+  return `<div class="unitRow${enemy ? ' foe' : ''}${u === p.target ? ' sel' : ''}${u.alive ? '' : ' dead'}" data-uid="${state.units.indexOf(u)}">${portraitHTML(u)}${badgeHTML(u)}<div class="unitInfo"><div class="nm">${u === p ? 'You' : u.name}<span>${C.name}</span></div>
   <div class="hpb"><div style="width:${hp.toFixed(1)}%;background:${col}"></div></div><div class="rsb"><div style="width:${u.res}%"></div></div>${castBarHTML(u)}<div class="dr">${drText(u)}</div></div>${buffsHTML(u)}</div>`;
 }
 function castBarHTML(u) {
@@ -67,9 +67,14 @@ function castBarHTML(u) {
   // largeur remplie à chaque image par hudCastFrame (pas ici : l'interface n'est reconstruite que 12 fois/s)
   return `<div class="castBar"><span class="cbIcon">${skillIconSVG(u.cls, c.i ?? 0)}</span><div class="cbTrack"><div class="cbFill" data-u="${u.id}" style="width:${(castProgress(u) * 100).toFixed(1)}%"></div><span class="cbName">${c.name}</span></div></div>`;
 }
+// Emblème de la classe (médaillon des cadres de l'interface PC, src/ui/hud.css)
+function badgeHTML(u) {
+  return `<div class="badge"><img src="assets/ui/class_${u.cls}.png" alt=""></div>`;
+}
+// Cadre du joueur / de la cible. Portrait et emblème ne s'affichent que dans l'interface PC (hud.css).
 function frameHTML(u, enemy = false) {
   const C = CLASS[u.cls];
-  return `<div class="nameRow"><b>${u.name}</b><span>${Math.ceil(u.hp)} HP</span></div><div class="tiny">${RACE[u.race]?.name || ''} ${C.name} · ${C.role} · ${ARMOR[C.armor]?.label || ''}</div><div class="bar"><div class="fill ${enemy ? 'enemy' : ''}" style="width:${(100 * u.hp) / u.maxHp}%"></div></div><div class="bar resource"><div class="fill" style="width:${u.res}%"></div></div><div class="tiny">${C.res} ${Math.round(u.res)}/100${u.shield > 0 ? ` · Shield ${Math.ceil(u.shield)}` : ''}</div>${buffsHTML(u)}`;
+  return `${portraitHTML(u)}${badgeHTML(u)}<div class="nameRow"><b>${u.name}</b><span>${Math.ceil(u.hp)} HP</span></div><div class="tiny fClass">${RACE[u.race]?.name || ''} ${C.name} · ${C.role} · ${ARMOR[C.armor]?.label || ''}</div><div class="bar fHp"><div class="fill ${enemy ? 'enemy' : ''}" style="width:${(100 * u.hp) / u.maxHp}%"></div></div><div class="bar resource fRes"><div class="fill" style="width:${u.res}%"></div></div><div class="tiny fInfo">${C.res} ${Math.round(u.res)}/100${u.shield > 0 ? ` · Shield ${Math.ceil(u.shield)}` : ''}</div>${buffsHTML(u)}`;
 }
 function setHTML(el) {
   if (el._html !== el._shown) {
@@ -88,8 +93,9 @@ function updateUI() {
   $('selfFrame')._html = frameHTML(p, false);
   $('targetFrame')._html = t
     ? frameHTML(t, true) +
-      `<div class="tiny">${los(p, t) ? '✓ In line of sight' : '⚠ Line of sight blocked'}</div>${castBarHTML(t)}`
+      `<div class="tiny fLos">${los(p, t) ? '✓ In line of sight' : '⚠ Line of sight blocked'}</div>${castBarHTML(t)}`
     : '<b>No target</b>';
+  $('targetFrame').classList.toggle('noTarget', !t);
   $('arenaFrames')._html = state.units
     .filter(u => u.team !== p.team)
     .map(u => unitRowHTML(u, true))

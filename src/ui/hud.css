@@ -1,0 +1,444 @@
+/* Interface en jeu (PC) : design de l'utilisateur (maquette assets_src/ui/interface_in_game.png, docs/SPEC.md).
+   Images : assets/ui/hud/, découpées de sa panoplie par tools/build_hud_assets.js. Chargé après lobby.css.
+   Le mobile garde son interface (body.mobile-mode) ; le lobby garde ses barres (body.lobby).
+   Cadres d'unité : images à proportions fixes ; portrait, barres et textes placés en % de l'image source
+   (coordonnées mesurées dans le script). Les barres peintes servent de remplissage : la partie vide est recouverte. */
+.ico {
+  display: inline-block;
+  width: 1.3em;
+  height: 1.3em;
+  margin-right: 0.4em;
+  vertical-align: -0.3em;
+  background: center / contain no-repeat;
+}
+.ico.swords {
+  background-image: url(../../assets/ui/hud/icon_swords.webp);
+}
+.ico.gear {
+  background-image: url(../../assets/ui/hud/icon_gear.webp);
+}
+.ico.music {
+  background-image: url(../../assets/ui/hud/icon_music.webp);
+}
+.ico.shield {
+  background-image: url(../../assets/ui/hud/icon_shield.webp);
+}
+.ico.speaker {
+  background-image: url(../../assets/ui/hud/icon_speaker.webp);
+}
+body:not(.mobile-mode) {
+  --hud-self: clamp(280px, 19vw, 340px);
+  --hud-row: clamp(240px, 16vw, 290px);
+}
+
+/* ---------- barre du haut : bois cerclé d'or, blason suspendu, boutons sertis ---------- */
+body:not(.mobile-mode):not(.lobby) #top {
+  position: relative;
+  z-index: 12;
+  border: 0 !important;
+  border-image: url(../../assets/ui/hud/top_bar.webp) 20 70 fill / 10px 34px round stretch !important;
+  background: #2a1a10 !important;
+  box-shadow: 0 6px 16px #000c !important;
+}
+body:not(.mobile-mode):not(.lobby) #top::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: clamp(300px, 27vw, 480px);
+  aspect-ratio: 840 / 167;
+  transform: translateX(-50%);
+  background: url(../../assets/ui/hud/crest.webp) center / contain no-repeat;
+  filter: drop-shadow(0 4px 6px #000a);
+  pointer-events: none;
+}
+body:not(.mobile-mode):not(.lobby) #top button {
+  border: 0 !important;
+  border-image: url(../../assets/ui/hud/button.webp) 30 40 fill / 10px 14px stretch !important;
+  background: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 7px 16px;
+  font-weight: 700;
+  filter: drop-shadow(0 2px 3px #000a);
+}
+
+/* ---------- barre du bas : bois, plaque du chrono, cases de sorts dorées ---------- */
+body:not(.mobile-mode):not(.lobby) #bottom {
+  border: 0 !important;
+  border-image: url(../../assets/ui/hud/bottom_bar.webp) 22 80 fill / 12px 38px round stretch !important;
+  background: #24160d !important;
+  box-shadow: 0 -6px 16px #000a !important;
+  overflow: visible;
+}
+body:not(.mobile-mode):not(.lobby) #center {
+  align-self: end;
+  width: 270px;
+  height: 92px;
+  margin-bottom: -2px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: url(../../assets/ui/hud/plaque.webp) center / contain no-repeat;
+  filter: drop-shadow(0 -2px 6px #000a);
+}
+body:not(.mobile-mode):not(.lobby) #round,
+body:not(.mobile-mode):not(.lobby) #score {
+  font-size: 11px;
+  line-height: 1.1;
+}
+body:not(.mobile-mode):not(.lobby) #round {
+  color: #ffd56a;
+}
+body:not(.mobile-mode):not(.lobby) #timer {
+  font-size: 23px;
+  line-height: 1.05;
+}
+body:not(.mobile-mode) .skill {
+  border: 0 !important;
+  background: #0a0f26 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 3px 8px #000a !important;
+}
+body:not(.mobile-mode) .skill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: url(../../assets/ui/hud/slot.webp) center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+body:not(.mobile-mode) .skill .icon,
+body:not(.mobile-mode) .skill .sweep {
+  inset: 7% !important;
+  border-radius: 6px !important;
+}
+body:not(.mobile-mode) .skill .skillName {
+  left: 7%;
+  right: 7%;
+  bottom: 7%;
+  border-radius: 0 0 6px 6px;
+}
+body:not(.mobile-mode) .skill .cost {
+  left: 11%;
+  top: 8%;
+}
+body:not(.mobile-mode) .skill .key {
+  right: 11%;
+  top: 8%;
+}
+body:not(.mobile-mode) .skill.queued,
+body:not(.mobile-mode) .skill.pressed {
+  box-shadow: 0 0 14px #ffc85d, 0 0 4px #fff3c0 !important;
+}
+body:not(.mobile-mode) .tag {
+  border: 0 !important;
+  border-image: url(../../assets/ui/hud/pill.webp) 20 30 fill / 8px 11px stretch !important;
+  background: none !important;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ---------- panneau des contrôles ---------- */
+body:not(.mobile-mode) #help {
+  border: 0 !important;
+  border-image: url(../../assets/ui/hud/panel.webp) 34 fill / 14px stretch !important;
+  background: none !important;
+  box-shadow: none !important;
+  border-radius: 0;
+  backdrop-filter: none;
+  padding: 12px 16px;
+  filter: drop-shadow(0 6px 12px #000b);
+}
+body:not(.mobile-mode) #help b:first-child {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 14px;
+  color: #ffd56a;
+}
+body:not(.mobile-mode) #pointerHint {
+  top: 46px;
+}
+
+/* ---------- cadres d'unité ---------- */
+body:not(.mobile-mode) #selfFrame,
+body:not(.mobile-mode) #targetFrame,
+body:not(.mobile-mode) .unitRow {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  padding: 0;
+  background: none !important;
+  filter: drop-shadow(0 5px 10px #000b);
+  color: #f3ead2;
+}
+/* image du cadre au-dessus du portrait (qui passe dans le cercle transparent), sous les textes */
+body:not(.mobile-mode) #selfFrame::before,
+body:not(.mobile-mode) #targetFrame::before,
+body:not(.mobile-mode) .unitRow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--fimg) center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+body:not(.mobile-mode) #selfFrame,
+body:not(.mobile-mode) #targetFrame {
+  width: var(--hud-self);
+  aspect-ratio: 643 / 243;
+}
+body:not(.mobile-mode) #selfFrame {
+  --fimg: url(../../assets/ui/hud/frame_self.webp);
+}
+body:not(.mobile-mode) #targetFrame {
+  --fimg: url(../../assets/ui/hud/frame_target.webp);
+}
+body:not(.mobile-mode) #targetFrame.noTarget {
+  display: none;
+}
+body:not(.mobile-mode) .hud.uiEdit #targetFrame.noTarget {
+  display: block;
+}
+body:not(.mobile-mode) #partyFrames,
+body:not(.mobile-mode) #arenaFrames {
+  width: var(--hud-row);
+  top: calc(14px + var(--hud-self) * 243 / 643 + 8px);
+  padding: 0;
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+}
+body:not(.mobile-mode) .unitRow {
+  display: block;
+  aspect-ratio: 433 / 129;
+  --fimg: url(../../assets/ui/hud/frame_party.webp);
+}
+body:not(.mobile-mode) .unitRow.foe {
+  --fimg: url(../../assets/ui/hud/frame_enemy.webp);
+}
+body:not(.mobile-mode) .unitRow + .unitRow {
+  margin-top: 5px;
+}
+body:not(.mobile-mode) .unitRow.sel {
+  filter: drop-shadow(0 0 6px #ffd96f) drop-shadow(0 5px 10px #000b);
+}
+/* portraits dans le cercle transparent, emblème de classe dans le médaillon */
+body:not(.mobile-mode) .frame > .portrait,
+body:not(.mobile-mode) .unitRow > .portrait,
+body:not(.mobile-mode) .badge {
+  display: block;
+  position: absolute;
+  aspect-ratio: 1;
+  height: auto;
+  border: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  z-index: -1;
+}
+body:not(.mobile-mode) .badge {
+  z-index: 1;
+  background: #0a0f26;
+}
+body:not(.mobile-mode) .badge img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+body:not(.mobile-mode) #selfFrame > .portrait {
+  left: 5.1%;
+  top: 14.8%;
+  width: 19.6%;
+}
+body:not(.mobile-mode) #targetFrame > .portrait {
+  left: 75.1%;
+  top: 14.8%;
+  width: 19.6%;
+}
+body:not(.mobile-mode) #selfFrame > .badge,
+body:not(.mobile-mode) #targetFrame > .badge {
+  top: 57.6%;
+  width: 6.5%;
+  left: 4.4%;
+}
+body:not(.mobile-mode) #targetFrame > .badge {
+  left: 89.1%;
+}
+body:not(.mobile-mode) .unitRow > .portrait {
+  left: 6%;
+  top: 16.3%;
+  width: 18.5%;
+}
+body:not(.mobile-mode) .unitRow > .badge {
+  left: 6%;
+  top: 67.4%;
+  width: 6.2%;
+}
+/* textes du joueur / de la cible */
+body:not(.mobile-mode) #selfFrame > div:not(.portrait):not(.badge):not(.buffs):not(.castBar),
+body:not(.mobile-mode) #targetFrame > div:not(.portrait):not(.badge):not(.buffs):not(.castBar) {
+  position: absolute;
+  left: 28.9%;
+  right: 5.6%;
+  margin: 0;
+}
+body:not(.mobile-mode) #targetFrame > div:not(.portrait):not(.badge):not(.buffs):not(.castBar) {
+  left: 5.5%;
+  right: 29%;
+}
+body:not(.mobile-mode) .frame .nameRow {
+  top: 11%;
+  font-size: 14px;
+  line-height: 1.1;
+  text-shadow: 0 1px 2px #000;
+}
+body:not(.mobile-mode) .frame .nameRow b {
+  font-family: 'Cinzel', Georgia, serif;
+  color: #fff3d0;
+}
+body:not(.mobile-mode) .frame .fClass {
+  top: 27%;
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #e7c27a !important;
+}
+body:not(.mobile-mode) .frame .fInfo,
+body:not(.mobile-mode) .frame .fLos {
+  top: 74%;
+  font-size: 10.5px;
+  line-height: 12px;
+  color: #dfe5ff !important;
+}
+body:not(.mobile-mode) .frame .fLos {
+  top: 84%;
+}
+/* incantation de la cible : à gauche du cadre, sous ses buffs (dessous, elle couvrirait les adversaires) */
+body:not(.mobile-mode) #targetFrame > .castBar {
+  position: absolute;
+  top: 66%;
+  right: calc(100% + 10px);
+  width: 210px;
+  margin: 0;
+}
+body:not(.mobile-mode) .castBar .cbTrack {
+  height: 16px;
+  border-color: #c99a4a;
+}
+body:not(.mobile-mode) .castBar .cbName {
+  font-size: 10px;
+  line-height: 16px;
+  font-weight: 700;
+}
+body:not(.mobile-mode) .castBar .cbIcon {
+  width: 18px;
+  height: 18px;
+}
+/* barres : la peinture du cadre fait le remplissage, la partie vide est recouverte à droite */
+body:not(.mobile-mode) .frame .fHp {
+  top: 43.2%;
+  height: 6.6%;
+}
+body:not(.mobile-mode) .frame .fRes {
+  top: 56.8%;
+  height: 7.4%;
+}
+body:not(.mobile-mode) .frame .bar,
+body:not(.mobile-mode) .unitRow .hpb,
+body:not(.mobile-mode) .unitRow .rsb {
+  background: none !important;
+  box-shadow: none;
+  border-radius: 99px;
+  overflow: hidden;
+}
+body:not(.mobile-mode) .frame .bar .fill,
+body:not(.mobile-mode) .unitRow .hpb > div,
+body:not(.mobile-mode) .unitRow .rsb > div {
+  position: relative;
+  background: none !important;
+  transition: width 0.15s linear;
+}
+body:not(.mobile-mode) .frame .bar .fill::after,
+body:not(.mobile-mode) .unitRow .hpb > div::after,
+body:not(.mobile-mode) .unitRow .rsb > div::after {
+  content: '';
+  position: absolute;
+  left: 100%;
+  top: 0;
+  bottom: 0;
+  width: 2000px;
+  background: linear-gradient(#060914, #111a3a);
+  box-shadow: inset 2px 0 3px #000;
+}
+/* lignes de l'équipe et des adversaires */
+body:not(.mobile-mode) .unitRow .unitInfo {
+  position: absolute;
+  left: 30.3%;
+  right: 6.4%;
+  top: 0;
+  bottom: 0;
+}
+body:not(.mobile-mode) .unitRow .nm {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 19%;
+  font-size: 12px;
+  text-shadow: 0 1px 2px #000;
+}
+body:not(.mobile-mode) .unitRow .nm span {
+  font-size: 10px;
+  color: #e7c27a;
+  opacity: 1;
+}
+body:not(.mobile-mode) .unitRow .hpb {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50.4%;
+  height: 11.6%;
+  margin: 0;
+}
+body:not(.mobile-mode) .unitRow .rsb {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 69.8%;
+  height: 8.5%;
+  margin: 0;
+}
+/* incantation d'une ligne : à la place du nom */
+body:not(.mobile-mode) .unitRow .castBar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 13%;
+  margin: 0;
+  z-index: 2;
+}
+body:not(.mobile-mode) .unitRow .unitInfo:has(.castBar) .nm {
+  visibility: hidden;
+}
+body:not(.mobile-mode) .unitRow .dr {
+  position: absolute;
+  left: 0;
+  top: 84%;
+  min-height: 0;
+  margin: 0;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: #000a;
+  font-size: 9px;
+  line-height: 12px;
+  white-space: nowrap;
+}
+body:not(.mobile-mode) .unitRow .dr:empty {
+  display: none;
+}
+body:not(.mobile-mode) #selfFrame > .buffs,
+body:not(.mobile-mode) #targetFrame > .buffs {
+  top: 38%;
+}
