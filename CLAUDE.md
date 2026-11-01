@@ -36,7 +36,7 @@ npm run test:all   # ~1 min 30 : + test navigateur complet (sélection, 35 kits,
 
 ## Règles non négociables
 
-1. **Contrôles desktop validés = intouchables** : ZQSD (Q gauche, D droite), Espace saut, clic droit + souris = caméra MMO, molette zoom, clic gauche/TAB cible, 1–5 sorts, R trinket. Ne jamais « corriger » les signes de `screenRight` / `applyLook` (convention contre-intuitive mais validée ; inversée plusieurs fois par le passé).
+1. **Contrôles desktop validés = intouchables** : ZQSD (Q gauche, D droite), Espace saut, glisser clic droit = caméra + personnage, glisser clic gauche = caméra seule, clic gauche OU droit sans glisser = cibler, gauche + droit (tout ordre) = avancer, molette zoom, TAB cible, 1–6 sorts, R trinket (code : `src/input/controls.js`, avance souris dans `playerMove`). Ne jamais « corriger » les signes de `screenRight` / `applyLook` (convention contre-intuitive mais validée ; inversée plusieurs fois par le passé).
 2. **UI de sélection race/classe : ne pas la restructurer** sans demande explicite. « Améliorer les personnages » = modèle 3D, proportions, matériaux, équipement, détails raciaux uniquement.
 3. **La classe choisit le modèle, la race est secondaire** (Orc Mage = modèle Mage + traits Orc). Preview et arène utilisent le même modèle.
 4. Simulation fixe 120 Hz (`SIM_DT`) + interpolation `renderAlpha` ; téléportations avec `visualSnap`.

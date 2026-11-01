@@ -27,7 +27,7 @@ body.skillDrag .skill[data-slot]{outline:1px dashed #ffd96f88}.skill.dragFrom{ou
 #reticle{display:none;position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);opacity:.7}#reticle:before,#reticle:after{content:"";position:absolute;background:#fff5d9;box-shadow:0 0 9px #ffc85d}#reticle:before{left:7px;top:0;width:2px;height:16px}#reticle:after{left:0;top:7px;width:16px;height:2px}
 #pointerHint{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:#1c140fdf;border:1px solid #7f6037;border-radius:999px;padding:6px 11px;font-size:11px;color:#eadcb7}
 #castBar{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);width:min(430px,55%);height:27px;border:1px solid #92703b;background:#17110c;border-radius:8px;overflow:hidden;display:none;box-shadow:0 4px 18px #0009}.castFill{height:100%;width:0;background:linear-gradient(90deg,#9b5f18,#f1c55f)}.castText{position:absolute;inset:0;display:grid;place-items:center;font-size:12px;font-weight:bold;text-shadow:0 1px 2px #000}
-#floaters,#nameplates{position:absolute;inset:0;pointer-events:none}.floater{position:absolute;font-weight:900;font-size:16px;text-shadow:0 2px 3px #000,0 0 6px #000;transform:translate(-50%,-50%);white-space:nowrap}.nameplate{position:absolute;transform:translate(-50%,-100%);min-width:82px;text-align:center;font-size:10px;text-shadow:0 1px 3px #000}.nameplate .npName{font-weight:800}.nameplate .npBar{height:5px;background:#241a13;border:1px solid #0008;border-radius:99px;overflow:hidden}.nameplate .npFill{height:100%}.nameplate.target .npName{color:#ffd96f}
+#floaters,#nameplates{position:absolute;inset:0;pointer-events:none}.floater{position:absolute;font-weight:900;font-size:16px;text-shadow:0 2px 3px #000,0 0 6px #000;transform:translate(-50%,-50%);white-space:nowrap}.nameplate{position:absolute;transform:translate(-50%,-100%);min-width:82px;text-align:center;font-size:10px;text-shadow:0 1px 3px #000}.nameplate .npName{font-weight:800}.nameplate .npBar{height:5px;background:#241a13;border:1px solid #0008;border-radius:99px;overflow:hidden}.nameplate .npFill{height:100%}.nameplate.target .npName{color:#ffd96f;font-size:14px}.nameplate.target{min-width:118px;z-index:2}.nameplate.target .npBar{height:9px;border-color:#ffd96f;box-shadow:0 0 8px #ffd96faa}
 #roundSplash{position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);font-size:34px;font-weight:900;color:#ffe8ad;text-shadow:0 3px 8px #000,0 0 24px #f5a73b;opacity:0;transition:opacity .2s}
 #skills{display:flex;gap:7px;justify-content:center;pointer-events:auto}.skill{width:84px;height:80px;padding:4px 4px 15px;position:relative;font-size:9px;line-height:11px;background:linear-gradient(180deg,#392718,#1a120c);border-color:#8c6937;overflow:hidden}.skill .icon{display:block;width:43px;height:43px;margin:0 auto 3px;border-radius:7px;overflow:hidden;border:1px solid #bc9557;box-shadow:inset 0 0 8px #000b,0 0 7px #0008}.skill .icon svg{display:block;width:100%;height:100%}.skillName{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px #000}.key{position:absolute;right:5px;bottom:3px;color:#f4dfad;font-size:10px;font-weight:900;text-shadow:0 1px 2px #000}.cost{position:absolute;left:5px;bottom:3px;color:#8ec2ff;font-size:9px}.cd{position:absolute;inset:0;border-radius:8px;background:#000b;display:grid;place-items:center;font-size:22px;font-weight:900;text-shadow:0 2px 3px #000}.skill.gcding:after{content:"";position:absolute;inset:0;border-radius:8px;background:linear-gradient(180deg,#ffffff10,#6da8ff22);pointer-events:none}.skill.queued{box-shadow:inset 0 0 0 2px #ffe080,0 0 10px #ffc85d88}.trinket{border-color:#a99055}
 #center{text-align:center;min-width:128px}#timer{font-size:28px;font-weight:900;color:#ffecbc}#round{font-size:12px;color:var(--gold)}#score{font-size:11px;color:var(--muted)}#status{font-size:11px;color:var(--muted);line-height:1.45}.tag{display:inline-block;padding:3px 7px;border-radius:999px;background:#2d2117;border:1px solid #6e552f;margin:2px;font-size:10px;color:#f0ddb2}
@@ -134,33 +134,33 @@ body.mobile-mode #playBtn{font-size:14px!important;padding:9px 14px!important}
 </main>
 <footer id="bottom"><div id="status" class="sideBottom"></div><div id="center"><div id="round">Round 1 · BO3</div><div id="timer">02:30</div><div id="score">0 - 0</div></div><div id="skills"></div></footer>
 </div>
-<script src="game_logic.js?v=202611010414"></script>
+<script src="game_logic.js?v=202611010416"></script>
 <!-- High-fidelity character renderer. The game remains playable with the built-in fallback if these fail to load. -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js" crossorigin="anonymous"></script>
 <!-- Personnages CC0 assemblés (assets emballés en .js dans assets/characters/ : fonctionne en double-clic). -->
-<script>window.ASSET_V="202611010414"</script>
-<script src="src/characters/kits.js?v=202611010414"></script>
-<script src="src/characters/builder.js?v=202611010414"></script>
-<script src="src/render/environment.js?v=202611010414"></script>
-<script src="src/render/effects.js?v=202611010414"></script>
-<script src="assets/ui/pick_icons.js?v=202611010414"></script>
-<script src="src/core/setup.js?v=202611010414"></script>
-<script src="src/render/heroes3d.js?v=202611010414"></script>
-<script src="src/data/classes.js?v=202611010414"></script>
-<script src="src/core/webgl.js?v=202611010414"></script>
-<script src="src/game/combat.js?v=202611010414"></script>
-<script src="src/game/ai.js?v=202611010414"></script>
-<script src="src/game/rules.js?v=202611010414"></script>
-<script src="src/ui/skillbar.js?v=202611010414"></script>
-<script src="src/game/sim.js?v=202611010414"></script>
-<script src="src/render/world.js?v=202611010414"></script>
-<script src="src/ui/hud.js?v=202611010414"></script>
-<script src="src/audio/music.js?v=202611010414"></script>
-<script src="src/audio/sfx.js?v=202611010414"></script>
-<script src="src/ui/settings.js?v=202611010414"></script>
-<script src="src/ui/mobile.js?v=202611010414"></script>
-<script src="src/input/controls.js?v=202611010414"></script>
-<script src="src/core/main.js?v=202611010414"></script>
+<script>window.ASSET_V="202611010416"</script>
+<script src="src/characters/kits.js?v=202611010416"></script>
+<script src="src/characters/builder.js?v=202611010416"></script>
+<script src="src/render/environment.js?v=202611010416"></script>
+<script src="src/render/effects.js?v=202611010416"></script>
+<script src="assets/ui/pick_icons.js?v=202611010416"></script>
+<script src="src/core/setup.js?v=202611010416"></script>
+<script src="src/render/heroes3d.js?v=202611010416"></script>
+<script src="src/data/classes.js?v=202611010416"></script>
+<script src="src/core/webgl.js?v=202611010416"></script>
+<script src="src/game/combat.js?v=202611010416"></script>
+<script src="src/game/ai.js?v=202611010416"></script>
+<script src="src/game/rules.js?v=202611010416"></script>
+<script src="src/ui/skillbar.js?v=202611010416"></script>
+<script src="src/game/sim.js?v=202611010416"></script>
+<script src="src/render/world.js?v=202611010416"></script>
+<script src="src/ui/hud.js?v=202611010416"></script>
+<script src="src/audio/music.js?v=202611010416"></script>
+<script src="src/audio/sfx.js?v=202611010416"></script>
+<script src="src/ui/settings.js?v=202611010416"></script>
+<script src="src/ui/mobile.js?v=202611010416"></script>
+<script src="src/input/controls.js?v=202611010416"></script>
+<script src="src/core/main.js?v=202611010416"></script>
 </body>
 </html>

@@ -307,7 +307,7 @@ function playerMove(dt) {
     return;
   }
   let mv = GameLogic.moveVector(state.keys, camera.yaw);
-  if ((MOUSE_BTN & 3) === 3 && looking) mv = GameLogic.moveVector({ ...state.keys, z: true }, camera.yaw); // clic gauche + droit = avancer
+  if ((MOUSE_BTN & 3) === 3) mv = GameLogic.moveVector({ ...state.keys, z: true }, camera.yaw); // clic gauche + droit = avancer
   let dx = mv.x,
     dz = mv.z;
   if (MOBILE.enabled && (Math.abs(MOBILE.moveForward) > 0.04 || Math.abs(MOBILE.moveRight) > 0.04)) {

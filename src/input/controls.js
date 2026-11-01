@@ -74,12 +74,14 @@ window.addEventListener('keyup', e => setMoveKey(e, false));
 window.addEventListener('blur', () => {
   if (state) state.keys = {};
 });
+// Rotation de la caméra. `looking` (clic droit) tourne aussi le personnage ; `orbiting` (glisser au clic gauche) tourne la caméra seule.
+let orbiting = false;
 function applyLook(dx, dy) {
-  if (!looking) return;
+  if (!looking && !orbiting) return;
   const next = GameLogic.applyLook(camera.yaw, camera.pitch, dx, dy);
   camera.yaw = next.yaw;
   camera.pitch = next.pitch;
-  if (state?.player?.alive) state.player.yaw = camera.yaw;
+  if (looking && state?.player?.alive) state.player.yaw = camera.yaw;
 }
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('pointerdown', e => {
@@ -130,53 +132,67 @@ function pickTargetAt(sx, sy) {
   }
   return false;
 }
-canvas.addEventListener('pointerdown', e => {
-  canvas.focus();
-  if (MOBILE.enabled && e.pointerType === 'touch') return;
-  if (e.button === 0) {
-    const r = canvas.getBoundingClientRect();
-    pickTargetAt(e.clientX - r.left, e.clientY - r.top);
-    return;
-  }
-  if (e.button !== 2) return;
-  looking = true;
-  rightPointerId = e.pointerId;
-  lastPX = e.clientX;
-  lastPY = e.clientY;
-  if (canvas.requestPointerLock) {
+// Souris style MMO :
+//  - clic gauche OU droit sans glisser = cibler l'unité sous le curseur ;
+//  - glisser au clic gauche = tourner la caméra seule ; glisser au clic droit = caméra + personnage ;
+//  - gauche + droit enfoncés (dans n'importe quel ordre) = avancer (voir playerMove, MOUSE_BTN).
+const DRAG_PX = 5;
+const MOUSE = { down: 0, x: 0, y: 0, moved: 0, dragging: false, both: false };
+const fromTouch = e => e.sourceCapabilities?.firesTouchEvents;
+function lockPointer() {
+  if (document.pointerLockElement !== canvas && canvas.requestPointerLock)
     try {
       canvas.requestPointerLock();
     } catch (_) {}
+}
+function unlockPointer() {
+  if (document.pointerLockElement === canvas && document.exitPointerLock) document.exitPointerLock();
+}
+canvas.addEventListener('mousedown', e => {
+  canvas.focus();
+  if (fromTouch(e) || (e.button !== 0 && e.button !== 2)) return;
+  if (!MOUSE.down) Object.assign(MOUSE, { x: e.clientX, y: e.clientY, moved: 0, dragging: false, both: false });
+  MOUSE.down |= e.button === 0 ? 1 : 2;
+  if (MOUSE.down === 3) MOUSE.both = true;
+  if (e.button === 2) {
+    looking = true;
+    orbiting = false;
+    if (state?.player?.alive) state.player.yaw = camera.yaw;
   }
-  if (document.pointerLockElement !== canvas) canvas.setPointerCapture?.(e.pointerId);
-  if (state?.player?.alive) state.player.yaw = camera.yaw;
   e.preventDefault();
 });
 document.addEventListener('mousemove', e => {
-  if (looking && document.pointerLockElement === canvas) applyLook(e.movementX || 0, e.movementY || 0);
-});
-canvas.addEventListener('pointermove', e => {
-  if (!looking || document.pointerLockElement === canvas) return;
-  const dx = e.clientX - lastPX,
-    dy = e.clientY - lastPY;
-  lastPX = e.clientX;
-  lastPY = e.clientY;
-  applyLook(dx, dy);
-});
-function stopLook() {
-  looking = false;
-  if (rightPointerId != null)
-    try {
-      canvas.releasePointerCapture?.(rightPointerId);
-    } catch (_) {}
-  rightPointerId = null;
-  if (document.pointerLockElement === canvas && document.exitPointerLock) document.exitPointerLock();
-}
-canvas.addEventListener('pointerup', e => {
-  if (e.button === 2) stopLook();
+  if (!MOUSE.down) return;
+  const dx = e.movementX || 0,
+    dy = e.movementY || 0;
+  MOUSE.moved += Math.abs(dx) + Math.abs(dy);
+  if (!MOUSE.dragging && MOUSE.moved > DRAG_PX) {
+    MOUSE.dragging = true;
+    if (MOUSE.down & 1 && !looking) orbiting = true;
+    lockPointer();
+  }
+  if (MOUSE.dragging) applyLook(dx, dy);
 });
 window.addEventListener('mouseup', e => {
-  if (e.button === 2 && looking) stopLook();
+  const bit = e.button === 0 ? 1 : e.button === 2 ? 2 : 0;
+  if (!bit || !(MOUSE.down & bit)) return;
+  MOUSE.down &= ~bit;
+  if (bit === 2) looking = false;
+  if (bit === 1) orbiting = false;
+  if (!MOUSE.down) {
+    // clic simple (sans glisser, sans combinaison gauche+droit) : ciblage
+    if (!MOUSE.dragging && !MOUSE.both) {
+      const r = canvas.getBoundingClientRect();
+      pickTargetAt(MOUSE.x - r.left, MOUSE.y - r.top);
+    }
+    MOUSE.dragging = false;
+    unlockPointer();
+  } else if (MOUSE.down & 1 && MOUSE.dragging) orbiting = true;
+});
+window.addEventListener('blur', () => {
+  MOUSE.down = 0;
+  looking = orbiting = false;
+  unlockPointer();
 });
 canvas.addEventListener(
   'wheel',
