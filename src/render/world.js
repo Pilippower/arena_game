@@ -408,19 +408,37 @@ function renderCharacter(u) {
   }
   if (u.burst > 0)
     part('torus', [u.x, y + 0.1, u.z], [0, 0, 0], [1.06, 0.075, 1.06], [1, 0.28, 0.05], [0.7, 0.13, 0.01], 0.68);
-  if (u.stun > 0) {
-    for (let k = 0; k < 3; k++) {
-      const a = now() * 3 + k * 2.094;
+  if (u.stun > 0) stunSwirl(u.x, y + 2.55, u.z, now());
+}
+// Étourdissement : tourbillon (deux bras en spirale qui tournent, petites étoiles au bout).
+function stunSwirl(x, y, z, t) {
+  for (let arm = 0; arm < 2; arm++)
+    for (let k = 0; k < 12; k++) {
+      const f = k / 11,
+        a = -t * 5 + arm * Math.PI + f * 4.2,
+        r = 0.08 + f * 0.62,
+        sz = 0.055 + f * 0.05;
       part(
         'sphere',
-        [u.x + Math.sin(a) * 0.45, y + 2.58, u.z + Math.cos(a) * 0.45],
+        [x + Math.sin(a) * r, y + f * 0.05, z + Math.cos(a) * r],
         [0, 0, 0],
-        [0.07, 0.07, 0.07],
-        [1, 0.78, 0.08],
-        [0.8, 0.5, 0.02],
-        0.9
+        [sz, sz * 0.6, sz],
+        [1, 0.85, 0.2],
+        [1, 0.6, 0.05],
+        0.55 + f * 0.4
       );
     }
+  for (let k = 0; k < 3; k++) {
+    const a = -t * 5 + (k * Math.PI * 2) / 3 + 4.2;
+    part(
+      'cone',
+      [x + Math.sin(a) * 0.74, y + 0.08, z + Math.cos(a) * 0.74],
+      [0, -a, 0],
+      [0.06, 0.08, 0.06],
+      [1, 0.95, 0.5],
+      [1, 0.8, 0.2],
+      0.95
+    );
   }
 }
 function renderPersistentCC() {
@@ -446,29 +464,7 @@ function renderPersistentCC() {
         );
       }
     }
-    if (u.stun > 0) {
-      for (let i = 0; i < 4; i++) {
-        const a = tt * 3.2 + (i * Math.PI) / 2;
-        part(
-          'sphere',
-          [ux + Math.sin(a) * 0.52, yy + 2.62, uz + Math.cos(a) * 0.52],
-          [0, 0, 0],
-          [0.085, 0.085, 0.085],
-          [1, 0.82, 0.12],
-          [1, 0.55, 0.02],
-          0.94
-        );
-      }
-      part(
-        'torus',
-        [ux, yy + 2.58, uz],
-        [Math.PI / 2, 0, 0],
-        [0.56, 0.045, 0.56],
-        [1, 0.75, 0.12],
-        [1, 0.45, 0.02],
-        0.7
-      );
-    }
+    if (u.stun > 0) stunSwirl(ux, yy + 2.55, uz, tt);
     if (u.silence > 0) {
       part(
         'torus',
