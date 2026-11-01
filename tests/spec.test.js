@@ -238,6 +238,26 @@ run('src/ui/hud.js');
     'lobby épuré'
   );
 }
-assert.match(read('src/game/sim.js'), /if \(state\.ended\) \{[\s\S]*?u\.prevX = u\.x;[\s\S]*?u\.moving = false;/, 'fin de manche : pas de tremblement');
-assert.match(read('src/render/heroes3d.js'), /state\.winTeam === u\.team\) \{\s*\/\/[^\n]*\n\s*key = 'cheer'/, 'vainqueurs : geste de joie');
+assert.match(
+  read('src/game/sim.js'),
+  /if \(state\.ended\) \{[\s\S]*?u\.prevX = u\.x;[\s\S]*?u\.moving = false;/,
+  'fin de manche : pas de tremblement'
+);
+assert.match(
+  read('src/render/heroes3d.js'),
+  /state\.winTeam === u\.team\) \{\s*\/\/[^\n]*\n\s*key = 'cheer'/,
+  'vainqueurs : geste de joie'
+);
+// Écran de fin de match : panoplie de l'utilisateur, animé (flammes, étincelles / braises)
+{
+  const fs = require('node:fs');
+  for (const f of ['frame_victory_top', 'frame_victory_mid', 'frame_defeat_top', 'btn_again_loss', 'ribbon_ally'])
+    assert.ok(
+      fs.existsSync(require('node:path').join(__dirname, '..', 'assets/ui/results', f + '.webp')),
+      'résultats : ' + f
+    );
+  assert.match(read('src/game/match.js'), /resultsFxStart\(win\)/, 'résultats : animation lancée');
+  assert.match(read('src/ui/results.js'), /requestAnimationFrame/, 'résultats : rien de figé');
+  assert.match(read('src/ui/results.css'), /cqh/, 'résultats : tient dans la hauteur');
+}
 console.log('OK - spécifications validées (docs/SPEC.md)');

@@ -1,0 +1,215 @@
+/* Écran de fin de match (PC) : design de l'utilisateur (maquettes assets_src/ui/results_victory.png et
+   results_defeat.png ; images assets/ui/results/ découpées par tools/build_results_assets.js). Chargé après hud.css.
+   Cadre en 3 couches : haut et bas à leurs proportions, bande du milieu étirée selon le nombre de joueurs.
+   --u = 1 pixel de l'image source du cadre. Flammes, étincelles et braises : src/ui/results.js. */
+body:not(.mobile-mode) #results {
+  container-type: size;
+  background: radial-gradient(ellipse at 50% 45%, #0000 30%, #000c 100%), #05070fa8 !important;
+}
+body:not(.mobile-mode) #results::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(1300px, 95vw);
+  height: 90%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse at 50% 40%, var(--glow) 0%, #0000 62%);
+  animation: resGlow 2.6s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+body:not(.mobile-mode) #results.win {
+  --glow: #ffb43a55;
+}
+body:not(.mobile-mode) #results.loss {
+  --glow: #d0201a4d;
+}
+@keyframes resGlow {
+  from {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+}
+#resultsFx {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+body:not(.mobile-mode) #results .resPanel {
+  /* tout est en --u : le panneau garde ses proportions et tient dans la hauteur (3 joueurs par équipe ≈ 525 u) */
+  --u: min(calc(900px / var(--fw)), calc(64cqw / var(--fw)), calc(94cqh / 525));
+  position: relative;
+  width: calc(var(--fw) * var(--u));
+  max-width: none;
+  max-height: none;
+  min-height: calc(var(--fh) * var(--u));
+  overflow: visible;
+  padding: calc(160 * var(--u)) calc(58 * var(--u)) calc(44 * var(--u));
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  background-repeat: no-repeat !important;
+  background-size:
+    100% auto,
+    100% auto,
+    100% calc(100% - (210 + var(--fb)) * var(--u) + 2px) !important;
+  /* bande du milieu : 1 px sous chaque raccord (sinon une fine ligne apparaît selon l'arrondi) */
+  background-position:
+    top center,
+    bottom center,
+    0 calc(210 * var(--u) - 1px) !important;
+  animation: resFrameGlow 2.6s ease-in-out infinite alternate;
+}
+body:not(.mobile-mode) #results.win .resPanel {
+  --fw: 652;
+  --fh: 354;
+  --fb: 119;
+  --edge: #ffc85a;
+  background-image:
+    url(../../assets/ui/results/frame_victory_top.webp), url(../../assets/ui/results/frame_victory_bottom.webp),
+    url(../../assets/ui/results/frame_victory_mid.webp) !important;
+}
+body:not(.mobile-mode) #results.loss .resPanel {
+  --fw: 613;
+  --fh: 352;
+  --fb: 117;
+  --edge: #ff4a2a;
+  background-image:
+    url(../../assets/ui/results/frame_defeat_top.webp), url(../../assets/ui/results/frame_defeat_bottom.webp),
+    url(../../assets/ui/results/frame_defeat_mid.webp) !important;
+}
+/* la lumière du cadre respire */
+@keyframes resFrameGlow {
+  from {
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--edge) 35%, transparent)) drop-shadow(0 18px 40px #000c);
+  }
+  to {
+    filter: drop-shadow(0 0 22px color-mix(in srgb, var(--edge) 70%, transparent)) drop-shadow(0 18px 40px #000c);
+  }
+}
+/* titre peint dans le cadre : le texte reste pour l'accessibilité */
+body:not(.mobile-mode) #resultsTitle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+body:not(.mobile-mode) #resultsScore {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(111 * var(--u));
+  height: calc(28 * var(--u));
+  margin: 0;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: calc(21 * var(--u));
+  line-height: calc(28 * var(--u));
+  color: #fff4d6;
+  text-shadow:
+    0 0 8px #000,
+    0 1px 2px #000;
+}
+body:not(.mobile-mode) #results.win #resultsScore {
+  left: 1.4%;
+}
+/* rubans des équipes (texte peint) et tableaux */
+body:not(.mobile-mode) #resultsTeams h3 {
+  height: calc(27 * var(--u));
+  aspect-ratio: 274 / 50;
+  margin: calc(4 * var(--u)) 0 calc(2 * var(--u)) calc(-6 * var(--u));
+  color: transparent !important;
+  font-size: 0;
+  background: url(../../assets/ui/results/ribbon_ally.webp) left center / contain no-repeat;
+}
+body:not(.mobile-mode) #resultsTeams h3.enemy {
+  aspect-ratio: 249 / 50;
+  background-image: url(../../assets/ui/results/ribbon_enemy.webp);
+}
+body:not(.mobile-mode) #results .resTable {
+  margin-bottom: calc(6 * var(--u));
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #b48a3c88;
+  border-radius: 6px;
+  background: #070b1cb8;
+}
+body:not(.mobile-mode) #results .resTable th {
+  padding: calc(2 * var(--u)) calc(5 * var(--u));
+  font-size: calc(7.5 * var(--u));
+  letter-spacing: 0.06em;
+  color: #e6d3a3;
+  border-bottom: 1px solid #b48a3c55;
+}
+body:not(.mobile-mode) #results .resTable td {
+  padding: calc(2 * var(--u)) calc(6 * var(--u));
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: calc(9.5 * var(--u));
+  color: #f3ead2;
+  border-bottom: 1px solid #ffffff10;
+}
+body:not(.mobile-mode) #results .resTable tbody tr:last-child td {
+  border-bottom: 0;
+}
+body:not(.mobile-mode) #results .resTable td.rName {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+}
+body:not(.mobile-mode) #results .rPort {
+  width: calc(22 * var(--u));
+  height: calc(22 * var(--u));
+}
+.rPort {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #c99a4a;
+  background: #0a0f26;
+}
+body:not(.mobile-mode) #results .resTable td.rNum i {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #3a5ec8, #7fb2ff);
+}
+body:not(.mobile-mode) #results .resTable td.rNum.sorted i {
+  background: linear-gradient(90deg, #c88a1c, #ffd56a);
+}
+/* boutons de la panoplie (texte peint) */
+body:not(.mobile-mode) #results .resButtons {
+  gap: calc(18 * var(--u));
+  margin-top: calc(10 * var(--u));
+}
+body:not(.mobile-mode) #results .resButtons button {
+  width: calc(150 * var(--u));
+  aspect-ratio: 207 / 54;
+  height: auto;
+  padding: 0;
+  font-size: 0;
+  color: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: center / 100% 100% no-repeat !important;
+  filter: drop-shadow(0 4px 8px #000a);
+}
+body:not(.mobile-mode) #results.win #resultsAgain {
+  background-image: url(../../assets/ui/results/btn_again_win.webp) !important;
+}
+body:not(.mobile-mode) #results.loss #resultsAgain {
+  background-image: url(../../assets/ui/results/btn_again_loss.webp) !important;
+}
+body:not(.mobile-mode) #results #resultsLobby {
+  background-image: url(../../assets/ui/results/btn_lobby.webp) !important;
+}
+body:not(.mobile-mode) #results .resButtons button:hover {
+  filter: brightness(1.18) drop-shadow(0 0 10px #ffd96f88);
+}

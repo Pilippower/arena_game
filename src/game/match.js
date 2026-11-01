@@ -56,7 +56,7 @@ function renderResultsTables() {
       .sort((x, y) => (x.s[K] - y.s[K]) * RESULTS_SORT.dir)
       .map(
         ({ u, s }) =>
-          `<tr><td class="rName">${u === state.player ? 'You' : u.name}</td><td>${RACE[u.race]?.name || ''} ${CLASS[u.cls].name}</td>${cell(s, 'damage')}${cell(s, 'healing')}${cell(s, 'kills')}</tr>`
+          `<tr><td class="rName">${resultsPortrait(u)}${u === state.player ? 'You' : u.name}</td><td>${RACE[u.race]?.name || ''} ${CLASS[u.cls].name}</td>${cell(s, 'damage')}${cell(s, 'healing')}${cell(s, 'kills')}</tr>`
       )
       .join('')}</tbody></table>`;
   $('resultsTeams').innerHTML =
@@ -72,17 +72,25 @@ function renderResultsTables() {
         })
     );
 }
+// Portrait 3D du visage (comme les cadres), sinon rien
+function resultsPortrait(u) {
+  const src = HF.records?.get(u.id)?.portrait;
+  return src ? `<img class="rPort" src="${src}" alt="">` : '';
+}
 function showResults() {
   const win = state.scoreA > state.scoreB;
+  $('results').className = win ? 'win' : 'loss';
   $('resultsTitle').textContent = win ? 'Victory' : 'Defeat';
   $('resultsTitle').className = win ? 'win' : 'loss';
   $('resultsScore').textContent = `${state.scoreA} - ${state.scoreB}`;
   renderResultsTables();
   $('results').style.display = 'flex';
+  resultsFxStart(win);
   if (win) setTimeout(() => SFX.victory(true), 300);
 }
 function hideResults() {
   $('results').style.display = 'none';
+  resultsFxStop();
 }
 // Nouveau match avec la même composition.
 function playAgain() {
