@@ -167,6 +167,18 @@ const onDeck = v => !!arena.bridge && (v.y || 0) > arena.bridge.y - 0.6 && Math.
 function aiWaypoint(u, goal) {
   const B = arena.bridge,
     deck = onDeck;
+  // sur une rampe, cible au sol du côté du pont (près du flanc ou sous le bord du tablier) : on descend juste assez
+  // pour sortir de la zone du garde-corps, puis on saute par le côté de la rampe, du côté de la cible. Tout droit,
+  // on repassait au-dessus du tablier (renvoyé par le garde-corps) ou on remontait la rampe : va-et-vient sans fin.
+  const s = B && surfaceAt(u.x, u.z);
+  if (s && !s.deck && (u.y || 0) > 0.05 && !deck(goal) && Math.abs(goal.z) < Math.abs(u.z) + 0.5) {
+    const sx = Math.sign(u.x),
+      sz = Math.sign(u.z),
+      out = B.halfW + 1.2;
+    if (Math.abs(u.z) < out) return { x: sx * B.rampX, y: 0, z: sz * (out + 0.3) };
+    const side = Math.sign(goal.x - sx * B.rampX) || -sx;
+    return { x: sx * B.rampX + side * (B.rampW / 2 + 0.8), y: 0, z: u.z };
+  }
   if (!B || deck(u) === deck(goal)) {
     u.aiRamp = null;
     return goal;
@@ -408,7 +420,7 @@ function ai(u, dt) {
   // hauteur du but, jamais dessous (il hésitait sous le tablier en voyant puis perdant sa cible)
   const wp = aiWaypoint(u, goal);
   let via = false;
-  if (wp !== goal && caster && !onDeck(u))
+  if (wp !== goal && caster && !onDeck(u) && onDeck(goal))
     goal = { x: goal.x, y: goal.y, z: (u.z < 0 ? -1 : 1) * (arena.bridge.halfW + 4) };
   else if (wp !== goal && (!caster || !los(u, goal))) {
     goal = wp;
