@@ -16,7 +16,7 @@ L'utilisateur communique en français : répondre en français.
   - `game/` : `combat.js` (dégâts, contrôles + DR, interruptions, ruées, sorts), `ai.js` (IA + difficulté), `rules.js` (mouton, auto-attaque, cibles), `sim.js` (pas de simulation 120 Hz).
   - `render/` : `heroes3d.js` (personnages three.js, preview, portraits), `world.js` (décor + rendu de secours + noms), `environment.js` (décor), `effects.js` (effets de sorts).
   - `characters/` : `kits.js` (données des 35 kits, lu aussi par `tools/build_characters.js`), `builder.js` (assemblage three.js).
-  - Musique : `audio/tracks.js` (lobby = `assets/audio/lobby.mp3` fourni par l'utilisateur ; musique de jeu = fichier choisi par le joueur dans ⚙, stocké en IndexedDB, jamais publié ; départ aléatoire, volume bas `TRACK_VOL`), repli `audio/music.js` (procédural). Ne jamais ajouter au dépôt de musique sous copyright (règle 9).
+  - Musique : `audio/tracks.js` (lobby = `assets/audio/lobby.mp3` fourni par l'utilisateur ; musique de jeu = `assets/audio/game.mp3` (fournie par l'utilisateur, sans droits Blizzard selon lui), ou fichier choisi par le joueur dans ⚙ / au lobby (IndexedDB) ; départ aléatoire, volume bas `TRACK_VOL`), repli `audio/music.js` (procédural).
   - Thème visuel (couleurs, cadres, boutons, fond de prévisualisation) : `src/ui/theme.css` (surcharges, chargé après le CSS d'index.html).
   - Curseurs (gantelet / épée sur ennemi / main verte sur allié) : `src/ui/cursor.js` (`unitAtScreen` sert aussi au ciblage au clic).
   - `ui/` (hud, skillbar, settings, mobile), `audio/` (music, sfx), `input/controls.js` (contrôles validés), `core/` (setup, webgl, main = boucle).

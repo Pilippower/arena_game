@@ -170,40 +170,105 @@
       m.rotation.y = r() * 6;
       return m;
     };
-    // obstacles de la carte
+    // Bloc de pierre irrégulier (boîte subdivisée, sommets bruités) : remplace les cubes lisses.
+    const stoneBlock = (w, h, d, x, y, z, mat = rock, jit = 0.12) => {
+      const geo = new THREE.BoxGeometry(w, h, d, 3, 3, 3),
+        p = geo.attributes.position;
+      for (let i = 0; i < p.count; i++) {
+        const k = noise(p.getX(i) * 0.9 + x, p.getY(i) * 0.9 + z, 256, 2) - 0.5;
+        p.setXYZ(i, p.getX(i) * (1 + k * jit), p.getY(i) * (1 + k * jit * 0.6), p.getZ(i) * (1 + k * jit));
+      }
+      geo.computeVertexNormals();
+      const m = add(geo, mat, x, y, z);
+      m.rotation.y = (r() - 0.5) * 0.3;
+      return m;
+    };
+    const masonry = new THREE.MeshStandardMaterial({ map: rockT, color: 0xc8b6a4, roughness: 0.95 });
+    const strap = (geoW, h, x, y, z, rot = 0) => {
+      const s = add(new THREE.BoxGeometry(geoW, h, 0.06), iron, x, y, z, false);
+      s.rotation.y = rot;
+      return s;
+    };
+    // poteau de bois massif : écorce, cerclages de fer rivetés, pointe d'os
+    const post = (x, z, rr, h, tip = true) => {
+      add(new THREE.CylinderGeometry(rr * 0.9, rr * 1.05, h, 12), darkWood, x, h / 2, z);
+      for (const y of [0.5, h * 0.5, h - 0.5]) {
+        add(new THREE.CylinderGeometry(rr * 1.1, rr * 1.1, 0.22, 12), iron, x, y, z);
+        for (let k = 0; k < 6; k++) {
+          const a = (k / 6) * Math.PI * 2;
+          add(
+            new THREE.SphereGeometry(0.05, 6, 4),
+            iron,
+            x + Math.sin(a) * rr * 1.12,
+            y,
+            z + Math.cos(a) * rr * 1.12,
+            false
+          );
+        }
+      }
+      if (tip) {
+        const t = add(new THREE.ConeGeometry(rr * 0.75, 1.6, 8), bone, x, h + 0.75, z);
+        t.rotation.z = (r() - 0.5) * 0.25;
+      }
+    };
+    // obstacles de la carte (mêmes cercles de collision que MAPS.bridge)
     for (const p of arena.pillars) {
       if (p.kind === 'rock') {
-        const b = add(new THREE.BoxGeometry(p.r * 1.7, p.h, p.r * 1.7), rock, p.x, p.h / 2, p.z);
-        b.rotation.y = r() * 0.6;
-        boulder(p.x + p.r * 0.6, p.z - p.r * 0.5, p.r * 0.45, p.h * 0.5);
-      } else {
-        add(new THREE.CylinderGeometry(p.r * 0.85, p.r, p.h, 10), darkWood, p.x, p.h / 2, p.z);
-        for (const y of [0.6, p.h - 0.8])
-          add(new THREE.CylinderGeometry(p.r * 1.05, p.r * 1.05, 0.25, 10), iron, p.x, y, p.z);
-        const tip = add(new THREE.ConeGeometry(p.r * 0.7, 1.4, 8), bone, p.x, p.h + 0.7 + 0.6, p.z);
-        tip.rotation.z = (r() - 0.5) * 0.2;
+        // empilement de blocs taillés + éboulis au pied
+        stoneBlock(p.r * 1.9, p.h * 0.55, p.r * 1.7, p.x, p.h * 0.27, p.z, masonry);
+        stoneBlock(p.r * 1.5, p.h * 0.5, p.r * 1.4, p.x + 0.1, p.h * 0.75, p.z - 0.05, masonry);
+        for (let k = 0; k < 4; k++) {
+          const a = r() * Math.PI * 2;
+          boulder(p.x + Math.sin(a) * p.r * 1.2, p.z + Math.cos(a) * p.r * 1.2, 0.25 + r() * 0.35, 0.6 + r() * 0.5);
+        }
+      } else post(p.x, p.z, p.r, p.h, false);
+    }
+    // le pont : deux longerons, planches individuelles, sangles de fer, garde-corps, chevalets sous le tablier
+    const bridgeY = 4.8,
+      len = hx * 2 + 4,
+      W = 4.6;
+    for (const sz of [-1, 1]) {
+      add(new THREE.BoxGeometry(len, 0.5, 0.45), darkWood, 0, bridgeY - 0.15, sz * (W / 2 - 0.2));
+      add(new THREE.BoxGeometry(len, 0.18, 0.2), darkWood, 0, bridgeY + 1.15, sz * (W / 2 - 0.1)); // main courante
+    }
+    const plankG = new THREE.BoxGeometry(0.55, 0.16, W - 0.3),
+      plankMats = [wood, darkWood];
+    for (let x = -len / 2 + 0.3, k = 0; x < len / 2; x += 0.6, k++) {
+      const pl = add(plankG, plankMats[k % 5 === 0 ? 1 : 0], x, bridgeY + 0.14 + (r() - 0.5) * 0.03, 0);
+      pl.rotation.y = (r() - 0.5) * 0.04;
+      pl.receiveShadow = true;
+    }
+    for (let x = -len / 2 + 1.6; x < len / 2; x += 3.2) {
+      for (const sz of [-1, 1]) {
+        add(new THREE.BoxGeometry(0.24, 1.2, 0.24), darkWood, x, bridgeY + 0.65, sz * (W / 2 - 0.1)); // balustre
+        strap(0.3, 0.6, x, bridgeY - 0.1, sz * (W / 2 + 0.03));
+      }
+      add(new THREE.BoxGeometry(0.12, 0.05, W - 0.2), iron, x, bridgeY + 0.24, 0, false); // sangle sur le tablier
+    }
+    // chevalets : traverses et croix de Saint-André entre les poteaux qui portent le pont
+    const posts = arena.pillars.filter(p => p.kind === 'post');
+    for (const p of posts) {
+      add(new THREE.BoxGeometry(0.5, 0.45, W + 0.6), darkWood, p.x, bridgeY - 0.55, 0); // traverse
+      add(new THREE.CylinderGeometry(p.r * 0.9, p.r * 0.95, 1.2, 12), darkWood, p.x, bridgeY - 1.0, p.z); // tête de poteau
+    }
+    for (const sx of [-1, 1]) {
+      const a = posts.find(p => Math.sign(p.x) === sx && p.z > 0),
+        b = posts.find(p => Math.sign(p.x) === sx && p.z < 0);
+      if (!a || !b) continue;
+      const dz = a.z - b.z,
+        L = Math.hypot(dz, bridgeY - 1.2);
+      for (const s of [-1, 1]) {
+        const br = add(new THREE.BoxGeometry(0.2, L, 0.26), darkWood, a.x, (bridgeY - 0.6) / 2 + 0.3, 0);
+        br.rotation.x = s * Math.atan2(dz, bridgeY - 1.2);
       }
     }
-    // le pont : tablier de planches cerclé de fer, au-dessus du centre, d'un rempart à l'autre
-    const bridgeY = 4.8,
-      len = hx * 2 + 4;
-    const deck = add(new THREE.BoxGeometry(len, 0.35, 4.6), wood, 0, bridgeY, 0);
-    woodT.repeat.set(1, 1);
-    for (let x = -len / 2 + 1; x < len / 2; x += 3.2) {
-      add(new THREE.BoxGeometry(0.22, 0.42, 4.8), iron, x, bridgeY + 0.02, 0, false);
-      if (Math.abs(x) > 3) add(new THREE.BoxGeometry(0.25, 0.9, 0.25), darkWood, x, bridgeY + 0.6, 2.3);
-      if (Math.abs(x) > 3) add(new THREE.BoxGeometry(0.25, 0.9, 0.25), darkWood, x, bridgeY + 0.6, -2.3);
-    }
-    add(new THREE.BoxGeometry(len, 0.18, 0.2), darkWood, 0, bridgeY + 1.0, 2.3);
-    add(new THREE.BoxGeometry(len, 0.18, 0.2), darkWood, 0, bridgeY + 1.0, -2.3);
-    deck.receiveShadow = true;
-    // remparts : roche + palissade de rondins hérissée de pointes
+    // remparts : falaise de blocs empilés, palissade de rondins taillés en pointe, grandes défenses d'os
     const wallH = 4.2;
     const sides = [
-      [0, -hz - 1.2, hx * 2 + 6, 2.4, false],
-      [0, hz + 1.2, hx * 2 + 6, 2.4, false],
-      [-hx - 1.2, 0, 2.4, hz * 2, true],
-      [hx + 1.2, 0, 2.4, hz * 2, true]
+      [0, -hz - 1.6, hx * 2 + 7, 3.2, false],
+      [0, hz + 1.6, hx * 2 + 7, 3.2, false],
+      [-hx - 1.6, 0, 3.2, hz * 2 + 1, true],
+      [hx + 1.6, 0, 3.2, hz * 2 + 1, true]
     ];
     const bannerT = tex(THREE, bannerCanvas(), false);
     const bannerMat = new THREE.MeshStandardMaterial({
@@ -221,30 +286,73 @@
           '#include <begin_vertex>\nfloat k=(1.5-position.y)/3.;transformed.z+=(sin(time*2.+position.y*1.7+modelMatrix[3].x)*.5+.5)*.18*k;'
         );
     };
+    const logG = new THREE.CylinderGeometry(0.4, 0.46, 1, 8),
+      logTipG = new THREE.ConeGeometry(0.4, 0.9, 8);
     for (const [x, z, w, d, vert] of sides) {
-      add(new THREE.BoxGeometry(w, wallH, d), rock, x, wallH / 2, z);
-      const n = Math.floor((vert ? d : w) / 1.1);
-      for (let k = 0; k < n; k++) {
-        const t = -((vert ? d : w) / 2) + 0.55 + k * 1.1,
-          lx = vert ? x + Math.sign(x) * -0.6 : x + t,
-          lz = vert ? z + t : z + Math.sign(z) * -0.6,
-          lh = 2.2 + r() * 1.2;
-        add(new THREE.CylinderGeometry(0.42, 0.48, lh, 7), darkWood, lx, wallH + lh / 2 - 0.3, lz);
-        if (k % 4 === 0) {
-          const s = add(new THREE.ConeGeometry(0.45, 2.2, 7), bone, lx, wallH + lh + 0.6, lz);
-          s.rotation.set(vert ? 0 : Math.sign(z) * -0.45, 0, vert ? Math.sign(x) * 0.45 : 0);
+      const len2 = vert ? d : w,
+        inward = vert ? -Math.sign(x) : -Math.sign(z);
+      // blocs de falaise sur 2 rangées
+      for (let t = -len2 / 2; t < len2 / 2;) {
+        const bw = 2 + r() * 2.2;
+        for (let row = 0; row < 2; row++) {
+          const bh = wallH / 2 + r() * 0.4,
+            cx = vert ? x : x + t + bw / 2,
+            cz = vert ? z + t + bw / 2 : z;
+          stoneBlock(vert ? d : bw, bh, vert ? bw : d, cx, row * (wallH / 2) + bh / 2, cz, rock, 0.18);
         }
+        t += bw;
+      }
+      // palissade
+      for (let t = -len2 / 2 + 0.5; t < len2 / 2; t += 0.85) {
+        const lh = 2.4 + r() * 1.4,
+          lx = vert ? x - inward * 0.6 : x + t,
+          lz = vert ? z + t : z - inward * 0.6;
+        const lg = add(logG, darkWood, lx, wallH + lh / 2 - 0.3, lz);
+        lg.scale.y = lh;
+        add(logTipG, wood, lx, wallH + lh - 0.3 + 0.45, lz);
+      }
+      // ceinture de fer qui lie la palissade
+      add(
+        new THREE.BoxGeometry(vert ? 0.9 : len2, 0.18, vert ? len2 : 0.9),
+        iron,
+        vert ? x - inward * 0.6 : x,
+        wallH + 1.2,
+        vert ? z : z - inward * 0.6,
+        false
+      );
+      // défenses d'os inclinées vers l'arène
+      for (let t = -len2 / 2 + 3; t < len2 / 2 - 2; t += 6) {
+        const sx = vert ? x + inward * 0.9 : x + t,
+          sz = vert ? z + t : z + inward * 0.9,
+          s = add(new THREE.ConeGeometry(0.5, 3.2, 8), bone, sx, wallH + 0.6, sz);
+        s.rotation.set(vert ? 0 : -inward * 0.9, 0, vert ? inward * 0.9 : 0);
+      }
+      // porte grillagée au milieu des grands côtés
+      if (!vert) {
+        const gz = z + inward * (d / 2 + 0.02);
+        add(
+          new THREE.BoxGeometry(4.2, 3.4, 0.2),
+          new THREE.MeshStandardMaterial({ color: 0x0c0806, roughness: 1 }),
+          0,
+          1.7,
+          gz,
+          false
+        );
+        for (let k = -1.8; k <= 1.8; k += 0.45)
+          add(new THREE.BoxGeometry(0.1, 3.3, 0.1), iron, k, 1.65, gz + inward * 0.12, false);
+        for (const y of [0.9, 2.2]) add(new THREE.BoxGeometry(4, 0.1, 0.1), iron, 0, y, gz + inward * 0.12, false);
+        stoneBlock(5.4, 0.9, 1.2, 0, 3.8, gz - inward * 0.3, masonry);
       }
       // bannières vers l'arène
       for (let k = -2; k <= 2; k++) {
         if (k === 0) continue;
         const b = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 3.2, 4, 8), bannerMat);
         if (vert) {
-          b.position.set(x - Math.sign(x) * 1.25, wallH - 1.2, k * (d / 6));
-          b.rotation.y = (-Math.sign(x) * Math.PI) / 2;
+          b.position.set(x + inward * (d / 2 + 0.05), wallH - 1.2, k * (d / 6));
+          b.rotation.y = (inward * Math.PI) / 2;
         } else {
-          b.position.set(k * (w / 6), wallH - 1.2, z - Math.sign(z) * 1.25);
-          if (z > 0) b.rotation.y = Math.PI;
+          b.position.set(k * (w / 6), wallH - 1.2, z + inward * (d / 2 + 0.05));
+          if (inward < 0) b.rotation.y = Math.PI;
         }
         b.castShadow = true;
         S.add(b);

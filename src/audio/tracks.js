@@ -3,8 +3,8 @@
 //  - lobby : assets/audio/lobby.mp3 en boucle tant que l'écran de sélection est ouvert ;
 //  - en jeu : un fichier choisi par le joueur (⚙ Interface), gardé dans le navigateur (IndexedDB), jamais publié.
 //    Chaque partie démarre à une position aléatoire avec un fondu ; sans fichier, la musique procédurale joue.
-//  - fichier local facultatif assets/audio/local/game.mp3 (ignoré par git, jamais publié) : utilisé quand le joueur
-//    n'a rien choisi, sur la machine qui le possède (absent sur GitHub Pages → musique procédurale).
+//  - musique de jeu par défaut : assets/audio/game.mp3 (fournie par l'utilisateur, publiée), chargée seulement
+//    au lancement d'une partie (fichier lourd). Un fichier choisi par le joueur la remplace.
 const TRACKS = { lobby: null, game: null, gameUrl: null, gameName: '', want: 'none' };
 const TRACK_VOL = { lobby: 0.32, game: 0.16 }; // la musique ne doit pas couvrir les bruitages
 function trackVolume(kind) {
@@ -57,7 +57,7 @@ function playLobbyMusic() {
 // Fichier local par défaut : chargé une fois ; s'il est absent (erreur), on garde la musique procédurale.
 function localGameTrack() {
   if (TRACKS.local === undefined) {
-    const a = new Audio('assets/audio/local/game.mp3');
+    const a = new Audio('assets/audio/game.mp3');
     a.loop = true;
     a.preload = 'metadata';
     TRACKS.local = a;
@@ -129,7 +129,7 @@ async function clearGameTrack() {
   if (TRACKS.game) TRACKS.game.pause();
   TRACKS.game = null;
   TRACKS.gameName = '';
-  for (const id of ['gameTrackName', 'lobbyTrackName']) if ($(id)) $(id).textContent = 'Procedural soundtrack';
+  for (const id of ['gameTrackName', 'lobbyTrackName']) if ($(id)) $(id).textContent = 'Arena soundtrack';
   try {
     const db = await trackDb();
     db.transaction('t', 'readwrite').objectStore('t').delete('game');
@@ -145,7 +145,3 @@ async function clearGameTrack() {
 })();
 // Bouton du lobby : même sélecteur de fichier que les réglages (le fichier reste sur l'appareil).
 $('lobbyTrackBtn').onclick = () => $('gameTrackInput').click();
-// Sur la machine qui possède assets/audio/local/game.mp3, le lobby l'indique dès qu'il est trouvé.
-localGameTrack()?.addEventListener('loadedmetadata', () => {
-  if (!TRACKS.game && $('lobbyTrackName')) $('lobbyTrackName').textContent = 'Local file (assets/audio/local/game.mp3)';
-});
