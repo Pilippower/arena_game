@@ -26,7 +26,6 @@ const BURST_SPELL = { reaver: 'Pillar of Frost', arcanist: 'Arcane Power', shade
 function buffList(u) {
   const b = [];
   if (u.burst > 0 && BURST_SPELL[u.cls]) b.push({ n: BURST_SPELL[u.cls], t: u.burst });
-  if (u.speedBuff > 0 && !(u.burst > 0) && u.cls === 'reaver') b.push({ n: 'Death Advance', t: u.speedBuff });
   if (u.spellImmune > 0) b.push({ n: 'Cloak', t: u.spellImmune });
   if (u.shield > 0) {
     const n = u.shieldName || 'Power Shield',
@@ -57,7 +56,7 @@ function aurasHTML(b, cls) {
   return `<div class="${cls}">${b
     .map(
       x =>
-        `<span class="buff" title="${x.n}"><img src="assets/ui/spells/${spellArtKey(x.n)}.webp" alt="">${x.t != null ? `<b>${time(x.t)}</b>` : ''}${x.v != null ? `<i>${x.v}</i>` : ''}</span>`
+        `<span class="buff" title="${x.n}"><img src="assets/ui/spells/${spellArt(x.n)}.webp" alt="">${x.t != null ? `<b>${time(x.t)}</b>` : ''}${x.v != null ? `<i>${x.v}</i>` : ''}</span>`
     )
     .join('')}</div>`;
 }

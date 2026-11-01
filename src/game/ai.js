@@ -51,8 +51,8 @@ const AI_PROFILES = {
 const AI_ROLE = {
   sentinel: { melee: 1, dmg: 0, slow: 1, kick: 2, def: 3, gap: 4 },
   arcanist: { dmg: 0, peel: 1, kick: 2, burst: 3, escape: 4, cc: 5, ccHealer: 1 },
-  oracle: { healer: 1, heal: 0, shield: 1, kick: 2, mass: 3, escape: 4 },
-  reaver: { melee: 1, dmg: 0, grip: 1, stun: 2, kickStun: 1, burst: 3, gap: 4 },
+  oracle: { healer: 1, heal: 0, shield: 1, fear: 2, mass: 3, dmg: 4 },
+  reaver: { melee: 1, dmg: 0, grip: 1, stun: 2, kickStun: 1, burst: 3 },
   warden: {},
   warden_cat: { melee: 1, dmg: 0, slow: 1, stun: 2, kickStun: 2, gap: 3 },
   warden_bear: { melee: 1, dmg: 0, aoe: 1, def: 2, gap: 3 },
@@ -391,7 +391,18 @@ function ai(u, dt) {
       return;
     if (R.gap != null && R.melee && d > 6 && d < 15 && aiCanUse(u, R.gap) && useSkill(u, R.gap)) return;
     if (R.dmg != null && !healer && aiCanUse(u, R.dmg) && !(t.poly > 0) && useSkill(u, R.dmg)) return;
-    if (healer && R.kick != null && hpPct(t) < 0.5 && !ccd(t) && aiCastOn(u, R.kick, t)) return;
+    // prêtre : Holy Terror quand des mêlées le serrent, Smite quand personne n'a besoin de soins
+    if (R.fear != null && meleeOnMe.length && aiCanUse(u, R.fear) && useSkill(u, R.fear)) return;
+    if (
+      healer &&
+      R.dmg != null &&
+      friends.every(a => hpPct(a) > 0.85) &&
+      d < 15 &&
+      los(u, t) &&
+      aiCanUse(u, R.dmg) &&
+      useSkill(u, R.dmg)
+    )
+      return;
   }
   // 3. déplacement : mêlées au contact ; lanceurs à distance, en ligne de vue, en reculant face aux mêlées
   let desired = caster ? (healer ? 10 : 11) : 1.9,

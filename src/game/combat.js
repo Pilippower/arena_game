@@ -586,7 +586,7 @@ function tryPlayerSkill(i) {
 function spellFx(u, i, t, origin) {
   const c = CLASS[u.cls].accent,
     at = t || u;
-  if (i === 4) {
+  if (i === 4 && u.cls !== 'oracle') {
     if (u.cls === 'arcanist') {
       fx('blinkBurst', origin.x, (u.y || 0) + 0.9, origin.z, c, 0.5, 0.72);
       fx('blinkBurst', u.x, (u.y || 0) + 0.9, u.z, c, 0.6, 0.82);
@@ -605,7 +605,7 @@ function spellFx(u, i, t, origin) {
   } else if (u.cls === 'oracle') {
     if (i === 0) fx('healCast', u.x, (u.y || 0) + 1.35, u.z, c, 0.85, 0.5, at ? [at.x, (at.y || 0) + 1.3, at.z] : null);
     else if (i === 1) fx('shield', at.x, (at.y || 0) + 1.1, at.z, c, 0.85, 0.78);
-    else if (i === 2) fx('silence', at.x, (at.y || 0) + 1.25, at.z, c, 0.55, 0.72);
+    else if (i === 2) fx('nova', u.x, 0.1, u.z, [0.7, 0.45, 1], 1.4, 1.2);
     else if (i === 3) fx('holyBurst', u.x, 0.12, u.z, c, 1.05, 1.7);
   } else if (u.cls === 'warden') {
     if (i === 0) fx('slash', at.x, (at.y || 0) + 1.1, at.z, c, 0.32, 0.55);
@@ -647,7 +647,7 @@ function useSkill(u, i) {
     S = skillsOf(u)[i];
   u.curSchool = S.s || 'physical';
   SPELL_NOW = S.n;
-  const selfMobility = i === 4 && ['arcanist', 'oracle', 'warlock'].includes(u.cls),
+  const selfMobility = i === 4 && ['arcanist', 'warlock'].includes(u.cls),
     selfCC = u.cls === 'arcanist' && i === 1;
   if (!t && u.cls !== 'oracle' && !selfMobility && !selfCC) return false;
   const d = t ? d2(u, t) : 999,
@@ -655,7 +655,8 @@ function useSkill(u, i) {
     range = !!t && d < 15 && los(u, t);
   if (t && !(i === 4 && (u.cls === 'arcanist' || u.cls === 'reaver')) && !(u.cls === 'arcanist' && i === 1)) face(u, t);
   let ok = true;
-  if (i === 4) {
+  // emplacement 5 = mobilité, sauf le prêtre (Smite, sort de dégâts)
+  if (i === 4 && u.cls !== 'oracle') {
     if (u.cls === 'arcanist') {
       blinkForward(u, S.dist);
       action(u, 'dash');
@@ -763,8 +764,16 @@ function useSkill(u, i) {
       a.shieldName = S.n;
       fx('ring', a.x, 0.2, a.z, c.accent, 0.8, 0.8);
       action(u, 'cast');
-    } else if (i === 2 && range) {
-      control(t, 'silence', S.dur);
+    } else if (i === 2) {
+      // Holy Terror : fear instantané de tous les ennemis à portée (rendements décroissants habituels)
+      const hit = enemies(u).filter(e => d2(u, e) < S.radius && los(u, e) && !e.stealth);
+      if (!hit.length) return false;
+      hit.forEach(e => {
+        if (control(e, 'fear', S.dur, u)) fx('fear', e.x, (e.y || 0) + 1.15, e.z, c.accent, 1.0, 1.05);
+      });
+      action(u, 'cast');
+    } else if (i === 4 && range && u.silence <= 0) {
+      u.cast = castOf(u, i, t, 'damage', S.dmg);
       action(u, 'cast');
     } else if (i === 3) {
       allies(u).forEach(v => heal(u, v, S.heal));
@@ -837,7 +846,7 @@ function useSkill(u, i) {
   spellSfx(u, i, t);
   pay(u, i);
   u.cd[i] = S.cd;
-  u.gcd = u.gcdMax = i === 4 ? 0.35 : 1.05;
+  u.gcd = u.gcdMax = i === 4 && u.cls !== 'oracle' ? 0.35 : 1.05; // mobilité : GCD court (pas Smite)
   updateUI();
   return true;
 }

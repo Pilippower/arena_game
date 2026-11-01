@@ -21,6 +21,16 @@ assert.equal(ctx.skillMotif('Bear Form'), 'paw', 'Bear Form = empreinte de patte
 // CC sans recharge
 assert.equal(skill('arcanist', 'Polymorph').cd, 0, 'Polymorph sans recharge');
 assert.equal(skill('warlock', 'Fear').cd, 0, 'Fear sans recharge');
+// Prêtre : Smite (moitié des dégâts du mage) et Holy Terror (fear de zone 10 m) ; chevalier de la mort sans Death Advance
+assert.equal(C.oracle.skills.map(s => s.n).join(), 'Flash Heal,Power Shield,Holy Terror,Divine Hymn,Smite');
+assert.ok(
+  Math.abs(skill('oracle', 'Smite').dmg * 2 - skill('arcanist', 'Arcane Bolt').dmg) <= 10,
+  'Smite = moitié de l’Arcane Bolt'
+);
+assert.equal(skill('oracle', 'Holy Terror').radius, 10);
+assert.match(ctx.skillIconSVG('oracle', 2), /spells\/silence\.webp/, 'Holy Terror : icône de Silence');
+assert.match(ctx.skillIconSVG('oracle', 4), /spells\/angelic_step\.webp/, 'Smite : icône d’Angelic Step');
+assert.ok(!C.reaver.skills.some(s => s.n === 'Death Advance'), 'chevalier de la mort sans Death Advance');
 // Formes / camouflage
 assert.equal(ctx.FORM_INFO.cat.speed, 1.3, 'félin +30 % de vitesse');
 assert.equal(ctx.FORM_INFO.bear.hp, 1.4, 'ours +40 % PV');

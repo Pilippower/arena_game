@@ -50,9 +50,9 @@ const CLASS = {
     skills: [
       { n: 'Flash Heal', cd: 1.3, c: 28 },
       { n: 'Power Shield', cd: 8, c: 24 },
-      { n: 'Silence', cd: 16, c: 18 },
+      { n: 'Holy Terror', cd: 24, c: 22 },
       { n: 'Divine Hymn', cd: 30, c: 45 },
-      { n: 'Angelic Step', cd: 14, c: 10 }
+      { n: 'Smite', cd: 0, c: 10 }
     ],
     tags: ['heals', 'shields', 'support']
   },
@@ -69,8 +69,7 @@ const CLASS = {
       { n: 'Obliterate', cd: 5, c: 0 },
       { n: 'Death Grip', cd: 10, c: 15 },
       { n: 'Asphyxiate', cd: 12, c: 18 },
-      { n: 'Pillar of Frost', cd: 24, c: 25 },
-      { n: 'Death Advance', cd: 12, c: 18 }
+      { n: 'Pillar of Frost', cd: 24, c: 25 }
     ],
     tags: ['pressure', 'grip', 'melee']
   },
@@ -181,10 +180,12 @@ const SPELL_ART = new Set(
   ).split(' ')
 );
 const spellArtKey = n => n.toLowerCase().replace(/\W+/g, '_');
+// Image d'un sort : la sienne, ou celle d'un sort remplacé (champ art de SPELLS)
+const spellArt = n => SPELLS[n]?.art || spellArtKey(n);
 function skillIconSVG(cls, i, S) {
   const C = CLASS[cls];
   S = S || C.skills[i];
-  const art = spellArtKey(S.n);
+  const art = spellArt(S.n);
   if (SPELL_ART.has(art))
     return `<svg viewBox="0 0 48 48" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><image href="assets/ui/spells/${art}.webp" width="48" height="48" preserveAspectRatio="xMidYMid slice"/></svg>`;
   const a = rgbHex(C.accent),
@@ -235,17 +236,11 @@ const SKILL_META = {
   oracle: [
     { t: 'heal', s: 'holy' },
     { t: 'heal', s: 'holy' },
-    { t: 'ranged', s: 'shadow' },
+    { t: 'aoe', s: 'shadow' },
     { t: 'self', s: 'holy' },
-    { t: 'self', s: 'holy' }
+    { t: 'ranged', s: 'holy' }
   ],
-  reaver: [
-    { t: 'melee' },
-    { t: 'ranged', s: 'unholy' },
-    { t: 'ranged', s: 'unholy' },
-    { t: 'self', s: 'frost' },
-    { t: 'ranged' }
-  ],
+  reaver: [{ t: 'melee' }, { t: 'ranged', s: 'unholy' }, { t: 'ranged', s: 'unholy' }, { t: 'self', s: 'frost' }],
   warden: [
     { t: 'ranged', s: 'nature' },
     { t: 'ranged', s: 'nature' },
@@ -671,11 +666,19 @@ const SPELLS = {
     shield: 300,
     text: S => `Shields your friendly target, absorbing <b class="tHeal">${S.shield}</b> damage.`
   },
-  Silence: { dur: 2.8, text: S => `Silences the target for ${sec(S.dur)}.` },
+  // icônes : celles des sorts remplacés (Silence, Angelic Step)
+  'Holy Terror': {
+    radius: 10,
+    dur: 3,
+    art: 'silence',
+    text: S => `Instant: every enemy within ${S.radius} m flees in terror for ${sec(S.dur)}.`
+  },
   'Divine Hymn': { heal: 230, text: (S, D, H) => `Heals all allies for ${H(S.heal)}.` },
-  'Angelic Step': {
-    dist: 4.2,
-    text: S => `Leaps ${S.dist} m forward; breaks roots.`
+  Smite: {
+    cast: 1.5,
+    dmg: 100,
+    art: 'angelic_step',
+    text: (S, D) => `${sec(S.cast)} cast: holy light dealing ${D(S.dmg)} damage.`
   },
   Obliterate: {
     dmg: 190,
@@ -690,7 +693,6 @@ const SPELLS = {
   },
   Asphyxiate: { dmg: 65, stun: 2.5, text: (S, D) => `Ranged: ${D(S.dmg)} damage and stuns for ${sec(S.stun)}.` },
   'Pillar of Frost': { burst: 7, text: S => `+35% damage and +18% speed for ${sec(S.burst)}.` },
-  'Death Advance': { dist: 6, text: S => `Leaps ${S.dist} m where you face, then +18% speed for 3 s.` },
   Wrath: { cast: 1.5, dmg: 175, text: (S, D) => `${sec(S.cast)} cast: ${D(S.dmg)} nature damage.` },
   'Entangling Roots': { root: 5, text: S => `Roots grip the target: rooted for ${sec(S.root)}.` },
   Barkskin: { shield: 420, text: S => `Bark shield absorbing <b class="tHeal">${S.shield}</b> damage.` },

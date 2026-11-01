@@ -192,7 +192,7 @@ function sfxForSkill(u, S, i) {
     if (!/Sap/.test(n)) SFX.meleeHit(u, true);
     return;
   }
-  if (/Sap|Maim|Kidney|Asphyx|Silence|Roots|Grip/.test(n)) return SFX.cc(u);
+  if (/Sap|Maim|Kidney|Asphyx|Silence|Terror|Roots|Grip/.test(n)) return SFX.cc(u);
   if (/Starfall|Swipe/.test(n)) return SFX.spellHit(u, 'arcane');
   if (u.cast) return SFX.castStart(u, S.s);
   SFX.spellHit(u, S.s);

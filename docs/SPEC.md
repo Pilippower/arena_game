@@ -26,6 +26,8 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Death Grip : la cible est tirée devant le lanceur. Death Advance : bond dans la direction regardée.
 - Cloak (voleur) : immunité aux **sorts** 5 s (pas aux coups d'arme), retire racines et ralentissements magiques.
 - Sort qui échoue faute de ligne de vue : ressource et recharge rendues.
+- Prêtre : **Smite** (1,5 s, 100 dégâts sacrés = moitié de l'Arcane Bolt du mage, icône d'Angelic Step) remplace Angelic Step ; **Holy Terror** (instantané : tous les ennemis à 10 m fuient 3 s, rendements décroissants habituels, icône de Silence) remplace Silence. L'IA s'en sert (Holy Terror contre les mêlées au contact, Smite quand personne n'a besoin de soins). 🧪
+- Chevalier de la mort : plus de Death Advance (il a déjà Death Grip). 🧪
 - Voleur : frappe 2× plus vite qu'un guerrier pour la moitié des dégâts (même DPS). 🧪
 
 ## Classes, formes, armures
