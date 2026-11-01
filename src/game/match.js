@@ -26,6 +26,7 @@ function recordKill(src, t) {
 // Fin de manche : point au vainqueur, puis manche suivante ou résultats après la 3e.
 function endRound(win) {
   state.ended = true;
+  state.winTeam = win ? state.player.team : 1 - state.player.team;
   if (win) state.scoreA++;
   else state.scoreB++;
   showSplash(win ? 'Round won!' : 'Round lost');

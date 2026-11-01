@@ -4,6 +4,17 @@ function update(dt) {
   if (!state) return;
   if (state.splash > 0) state.splash -= dt;
   if (state.ended) {
+    // fin de manche : plus de mouvement ni d'interpolation résiduelle entre les deux dernières positions
+    // (le personnage tremblait sur place) ; les vainqueurs fêtent la victoire (heroes3d.js, « cheer »)
+    for (const u of state.units) {
+      u.prevX = u.x;
+      u.prevY = u.y || 0;
+      u.prevZ = u.z;
+      u.prevYaw = u.yaw;
+      u.moving = false;
+      u.cast = null;
+      u.mobility = null;
+    }
     updateVisualState(dt);
     return;
   }

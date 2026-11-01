@@ -238,4 +238,6 @@ run('src/ui/hud.js');
     'lobby épuré'
   );
 }
+assert.match(read('src/game/sim.js'), /if \(state\.ended\) \{[\s\S]*?u\.prevX = u\.x;[\s\S]*?u\.moving = false;/, 'fin de manche : pas de tremblement');
+assert.match(read('src/render/heroes3d.js'), /state\.winTeam === u\.team\) \{\s*\/\/[^\n]*\n\s*key = 'cheer'/, 'vainqueurs : geste de joie');
 console.log('OK - spécifications validées (docs/SPEC.md)');

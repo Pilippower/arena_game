@@ -737,6 +737,10 @@ function hfSetAnim(rec, u) {
   if (!u.alive) {
     key = 'death';
     names = ['Death01', 'Death_A', 'Death', 'Die'];
+  } else if (state?.ended && state.winTeam === u.team) {
+    // joie du vainqueur : arme brandie (pose levée du coup d'épée, animée plus bas)
+    key = 'cheer';
+    names = ['Sword_Attack', 'Spell_Simple_Shoot'];
   } else if (u.stun > 0 || u.mobility?.type === 'grip') {
     key = 'cc';
     names = ['Hit_Chest', 'Hit_A', 'Hit', 'Idle'];
@@ -992,6 +996,13 @@ function hfRender() {
     if (rec.action && rec.animKey === 'run')
       rec.action.timeScale = clamp(moveSpeed(u) / CLASS[u.cls].speed, 0.45, 1.18);
     if (rec.action && rec.animKey === 'back') rec.action.timeScale = -1.25;
+    // joie : l'arme levée « pompe » vers le ciel en rythme, avec un petit rebond (pas de pose figée)
+    if (rec.action && rec.animKey === 'cheer') {
+      const b = Math.sin(now() * 7 + u.id * 6);
+      rec.action.timeScale = 0;
+      rec.action.time = rec.action.getClip().duration * (0.13 + 0.035 * b);
+      rec.group.position.y += Math.max(0, b) * 0.07;
+    }
     if (rec.mixer) rec.mixer.update(dt);
     if (
       rec.action &&

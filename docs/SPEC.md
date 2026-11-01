@@ -45,6 +45,7 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Se cibler soi-même (ou un allié) : plus d'auto-attaque sur l'ennemi d'en face, posture droite (pas de garde de combat). 🧪
 - « Change class » en partie : confirmation (Leave / Stay) ; Leave arrête réellement le match (plus de simulation ni de sons), revient au lobby avec sa musique, race et classe présélectionnées. 🧪
 - Lobby : pas de sous-titre « 1v1 to 3v3 · WebGL… » ni d'infos en bas à gauche ; en jeu, pas de bulles (mobility, stun…) sur la barre du bas. 🧪
+- Fin de manche : plus aucun mouvement ni tremblement (interpolation figée) ; les vainqueurs vivants fêtent la victoire, arme brandie qui pompe vers le ciel avec un petit rebond (`cheer` dans `heroes3d.js`). 🧪
 - Le joueur ne choisit pas la musique : lobby = `assets/audio/lobby.mp3`, jeu = `assets/audio/game.mp3`.
 - Icônes de sorts **dessinées par l'utilisateur** (planche `assets_src/ui/spells_all.png` → `node tools/build_spell_icons.js` → `assets/ui/spells/`, liste `SPELL_ART` dans `classes.js`) pour **tous** les sorts et le trinket : elles remplacent entièrement l'ancienne icône ; l'illustration (sans le cadre de la planche) remplit **tout le bouton**, même non carré (pas de bandes sur les côtés), la bordure reste celle du jeu. 🧪
 - Icônes de sorts : l'illustration remplit tout le carré, le nom en bas par-dessus ; GCD et recharges affichés par un balayage circulaire ; retour visuel à l'appui.
