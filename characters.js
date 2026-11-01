@@ -342,14 +342,20 @@
       // Bouclier rond sanglé sur l'avant-bras gauche (face extérieure), épée longue en main droite
       const gold=new THREE.MeshStandardMaterial({color:0xe0b050,roughness:.3,metalness:.9}),gem=new THREE.MeshStandardMaterial({color:0x66ccff,emissive:0x3399ff,emissiveIntensity:2});
       const sh=new THREE.Group();sh.name='Shield';
-      const wood=new THREE.MeshStandardMaterial({color:0xc88a2c,roughness:.35,metalness:.75,envMap:envMap(THREE),envMapIntensity:1.2});
-      const ks=new THREE.Shape();ks.moveTo(0,.36);ks.quadraticCurveTo(.2,.34,.2,.12);ks.quadraticCurveTo(.18,-.2,0,-.42);ks.quadraticCurveTo(-.18,-.2,-.2,.12);ks.quadraticCurveTo(-.2,.34,0,.36);
-      const kite=new THREE.Mesh(new THREE.ExtrudeGeometry(ks,{depth:.025,bevelEnabled:true,bevelSize:.012,bevelThickness:.01,bevelSegments:2}),wood);kite.scale.setScalar(s);kite.position.z=-.012*s;sh.add(kite);
-      for(let k=0;k<6;k++){const t=k/5,y=(.3-t*.62)*s,x=(.2-t*t*.17)*s;for(const sx of [-1,1]){const sp=new THREE.Mesh(new THREE.ConeGeometry(.015*s,.07*s,5),dark);sp.position.set(sx*x,y,0);sp.rotation.z=-sx*Math.PI/2;sh.add(sp)}}
+      // Pavois : plaque d'acier sombre aux angles arrondis, bordure dorée rivetée, ombon serti, pointes aux coins
+      const plateM=new THREE.MeshStandardMaterial({color:0x23252e,roughness:.4,metalness:.8,envMap:envMap(THREE),envMapIntensity:.7});
+      const rr=(w,h,r)=>{const p=new THREE.Shape();p.moveTo(-w+r,-h);p.lineTo(w-r,-h);p.quadraticCurveTo(w,-h,w,-h+r);p.lineTo(w,h-r);p.quadraticCurveTo(w,h,w-r,h);p.lineTo(-w+r,h);p.quadraticCurveTo(-w,h,-w,h-r);p.lineTo(-w,-h+r);p.quadraticCurveTo(-w,-h,-w+r,-h);return p};
+      const ext=(sh,d,m)=>new THREE.Mesh(new THREE.ExtrudeGeometry(sh,{depth:d,bevelEnabled:true,bevelSize:.008,bevelThickness:.008,bevelSegments:2}),m);
+      const border=ext(rr(.22,.36,.05),.02,gold);border.scale.setScalar(s);border.position.z=-.015*s;sh.add(border);
+      const plate=ext(rr(.195,.335,.04),.02,plateM);plate.scale.setScalar(s);plate.position.z=-.005*s;sh.add(plate);
+      const ridge=B(.03,.6,.02,plateM);ridge.position.z=.022*s;sh.add(ridge);
+      const rivetG=new THREE.SphereGeometry(.011*s,8,6);for(const y of [-.31,.31])for(let k=-3;k<=3;k++){const rv=new THREE.Mesh(rivetG,gold);rv.position.set(k*.05*s,y*s,.022*s);sh.add(rv)}
+      const bossP=new THREE.Mesh(new THREE.CylinderGeometry(.075*s,.09*s,.03*s,8),gold);bossP.rotation.x=Math.PI/2;bossP.position.z=.03*s;sh.add(bossP);
+      for(const [x,y] of [[-.15,.26],[.15,.26],[-.15,-.26],[.15,-.26]]){const sp=new THREE.Mesh(new THREE.ConeGeometry(.02*s,.09*s,6),dark);sp.rotation.x=Math.PI/2;sp.position.set(x*s,y*s,.06*s);sh.add(sp)}
       const rim=new THREE.Mesh(new THREE.TorusGeometry(.001,.001,3,3),steel);sh.add(rim);
-      const boss=new THREE.Mesh(new THREE.OctahedronGeometry(.045*s,0),gem);boss.position.set(0,.04*s,.03*s);sh.add(boss);
+      const boss=new THREE.Mesh(new THREE.OctahedronGeometry(.045*s,0),gem);boss.scale.set(1,1.3,.7);boss.position.set(0,0,.055*s);sh.add(boss);
       const la=bones.lowerarm_l.getWorldPosition(new THREE.Vector3()),hl=bones.hand_l.getWorldPosition(new THREE.Vector3());
-      sh.position.copy(la).lerp(hl,.5).add(new THREE.Vector3(0,.07*s,0));sh.rotation.x=-Math.PI/2;mount(THREE,body,bones.lowerarm_l,sh);
+      sh.position.copy(la).lerp(hl,.5).add(new THREE.Vector3(0,.07*s,0));{const inner=new THREE.Group();[...sh.children].forEach(c=>inner.add(c));inner.rotation.z=Math.PI/2;sh.add(inner)}sh.rotation.x=-Math.PI/2;mount(THREE,body,bones.lowerarm_l,sh);
       if(kind==='hammerShield'){const w=new THREE.Group();w.name='Hammer';const hdl=new THREE.Mesh(new THREE.CylinderGeometry(.02*s,.022*s,.8*s,8),leather);hdl.position.y=.25*s;w.add(hdl);
         const head=B(.16,.09,.09,steel);head.position.y=.68*s;w.add(head);for(const x of [-.1,.1]){const cap2=new THREE.Mesh(new THREE.CylinderGeometry(.055*s,.045*s,.03*s,6),steel);cap2.rotation.z=Math.PI/2;cap2.position.set(x*s*.93,.68*s,0);w.add(cap2)}for(const x of [-.05,.05]){const band=B(.02,.1,.1,gold);band.position.set(x*s,.68*s,0);w.add(band)}
         const g2=new THREE.Mesh(new THREE.OctahedronGeometry(.035*s,0),gem);g2.position.set(0,.68*s,.09*s);w.add(g2);inHand(w,'r',.05*s,.35)}
