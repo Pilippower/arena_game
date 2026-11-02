@@ -306,6 +306,93 @@
     sp.scale.set(size, size, 1);
     return sp;
   }
+  // Feu follet : cœur brûlant, langues de flammes qui ondulent vers le haut, braises qui s'échappent, halo qui
+  // respire. Uniquement des sprites additifs (aucune lumière ajoutée). update(t) à chaque image.
+  const wispTextures = {};
+  function wispTexture(THREE, kind) {
+    if (wispTextures[kind]) return wispTextures[kind];
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d');
+    if (kind === 'flame') {
+      // langue de flamme : goutte effilée vers le haut, plus claire à la base
+      const gr = g.createRadialGradient(32, 46, 1, 32, 40, 30);
+      gr.addColorStop(0, 'rgba(255,255,255,1)');
+      gr.addColorStop(0.35, 'rgba(255,255,255,.8)');
+      gr.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = gr;
+      g.beginPath();
+      g.moveTo(32, 1);
+      g.bezierCurveTo(48, 22, 58, 44, 32, 63);
+      g.bezierCurveTo(6, 44, 16, 22, 32, 1);
+      g.fill();
+    } else {
+      const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gr.addColorStop(0, 'rgba(255,255,255,1)');
+      gr.addColorStop(0.3, 'rgba(255,255,255,.7)');
+      gr.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 64, 64);
+    }
+    return (wispTextures[kind] = new THREE.CanvasTexture(c));
+  }
+  function wispSprite(THREE, kind, color, size, normal = false) {
+    const sp = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: wispTexture(THREE, kind),
+        color,
+        // normal : couleur vive même sur fond clair (l'additif blanchit sur l'herbe) ; additif pour ce qui brille
+        blending: normal ? THREE.NormalBlending : THREE.AdditiveBlending,
+        transparent: true,
+        depthWrite: false
+      })
+    );
+    sp.scale.set(size, size, 1);
+    return sp;
+  }
+  function flameWisp(THREE, c, size) {
+    // couleur saturée (flammes vives, pas blanches) ; cœur à peine éclairci
+    const fc = c.clone().offsetHSL(0, 0.35, -0.08),
+      g = new THREE.Group(),
+      hot = fc.clone().lerp(new THREE.Color(1, 1, 1), 0.3),
+      halo = glowSprite(THREE, fc, size * 5),
+      core = wispSprite(THREE, 'ember', hot, size * 0.9),
+      tongues = [0, 1, 2].map(k => wispSprite(THREE, 'flame', k ? fc : hot, size, k > 0)),
+      embers = [0, 1, 2, 3].map(() => wispSprite(THREE, 'ember', hot, size * 0.3));
+    g.add(halo, ...tongues, core, ...embers);
+    // cœur et braises dessinés après les flammes colorées (ils brillent par-dessus)
+    tongues.forEach((sp, k) => (sp.renderOrder = k ? 1 : 2));
+    for (const sp of [core, ...embers]) sp.renderOrder = 2;
+    const update = t => {
+      halo.material.opacity = 0.75 + Math.sin(t * 3.1) * 0.2;
+      const p = 1 + Math.sin(t * 7) * 0.12;
+      core.scale.set(size * 0.9 * p, size * 0.9 * p, 1);
+      tongues.forEach((sp, k) => {
+        const ph = k * 2.1,
+          base = size * (k ? 1.9 : 1.3),
+          f = 1 + Math.sin(t * 11 + ph) * 0.18 + Math.sin(t * 17.3 + ph * 1.7) * 0.1;
+        sp.scale.set(base * (0.75 + 0.15 * Math.sin(t * 9 + ph)), base * 1.5 * f, 1);
+        sp.position.set(Math.sin(t * 6 + ph) * size * 0.15, base * 0.45, 0);
+        sp.material.rotation = Math.sin(t * 5 + ph) * 0.3;
+        sp.material.opacity = k ? 1 : 0.7;
+      });
+      // braises : montent en spirale et s'éteignent, puis renaissent
+      embers.forEach((sp, k) => {
+        const life = (t * 0.85 + k / embers.length) % 1,
+          a = k * 2.4 + Math.floor(t * 0.85 + k / embers.length) * 1.3;
+        sp.position.set(
+          Math.sin(a + life * 3) * size * 0.5,
+          size * (0.3 + life * 2.6),
+          Math.cos(a + life * 3) * size * 0.5
+        );
+        const z = size * 0.32 * (1 - life * 0.7);
+        sp.scale.set(z, z, 1);
+        sp.material.opacity = 1 - life;
+      });
+    };
+    update(0);
+    return { g, update, halo };
+  }
 
   // Yeux lumineux : l'iris (zone brune saturée de la texture) est recoloré et rendu émissif.
   function glowEyes(THREE, mesh, color, headBone, inv) {
@@ -414,7 +501,7 @@
     const crystalMat = new THREE.MeshStandardMaterial({
       color: cc,
       emissive: cc,
-      emissiveIntensity: 2.8,
+      emissiveIntensity: 1.4, // assez pour briller sans virer au blanc
       roughness: 0.15,
       metalness: 0.1,
       transparent: true,
@@ -440,19 +527,12 @@
     g.add(crystal);
     // pas de lumière ponctuelle : elle apparaissait et disparaissait avec le personnage, ce qui recompilait tous les
     // matériaux de la scène (gel) ; l'éclat vient du cristal émissif et du halo ci-dessous
-    // Halo magique pulsant autour du cristal
-    const hc = cc.clone().multiplyScalar(0.85);
-    hc.g *= 0.55; // halo plus saturé que le cristal
-    const halo = glowSprite(THREE, hc, 0.42 * s),
-      core = glowSprite(THREE, cc, 0.13 * s);
-    halo.position.y = core.position.y = 0.86 * s;
-    halo.name = 'CrystalGlow';
-    g.add(halo, core);
-    halo.onBeforeRender = () => {
-      const t = performance.now() / 1000,
-        p = 1 + Math.sin(t * 3.1) * 0.12 + Math.sin(t * 7.3) * 0.05;
-      halo.scale.set(0.42 * s * p, 0.42 * s * p, 1);
-    };
+    // Feu magique qui brûle autour du cristal (flammes, braises, halo qui respire)
+    const W = flameWisp(THREE, cc, 0.12 * s);
+    W.g.position.y = 0.84 * s;
+    W.halo.name = 'CrystalGlow';
+    g.add(W.g);
+    W.halo.onBeforeRender = () => W.update(performance.now() / 1000);
     if (cfg.inHand) {
       const G = handGrip(THREE, bones, 'r');
       g.position.copy(G.pos);
@@ -976,26 +1056,23 @@
     }
   }
 
-  // Orbes lumineux qui gravitent autour de la taille d'un lanceur de sorts (ils suivent le personnage, pas ses os).
+  // Feux follets qui gravitent autour de la taille d'un lanceur de sorts (ils suivent le personnage, pas ses os).
   function buildOrbs(THREE, root, bones, cfg, height) {
     const s = height / 1.8,
       g = new THREE.Group();
     g.name = 'Orbs';
     const c = new THREE.Color(...cfg.color),
       hy = bones.spine_01.getWorldPosition(new THREE.Vector3()).y;
-    const mat = new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 1.3, roughness: 0.2 });
-    const hc = c.clone();
-    hc.offsetHSL(0, 0.2, -0.1);
+    // feux follets (flammes, braises) suivis d'une traînée de comète le long de leur orbite
     const list = [];
     for (let i = 0; i < cfg.n; i++) {
-      const o = new THREE.Group(),
-        core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.06 * s, 1), mat),
-        halo = glowSprite(THREE, hc, 0.55 * s),
-        trail = glowSprite(THREE, hc, 0.28 * s);
-      trail.material.opacity = 0.5;
-      o.add(core, halo, trail);
-      g.add(o);
-      list.push({ o, trail, ph: (i / cfg.n) * Math.PI * 2 });
+      const W = flameWisp(THREE, c, 0.16 * s),
+        trail = [0, 1, 2, 3, 4].map(k =>
+          wispSprite(THREE, 'flame', c.clone().offsetHSL(0, 0.35, -0.08), 0.2 * s * (1 - k * 0.15), true)
+        );
+      trail.forEach((sp, k) => (sp.material.opacity = 0.55 * (1 - k * 0.18)));
+      g.add(W.g, ...trail);
+      list.push({ W, trail, ph: (i / cfg.n) * Math.PI * 2 });
     }
     let last = -1;
     const update = () => {
@@ -1003,16 +1080,21 @@
       if (t === last) return;
       last = t;
       for (const L of list) {
-        const a = t * 1.6 + L.ph,
-          r = 0.48 * s,
-          y = hy + 0.12 * s + Math.sin(t * 2.2 + L.ph) * 0.14 * s;
-        L.o.position.set(Math.sin(a) * r, y, Math.cos(a) * r);
-        L.trail.position.set(-Math.cos(a) * 0.07 * s, 0, Math.sin(a) * 0.07 * s);
-        L.o.children[1].material.opacity = 0.75 + Math.sin(t * 5 + L.ph) * 0.2;
+        const at = dt => {
+          const a = (t - dt) * 1.6 + L.ph;
+          return [
+            Math.sin(a) * 0.48 * s,
+            hy + 0.12 * s + Math.sin((t - dt) * 2.2 + L.ph) * 0.14 * s,
+            Math.cos(a) * 0.48 * s
+          ];
+        };
+        L.W.g.position.set(...at(0));
+        L.trail.forEach((sp, k) => sp.position.set(...at(0.045 * (k + 1))));
+        L.W.update(t + L.ph);
       }
     };
     update();
-    for (const L of list) L.o.children[1].onBeforeRender = update;
+    for (const L of list) L.W.halo.onBeforeRender = update;
     root.add(g);
   }
 
@@ -1338,13 +1420,9 @@
         .lerp(G.pos, 1.6)
         .add(new THREE.Vector3(0, 0.04 * s, 0.05 * s));
       if (fx.kind === 'orb') {
-        const core = new THREE.Mesh(
-          new THREE.IcosahedronGeometry(0.055 * s, 2),
-          new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 2.2 })
-        );
-        g.add(core);
-        const halo = glowSprite(THREE, c, 0.42 * s);
-        g.add(halo);
+        const W = flameWisp(THREE, c, 0.13 * s),
+          halo = W.halo;
+        g.add(W.g);
         const ring = new THREE.Mesh(
           new THREE.TorusGeometry(0.12 * s, 0.007 * s, 6, 32),
           new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending })
@@ -1356,7 +1434,7 @@
           const t = performance.now() / 1000;
           ring.rotation.set(t * 2.1, t * 1.3, 0);
           r2.rotation.set(-t * 1.4, 0, t * 2.4);
-          halo.material.opacity = 0.8 + Math.sin(t * 4) * 0.15;
+          W.update(t);
         };
       } else if (fx.kind === 'star' || fx.kind === 'flame') {
         const sp = new THREE.Sprite(
