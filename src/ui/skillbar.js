@@ -167,18 +167,17 @@ function updateHealthShrines(dt) {
       if (sh.respawn <= 0) sh.active = true;
     }
   }
-  const p = state.player;
-  if (!p?.alive) return;
+  // tout personnage blessé qui passe dessus le prend : joueur, amis en ligne, IA alliées et adversaires
   for (const sh of state.shrines) {
-    if (sh.active && p.hp < p.maxHp && Math.hypot(p.x - sh.x, p.z - sh.z) < 1.45) {
-      p.hp = p.maxHp;
-      p.shield = 0;
-      sh.active = false;
-      sh.respawn = 45;
-      fx('holyBurst', sh.x, 0.55, sh.z, [0.25, 1, 0.42], 1.25, 1.35);
-      addFloat(p, 'FULL HP', '#8dff9d');
-      updateUI();
-      break;
-    }
+    if (!sh.active) continue;
+    const p = state.units.find(u => u.alive && u.hp < u.maxHp && Math.hypot(u.x - sh.x, u.z - sh.z) < 1.45);
+    if (!p) continue;
+    p.hp = p.maxHp;
+    p.shield = 0;
+    sh.active = false;
+    sh.respawn = 45;
+    fx('holyBurst', sh.x, 0.55, sh.z, [0.25, 1, 0.42], 1.25, 1.35);
+    addFloat(p, 'FULL HP', '#8dff9d');
+    updateUI();
   }
 }

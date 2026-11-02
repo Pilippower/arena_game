@@ -498,6 +498,18 @@ function ai(u, dt) {
     goal = cover;
     desired = 0.3;
   }
+  // blessé : aller prendre le soin de la carte (sanctuaire actif à moins de 22 m), jusqu'à être soigné ; pas en Easy
+  if (P.defensive >= 0.7 && state.shrines) {
+    const sh = state.shrines
+      .filter(s => s.active && Math.hypot(s.x - u.x, s.z - u.z) < 22)
+      .sort((a, b) => Math.hypot(a.x - u.x, a.z - u.z) - Math.hypot(b.x - u.x, b.z - u.z))[0];
+    if (!sh || hpPct(u) > 0.9) u.aiShrine = false;
+    else if (hpPct(u) < 0.45) u.aiShrine = true;
+    if (u.aiShrine && sh) {
+      goal = { x: sh.x, y: 0, z: sh.z };
+      desired = 0.3;
+    }
+  }
   // autre niveau que le but (pont) : une mêlée passe par la rampe ; un lanceur au sol se place à côté du pont, à
   // hauteur du but, jamais dessous (il hésitait sous le tablier en voyant puis perdant sa cible)
   const wp = aiWaypoint(u, goal);

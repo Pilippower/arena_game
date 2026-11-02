@@ -711,3 +711,9 @@ assert.ok(
 // Régressions signalées : icône d'origine de Death Coil, cri du mort-vivant non étouffé
 assert.ok(!/'Death Coil': \{[^}]*art:/.test(read('src/data/classes.js')), 'Death Coil : icône d’origine');
 assert.ok(!read('src/audio/sfx.js').includes("lowpass: u.race === 'undead'"), 'cri du mort-vivant audible');
+// Soins de la carte : pris par tout personnage (adversaires compris), l'IA blessée va les chercher
+assert.ok(
+  read('src/ui/skillbar.js').includes('state.units.find(u => u.alive && u.hp < u.maxHp'),
+  'sanctuaires pour tous'
+);
+assert.ok(read('src/game/ai.js').includes('u.aiShrine = true'), 'IA : va chercher le soin de la carte');
