@@ -52,13 +52,24 @@ function debuffList(u) {
 function buffsHTML(u) {
   return aurasHTML(u.alive ? buffList(u) : [], 'buffs');
 }
+// Icône d'aura : l'image du sort si elle existe (SPELL_ART), sinon son icône vectorielle, comme sur la barre de sorts
+// (bug : une image absente, ex. Pain, donnait un carré noir et blanc qui clignotait à chaque mise à jour).
+function auraIcon(n) {
+  const art = spellArt(n);
+  if (SPELL_ART.has(art)) return `<img src="assets/ui/spells/${art}.webp" alt="">`;
+  for (const c in CLASS) {
+    const S = [CLASS[c].skills, ...Object.values(CLASS[c].bars || {})].flat().find(s => s.n === n);
+    if (S) return skillIconSVG(c, 0, S);
+  }
+  return '';
+}
 function aurasHTML(b, cls) {
   if (!b.length) return '';
   const time = t => (t < 3 ? t.toFixed(1) : Math.ceil(t) + 's');
   return `<div class="${cls}">${b
     .map(
       x =>
-        `<span class="buff" title="${x.n}"><img src="assets/ui/spells/${spellArt(x.n)}.webp" alt="">${x.t != null ? `<b>${time(x.t)}</b>` : ''}${x.v != null ? `<i>${x.v}</i>` : ''}</span>`
+        `<span class="buff" title="${x.n}">${auraIcon(x.n)}${x.t != null ? `<b>${time(x.t)}</b>` : ''}${x.v != null ? `<i>${x.v}</i>` : ''}</span>`
     )
     .join('')}</div>`;
 }

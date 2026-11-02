@@ -618,3 +618,22 @@ assert.ok(
     read('src/ui/lobby.css').includes('width: var(--mw);'),
   'lobby : murs jusqu’au cadre'
 );
+// Auras : jamais d'image absente (bug : Pain en carré noir et blanc qui clignotait)
+{
+  const fs = require('node:fs');
+  assert.ok(
+    read('src/ui/hud.js').includes('SPELL_ART.has(art)) return `<img'),
+    'auras : icône vectorielle si pas d’image'
+  );
+  for (const k of ctx.SPELL_ART)
+    assert.ok(fs.existsSync(require('node:path').join(__dirname, '..', 'assets/ui/spells', k + '.webp')), 'image ' + k);
+  for (const cls in C)
+    for (const S of [C[cls].skills, ...Object.values(C[cls].bars || {})].flat()) {
+      const art = ctx.spellArt(S.n);
+      if (ctx.SPELL_ART.has(art)) continue;
+      assert.ok(
+        !fs.existsSync(require('node:path').join(__dirname, '..', 'assets/ui/spells', art + '.webp')),
+        'SPELL_ART incomplet : ' + art
+      );
+    }
+}

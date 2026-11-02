@@ -675,6 +675,7 @@ const SPELLS = {
   },
   'Death Coil': {
     pct: 0.15,
+    art: 'death_advance', // icône du sort retiré Death Advance (morts-vivants spectraux)
     text: S => `Hurls a ball of shadow: steals ${pct(S.pct)} of the target's maximum health (damages it and heals you).`
   },
   'Pillar of Frost': { burst: 7, text: S => `+35% damage and +18% speed for ${sec(S.burst)}.` },
