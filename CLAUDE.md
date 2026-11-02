@@ -6,16 +6,17 @@ Documentation complète (mécaniques, historique des régressions, décisions va
 
 L'utilisateur communique en français : répondre en français.
 
-## État réel du repo (vérifié au 31/10/2026, fait foi sur HANDOFF.md)
+## État réel du repo (vérifié au 02/11/2026, fait foi sur HANDOFF.md)
 
 - `index.html` : HTML + CSS + liste ordonnée des scripts (~30 Ko). Tout le JS est dans `src/` (scripts classiques, pas de bundler : le jeu se lance en double-clic, `file://`). **L'ordre des balises <script> compte** (code exécuté au chargement).
 - `src/` (un fichier par rôle) :
-  - `data/classes.js` : classes, races, barres de forme/camouflage et **`SPELLS` = source unique des valeurs et textes de chaque sort** (dégâts, soins, durées, temps d'incantation, infobulle). Pour changer un sort : modifier `SPELLS` ; `game/combat.js` (effets, `useSkill`) et `ui/skillbar.js` (infobulles) lisent ces champs.
+  - `data/classes.js` : classes, races, barres de forme/camouflage et **`SPELLS` = source unique des valeurs et textes de chaque sort** (dégâts, soins, durées, temps d'incantation, infobulle). Pour changer une valeur : modifier `SPELLS` ; `ui/skillbar.js` (infobulles) et `game/spells.js` les lisent. Portée/école de chaque case : `SKILL_META` (même fichier, aligné sur l'ordre de `CLASS[cls].skills`).
+  - `game/spells.js` : **`SPELL_CAST` = mécanique de chaque sort, par nom** (`run(c)` effet, renvoie `false` si impossible ; `fx(c)` visuel ; options `mobility`, `noFace`, `usableStunned`). `useSkill` (combat.js) ne fait que les vérifications communes (étourdi, recharges, ressource, cible) puis appelle l'entrée. Sorts de forme/camouflage (champ `k`) : `useSpecialSkill` (combat.js). Rôles d'IA : `AI_ROLE` (`game/ai.js`) par nom de sort, convertis en numéros de case au chargement.
   - Armures (`ARMOR`, `CLASS_ARMOR` dans `data/classes.js`) : plaque/cuir/tissu réduisent les dégâts physiques/magiques (`armorReduction`, appliqué dans `damage()` selon `src.curSchool`). PV par classe : `hp` dans `CLASS`. Cadence des auto-attaques : `SWING` (`game/rules.js`).
   - Format 1v1 / 2v2 / 3v3 : `TEAM_SIZE` + `teamsFor()` dans `game/combat.js` (composition des équipes), choix « Mode » du lobby (`#sizeChoices`, `ui/settings.js`), `?size=` dans l'URL.
   - Match : `game/match.js` (3 manches `MATCH_ROUNDS`, stats dégâts/soins/kills par place `slotIndex`, écran de résultats, Play again / Back to lobby).
   - Cartes : `data/maps.js` (`MAPS` : dimensions, obstacles = cercles de LOS/collision, sanctuaires ; `applyMap(id)` remplit `arena` + `HEALTH_SPOTS`, reconstruit décor et occultants). Décor : `castle` dans `render/environment.js` (`buildCastleMap`), autres cartes dans `render/map_<id>.js` via `ArenaEnv.registerMap`. Vignettes du lobby : `assets/ui/map_thumbs.js` (captures du jeu `?map=<id>`). URL de test : `?autoplay=<classe>&race=<race>&map=<id>`.
-  - `game/` : `combat.js` (dégâts, contrôles + DR, interruptions, ruées, sorts), `ai.js` (IA + difficulté), `rules.js` (mouton, auto-attaque, cibles), `sim.js` (pas de simulation 120 Hz).
+  - `game/` : `combat.js` (dégâts, contrôles + DR, interruptions, ruées, `useSkill`), `spells.js` (`SPELL_CAST`), `ai.js` (IA + difficulté ; `aiSpecial` des formes est dans `data/classes.js`), `rules.js` (mouton, auto-attaque, cibles), `sim.js` (pas de simulation 120 Hz).
   - `render/` : `heroes3d.js` (personnages three.js, preview, portraits), `world.js` (décor + rendu de secours + noms), `environment.js` (décor), `effects.js` (effets de sorts).
   - `characters/` : `kits.js` (données des 35 kits, lu aussi par `tools/build_characters.js`), `builder.js` (assemblage three.js).
   - Musique : `audio/tracks.js` (lobby = `assets/audio/lobby.mp3` fourni par l'utilisateur ; musique de jeu = `assets/audio/game.mp3` (fournie par l'utilisateur, sans droits Blizzard selon lui) ; départ aléatoire, volume bas `TRACK_VOL`), repli `audio/music.js` (procédural).
@@ -48,6 +49,25 @@ npm run test:all   # ~1 min 30 : + test navigateur complet (sélection, 35 kits,
 ```
 
 `npm test` après chaque modification ; `npm run test:all` avant de publier. Le navigateur utilise la carte graphique (`tests/browser/browser.js`) ; `SOFTWARE_GL=1` force le rendu logiciel, `BROWSER_PATH` choisit le navigateur. Captures de personnages : `tools/shoot.js` (même lanceur).
+
+## Recettes (pour aller vite)
+
+- **Changer une valeur de sort** (dégâts, durée, recharge…) : `SPELLS` (`data/classes.js`) ; l'infobulle suit seule. Recharge/coût : `cd` / `c` dans `CLASS[cls].skills`.
+- **Ajouter / remplacer un sort** : entrée `SPELLS` (valeurs + `text`), place dans `CLASS[cls].skills` + `SKILL_META`, mécanique dans `SPELL_CAST` (`game/spells.js`), rôle dans `AI_ROLE` si l'IA doit l'utiliser, icône : `SPELL_ART` (ou `art:` pour réutiliser l'image d'un autre sort). `tests/spec.test.js` vérifie que chaque sort a sa mécanique et chaque rôle d'IA un vrai sort.
+- **Effet dans la durée** : `addAura(cible, lanceur, nom, 'dot'|'hot', total, durée, école)` ; affiché seul sur les cadres et au-dessus des personnages (`buffList` / `debuffList`).
+- **Contrôle** : `control(t, 'stun'|'root'|'fear'|'poly', durée, src, drKey?)` (rendements décroissants inclus).
+- **Images d'interface** fournies par l'utilisateur : planche dans `assets_src/ui/`, coordonnées de découpe dans le `tools/build_*_assets.js` correspondant, sortie `.webp` dans `assets/ui/<écran>/`. Placement en CSS **relatif** uniquement (%, `cqh`, variables `--u`), jamais en pixels.
+- **Message d'erreur au joueur** : `unitError(u, texte)` (affiché chez l'ami en ligne aussi), jamais `showError` direct pour une unité.
+- **Publier** : `bash tools/publish.sh "message"` (numéro `?v=`, tests, commit, push) ; `FULL=1` pour `test:all`. Spécifications validées par l'utilisateur : `docs/SPEC.md` + un test dans `tests/spec.test.js`.
+
+## Pièges connus
+
+- Fichiers en CRLF et en LF mélangés : les scripts d'édition doivent conserver les fins de ligne (`newline=''` en Python).
+- Heredoc bash : pas d'apostrophes ni de `$(` non échappés ; pour un gros script, l'écrire dans un fichier.
+- `tests/spec.test.js` lit souvent le texte du code (expressions régulières) : un renommage peut casser un test sans casser le jeu, mettre le test à jour en gardant la règle.
+- three.js : ne jamais changer le nombre de lumières d'une scène (recompilation de tous les shaders, saccade en combat) ; mettre l'intensité à 0 à la place.
+- `NET` doit rester un `var` (lu comme `window.NET`).
+- `docs/HANDOFF.md` est historique (démarrage du projet) : `CLAUDE.md` et `docs/SPEC.md` font foi.
 
 ## Règles non négociables
 
