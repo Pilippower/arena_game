@@ -51,7 +51,7 @@ const CLASS = {
       { n: 'Flash Heal', cd: 1.3, c: 28 },
       { n: 'Power Shield', cd: 8, c: 24 },
       { n: 'Holy Terror', cd: 24, c: 22 },
-      { n: 'Divine Hymn', cd: 30, c: 45 },
+      { n: 'Dispel', cd: 8, c: 20 },
       { n: 'Smite', cd: 0, c: 10 },
       { n: 'Pain', cd: 0, c: 15 }
     ],
@@ -238,7 +238,7 @@ const SKILL_META = {
     { t: 'heal', s: 'holy' },
     { t: 'heal', s: 'holy' },
     { t: 'aoe', s: 'shadow' },
-    { t: 'self', s: 'holy' },
+    { t: 'heal', s: 'holy' },
     { t: 'ranged', s: 'holy' },
     { t: 'ranged', s: 'shadow' }
   ],
@@ -579,6 +579,8 @@ function raceForClass(cls, team = 0, slot = 0) {
 // text(S, D, H) : D(x) affiche des dégâts (Burst inclus), H(x) des soins (Dampening inclus).
 const pct = x => `${Math.round(x * 100)} %`;
 const sec = x => `${x} s`;
+// Drain Life : soin = dégâts infligés × DRAIN_HEAL (doublé avec les PV +50 %)
+const DRAIN_HEAL = 2;
 const SPELLS = {
   'Mortal Strike': {
     dmg: 175,
@@ -635,7 +637,7 @@ const SPELLS = {
   },
   'Flash Heal': {
     cast: 1.15,
-    heal: 220,
+    heal: 440, // doublé avec les PV (+50 %), demande de l'utilisateur
     text: (S, D, H) => `${sec(S.cast)} cast: heals your friendly target (or you) for ${H(S.heal)}.`
   },
   'Power Shield': {
@@ -649,7 +651,12 @@ const SPELLS = {
     art: 'silence',
     text: S => `Instant: every enemy within ${S.radius} m flees in terror for ${sec(S.dur)}.`
   },
-  'Divine Hymn': { heal: 230, text: (S, D, H) => `Heals all allies for ${H(S.heal)}.` },
+  // remplace Divine Hymn (même icône)
+  Dispel: {
+    art: 'divine_hymn',
+    text: () =>
+      `Instant: removes all magic effects from your friendly target (or you): Polymorph, fears, magic roots and slows (Frost Nova, Entangling Roots, Frost Bolt) and damage over time. Melee slows and stuns stay.`
+  },
   Smite: {
     cast: 1.5,
     dmg: 100,
@@ -762,7 +769,7 @@ const SPELLS = {
     dur: 6,
     dps: 50,
     text: (S, D, H) =>
-      `Channeled ${sec(S.dur)}: a link drains ${D(S.dps)} health per second from the target and heals you for the same amount. Once started, the link follows the target even behind pillars.`
+      `Channeled ${sec(S.dur)}: a link drains ${D(S.dps)} health per second from the target and heals you for ${H(S.dps * DRAIN_HEAL)} per second. Once started, the link follows the target even behind pillars.`
   },
   'Demonic Gate': { dist: 5, text: S => `Teleports ${S.dist} m forward.` }
 };

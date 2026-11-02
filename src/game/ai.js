@@ -70,7 +70,7 @@ const AI_ROLE = {
     heal: 'Flash Heal',
     shield: 'Power Shield',
     fear: 'Holy Terror',
-    mass: 'Divine Hymn',
+    dispel: 'Dispel',
     dmg: 'Smite',
     dot: 'Pain'
   },
@@ -381,9 +381,20 @@ function ai(u, dt) {
       return;
     // soigneur
     if (healer) {
-      const low = friends.slice().sort((a, b) => hpPct(a) - hpPct(b))[0],
-        hurt = friends.filter(a => hpPct(a) < 0.55).length;
-      if (R.mass != null && hurt >= 2 && aiCanUse(u, R.mass) && useSkill(u, R.mass)) return;
+      const low = friends.slice().sort((a, b) => hpPct(a) - hpPct(b))[0];
+      // Dispel : d'abord un allié sous contrôle (mouton, peur, racines), sinon des dégâts dans la durée sur un blessé
+      if (R.dispel != null && aiCanUse(u, R.dispel)) {
+        const cc = a => a.poly > 0 || a.fear > 0 || a.root > 0,
+          tgt =
+            friends.find(a => dispellable(a) && cc(a) && (a === u || los(u, a))) ||
+            friends.find(a => dispellable(a) && hpPct(a) < 0.75 && (a === u || los(u, a)));
+        if (tgt) {
+          u.aiDispel = tgt;
+          const ok = useSkill(u, R.dispel);
+          u.aiDispel = null;
+          if (ok) return;
+        }
+      }
       if (low && hpPct(low) < 0.9 && !(low.shield > 0) && aiCanUse(u, R.shield) && los(u, low) && useSkill(u, R.shield))
         return;
       if (

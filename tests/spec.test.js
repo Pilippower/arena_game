@@ -22,7 +22,7 @@ assert.equal(ctx.skillMotif('Bear Form'), 'paw', 'Bear Form = empreinte de patte
 assert.equal(skill('arcanist', 'Polymorph').cd, 0, 'Polymorph sans recharge');
 assert.equal(skill('warlock', 'Fear').cd, 0, 'Fear sans recharge');
 // Prêtre : Smite (moitié des dégâts du mage) et Holy Terror (fear de zone 10 m) ; chevalier de la mort sans Death Advance
-assert.equal(C.oracle.skills.map(s => s.n).join(), 'Flash Heal,Power Shield,Holy Terror,Divine Hymn,Smite,Pain');
+assert.equal(C.oracle.skills.map(s => s.n).join(), 'Flash Heal,Power Shield,Holy Terror,Dispel,Smite,Pain');
 assert.ok(
   Math.abs(skill('oracle', 'Smite').dmg * 2 - skill('arcanist', 'Frost Bolt').dmg) <= 10,
   'Smite = moitié de l’Arcane Bolt'
@@ -763,3 +763,14 @@ assert.ok(
   read('index.html').includes('body.mobile-mode #nameplates .nameplate .npBar{height:8px}'),
   'barres de vie mobile'
 );
+// Prêtre : Dispel (effets magiques) à la place de Divine Hymn, même icône ; soins fixes doublés
+{
+  assert.ok(ctx.skillIconSVG('oracle', 3).includes('spells/divine_hymn.webp'), 'Dispel : icône de Divine Hymn');
+  const cb = read('src/game/combat.js');
+  assert.ok(
+    cb.includes('function dispel(u)') && cb.includes('(u.slow > 0 && u.slowMagic)'),
+    'Dispel : ralentissements magiques seulement'
+  );
+  assert.equal(skill('oracle', 'Flash Heal').heal, 440, 'Flash Heal doublé');
+  assert.ok(read('src/data/classes.js').includes('const DRAIN_HEAL = 2;'), 'Drain Life : soin doublé');
+}

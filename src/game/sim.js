@@ -102,7 +102,7 @@ function update(dt) {
           u.curSchool = 'shadow';
           const h0 = t.hp;
           damage(u, t, ca.value * 0.5);
-          if (h0 > t.hp) heal(u, u, h0 - t.hp);
+          if (h0 > t.hp) heal(u, u, (h0 - t.hp) * DRAIN_HEAL); // soin doublé (PV +50 %)
           fx('healBeam', t.x, (t.y || 0) + 1.2, t.z, [0.55, 1, 0.35], 0.55, 0.16, [u.x, (u.y || 0) + 1.4, u.z]);
         }
         if (u.cast && now() >= ca.end) u.cast = null;

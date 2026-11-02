@@ -61,6 +61,8 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 
 ## Classes, formes, armures
 - Barres de vie au-dessus des personnages grandes et épaisses, relatives à l'écran (PC : 110–160 px de large × 9–13 px d'épaisseur, cible 150–215 × 13–18 ; mobile 96 × 8, cible 120 × 11), contour sombre et ombre. 🧪
+- Prêtre : **Dispel** remplace Divine Hymn (même icône, 8 s de recharge, 20 de mana, instantané, cible amie ou soi) : retire les effets magiques (mouton, peurs, racines et ralentissements magiques : Frost Nova, Entangling Roots, Frost Bolt, dégâts dans la durée magiques) ; restent les ralentissements de mêlée (Hamstring, Rake), Sap et les étourdissements. L'IA dissipe d'abord un allié contrôlé, sinon un blessé sous dégâts dans la durée. 🧪
+- Soins fixes doublés avec les PV (02/11/2026) : Flash Heal 440, Drain Life soigne 2× les dégâts infligés ; les soins en % des PV de base (Rejuvenation, Regrowth, Death Coil) suivent déjà les PV. 🧪
 - PV de base (+50 % le 02/11/2026) : guerrier 2400, chevalier de la mort 2175, druide 1875, voleur 1770, démoniste 1740, prêtre 1620, mage 1470 (ours ×1,4). Les effets dans la durée définis en % des PV de la classe (Pain, Rejuvenation, Regrowth, Corruption) suivent. 🧪
 - Armure plaque (guerrier, chevalier de la mort) > cuir (druide, voleur) > tissu (mage, prêtre, démoniste). 🧪
 - Druide : félin = +30 % de vitesse ; ours = +40 % PV, -30 % dégâts subis. 🧪

@@ -316,6 +316,34 @@ function heal(src, t, v) {
 }
 // Effets dans la durée (auras) : 'dot' = dégâts / s, 'hot' = soins / s (tic chaque seconde, comptés dans le récap),
 // 'weaken' = les coups physiques de la cible perdent `per` dégâts par seconde de cadence. Réappliquer rafraîchit.
+// Dispel du prêtre : effets magiques retirés (mouton, peurs, racines et ralentissements magiques, dégâts dans la
+// durée magiques) ; restent les ralentissements de mêlée (Hamstring, Rake), Sap et les étourdissements.
+function dispellable(u) {
+  return (
+    (u.poly > 0 && u.polyKind !== 'sap') ||
+    u.fear > 0 ||
+    (u.root > 0 && u.rootSchool !== 'physical') ||
+    (u.slow > 0 && u.slowMagic) ||
+    (u.auras || []).some(a => a.kind === 'dot' && a.school !== 'physical')
+  );
+}
+function dispel(u) {
+  if (!dispellable(u)) return false;
+  if (u.poly > 0 && u.polyKind !== 'sap') endPoly(u, false);
+  if (u.fear > 0) {
+    u.fear = 0;
+    u.fearOwner = null;
+  }
+  if (u.root > 0 && u.rootSchool !== 'physical') {
+    u.root = 0;
+    u.rootBreakDamage = 0;
+    u.rootKind = null;
+  }
+  if (u.slow > 0 && u.slowMagic) u.slow = 0;
+  if (u.auras) u.auras = u.auras.filter(a => !(a.kind === 'dot' && a.school !== 'physical'));
+  addFloat(u, 'Dispelled', '#fff3b0');
+  return true;
+}
 function addAura(t, src, n, kind, total, dur, school = 'magic') {
   if (!t?.alive) return;
   t.auras = (t.auras || []).filter(a => !(a.n === n && a.src === src));

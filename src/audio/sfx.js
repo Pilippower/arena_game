@@ -285,7 +285,7 @@ function sfxForSkill(u, S, i) {
   const n = S.n || '',
     k = S.k;
   if (S.kick) return SFX.kick(u);
-  if (/Heal|Hymn|Rejuvenation|Regrowth/.test(n)) return SFX.holy(u, /Hymn/.test(n));
+  if (/Heal|Hymn|Dispel|Rejuvenation|Regrowth/.test(n)) return SFX.holy(u, /Hymn/.test(n));
   if (/Shield|Barrier|Cloak|Shield Wall/.test(n)) return SFX.shield(u);
   if (/Charge/.test(n)) return SFX.charge(u);
   if (/Frost Nova/.test(n)) return SFX.frost(u);

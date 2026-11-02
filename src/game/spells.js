@@ -170,13 +170,20 @@ const SPELL_CAST = {
     },
     fx: c => fx('nova', c.u.x, 0.1, c.u.z, [0.7, 0.45, 1], 1.4, 1.2)
   },
-  'Divine Hymn': {
+  // retire les effets magiques de la cible amie (IA : l'allié choisi par ai.js, sinon le plus blessé)
+  Dispel: {
     run(c) {
-      allies(c.u).forEach(v => heal(c.u, v, c.S.heal));
-      fx('ring', c.u.x, 0.1, c.u.z, c.col, 1, 2);
+      const a = c.u.ai ? c.u.aiDispel || lowestAlly(c.u) : friendlyTarget(c.u);
+      if (!a?.alive || (a !== c.u && (!los(c.u, a) || d2(c.u, a) > SPELL_RANGE))) return false;
+      dispel(a);
+      c.dispelled = a;
       action(c.u, 'cast');
     },
-    fx: c => fx('holyBurst', c.u.x, 0.12, c.u.z, c.col, 1.05, 1.7)
+    fx(c) {
+      const a = c.dispelled || c.u;
+      fx('holyBurst', a.x, 0.12, a.z, c.col, 0.9, 1.2);
+      fx('ring', a.x, 0.1, a.z, [1, 0.95, 0.7], 0.8, 1.1);
+    }
   },
   Smite: { run: c => startCast(c, 'damage', c.S.dmg) },
   // dégâts dans la durée, sans dégât initial
