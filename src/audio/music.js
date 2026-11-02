@@ -62,62 +62,6 @@ function audioPan(node, pan = 0) {
   node.connect(p);
   return p;
 }
-function musicTone(freq, time, dur, type = 'triangle', vol = 0.04, pan = 0, attack = 0.018, filterFreq = 0) {
-  const ctx = MUSIC.ctx;
-  if (!ctx) return;
-  const o = ctx.createOscillator(),
-    g = ctx.createGain();
-  o.type = type;
-  o.frequency.setValueAtTime(freq, time);
-  g.gain.setValueAtTime(0.0001, time);
-  g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), time + attack);
-  g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
-  let source = o,
-    out = g;
-  if (filterFreq) {
-    const f = ctx.createBiquadFilter();
-    f.type = 'lowpass';
-    f.frequency.value = filterFreq;
-    o.connect(f);
-    f.connect(g);
-  } else o.connect(g);
-  out = audioPan(g, pan);
-  out.connect(MUSIC.master);
-  if (MUSIC.reverb) out.connect(MUSIC.reverb);
-  o.start(time);
-  o.stop(time + dur + 0.06);
-}
-function musicDrum(time, accent = false, intensity = 0.5) {
-  const ctx = MUSIC.ctx;
-  if (!ctx) return;
-  const o = ctx.createOscillator(),
-    g = ctx.createGain();
-  o.type = 'sine';
-  o.frequency.setValueAtTime(accent ? 118 : 82, time);
-  o.frequency.exponentialRampToValueAtTime(43, time + 0.17);
-  g.gain.setValueAtTime((accent ? 0.095 : 0.055) * (0.55 + intensity * 0.7), time);
-  g.gain.exponentialRampToValueAtTime(0.0001, time + 0.25);
-  o.connect(g);
-  g.connect(MUSIC.master);
-  o.start(time);
-  o.stop(time + 0.28);
-  if (accent && MUSIC.noise) {
-    const n = ctx.createBufferSource(),
-      ng = ctx.createGain(),
-      f = ctx.createBiquadFilter();
-    n.buffer = MUSIC.noise;
-    f.type = 'bandpass';
-    f.frequency.value = 1100;
-    f.Q.value = 0.7;
-    ng.gain.setValueAtTime(0.018 * (0.6 + intensity), time);
-    ng.gain.exponentialRampToValueAtTime(0.0001, time + 0.12);
-    n.connect(f);
-    f.connect(ng);
-    ng.connect(MUSIC.master);
-    n.start(time);
-    n.stop(time + 0.13);
-  }
-}
 function musicIntensity() {
   if (!state || $('overlay')?.style.display !== 'none') return 0.28;
   const alive = state.units?.filter(u => u.alive) || [];

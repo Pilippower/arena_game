@@ -213,27 +213,6 @@ function footstepSfx(u, side = 0) {
     });
   }
 }
-function spellFlavorLayer(u, i) {
-  const a = sfxSpatial(u),
-    L = a.level,
-    P = a.pan;
-  if (!u) return;
-  const c = u.cls;
-  if (c === 'arcanist') {
-    sfxTone(1720, 0.11, 'sine', 0.028 * L, 1180, 0, P, 5200, 0.22);
-    if (i === 1 || i === 4) sfxNoise(0.14, 0.035 * L, 6200, 0, P, 'highpass');
-  } else if (c === 'sentinel') {
-    sfxNoise(0.06, 0.04 * L, 1500, 0, P);
-    if (i === 4) sfxTone(160, 0.15, 'sawtooth', 0.04 * L, 78, 0, P, 900, 0.08);
-  } else if (c === 'oracle') {
-    sfxChord([659.25, 783.99, 987.77], 0.22, 'sine', 0.028 * L, P, 0.01);
-  } else if (c === 'warlock') {
-    sfxNoise(0.1, 0.03 * L, 700, 0, P, 'lowpass');
-    sfxTone(132, 0.12, 'sawtooth', 0.025 * L, 72, 0, P, 800, 0.12);
-  } else if (c === 'reaver') {
-    sfxTone(118, 0.14, 'sawtooth', 0.028 * L, 62, 0, P, 650, 0.1);
-  }
-}
 
 function openSettings() {
   if (state) state.keys = {};

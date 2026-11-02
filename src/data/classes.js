@@ -221,10 +221,6 @@ function skillIconSVG(cls, i, S) {
 function trinketIconSVG() {
   return `<svg viewBox="0 0 48 48" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><image href="assets/ui/spells/trinket.webp" width="48" height="48" preserveAspectRatio="xMidYMid slice"/></svg>`;
 }
-// ancienne icône vectorielle du bijou (plus utilisée en jeu, gardée comme référence)
-function trinketIconVector() {
-  return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="trg"><stop stop-color="#ffe88b"/><stop offset=".55" stop-color="#80632b"/><stop offset="1" stop-color="#17100b"/></radialGradient></defs><rect width="48" height="48" rx="7" fill="url(#trg)"/><circle cx="24" cy="24" r="14" fill="none" stroke="#fff0a8" stroke-width="3"/><path d="M24 8l5 11 11 5-11 5-5 11-5-11-11-5 11-5z" fill="#fff1a0"/><circle cx="24" cy="24" r="4" fill="#9a6b24"/></svg>`;
-}
 
 // Portée (t) et école de magie (s) de chaque sort. melee = 2,45 m, ranged = 30 m (SPELL_RANGE) + ligne de vue.
 // kick = interruption : coupe l'incantation et verrouille son école 4 s.
@@ -574,68 +570,6 @@ function raceForClass(cls, team = 0, slot = 0) {
   if (cls === 'arcanist' && team === 1) r = 'elf';
   if (cls === 'reaver' && team === 1) r = 'orc';
   return r;
-}
-
-function classPickIconSVG(cls) {
-  const ic = window.PICK_ICONS?.['class_' + cls];
-  if (ic) return `<img class="pickIcon" src="${ic}" alt="">`;
-  const C = CLASS[cls],
-    a = rgbHex(C.accent),
-    b = rgbHex(C.color),
-    id = 'cp_' + cls;
-  const motif =
-    {
-      sentinel: `<path d="M16 38l17-23 4 3-17 23z" fill="#f4f7fb"/><path d="M11 18l19 19" stroke="#aeb8c5" stroke-width="5"/><path d="M31 9l8 8-5 5-8-8z" fill="#d4dae3"/><path d="M8 30l10-10" stroke="${a}" stroke-width="4"/><path d="M10 36c3-9 8-13 14-13s11 4 14 13" fill="none" stroke="#8793a3" stroke-width="4"/>`,
-      arcanist: `<circle cx="24" cy="24" r="10" fill="#cbeaff" opacity=".22"/><path d="M24 5l6 12 13 2-10 9 3 14-12-7-12 7 3-14-10-9 13-2z" fill="#dff6ff" stroke="${a}" stroke-width="2"/><circle cx="24" cy="24" r="5" fill="${a}"/><path d="M7 33c8-3 14-1 21 6" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2"/>`,
-      oracle: `<circle cx="24" cy="24" r="16" fill="#fff2a8" opacity=".18"/><path d="M21 7h6v12h12v7H27v15h-6V26H9v-7h12z" fill="#fff8da"/><path d="M24 3v6M24 39v6M3 24h6M39 24h6" stroke="${a}" stroke-width="2.6"/><circle cx="24" cy="24" r="8" fill="none" stroke="#fff" stroke-opacity=".4"/>`,
-      warden: `<path d="M8 31c7-12 17-20 32-22-3 16-12 27-26 31 4-8 10-14 19-20-9 3-16 8-25 11z" fill="#b8ef75" stroke="${a}" stroke-width="2"/><path d="M23 34c4-6 8-10 15-14" stroke="#fff6c8" stroke-width="2.5"/><circle cx="14" cy="15" r="4" fill="#f4c15b"/>`,
-      shade: `<path d="M10 38l14-26 5 3-12 27z" fill="#eef3f7"/><path d="M38 38L24 12l-5 3 12 27z" fill="#d9e0e7"/><path d="M13 30l8-8M35 30l-8-8" stroke="${a}" stroke-width="3"/><path d="M17 10h14l-7 8z" fill="#ffe36a"/>`,
-      reaver: `<path d="M24 5l-5 15 8-2-5 25 18-27-10 3 4-14z" fill="#dff8ff" stroke="${a}" stroke-width="2"/><circle cx="12" cy="34" r="6" fill="#d8e6ef"/><circle cx="36" cy="34" r="6" fill="#d8e6ef"/><path d="M10 34h4M34 34h4" stroke="#496070" stroke-width="2"/><path d="M12 28c4-4 8-5 12-5s8 1 12 5" fill="none" stroke="#8acaff" stroke-width="2"/>`,
-      warlock: `<circle cx="24" cy="24" r="16" fill="#6e3f8d" opacity=".28"/><path d="M24 6c8 4 13 10 13 18 0 9-5 14-13 18-8-4-13-9-13-18 0-8 5-14 13-18z" fill="#26152f" stroke="${a}" stroke-width="2.5"/><path d="M24 12l4 8 9 1-7 6 3 9-9-5-9 5 3-9-7-6 9-1z" fill="${a}"/><circle cx="19" cy="24" r="2" fill="#caffb2"/><circle cx="29" cy="24" r="2" fill="#caffb2"/>`
-    }[cls] || `<circle cx="24" cy="24" r="14" fill="#fff"/>`;
-  return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><radialGradient id="${id}" cx="36%" cy="28%"><stop offset="0" stop-color="${a}"/><stop offset=".56" stop-color="${b}"/><stop offset="1" stop-color="#07070b"/></radialGradient><linearGradient id="shine_${id}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".42"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><rect width="48" height="48" rx="10" fill="url(#${id})"/><path d="M3 40C12 23 12 12 33 3" stroke="url(#shine_${id})" stroke-width="7" fill="none"/>${motif}<rect x="1" y="1" width="46" height="46" rx="9" fill="none" stroke="#fff" stroke-opacity=".30"/></svg>`;
-}
-function racePickIconSVG(rk) {
-  const ic = window.PICK_ICONS?.['race_' + rk];
-  if (ic) return `<img class="pickIcon" src="${ic}" alt="">`;
-  const data = {
-    human: {
-      a: '#b7dcff',
-      b: '#3d628b',
-      skin: '#e6b88e',
-      hair: '#5a3420',
-      p: `<path d="M11 39c2-10 7-15 13-15s11 5 13 15" fill="#657892"/><ellipse cx="24" cy="20" rx="10" ry="12" fill="#e6b88e"/><path d="M14 20c0-10 5-15 10-15s10 5 10 15c-4-4-7-6-10-6s-6 2-10 6z" fill="#5a3420"/><path d="M18 20h4M26 20h4" stroke="#3a241a" stroke-width="1.8" stroke-linecap="round"/><path d="M21 27c2 1 4 1 6 0" stroke="#8a4e39" stroke-width="1.4" fill="none"/>`
-    },
-    dwarf: {
-      a: '#ffd58b',
-      b: '#6f4b2c',
-      skin: '#e3b88e',
-      hair: '#7a451e',
-      p: `<path d="M10 40c3-10 8-14 14-14s11 4 14 14" fill="#6d5a43"/><ellipse cx="24" cy="18" rx="9" ry="10" fill="#e3b88e"/><path d="M15 18c1-9 5-13 9-13s8 4 9 13c-4-3-6-4-9-4s-5 1-9 4z" fill="#7a451e"/><path d="M15 23c2 12 6 18 9 18s7-6 9-18c-4 4-6 5-9 5s-5-1-9-5z" fill="#7a451e"/><path d="M18 18h4M26 18h4" stroke="#3a241a" stroke-width="1.8" stroke-linecap="round"/>`
-    },
-    elf: {
-      a: '#a7edff',
-      b: '#425f87',
-      skin: '#d9ae91',
-      hair: '#d7e7ef',
-      p: `<path d="M10 40c3-10 8-15 14-15s11 5 14 15" fill="#64786b"/><ellipse cx="24" cy="20" rx="8.5" ry="11.5" fill="#d9ae91"/><path d="M12 20l6-5-1 10zM36 20l-6-5 1 10z" fill="#d9ae91"/><path d="M15 18c1-9 5-13 9-13s8 4 9 13c-4-3-7-5-9-5s-5 2-9 5z" fill="#d7e7ef"/><path d="M18 20h4M26 20h4" stroke="#72efff" stroke-width="2.3" stroke-linecap="round"/><path d="M21 27c2 1 4 1 6 0" stroke="#8b5b52" stroke-width="1.3" fill="none"/>`
-    },
-    orc: {
-      a: '#a4ed78',
-      b: '#395c2d',
-      skin: '#679a45',
-      hair: '#24241d',
-      p: `<path d="M9 40c3-11 8-16 15-16s12 5 15 16" fill="#4b5441"/><ellipse cx="24" cy="20" rx="11" ry="12" fill="#679a45"/><path d="M13 18c2-9 6-13 11-13s9 4 11 13c-4-4-8-6-11-6s-7 2-11 6z" fill="#24241d"/><path d="M16 19l6 1M32 19l-6 1" stroke="#26331e" stroke-width="2.4" stroke-linecap="round"/><path d="M17 28c1 6 4 10 7 10s6-4 7-10c-4 2-5 3-7 3s-3-1-7-3z" fill="#4e7437"/><path d="M18 27c0 6-2 10-5 13M30 27c0 6 2 10 5 13" stroke="#f1dfbd" stroke-width="2.6" stroke-linecap="round"/><path d="M20 26h8" stroke="#283821" stroke-width="1.7"/>`
-    },
-    undead: {
-      a: '#aaf5ff',
-      b: '#354e57',
-      skin: '#bcc7c2',
-      hair: '#edf6f6',
-      p: `<path d="M10 40c3-10 8-15 14-15s11 5 14 15" fill="#53666a"/><ellipse cx="24" cy="20" rx="9.5" ry="11" fill="#bcc7c2"/><path d="M15 17c2-9 5-12 9-12s7 3 9 12c-4-3-6-4-9-4s-5 1-9 4z" fill="#edf6f6"/><circle cx="20" cy="20" r="2.2" fill="#83f7ff"/><circle cx="28" cy="20" r="2.2" fill="#83f7ff"/><path d="M19 28h10M21 31h6" stroke="#5c7273" stroke-width="1.5"/><path d="M15 23l-3 5M33 23l3 5" stroke="#789294" stroke-width="2"/>`
-    }
-  }[rk];
-  return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><radialGradient id="rg_${rk}" cx="38%" cy="28%"><stop offset="0" stop-color="${data.a}"/><stop offset=".58" stop-color="${data.b}"/><stop offset="1" stop-color="#07080b"/></radialGradient><linearGradient id="rs_${rk}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".30"/><stop offset=".46" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><rect width="48" height="48" rx="10" fill="url(#rg_${rk})"/><path d="M3 39C13 25 11 12 31 3" stroke="url(#rs_${rk})" stroke-width="7" fill="none"/>${data.p}<rect x="1" y="1" width="46" height="46" rx="9" fill="none" stroke="#fff" stroke-opacity=".28"/></svg>`;
 }
 
 // ---------- Valeurs et textes des sorts : SOURCE UNIQUE ----------

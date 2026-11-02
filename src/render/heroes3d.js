@@ -55,9 +55,6 @@ function hfAssetCandidatesFor(u) {
   else fallbacks.push(HF_ASSET_BASE_HOLLOW + 'Mage.glb');
   return [primary, ...fallbacks.filter(x => x !== primary)];
 }
-function hfAssetFor(u) {
-  return hfAssetCandidatesFor(u)[0];
-}
 
 // Dessus du socle : dalles rayonnantes, joints sombres, lumière dorée au centre.
 function previewPedestalTexture() {
@@ -1030,10 +1027,6 @@ function hfSyncUnits() {
       HF.records.delete(id);
     }
   for (const u of state.units) if (!HF.records.has(u.id)) hfCreateRecord(u);
-}
-function hfHasModel(u) {
-  const r = HF.records.get(u.id);
-  return !!(r && r.loaded && !r.failed);
 }
 function hfRender() {
   if (!HF.enabled || !state) return;
@@ -2012,121 +2005,6 @@ function hfHandPos(u) {
   if (rec.handBone === undefined) rec.handBone = rec.model.getObjectByName('hand_r') || null;
   if (rec.handBone) return rec.handBone.getWorldPosition(new THREE.Vector3());
   return new THREE.Vector3(rec.group.position.x, rec.group.position.y + 1.4, rec.group.position.z);
-}
-// ---------- Portraits 3D de la sélection (race / classe) ----------
-// Chaque bouton montre le vrai personnage (buste, pose de repos), rendu une fois hors écran puis mis en cache.
-// La race montre un archétype marquant ; les classes montrent la race choisie dans chaque classe.
-const PICK_ART = { cache: new Map(), queue: [], busy: false, rt: null, scene: null, cam: null };
-const RACE_SHOWCASE = { human: 'arcanist', dwarf: 'reaver', elf: 'oracle', orc: 'reaver', undead: 'oracle' };
-function pickArt(race, cls, cb) {
-  const key = race + '_' + cls;
-  if (PICK_ART.cache.has(key)) return cb(PICK_ART.cache.get(key));
-  PICK_ART.queue.push({ key, cb });
-  pickArtNext();
-}
-async function pickArtNext() {
-  if (PICK_ART.busy || !PICK_ART.queue.length || !window.CharacterKit || !PREVIEW.renderer) return;
-  PICK_ART.busy = true;
-  const job = PICK_ART.queue.shift();
-  try {
-    if (PICK_ART.cache.has(job.key)) {
-      job.cb(PICK_ART.cache.get(job.key));
-      return;
-    }
-    const R = PREVIEW.renderer,
-      S = 192;
-    if (!PICK_ART.rt) {
-      PICK_ART.rt = new THREE.WebGLRenderTarget(S, S);
-      PICK_ART.rt.texture.encoding = THREE.sRGBEncoding;
-      const sc = (PICK_ART.scene = new THREE.Scene());
-      sc.add(new THREE.HemisphereLight(0xdfe6ff, 0x302040, 1.1));
-      const key = new THREE.DirectionalLight(0xfff0dc, 2.2);
-      key.position.set(1.5, 2.5, 3);
-      sc.add(key);
-      const rim = new THREE.DirectionalLight(0x8f7dff, 2.4);
-      rim.position.set(-2.5, 1.5, -2.5);
-      sc.add(rim);
-      PICK_ART.cam = new THREE.PerspectiveCamera(24, 1, 0.05, 20);
-    }
-    const k = await CharacterKit.build(THREE, job.key, { loader: PREVIEW.loader || new THREE.GLTFLoader() });
-    const root = k.root;
-    root.scale.setScalar(1.8 / k.height);
-    root.rotation.y = 0.35;
-    const mixer = new THREE.AnimationMixer(root),
-      clip = k.clips.find(c => c.name === 'Idle_Loop');
-    if (clip) {
-      mixer.clipAction(clip).play();
-      mixer.update(clip.duration * 0.3);
-    }
-    PICK_ART.scene.add(root);
-    root.updateMatrixWorld(true);
-    const head = root.getObjectByName('Head'),
-      hp = head ? head.getWorldPosition(new THREE.Vector3()) : new THREE.Vector3(0, 1.6, 0);
-    const cam = PICK_ART.cam;
-    cam.position.set(hp.x + 0.4, hp.y + 0.05, hp.z + 1.85);
-    cam.lookAt(hp.x, hp.y - 0.13, hp.z);
-    const cc = new THREE.Color();
-    R.getClearColor(cc);
-    const ca = R.getClearAlpha();
-    R.setRenderTarget(PICK_ART.rt);
-    R.setClearColor(0, 0);
-    R.clear();
-    R.render(PICK_ART.scene, cam);
-    const px = new Uint8Array(S * S * 4);
-    R.readRenderTargetPixels(PICK_ART.rt, 0, 0, S, S, px);
-    R.setRenderTarget(null);
-    R.setClearColor(cc, ca);
-    PICK_ART.scene.remove(root);
-    root.traverse(o => {
-      if (o.isMesh) {
-        o.geometry.dispose();
-      }
-    });
-    const c = document.createElement('canvas');
-    c.width = c.height = S;
-    const g = c.getContext('2d'),
-      id = g.createImageData(S, S);
-    for (let y = 0; y < S; y++) id.data.set(px.subarray((S - 1 - y) * S * 4, (S - y) * S * 4), y * S * 4);
-    g.putImageData(id, 0, 0);
-    const url = c.toDataURL();
-    PICK_ART.cache.set(job.key, url);
-    job.cb(url);
-  } catch (e) {
-    console.warn('Portrait de sélection indisponible', job.key, e);
-  } finally {
-    PICK_ART.busy = false;
-    setTimeout(pickArtNext, 0);
-  }
-}
-// Place l'image dans un bouton (le pictogramme reste tant que le portrait n'est pas prêt).
-function setPickArt(btn, url) {
-  if (!btn) return;
-  let img = btn.querySelector('img.pickArt');
-  if (!img) {
-    img = document.createElement('img');
-    img.className = 'pickArt';
-    img.alt = '';
-    const svg = btn.querySelector('svg');
-    if (svg) svg.replaceWith(img);
-    else btn.prepend(img);
-  }
-  img.src = url;
-}
-function refreshPickArt(race) {
-  if (!PREVIEW.renderer && !previewEnsure()) return;
-  PICK_ART.race = race || 'human';
-  document
-    .querySelectorAll('#raceChoices button[data-r]')
-    .forEach(b => pickArt(b.dataset.r, RACE_SHOWCASE[b.dataset.r] || 'sentinel', u => setPickArt(b, u)));
-  const r = race || 'human';
-  PICK_ART.queue = PICK_ART.queue.filter(
-    j => !/_/.test(j.key) || Object.keys(RACE_SHOWCASE).some(k => j.key === k + '_' + RACE_SHOWCASE[k])
-  );
-  document.querySelectorAll('#classChoices button[data-c]').forEach(b =>
-    pickArt(r, b.dataset.c, u => {
-      if (PICK_ART.race === r) setPickArt(b, u);
-    })
-  );
 }
 function hfMakePortraits() {
   const u = state.units.find(v => {
