@@ -49,10 +49,12 @@ function loadPrefs() {
         if (typeof v.keybinds.move[k] === 'string') d.keybinds.move[k] = v.keybinds.move[k];
     if (typeof v.keybinds?.trinket === 'string') d.keybinds.trinket = v.keybinds.trinket;
     // une touche ne commande jamais deux choses : une case sans touche valide (ou en double) prend sa touche par
-    // défaut si elle est libre, sinon la première libre (bug : la 7e case du druide héritait du « 5 » déjà pris)
-    const used = new Set([...Object.values(d.keybinds.move), d.keybinds.trinket]),
+    // défaut si elle est libre, sinon la première libre (bug : la 7e case du druide héritait du « 5 » déjà pris) ;
+    // une case laissée « Unset » (touche reprise par une autre action dans Settings) le reste
+    const used = new Set([...Object.values(d.keybinds.move), d.keybinds.trinket].filter(Boolean)),
       spare = ['Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'KeyF', 'KeyG', 'KeyT', 'KeyV', 'KeyC', 'KeyX'];
     d.keybinds.skills = d.keybinds.skills.map((def, i) => {
+      if (custom && sk[i] === '') return '';
       const c = [custom && sk[i], def, ...spare].find(k => typeof k === 'string' && k && !used.has(k));
       used.add(c);
       return c;

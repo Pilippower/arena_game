@@ -679,7 +679,8 @@ assert.ok(
   for (const stored of [
     ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'KeyE'],
     ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'KeyQ', 'Digit5'],
-    ['Digit1', 'Digit1', 'KeyW', 'Digit4', 'KeyQ', 'KeyE']
+    ['Digit1', 'Digit1', 'KeyW', 'Digit4', 'KeyQ', 'KeyE'],
+    ['', 'Digit2', 'Digit1', 'Digit4', 'KeyQ', 'KeyE', 'Digit5']
   ]) {
     const c = {
       clamp: (v, a, b) => Math.min(b, Math.max(a, v)),
@@ -698,7 +699,8 @@ assert.ok(
       c
     );
     const kb = c.out.keybinds,
-      all = [...kb.skills, kb.trinket, ...Object.values(kb.move)];
+      all = [...kb.skills, kb.trinket, ...Object.values(kb.move)].filter(Boolean);
+    if (stored[0] === '') assert.equal(kb.skills[0], '', 'case Unset gardée');
     assert.equal(kb.skills.length, 7, '7 cases');
     assert.equal(new Set(all).size, all.length, 'touches uniques : ' + kb.skills.join(','));
   }
@@ -717,3 +719,9 @@ assert.ok(
   'sanctuaires pour tous'
 );
 assert.ok(read('src/game/ai.js').includes('u.aiShrine = true'), 'IA : va chercher le soin de la carte');
+// Réglages : une touche reprise rend l'ancienne action « Unset » (pas de permutation)
+assert.ok(read('src/ui/settings.js').includes("if (other) set(other, '');"), 'touche reprise : ancienne action Unset');
+assert.ok(
+  read('src/input/controls.js').includes('e.code ? PREFS.keybinds.skills.indexOf(e.code) : -1'),
+  'Unset : aucune touche'
+);

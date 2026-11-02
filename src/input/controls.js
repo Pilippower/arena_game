@@ -16,7 +16,7 @@ function setMoveKey(e, down) {
       ArrowLeft: 'arrowleft',
       ArrowRight: 'arrowright'
     },
-    k = m[e.code || ''];
+    k = e.code ? m[e.code] : null;
   if (k) {
     state.keys[k] = down;
     e.preventDefault();
@@ -49,14 +49,14 @@ window.addEventListener('keydown', e => {
     }
     return;
   }
-  const skillIndex = PREFS.keybinds.skills.indexOf(e.code);
+  const skillIndex = e.code ? PREFS.keybinds.skills.indexOf(e.code) : -1;
   if (skillIndex >= 0) {
     e.preventDefault();
     const o = slotOrder(state.player);
     if (o[skillIndex] != null) tryPlayerSkill(o[skillIndex]);
     return;
   }
-  if (e.code === PREFS.keybinds.trinket) {
+  if (e.code && e.code === PREFS.keybinds.trinket) {
     e.preventDefault();
     useTrinket(state.player);
     return;

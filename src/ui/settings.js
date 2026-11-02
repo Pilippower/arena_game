@@ -11,7 +11,7 @@ function renderBindGrid() {
   const cls = state?.player?.cls || LOBBY_UNIT?.cls,
     names = PREFS.keybinds.skills.map((_, i) => (cls && CLASS[cls].skills[i]?.n) || `Spell ${i + 1}`),
     btn = (type, i, code) =>
-      `<button class="bindBtn ${captureBind?.type === type && captureBind.i === i ? 'capturing' : ''}" data-bind="${type}" data-i="${i}">${captureBind?.type === type && captureBind.i === i ? 'Press a key…' : keyLabel(code)}</button>`;
+      `<button class="bindBtn ${captureBind?.type === type && captureBind.i === i ? 'capturing' : ''}${code ? '' : ' unset'}" data-bind="${type}" data-i="${i}">${captureBind?.type === type && captureBind.i === i ? 'Press a key…' : code ? keyLabel(code) : 'Unset'}</button>`;
   const MOVES = [
     ['forward', 'Move forward'],
     ['back', 'Move back'],
@@ -38,18 +38,18 @@ function assignCapturedBind(code) {
     $('bindStatus').textContent = `${keyLabel(code)} is reserved for movement/gameplay.`;
     return true;
   }
-  // toutes les touches (sorts, trinket, déplacements) : une touche déjà prise échange sa place avec l'ancienne
+  // toutes les touches (sorts, trinket, déplacements) : une touche déjà prise est retirée de son ancienne action, qui
+  // devient « Unset » (pas d'échange : la permutation déplaçait une touche ailleurs sans qu'on le voie)
   const kb = PREFS.keybinds,
     slots = [...kb.skills.map((_, i) => ['skill', i]), ['trinket', 0], ...Object.keys(kb.move).map(k => ['move', k])],
     get = ([t, i]) => (t === 'skill' ? kb.skills[i] : t === 'move' ? kb.move[i] : kb.trinket),
     set = ([t, i], c) => (t === 'skill' ? (kb.skills[i] = c) : t === 'move' ? (kb.move[i] = c) : (kb.trinket = c)),
     me = [captureBind.type, captureBind.i],
-    old = get(me),
     other = slots.find(s => get(s) === code && !(s[0] === me[0] && s[1] === me[1]));
   set(me, code);
-  if (other) set(other, old);
+  if (other) set(other, '');
   savePrefs();
-  $('bindStatus').textContent = `Keybind set: ${keyLabel(code)}`;
+  $('bindStatus').textContent = `Keybind set: ${keyLabel(code)}` + (other ? ' (previous action is now unset)' : '');
   captureBind = null;
   renderBindGrid();
   if (state) updateUI();
