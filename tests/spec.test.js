@@ -349,8 +349,9 @@ assert.match(
     'frame_victory_top',
     'frame_victory_mid',
     'frame_defeat_top',
-    'banner_victory',
-    'banner_defeat',
+    'title_victory',
+    'title_defeat',
+    'pennant',
     'btn_again_loss',
     'ribbon_ally'
   ])
@@ -459,9 +460,10 @@ assert.ok(
   );
 }
 assert.ok(
-  read('src/ui/results.css').includes('banner_victory.webp') &&
-    read('src/ui/results.css').includes('top: calc(var(--scy) * var(--bs) * var(--g) - 14 * var(--u));'),
-  'bandeau HD, score centré sur sa plaque'
+  read('src/ui/results.css').includes('title_victory.webp') &&
+    !read('src/ui/results.css').includes('banner_') &&
+    read('src/ui/results.css').includes('top: calc((var(--ty) + var(--scy) * var(--ts)) * var(--g) - 14 * var(--u));'),
+  'titre intégré au bord haut du cadre (pas de bandeau surélevé), score centré sur sa plaque'
 );
 for (const m of Object.values(ctx.MAPS)) assert.ok(m.desc.length <= 40, 'description d’arène courte : ' + m.name);
 assert.ok(

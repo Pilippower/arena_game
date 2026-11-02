@@ -41,10 +41,10 @@ body #results.loss {
   pointer-events: none;
 }
 body #results .resPanel {
-  /* Bandeau (titre + plaque de score) posé au-dessus du cadre, qu'il chevauche. Tout est relatif à la largeur
-     --W du panneau : --g = 1 pixel de l'image du cadre, --u = unité du contenu (tableaux, boutons, rubans).
-     --fo : décalage du cadre sous le bandeau ; --ft / --fb : hauteurs du haut et du bas du cadre (la bande du
-     milieu est étirée selon le nombre de joueurs). */
+  /* Titre intégré au bord haut du cadre (maquette d'origine) : mot, lauriers et plaque du score posés sous la
+     crête du cadre. Tout est relatif à la largeur --W du panneau : --g = 1 pixel de l'image du cadre, --u = unité
+     du contenu (tableaux, boutons, rubans). --ts / --ty : échelle et haut de l'image du titre (pixels du cadre) ;
+     --ft / --fb : hauteurs du haut et du bas du cadre (la bande du milieu est étirée selon le nombre de joueurs). */
   --W: min(1000px, 59cqw, calc(92cqh * 1.06)); /* maquette : ≈ 59 % de la largeur de l'écran */
   --u: calc(var(--W) / 652);
   --g: calc(var(--W) / var(--fw));
@@ -60,14 +60,19 @@ body #results .resPanel {
   box-shadow: none !important;
   background-color: transparent !important;
   background-repeat: no-repeat !important;
+  /* couches : titre, fanions gauche / droit (victoire), haut, bas et bande du milieu du cadre */
   background-size:
-    calc(var(--bw) * var(--bs) * var(--g)) auto,
+    calc(var(--bw) * var(--ts) * var(--g)) auto,
+    calc(96 * var(--g)) auto,
+    calc(96 * var(--g)) auto,
     100% auto,
     100% auto,
     100% calc(100% - (var(--fo) + var(--ft) + var(--fb)) * var(--g) + 2px) !important;
   /* bande du milieu : 1 px sous chaque raccord (sinon une fine ligne apparaît selon l'arrondi) */
   background-position:
-    top center,
+    center calc(var(--ty) * var(--g)),
+    calc(86 * var(--g)) calc(50 * var(--g)),
+    calc(100% - 86 * var(--g)) calc(50 * var(--g)),
     0 calc(var(--fo) * var(--g)),
     bottom center,
     0 calc((var(--fo) + var(--ft)) * var(--g) - 1px) !important;
@@ -78,16 +83,18 @@ body #results.win .resPanel {
   --fh: 467;
   --ft: 376;
   --fb: 75;
-  --fo: 88; /* bandeau à cheval sur le bord du haut (fanions pendus dans le cadre) */
+  --fo: 0;
   --bw: 722;
-  --bs: 0.906;
-  --scy: 178;
-  --pt: 118;
+  --ts: 0.86;
+  --ty: -8.5;
+  --scy: 176;
+  --pt: 170;
   --px: 100;
   --pb: 66;
   --edge: #ffc85a;
   background-image:
-    url(../../assets/ui/results/banner_victory.webp), url(../../assets/ui/results/frame_victory_top.webp),
+    url(../../assets/ui/results/title_victory.webp), url(../../assets/ui/results/pennant.webp),
+    url(../../assets/ui/results/pennant.webp), url(../../assets/ui/results/frame_victory_top.webp),
     url(../../assets/ui/results/frame_victory_bottom.webp), url(../../assets/ui/results/frame_victory_mid.webp) !important;
 }
 body #results.loss .resPanel {
@@ -95,16 +102,17 @@ body #results.loss .resPanel {
   --fh: 394;
   --ft: 302;
   --fb: 82;
-  --fo: 67;
+  --fo: 0;
   --bw: 729;
-  --bs: 0.737;
-  --scy: 167.5;
-  --pt: 92;
+  --ts: 0.86;
+  --ty: -21.6;
+  --scy: 169;
+  --pt: 150;
   --px: 62;
   --pb: 58;
   --edge: #ff4a2a;
   background-image:
-    url(../../assets/ui/results/banner_defeat.webp), url(../../assets/ui/results/frame_defeat_top.webp),
+    url(../../assets/ui/results/title_defeat.webp), none, none, url(../../assets/ui/results/frame_defeat_top.webp),
     url(../../assets/ui/results/frame_defeat_bottom.webp), url(../../assets/ui/results/frame_defeat_mid.webp) !important;
 }
 /* la lumière du cadre respire */
@@ -116,7 +124,7 @@ body #results.loss .resPanel {
     filter: drop-shadow(0 0 22px color-mix(in srgb, var(--edge) 70%, transparent)) drop-shadow(0 18px 40px #000c);
   }
 }
-/* titre peint dans le cadre : le texte reste pour l'accessibilité */
+/* titre peint sur le cadre : le texte reste pour l'accessibilité */
 body #resultsTitle {
   position: absolute;
   width: 1px;
@@ -124,11 +132,11 @@ body #resultsTitle {
   overflow: hidden;
   clip: rect(0 0 0 0);
 }
-/* score centré sur la plaque peinte du bandeau (--scy : centre mesuré, en pixels de l'image du bandeau) */
+/* score centré sur la plaque peinte du titre (--scy : centre mesuré, en pixels de l'image du titre) */
 body #resultsScore {
   position: absolute;
   left: 50%;
-  top: calc(var(--scy) * var(--bs) * var(--g) - 14 * var(--u));
+  top: calc((var(--ty) + var(--scy) * var(--ts)) * var(--g) - 14 * var(--u));
   height: calc(28 * var(--u));
   transform: translateX(-50%);
   margin: 0;
@@ -343,7 +351,7 @@ body #leaveConfirm .resButtons button:hover {
 }
 
 /* mobile (paysage, peu de hauteur) : le cadre entier tient dans l'écran, comme sur la maquette (bas et ornement
-   visibles). Hauteur du panneau ≈ largeur × (0,565 + 0,058 × lignes) ; --rows = nombre de joueurs (match.js). */
+   visibles). Hauteur du panneau ≈ largeur × (0,545 + 0,058 × lignes) ; --rows = nombre de joueurs (match.js). */
 body.mobile-mode #results {
   /* pas d'agrandissement automatique du texte (navigateurs mobiles) : il cassait les proportions du tableau */
   -webkit-text-size-adjust: 100%;
@@ -354,7 +362,7 @@ body.mobile-mode #results {
 }
 body.mobile-mode #results .resPanel {
   /* jamais sous 52 % de la largeur (texte lisible) : en 3v3 le panneau peut alors défiler un peu */
-  --W: max(min(52cqw, 600px), min(600px, 68cqw, calc(96cqh / (0.565 + 0.058 * var(--rows, 2)))));
+  --W: max(min(52cqw, 600px), min(600px, 68cqw, calc(96cqh / (0.545 + 0.058 * var(--rows, 2)))));
   margin: auto;
 }
 body.mobile-mode #leaveConfirm .leavePanel {
