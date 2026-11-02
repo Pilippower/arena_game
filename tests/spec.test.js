@@ -803,3 +803,8 @@ assert.ok(
     read('src/game/ai.js').includes('PREFS.cameraReturn === false'),
   'réglage retour caméra'
 );
+// IA de mêlée : suit un pas en arrière (repart dès la sortie de l'allonge)
+assert.ok(
+  read('src/game/combat.js').includes('if (d > desired + (caster ? 1.2 : 0.4)) dir = 1;'),
+  'mêlée : suit la cible'
+);

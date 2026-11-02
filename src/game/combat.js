@@ -769,7 +769,9 @@ function aiMoveDir(u, d, desired, caster) {
   if (dir === 1 && d <= desired + 0.2) dir = 0;
   else if (dir === -1 && d >= desired) dir = 0;
   if (!dir) {
-    if (d > desired + 1.2) dir = 1;
+    // mêlée : on repart dès que la cible sort de l'allonge (2,45 m) ; avant, un pas en arrière (2,5 à 3,1 m) laissait
+    // l'adversaire planté sans frapper, comme si le combat s'arrêtait
+    if (d > desired + (caster ? 1.2 : 0.4)) dir = 1;
     else if (caster && d < desired - 2.5) dir = -1;
   }
   u.aiDir = dir;
