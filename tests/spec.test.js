@@ -765,7 +765,7 @@ assert.ok(
 );
 // Prêtre : Dispel (effets magiques) à la place de Divine Hymn, même icône ; soins fixes doublés
 {
-  assert.ok(ctx.skillIconSVG('oracle', 3).includes('spells/divine_hymn.webp'), 'Dispel : icône de Divine Hymn');
+  assert.ok(ctx.skillIconSVG('oracle', 3).includes('spells/dispel.webp'), 'Dispel : icône de l’utilisateur');
   const cb = read('src/game/combat.js');
   assert.ok(
     cb.includes('function dispel(u)') && cb.includes('(u.slow > 0 && u.slowMagic)'),

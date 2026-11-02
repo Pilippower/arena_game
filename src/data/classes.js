@@ -178,7 +178,7 @@ const SPELL_ART = new Set(
     'ambush angelic_step arcane_bolt arcane_power asphyxiate backstab barkskin bear_form blink cat_form ' +
     'charge cloak counterspell dark_soul death_advance death_grip demonic_gate divine_hymn ' +
     'entangling_roots fear flash_heal frenzied_regeneration frost_nova hamstring human_form kidney_shot ' +
-    'rejuvenation regrowth cheap_shot drain_life demoralizing_roar pain ' +
+    'rejuvenation regrowth cheap_shot drain_life demoralizing_roar pain dispel ' +
     'maim maul mortal_strike obliterate pillar_of_frost polymorph power_shield pummel rake sap ' +
     'shadow_bolt shadowstep shield_wall shred silence spell_lock starfall stealth swipe vendetta ' +
     'wild_charge wrath'
@@ -651,9 +651,8 @@ const SPELLS = {
     art: 'silence',
     text: S => `Instant: every enemy within ${S.radius} m flees in terror for ${sec(S.dur)}.`
   },
-  // remplace Divine Hymn (même icône)
+  // remplace Divine Hymn ; icône de l'utilisateur
   Dispel: {
-    art: 'divine_hymn',
     text: () =>
       `Instant: removes all magic effects from your friendly target (or you): Polymorph, fears, magic roots and slows (Frost Nova, Entangling Roots, Frost Bolt) and damage over time. Melee slows and stuns stay.`
   },
