@@ -607,3 +607,8 @@ assert.match(
   );
   assert.ok(h3.includes('ease = 1 - Math.exp(-dt * 26)') && h3.includes('k.handQ.slerp(rel, ease)'), 'IK : lissage');
 }
+// Fin de match : flammes animées sur les flammes peintes des torches
+assert.ok(
+  read('src/ui/results.js').includes('[30, 168]') && read('src/ui/results.js').includes('[696, 168]'),
+  'torches de la défaite'
+);

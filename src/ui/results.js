@@ -2,15 +2,15 @@
 // Écran de fin de match (design de l'utilisateur, src/ui/results.css) : tout ce qui brille est vivant.
 // Canevas par-dessus le panneau (mélange additif) : flammes des deux torches du cadre, étincelles dorées qui
 // montent autour du cadre (victoire) ou braises rouges (défaite) ; la lueur du cadre respire (CSS).
-// Torches : base de la flamme dans l'image du cadre (pixels de l'image ; w = largeur du cadre, fo = décalage du
-// cadre sous le bandeau, mêmes valeurs que results.css).
+// Torches : base de la flamme dans l'image du cadre (pixels de l'image, centre des flammes peintes mesuré dans
+// frame_*_top.webp ; w = largeur du cadre, fo = décalage du cadre, mêmes valeurs que results.css).
 const RESULT_FRAMES = {
   win: {
     w: 896,
     fo: 0,
     torches: [
-      [38, 172],
-      [858, 172]
+      [43, 172],
+      [851, 172]
     ],
     spark: [255, 214, 120]
   },
@@ -18,8 +18,8 @@ const RESULT_FRAMES = {
     w: 726,
     fo: 0,
     torches: [
-      [18, 172],
-      [705, 172]
+      [30, 168],
+      [696, 168]
     ],
     spark: [255, 90, 40]
   }

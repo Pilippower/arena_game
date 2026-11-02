@@ -69,7 +69,12 @@ const smooth = (a, b, x) => {
           i = (y * r.w + x) * 4 + 3;
         r.data[i] = Math.round(r.data[i] * Math.max(aT, aP));
       }
-    await save(fromRaw(r), `title_${k}`);
+    // agrandi ×2 (Lanczos) et contours accentués : le titre s'affiche plus grand que la planche (sinon flou)
+    await sharp(await fromRaw(r).png().toBuffer())
+      .resize(r.w * 2, r.h * 2, { kernel: 'lanczos3' })
+      .sharpen({ sigma: 1.1, m1: 0.6, m2: 2.2 })
+      .webp({ quality: 96, alphaQuality: 100 })
+      .toFile(path.join(OUT, `title_${k}.webp`));
   }
   // fanion bleu pendu dans les coins du haut du cadre de victoire (maquette)
   await save(crop('results2_a.png', 1106, 686, 142, 188).trim(), 'pennant');
