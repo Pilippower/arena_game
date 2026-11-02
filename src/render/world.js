@@ -418,34 +418,29 @@ function renderCharacter(u) {
   if (u.stun > 0) stunSwirl(u.x, y + 2.55, u.z, now());
 }
 // Étourdissement : tourbillon (deux bras en spirale qui tournent, petites étoiles au bout).
+// Étourdissement : deux cercles jaunes lumineux au-dessus de la tête (anneaux continus, pas de bulles) qui
+// tournent en sens contraire et pulsent ; un éclat plus vif court sur chaque anneau.
 function stunSwirl(x, y, z, t) {
-  for (let arm = 0; arm < 2; arm++)
-    for (let k = 0; k < 12; k++) {
-      const f = k / 11,
-        a = -t * 5 + arm * Math.PI + f * 4.2,
-        r = 0.08 + f * 0.62,
-        sz = 0.055 + f * 0.05;
+  const N = 40;
+  for (let ring = 0; ring < 2; ring++) {
+    const R = (ring ? 0.42 : 0.6) * (1 + Math.sin(t * 6 + ring) * 0.06),
+      h = y + (ring ? 0.14 : 0),
+      spin = (ring ? -1 : 1) * t * 3.2;
+    for (let k = 0; k < N; k++) {
+      const a = (k / N) * Math.PI * 2,
+        head = ((((a - spin) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2), // 0 = éclat
+        hot = Math.max(0, 1 - head * 5),
+        sz = 0.028 + hot * 0.02;
       part(
         'sphere',
-        [x + Math.sin(a) * r, y + f * 0.05, z + Math.cos(a) * r],
+        [x + Math.sin(a) * R, h, z + Math.cos(a) * R],
         [0, 0, 0],
-        [sz, sz * 0.6, sz],
-        [1, 0.85, 0.2],
-        [1, 0.6, 0.05],
-        0.55 + f * 0.4
+        [sz, sz * 0.7, sz],
+        [1, 0.88 + hot * 0.1, 0.25 + hot * 0.5],
+        [1, 0.7 + hot * 0.3, 0.1 + hot * 0.5],
+        0.9
       );
     }
-  for (let k = 0; k < 3; k++) {
-    const a = -t * 5 + (k * Math.PI * 2) / 3 + 4.2;
-    part(
-      'cone',
-      [x + Math.sin(a) * 0.74, y + 0.08, z + Math.cos(a) * 0.74],
-      [0, -a, 0],
-      [0.06, 0.08, 0.06],
-      [1, 0.95, 0.5],
-      [1, 0.8, 0.2],
-      0.95
-    );
   }
 }
 // Icône animée au-dessus de la tête pour chaque contrôle (même principe que le tourbillon d'étourdissement).

@@ -254,6 +254,7 @@ function damage(src, t, v, crit = false, school = src.curSchool || 'physical') {
     const q = Math.min(t.shield, v);
     t.shield -= q;
     v -= q;
+    recordHeal(t.shieldSrc || t, q); // un bouclier compte comme du soin (dégâts absorbés), au profit de son poseur
   }
   v = Math.round(v * (crit ? 1.5 : 1));
   recordDamage(src, t, Math.min(v, t.hp));
@@ -741,6 +742,7 @@ function useSkill(u, i) {
     } else if (i === 3) {
       u.shield += S.shield;
       u.shieldName = S.n;
+      u.shieldSrc = u;
       fx('ring', u.x, 0.5, u.z, c.accent, 0.8, 1);
       action(u, 'cast');
     } else ok = false;
@@ -798,6 +800,7 @@ function useSkill(u, i) {
     } else if (i === 1 && a) {
       a.shield += S.shield;
       a.shieldName = S.n;
+      a.shieldSrc = u; // l'absorption est comptée en soins pour le prêtre (récap)
       fx('ring', a.x, 0.2, a.z, c.accent, 0.8, 0.8);
       action(u, 'cast');
     } else if (i === 2) {
@@ -827,6 +830,7 @@ function useSkill(u, i) {
     } else if (i === 2) {
       u.shield += S.shield;
       u.shieldName = S.n;
+      u.shieldSrc = u;
       action(u, 'cast');
     } else if (i === 3) {
       enemies(u)
@@ -873,6 +877,7 @@ function useSkill(u, i) {
       u.burst = S.burst;
       u.shield += S.shield;
       u.shieldName = S.n;
+      u.shieldSrc = u;
       fx('ring', u.x, 0.1, u.z, c.accent, 1, 1.15);
       action(u, 'cast');
     } else ok = false;
@@ -899,6 +904,7 @@ function useTrinket(u) {
     u.trinket = TRINKET.cd;
     u.shield += TRINKET.shield;
     u.shieldName = 'Trinket';
+    u.shieldSrc = u;
     // animation : colonne de lumière dorée, chaînes brisées (éclats), onde au sol
     const y = u.y || 0,
       gold = [1, 0.82, 0.28];

@@ -453,4 +453,12 @@ assert.ok(
   );
   assert.ok(!cb.includes('if (!hit.length) return false;'), 'sorts de zone sans cible');
 }
+assert.ok(read('src/game/ai.js').includes('if (!p.airVel) p.airVel = p.lastVel'), 'saut : trajectoire figée');
+assert.ok(read('src/game/combat.js').includes('recordHeal(t.shieldSrc || t, q)'), 'boucliers comptés en soins');
+assert.ok(
+  read('src/core/loading.js').includes('const LOADING_MIN_MS = 3000;') &&
+    read('src/core/loading.js').includes("if (first) loadingShow('Entering the arena');"),
+  'chargement immédiat, 3 s minimum'
+);
+assert.ok(!/stunSwirl[\s\S]{0,400}'cone'/.test(read('src/render/world.js')), 'étourdissement : cercles');
 console.log('OK - spécifications validées (docs/SPEC.md)');

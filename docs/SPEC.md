@@ -35,6 +35,10 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Sorts de zone (Frost Nova, Holy Terror, Swipe…) : se lancent même si aucun ennemi n'est à portée. 🧪
 - Druide en forme d'ours ou de félin : insensible au mouton du mage (« Immune ») ; changer de forme libère des racines et ralentissements. 🧪
 - Blink du mage : utilisable étourdi, brise l'étourdissement. 🧪
+- Saut (et chute) : la trajectoire du décollage est gardée jusqu'à l'atterrissage ; les touches ne la changent plus en l'air. 🧪
+- Boucliers (Power Shield, Shield Wall, Trinket…) : les dégâts absorbés comptent comme soins du poseur dans le récapitulatif. 🧪
+- Étourdissement : deux cercles jaunes lumineux au-dessus de la tête (pas de bulles), qui tournent en sens contraire. 🧪
+- Début de match : écran de chargement affiché dès le clic sur Play (aucune image du jeu avant), gardé **au moins 3 s** ; IA, chrono et déplacements arrêtés tant qu'il est affiché. 🧪
 - Sort qui échoue faute de ligne de vue : recharge rendue (la ressource n'a pas été prise).
 - Prêtre : **Smite** (1,5 s, 100 dégâts sacrés = moitié de l'Arcane Bolt du mage, icône d'Angelic Step) remplace Angelic Step ; **Holy Terror** (instantané : tous les ennemis à 10 m fuient **6 s**, rendements décroissants habituels, icône de Silence) remplace Silence. L'IA s'en sert (Holy Terror contre les mêlées au contact, Smite quand personne n'a besoin de soins). 🧪
 - Chevalier de la mort : plus de Death Advance (il a déjà Death Grip). 🧪

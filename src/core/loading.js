@@ -7,6 +7,7 @@
 //   (state.loading) ; l'écran n'apparaît que si la préparation dépasse 150 ms (manches suivantes : en cache).
 // - warmPreview() : à l'ouverture, chaque classe passe une fois dans la prévisualisation du lobby.
 const LOADING = { el: null, shown: false, token: 0 };
+const LOADING_MIN_MS = 3000; // durée minimale de l'écran au début d'un match (sinon il clignote)
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 function loadingShow(title) {
@@ -86,11 +87,11 @@ async function prepareMatch() {
     S = state,
     first = S.round === 1;
   S.loading = true;
-  // manche suivante (tout est en cache) : pas d'écran si la préparation est rapide
-  const showT = setTimeout(
-    () => token === LOADING.token && loadingShow(first ? 'Entering the arena' : `Round ${S.round}`),
-    first ? 0 : 150
-  );
+  // début du match : écran affiché tout de suite (avant la moindre image du jeu) et gardé au moins 3 s ;
+  // manche suivante (tout est en cache) : écran seulement si la préparation dépasse 150 ms
+  const tStart = performance.now();
+  if (first) loadingShow('Entering the arena');
+  const showT = first ? 0 : setTimeout(() => token === LOADING.token && loadingShow(`Round ${S.round}`), 150);
   const stale = () => token !== LOADING.token || state !== S;
   loadingProgress(0.05, 'Building the arena');
   await nextFrame();
@@ -159,7 +160,11 @@ async function prepareMatch() {
     }
   }
   clearTimeout(showT);
-  loadingProgress(1, '');
+  loadingProgress(1, 'Ready');
+  while (first && performance.now() - tStart < LOADING_MIN_MS) {
+    await sleep(50);
+    if (stale()) return;
+  }
   S.loading = false;
   loadingHide();
   showSplash(`Round ${S.round}`);

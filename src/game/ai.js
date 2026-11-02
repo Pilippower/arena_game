@@ -499,6 +499,18 @@ function playerMove(dt) {
     p.moving = true;
     return;
   }
+  // En l'air (saut ou chute) : la trajectoire du décollage est gardée jusqu'à l'atterrissage, les touches ne la
+  // changent plus (seul le regard peut tourner).
+  if (!p.grounded) {
+    if (!p.airVel) p.airVel = p.lastVel || { x: 0, z: 0 };
+    p.x += p.airVel.x * dt;
+    p.z += p.airVel.z * dt;
+    p.moving = false;
+    resolveWalls(p);
+    return;
+  }
+  p.airVel = null;
+  p.lastVel = { x: 0, z: 0 };
   // Base de trajectoire : la caméra, sauf pendant un glisser au clic gauche (orbiting) où elle reste figée
   // sur l'orientation d'avant le glisser ; au relâchement, la caméra revient doucement derrière le personnage.
   const base = moveBaseYaw(dt);
@@ -527,6 +539,7 @@ function playerMove(dt) {
   const sp = moveSpeed(p) * (back ? 0.62 : 1);
   p.x += dx * sp * dt;
   p.z += dz * sp * dt;
+  p.lastVel = { x: dx * sp, z: dz * sp }; // vitesse reprise telle quelle si l'on saute
   p.yaw = looking || MOBILE.lookPointer !== null || back ? base : Math.atan2(dx, dz);
   p.movePhase += dt * 9.2;
   resolveWalls(p);
