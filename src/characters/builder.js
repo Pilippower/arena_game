@@ -393,6 +393,62 @@
     update(0);
     return { g, update, halo };
   }
+  // Enchantement d'arme : chapelet de halos le long du tranchant (suit l'arme quelle que soit son orientation, un seul
+  // halo allongé resterait vertical à l'écran), pulsation qui court le long de la lame, étincelles d'énergie qui filent
+  // vers la pointe. path = points de la lame dans le repère de l'arme ; size = épaisseur de la lueur.
+  function weaponEnchant(THREE, w, color, path, size) {
+    const P = path.map(p => new THREE.Vector3(...p)),
+      seg = P.slice(1).map((p, i) => p.distanceTo(P[i])),
+      total = seg.reduce((a, b) => a + b, 0),
+      at = f => {
+        let d = f * total;
+        for (let i = 0; i < seg.length; i++) {
+          if (d <= seg[i] || i === seg.length - 1) return P[i].clone().lerp(P[i + 1], Math.min(1, d / seg[i]));
+          d -= seg[i];
+        }
+      },
+      hot = color.clone().lerp(new THREE.Color(1, 1, 1), 0.35),
+      n = Math.max(3, Math.round(total / (size * 0.55))),
+      beads = [],
+      sparks = [];
+    // sous chaque halo additif, une lueur colorée en mélange normal : la couleur tient même sur l'herbe claire
+    const tint = color.clone().offsetHSL(0, 0.3, -0.12);
+    for (let i = 0; i < n; i++) {
+      const pos = at(i / (n - 1)),
+        c = glowSprite(THREE, tint, size * 2.6),
+        b = glowSprite(THREE, color, size * 2.2);
+      c.material.blending = THREE.NormalBlending;
+      c.material.opacity = 0.5;
+      c.renderOrder = 1;
+      b.renderOrder = 2;
+      c.position.copy(pos);
+      b.position.copy(pos);
+      w.add(c, b);
+      beads.push(b);
+    }
+    for (let i = 0; i < 6; i++) {
+      const sp = wispSprite(THREE, 'ember', hot, size * 0.6);
+      sp.renderOrder = 2;
+      w.add(sp);
+      sparks.push(sp);
+    }
+    beads[0].onBeforeRender = () => {
+      const t = performance.now() / 1000;
+      beads.forEach((b, i) => {
+        const wave = 0.5 + 0.5 * Math.sin(t * 5 - (i / n) * 6);
+        b.material.opacity = 0.55 + 0.4 * wave;
+        const z = size * (1.9 + 0.7 * wave);
+        b.scale.set(z, z, 1);
+      });
+      sparks.forEach((sp, i) => {
+        const life = (t * 0.7 + i / sparks.length) % 1;
+        sp.position.copy(at(life));
+        sp.position.x += Math.sin(t * 9 + i * 2) * size * 0.25;
+        sp.position.z += Math.cos(t * 7 + i * 3) * size * 0.25;
+        sp.material.opacity = Math.sin(life * Math.PI);
+      });
+    };
+  }
 
   // Yeux lumineux : l'iris (zone brune saturée de la texture) est recoloré et rendu émissif.
   function glowEyes(THREE, mesh, color, headBone, inv) {
@@ -803,6 +859,16 @@
             c.position.y = HY + (c.position.y - HY) * 1.35;
             c.scale.multiplyScalar(1.35);
           }
+        weaponEnchant(
+          THREE,
+          w,
+          new THREE.Color(0.25, 0.7, 1),
+          [
+            [0, HY - 0.12 * s, 0],
+            [0, HY + 0.3 * s, 0]
+          ],
+          0.13 * s
+        );
         inHand(w, 'r', 0.05 * s, 0.35);
       } else if (kind === 'axeShield') {
         const w = new THREE.Group();
@@ -836,12 +902,23 @@
         const cap = B(0.06, 0.08, 0.06, gold);
         cap.position.y = 0.76 * s;
         w.add(cap);
+        weaponEnchant(
+          THREE,
+          w,
+          new THREE.Color(1, 0.42, 0.08),
+          [
+            [0.17 * s, 0.53 * s, 0],
+            [0.25 * s, 0.68 * s, 0],
+            [0.17 * s, 0.83 * s, 0]
+          ],
+          0.09 * s
+        );
         inHand(w, 'r', 0.05 * s, 0.35);
       } else {
         const ice = new THREE.MeshStandardMaterial({
           color: 0x4a9cff,
           emissive: 0x1a50ff,
-          emissiveIntensity: 1.1,
+          emissiveIntensity: 2.2,
           metalness: 0.2,
           roughness: 0.1,
           transparent: true,
@@ -860,13 +937,23 @@
         aura.onBeforeRender = () => {
           aura.material.opacity = 0.55 + Math.sin(performance.now() / 90) * 0.15;
         };
+        weaponEnchant(
+          THREE,
+          sw,
+          new THREE.Color(0.3, 0.6, 1),
+          [
+            [0, 0.05 * s, 0],
+            [0, 0.98 * s, 0]
+          ],
+          0.09 * s
+        );
         inHand(sw, 'r', -0.11 * s, 0.3);
       }
     } else if (kind === 'runeblade') {
       const sw = sword(1.0, 0.075, dark, dark);
       sw.name = 'Runeblade';
       const rc = new THREE.Color(0.45, 0.85, 1),
-        rune = new THREE.MeshStandardMaterial({ color: rc, emissive: rc, emissiveIntensity: 2.2 });
+        rune = new THREE.MeshStandardMaterial({ color: rc, emissive: rc, emissiveIntensity: 3.6 });
       for (let i = 0; i < 5; i++) {
         const r = B(0.022, 0.06, 0.016, rune);
         r.position.y = (0.15 + i * 0.17) * s;
@@ -877,6 +964,16 @@
       glow.scale.set(0.25 * s, 1.1 * s, 1);
       glow.material.opacity = 0.35;
       sw.add(glow);
+      weaponEnchant(
+        THREE,
+        sw,
+        new THREE.Color(0.35, 0.8, 1),
+        [
+          [0, 0.05 * s, 0],
+          [0, 1.08 * s, 0]
+        ],
+        0.1 * s
+      );
       inHand(sw, 'r', -0.11 * s, 0.4);
     } else if (kind === 'daggers') {
       // Glaives doubles (design original) : poignée au poing, une lame en croissant de chaque côté de la main
@@ -885,7 +982,7 @@
       const fel = new THREE.MeshStandardMaterial({
         color: new THREE.Color(0x1f8a12).convertSRGBToLinear(),
         emissive: new THREE.Color(0x2fc80f).convertSRGBToLinear(),
-        emissiveIntensity: 0.9,
+        emissiveIntensity: 1.8,
         roughness: 0.3,
         metalness: 0
       });
@@ -931,12 +1028,17 @@
           const halo = new THREE.Mesh(m.geometry, felHalo);
           halo.scale.set(s * 1.25, dir * s * 1.08, s * 1.18);
           g.add(halo);
-          for (const t of [0.22, 0.4, 0.56]) {
-            const aura = glowSprite(THREE, new THREE.Color(0.35, 1, 0.15), 0.28 * s);
-            aura.position.set(0, dir * t * s, -0.06 * s);
-            aura.material.opacity = 0.55;
-            g.add(aura);
-          }
+          weaponEnchant(
+            THREE,
+            g,
+            new THREE.Color(0.3, 1, 0.12),
+            [
+              [0, dir * 0.1 * s, -0.02 * s],
+              [0, dir * 0.4 * s, -0.04 * s],
+              [0, dir * 0.6 * s, -0.16 * s]
+            ],
+            0.07 * s
+          );
         }
         const guard = new THREE.Mesh(new THREE.CylinderGeometry(0.07 * s, 0.07 * s, 0.025 * s, 16), grip);
         guard.rotation.z = Math.PI / 2;

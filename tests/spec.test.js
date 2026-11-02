@@ -637,3 +637,12 @@ assert.ok(
       );
     }
 }
+// Armes enchantées lumineuses (toutes les armes de mêlée) et feux follets des lanceurs
+{
+  const bd = read('src/characters/builder.js');
+  assert.ok((bd.match(/weaponEnchant\(\s*THREE/g) || []).length >= 5, 'enchantements sur toutes les armes de mêlée');
+  assert.ok(
+    bd.includes('function flameWisp') && !/new THREE\.PointLight/.test(bd),
+    'feux follets sans lumière ajoutée'
+  );
+}
