@@ -214,7 +214,9 @@ function netUnitState(u) {
     mv: !!u.moving,
     mp: r2(u.movePhase),
     gr: !!u.grounded,
-    cast: u.cast ? { n: u.cast.name, i: u.cast.i, rem: r2(u.cast.end - now()), dur: u.cast.dur } : null,
+    cast: u.cast
+      ? { n: u.cast.name, i: u.cast.i, rem: r2(u.cast.end - now()), dur: u.cast.dur, ch: !!u.cast.channel }
+      : null,
     stun: r2(u.stun),
     root: r2(u.root),
     fear: r2(u.fear || 0),
@@ -328,7 +330,9 @@ const NET_COPY = u => s => {
   u.shield = s.sh;
   u.shieldName = s.sn;
   u.alive = s.al;
-  u.cast = s.cast ? { name: s.cast.n, i: s.cast.i, end: now() + s.cast.rem, dur: s.cast.dur } : null;
+  u.cast = s.cast
+    ? { name: s.cast.n, i: s.cast.i, end: now() + s.cast.rem, dur: s.cast.dur, channel: s.cast.ch }
+    : null;
   u.stun = s.stun;
   u.root = s.root;
   u.fear = s.fear;

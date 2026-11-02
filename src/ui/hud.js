@@ -179,7 +179,12 @@ function renderSkillBar(p) {
     if (w._h !== cd) w.innerHTML = w._h = cd;
   }
 }
-const castProgress = u => (u.cast ? clamp(1 - (u.cast.end - now()) / u.cast.dur, 0, 1) : 0);
+// incantation : la barre se remplit ; canalisation (Drain Life) : elle part pleine et se vide
+const castProgress = u => {
+  if (!u.cast) return 0;
+  const left = clamp((u.cast.end - now()) / u.cast.dur, 0, 1);
+  return u.cast.channel ? left : 1 - left;
+};
 // Barres d'incantation (la sienne, cible, cadres d'arène) : progression mise à jour à chaque image, sans à-coups.
 function hudCastFrame() {
   const p = state?.player;

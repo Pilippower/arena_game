@@ -542,4 +542,10 @@ assert.ok(
   ),
   'bêtes : fourrure, sans trou, animées'
 );
+assert.ok(read('src/data/classes.js').includes('  cds[i] = S.cd;'), 'recharge dans la barre du sort lancé');
+assert.ok(
+  read('src/ui/hud.js').includes('return u.cast.channel ? left : 1 - left;'),
+  'canalisation : barre qui se vide'
+);
+for (const k of ['drain_life', 'demoralizing_roar']) assert.ok(ctx.SPELL_ART.has(k), 'icône ' + k);
 console.log('OK - spécifications validées (docs/SPEC.md)');

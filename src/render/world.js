@@ -1224,7 +1224,7 @@ function renderOverlayWorld() {
     if (e._k.au !== au) e._auras.innerHTML = e._k.au = au;
     if (cs) {
       const left = Math.max(0, u.cast.end - now());
-      e._castFill.style.width = (clamp(1 - left / u.cast.dur, 0, 1) * 100).toFixed(1) + '%';
+      e._castFill.style.width = (castProgress(u) * 100).toFixed(1) + '%'; // canalisation : se vide
       const lt = left.toFixed(1);
       if (e._k.lt !== lt) {
         e._castTime.textContent = lt;

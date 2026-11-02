@@ -178,7 +178,7 @@ const SPELL_ART = new Set(
     'ambush angelic_step arcane_bolt arcane_power asphyxiate backstab barkskin bear_form blink cat_form ' +
     'charge cloak counterspell dark_soul death_advance death_grip demonic_gate divine_hymn ' +
     'entangling_roots fear flash_heal frenzied_regeneration frost_nova hamstring human_form kidney_shot ' +
-    'rejuvenation regrowth cheap_shot ' +
+    'rejuvenation regrowth cheap_shot drain_life demoralizing_roar ' +
     'maim maul mortal_strike obliterate pillar_of_frost polymorph power_shield pummel rake sap ' +
     'shadow_bolt shadowstep shield_wall shred silence spell_lock starfall stealth swipe vendetta ' +
     'wild_charge wrath'
@@ -368,6 +368,9 @@ function useSpecialSkill(u, i) {
     return false;
   u.curSchool = S.s || 'physical';
   SPELL_NOW = S.n;
+  // recharges de la barre du sort lancé : le sort peut changer de barre (sortie de camouflage, de forme) ; sans ça,
+  // la recharge tombait dans l'autre barre (Cheap Shot remettait Kidney Shot à zéro)
+  const cds = u.cd;
   const shift = ['cat', 'bear', 'human'].includes(S.k) || S.k === 'stealth';
   if (u.gcd > 0 && !(S.k === 'stealth' && u.stealth)) return false;
   let t = hostileTarget(u);
@@ -443,7 +446,7 @@ function useSpecialSkill(u, i) {
   if (!['cat', 'bear', 'human'].includes(k)) fx('ring', u.x, 0.12, u.z, c.accent, 0.4, 0.6);
   spellSfxKind(u, S);
   if (!paid) u.res = Math.max(0, u.res - (S.c || 0)); // coût du sort lancé (la barre a pu changer : camouflage)
-  u.cd[i] = S.cd;
+  cds[i] = S.cd;
   if (!(k === 'stealth' && !u.stealth)) u.gcd = u.gcdMax = 1;
   updateUI();
   return true;
