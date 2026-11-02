@@ -11,6 +11,8 @@ function sfxCtx() {
 // Cris d'effort, lame qui fend l'air, impacts d'épée / de masse / de hache. Décodés une fois ; tant qu'ils ne sont
 // pas prêts (ou si le pack manque), les sons procéduraux d'origine prennent le relais.
 const SAMPLES = { buf: null, last: {} };
+// décodés dès la première interaction (clic ou touche dans le lobby) : prêts avant le premier coup de la partie
+for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, () => sfxCtx(), { once: true, capture: true });
 function sfxSamplesLoad(ctx) {
   if (SAMPLES.buf || !window.SFX_PACK) return;
   SAMPLES.buf = {};
@@ -110,7 +112,8 @@ function sfxMetal(vol, pan, delay = 0, base = 420) {
 }
 const SFX = {
   // Cri d'effort du personnage qui frappe (voix d'homme ou de femme selon le personnage, plus grave pour un orc ou
-  // un mort-vivant, plus claire pour un elfe ; étouffée pour le mort-vivant). Pas deux cris en moins de 1,2 s.
+  // un mort-vivant, plus claire pour un elfe ; jamais étouffée : un filtre rendait le cri du mort-vivant
+  // méconnaissable). Pas deux cris en moins de 1,2 s.
   effort(u) {
     if (!u || u.form || u.stealth) return;
     const t = performance.now();
@@ -118,10 +121,9 @@ const SFX = {
     u.effortAt = t;
     const a = sfxSpatial(u),
       who = sfxWho(u),
-      rate = { orc: 0.84, undead: 0.8, dwarf: 0.9, elf: 1.08 }[u.race] || 1;
-    sfxSample(who.sex === 'F' ? 'effort_f' : 'effort_m', 0.4 * a.level, a.pan, {
-      rate: rate * (0.96 + Math.random() * 0.08),
-      lowpass: u.race === 'undead' ? 1900 : 0
+      rate = { orc: 0.86, undead: 0.88, dwarf: 0.9, elf: 1.08 }[u.race] || 1;
+    sfxSample(who.sex === 'F' ? 'effort_f' : 'effort_m', 0.55 * a.level, a.pan, {
+      rate: rate * (0.96 + Math.random() * 0.08)
     });
   },
   // Jingle de victoire original, bref (~1,4 s) : arpège majeur montant + accord tenu, volume modéré.

@@ -920,66 +920,72 @@ function hfTwoHandIK(rec) {
     if (k.out[i] && b.quaternion.equals(k.out[i])) b.quaternion.copy(k.anim[i]);
     else k.anim[i].copy(b.quaternion);
   });
-  // Garde à deux mains hors frappe (repos, garde, course, saut, incantation) : mains devant la hanche droite, lame
-  // dressée vers l'avant. Les clips (repos bras ballants, Sword_Idle épée basse derrière, jogging à mains nues)
-  // plaçaient les deux mains derrière le dos. Fondu vers la frappe du clip quand il attaque.
+  // Main droite pilotée entièrement ici, dans le repère du personnage (+z = avant, +x = sa gauche) : garde à deux mains
+  // (mains devant la hanche droite, lame dressée) et frappe à deux mains calculée (armé au-dessus de l'épaule droite,
+  // taille vers l'avant, accompagnement vers le bas, retour en garde). Les clips n'ont pas de prise à deux mains : leurs
+  // mains finissaient derrière le dos, et mélanger la garde avec Sword_Attack faisait plonger et remonter la lame deux
+  // fois par coup (le « tremblement »). Le corps garde l'élan du clip de frappe.
   const tc = performance.now() / 1000;
-  k.ready = k.ready ?? 1;
-  k.ready += ((rec.animKey === 'attack' ? 0 : 1) - k.ready) * (1 - Math.exp(-Math.min(0.1, tc - (k.tc ?? tc)) * 12));
-  k.tc = tc;
   m.updateMatrixWorld(true);
+  if (!k.keys) {
+    const hy = m.worldToLocal(m.getObjectByName('Head').getWorldPosition(new THREE.Vector3())).y / 1.61,
+      K = (x, y, z, dx, dy, dz) => ({
+        p: new THREE.Vector3(x, y * hy, z * hy),
+        d: new THREE.Vector3(dx, dy, dz).normalize()
+      });
+    k.guardKey = K(-0.1, 1.0, 0.3, 0.25, 0.8, 0.55);
+    // [instant dans la frappe (0..1), pose] ; la frappe dure STRIKE_T s, impact vers 35 %
+    k.keys = [
+      [0.17, K(-0.22, 1.45, 0.08, -0.2, 0.75, -0.62)], // armé : lame au-dessus de l'épaule droite, pointe en arrière
+      [0.35, K(0.02, 1.12, 0.52, -0.25, 0.05, 0.97)], // impact : lame à l'horizontale devant soi
+      [0.58, K(0.2, 0.86, 0.38, -0.62, -0.5, 0.6)], // accompagnement : vers le bas et la gauche
+      [1, k.guardKey]
+    ];
+    k.cur = { p: k.guardKey.p.clone(), d: k.guardKey.d.clone() };
+  }
+  const STRIKE_T = 0.6;
+  if (rec.animKey === 'attack' && k.lastKey !== 'attack') {
+    k.atk0 = tc;
+    k.from = { p: k.cur.p.clone(), d: k.cur.d.clone() }; // nouvelle frappe : on part de la pose actuelle (pas de saut)
+  }
+  k.lastKey = rec.animKey;
+  const ph = k.atk0 != null ? (tc - k.atk0) / STRIKE_T : 2;
+  if (ph < 1) {
+    let a = { t: 0, ...k.from },
+      b = null;
+    for (const [t, P] of k.keys) {
+      if (ph <= t) {
+        b = { t, ...P };
+        break;
+      }
+      a = { t, ...P };
+    }
+    const x = clamp((ph - a.t) / (b.t - a.t), 0, 1),
+      e = x * x * (3 - 2 * x);
+    k.cur.p.copy(a.p).lerp(b.p, e);
+    k.cur.d.copy(a.d).lerp(b.d, e).normalize();
+  } else {
+    k.cur.p.copy(k.guardKey.p);
+    k.cur.d.copy(k.guardKey.d);
+  }
   // coudes vers le bas, l'arrière et l'extérieur (gauche = +x du modèle)
-  const q = m.getWorldQuaternion(new THREE.Quaternion()),
-    poleL = new THREE.Vector3(0.7, -1, -0.6).applyQuaternion(q),
-    poleR = new THREE.Vector3(-0.7, -1, -0.6).applyQuaternion(q);
-  const [up, lo, hand] = k.L,
-    sh = up.getWorldPosition(new THREE.Vector3()),
-    reach =
-      sh.distanceTo(lo.getWorldPosition(new THREE.Vector3())) +
-      hand.getWorldPosition(new THREE.Vector3()).distanceTo(lo.getWorldPosition(new THREE.Vector3())),
-    rh = k.R[2].getWorldPosition(new THREE.Vector3());
-  // Cibles des deux mains lissées dans le repère du personnage, selon le temps écoulé (même rendu à 60 ou 175 images/s) :
-  // la frappe passe très vite au-dessus de la tête, sans lissage le bras recalé partait dans tous les sens.
-  const tNow = performance.now() / 1000,
-    dt = Math.min(0.1, tNow - (k.t ?? tNow)),
-    ease = 1 - Math.exp(-dt * 26);
-  k.t = tNow;
-  // main droite trop loin de l'épaule gauche : on la ramène vers le corps (le bras droit suit), l'arme avec
-  const rt =
-      sh.distanceTo(rh) > reach * 0.8
-        ? sh.clone().add(
-            rh
-              .clone()
-              .sub(sh)
-              .setLength(reach * 0.8)
-          )
-        : rh,
-    rl = m.worldToLocal(rt.clone());
-  // repère du personnage : +z = avant, +x = sa gauche ; hauteur proportionnelle à celle de la tête
-  if (!k.readyPos) {
-    const hy = m.worldToLocal(m.getObjectByName('Head').getWorldPosition(new THREE.Vector3())).y / 1.61;
-    k.readyPos = new THREE.Vector3(-0.1, 1.0 * hy, 0.3 * hy);
-  }
-  rl.lerp(k.readyPos, k.ready);
-  k.smoothR = k.smoothR ? k.smoothR.lerp(rl, ease) : rl;
-  hfArmIK(...k.R, m.localToWorld(k.smoothR.clone()), poleR);
-  // orientation de la main (donc de la lame) lissée dans le repère du personnage : au début de la frappe, le fondu
-  // entre la garde et le coup (poses très différentes) la faisait basculer une image vers le bas
+  const mq = m.getWorldQuaternion(new THREE.Quaternion()),
+    poleL = new THREE.Vector3(0.7, -1, -0.6).applyQuaternion(mq),
+    poleR = new THREE.Vector3(-0.7, -1, -0.6).applyQuaternion(mq);
+  const [up, lo, hand] = k.L;
+  hfArmIK(...k.R, m.localToWorld(k.cur.p.clone()), poleR);
   m.updateMatrixWorld(true);
+  // orientation de la main : on part de son orientation de l'image précédente (dans le repère du personnage) et on la
+  // tourne au plus court vers la direction voulue de la lame : aucune rotation parasite venant du clip
   const H = k.R[2],
-    mq = m.getWorldQuaternion(new THREE.Quaternion());
-  // en garde : la main tourne pour que la lame (+y de l'arme) pointe vers le haut, l'avant et un peu vers la gauche
-  if (k.ready > 0.001) {
-    const blade = new THREE.Vector3(0, 1, 0).transformDirection(k.grip.matrixWorld),
-      want = new THREE.Vector3(0.25, 0.8, 0.55).normalize().applyQuaternion(mq),
-      turn = new THREE.Quaternion().slerp(new THREE.Quaternion().setFromUnitVectors(blade, want), k.ready),
-      hw = H.getWorldQuaternion(new THREE.Quaternion());
-    H.quaternion.copy(H.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(turn.multiply(hw)));
-    m.updateMatrixWorld(true);
-  }
-  const rel = mq.clone().invert().multiply(H.getWorldQuaternion(new THREE.Quaternion()));
-  k.handQ = k.handQ ? k.handQ.slerp(rel, ease) : rel;
-  H.quaternion.copy(H.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(mq).multiply(k.handQ));
+    toLocal = q => H.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(q);
+  if (k.handQ) H.quaternion.copy(toLocal(mq.clone().multiply(k.handQ)));
+  m.updateMatrixWorld(true);
+  const blade = new THREE.Vector3(0, 1, 0).transformDirection(k.grip.matrixWorld),
+    want = k.cur.d.clone().applyQuaternion(mq),
+    hw = new THREE.Quaternion().setFromUnitVectors(blade, want).multiply(H.getWorldQuaternion(new THREE.Quaternion()));
+  H.quaternion.copy(toLocal(hw));
+  k.handQ = mq.clone().invert().multiply(hw);
   m.updateMatrixWorld(true);
   // main gauche : sa PAUME (pas son poignet) sur la poignée, juste sous la droite, paume tournée du même côté que la
   // droite et pouce vers la lame (prise à deux mains). Repère d'une main : +y = doigts, +z = pouce, paume en +x
@@ -992,9 +998,8 @@ function hfTwoHandIK(rec) {
     qL = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xL, yL, zL)),
     palmL = k.grip.localToWorld(new THREE.Vector3(0, -0.09, 0)),
     wrist = palmL.sub(new THREE.Vector3(0.028, 0.075, 0).applyQuaternion(qL)),
-    tgt = m.worldToLocal(wrist);
-  k.smooth = k.smooth ? k.smooth.lerp(tgt, ease) : tgt;
-  hfArmIK(up, lo, hand, m.localToWorld(k.smooth.clone()), poleL);
+    tgt = wrist;
+  hfArmIK(up, lo, hand, tgt, poleL);
   m.updateMatrixWorld(true);
   hand.quaternion.copy(hand.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(qL));
   bones.forEach((b, i) => (k.out[i] = (k.out[i] || new THREE.Quaternion()).copy(b.quaternion)));

@@ -557,7 +557,7 @@ assert.ok(
 );
 for (const k of ['drain_life', 'demoralizing_roar']) assert.ok(ctx.SPELL_ART.has(k), 'icône ' + k);
 assert.ok(
-  h3.includes('function hfBladeSlash') && h3.includes('k.smooth.lerp(tgt, ease)'),
+  h3.includes('function hfBladeSlash') && h3.includes('hfArmIK(up, lo, hand, tgt, poleL)'),
   'glaives du voleur, frappe fluide du chevalier'
 );
 {
@@ -605,7 +605,10 @@ assert.match(
     h3.includes('b.quaternion.equals(k.out[i])) b.quaternion.copy(k.anim[i])'),
     'IK : repart de la pose animée'
   );
-  assert.ok(h3.includes('ease = 1 - Math.exp(-dt * 26)') && h3.includes('k.handQ.slerp(rel, ease)'), 'IK : lissage');
+  assert.ok(
+    h3.includes('setFromUnitVectors(blade, want).multiply(H.getWorldQuaternion'),
+    'IK : lame tournée au plus court, sans rotation du clip'
+  );
 }
 // Fin de match : flammes animées sur les flammes peintes des torches
 assert.ok(
@@ -664,9 +667,9 @@ assert.ok(
 }
 // Chevalier de la mort : garde à deux mains devant lui hors frappe (mains jamais derrière le dos)
 assert.ok(
-  read('src/render/heroes3d.js').includes("(rec.animKey === 'attack' ? 0 : 1)") &&
-    read('src/render/heroes3d.js').includes('new THREE.Vector3(-0.1, 1.0 * hy, 0.3 * hy)'),
-  'DK : garde à deux mains devant lui'
+  read('src/render/heroes3d.js').includes('k.guardKey = K(-0.1, 1.0, 0.3, 0.25, 0.8, 0.55)') &&
+    read('src/render/heroes3d.js').includes('const STRIKE_T = 0.6;'),
+  'DK : garde à deux mains devant lui et frappe calculée (pas de mélange avec le clip)'
 );
 // Raccourcis : jamais deux sorts sur la même touche, même avec d'anciens réglages à 6 cases (bug : druide, 2 sorts sur 5)
 {
@@ -705,3 +708,6 @@ assert.ok(
   read('src/render/heroes3d.js').includes('palmL = k.grip.localToWorld(new THREE.Vector3(0, -0.09, 0))'),
   'DK : mains alignées sur la poignée'
 );
+// Régressions signalées : icône d'origine de Death Coil, cri du mort-vivant non étouffé
+assert.ok(!/'Death Coil': \{[^}]*art:/.test(read('src/data/classes.js')), 'Death Coil : icône d’origine');
+assert.ok(!read('src/audio/sfx.js').includes("lowpass: u.race === 'undead'"), 'cri du mort-vivant audible');
