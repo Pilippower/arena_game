@@ -774,3 +774,5 @@ assert.ok(
   assert.equal(skill('oracle', 'Flash Heal').heal, 440, 'Flash Heal doublé');
   assert.ok(read('src/data/classes.js').includes('const DRAIN_HEAL = 2;'), 'Drain Life : soin doublé');
 }
+// Pain : icône de l'utilisateur
+assert.ok(ctx.skillIconSVG('oracle', 5).includes('spells/pain.webp'), 'Pain : icône de l’utilisateur');
