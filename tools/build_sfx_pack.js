@@ -11,7 +11,8 @@ const { launch } = require('../tests/browser/browser.js');
 const SRC = path.join(__dirname, '../assets_src/audio');
 const OUT = path.join(__dirname, '../assets/audio/sfx_pack.js');
 const SR = 22050;
-// [fichier, durée max (s)] ; pour un fichier à plusieurs cris, seg = numéro du cri
+// [fichier, durée max (s)] ; pour un fichier à plusieurs cris, seg = numéro du cri ; at = départ (s) dans un long
+// enregistrement (le cri le plus proche après cet instant)
 const PACK = {
   // cris d'effort masculins (cris et grognements courts, attaque rapide)
   effort_m: [
@@ -43,7 +44,22 @@ const PACK = {
   // coup sourd (masse, hache, griffes) et résonance métallique grave
   thud: [['thud2.wav', 0.5]],
   bong: [['bong1.wav', 0.9]],
-  clink: [['clink1_0.wav', 0.3]]
+  clink: [['clink1_0.wav', 0.3]],
+  // druide en forme d'ours : grognements (U.S. Fish & Wildlife Service, CC0) et rugissement de grizzly (NPS, domaine public)
+  roar_bear: [
+    ['beasts/bear_01.ogg', 0.8],
+    ['beasts/bear_02.ogg', 0.8],
+    ['beasts/yell-GrizzlyEating010315.mp3', 0.9, null, 20.6],
+    ['beasts/yell-YELLGrizzlyBearVocalizations20160520Android1.mp3', 0.9, null, 33.0]
+  ],
+  // druide en forme de chat : feulements d'attaque (joués plus aigus en jeu)
+  snarl_cat: [
+    ['beasts/monster-snarl-attack.ogg', 0.45, null, 0.1],
+    ['beasts/monster-snarl-attack.ogg', 0.45, null, 2.15],
+    ['beasts/monster-snarl-attack.ogg', 0.6, null, 3.45],
+    ['beasts/monster-snarl-attack.ogg', 0.6, null, 5.4],
+    ['beasts/monster-snarls-2_0.ogg', 0.6, null, 2.75]
+  ]
 };
 
 const wav = (pcm, sr) => {
@@ -72,10 +88,10 @@ const wav = (pcm, sr) => {
   let bytes = 0;
   for (const [key, list] of Object.entries(PACK)) {
     out[key] = [];
-    for (const [file, maxDur, seg] of list) {
+    for (const [file, maxDur, seg, at] of list) {
       const b64 = fs.readFileSync(path.join(SRC, file)).toString('base64');
       const pcm = await page.evaluate(
-        async ({ b64, maxDur, seg, SR }) => {
+        async ({ b64, maxDur, seg, at, SR }) => {
           const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
           const raw = await new OfflineAudioContext(1, 1, 44100).decodeAudioData(bin.buffer);
           // mono + rééchantillonnage
@@ -102,7 +118,10 @@ const wav = (pcm, sr) => {
               on = true;
             } else if (on && v < pk * 0.03) on = false;
           });
-          let s0 = starts[seg ?? 0] ?? 0;
+          let s0 =
+            at != null
+              ? (starts.find(i => i * win >= at * SR - SR * 0.05) ?? Math.round((at * SR) / win))
+              : (starts[seg ?? 0] ?? 0);
           while (s0 > 0 && env[s0 - 1] > pk * 0.02) s0--; // remonte au tout début du son
           let a = Math.max(0, s0 * win - Math.round(SR * 0.005)),
             b = Math.min(d.length, a + Math.round(maxDur * SR));
@@ -119,7 +138,7 @@ const wav = (pcm, sr) => {
             return Math.round(Math.max(-1, Math.min(1, v * g * f)) * 32767);
           });
         },
-        { b64, maxDur, seg, SR }
+        { b64, maxDur, seg, at, SR }
       );
       if (pcm.length < SR * 0.15) continue; // bruit parasite (ex. un cri découpé trop court)
       const w = wav(pcm, SR);

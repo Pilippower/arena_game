@@ -786,3 +786,9 @@ assert.ok(read('index.html').includes('animation:npTargetGlow'), 'cible : contou
   );
   assert.ok(read('src/ui/hud.js').includes("if (b.classList.contains('empty')) continue;"), 'emplacement vide');
 }
+// Druide : feulement en chat, grognement d'ours en ours ; licences documentées
+assert.ok(read('src/audio/sfx.js').includes("cat ? 'snarl_cat' : 'roar_bear'"), 'cris des formes du druide');
+assert.ok(
+  read('assets/audio/LICENSES.md').includes('roar_bear') && read('assets/audio/LICENSES.md').includes('snarl_cat'),
+  'licences des cris de bêtes'
+);
