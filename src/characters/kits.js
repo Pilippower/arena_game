@@ -289,7 +289,28 @@
       hair: 'Hair_Long',
       ears: { len: 0.13, up: 0.6 },
       eyeGlow: [0.35, 0.85, 1.0],
-      bones: { spine_03: 0.96 }
+      // Silhouette élancée (pas un humain aux longues oreilles) : bassin et torse étroits, long cou, membres fins et
+      // allongés. [x, y, z] (y = longueur) ; chaque enfant hérite de l'échelle : tête, mains et pieds compensés.
+      bones: {
+        pelvis: [0.88, 1, 0.9],
+        spine_01: [0.94, 1.05, 0.94],
+        spine_02: [0.98, 1.04, 0.97],
+        spine_03: [1.02, 1.03, 0.98],
+        neck_01: [0.95, 1.18, 0.95],
+        Head: [1.14, 0.98, 1.12],
+        upperarm_l: [0.86, 1.06, 0.86],
+        upperarm_r: [0.86, 1.06, 0.86],
+        lowerarm_l: [0.9, 1.05, 0.9],
+        lowerarm_r: [0.9, 1.05, 0.9],
+        hand_l: [1.5, 0.88, 1.5],
+        hand_r: [1.5, 0.88, 1.5],
+        thigh_l: [0.9, 1.08, 0.9],
+        thigh_r: [0.9, 1.08, 0.9],
+        calf_l: [0.92, 1.05, 0.92],
+        calf_r: [0.92, 1.05, 0.92],
+        foot_l: [1.32, 0.88, 1.32],
+        foot_r: [1.32, 0.88, 1.32]
+      }
     },
     undead: {
       skin: [0.84, 0.8, 0.68],

@@ -518,4 +518,5 @@ assert.ok(
   'chargement immédiat, 3 s minimum'
 );
 assert.ok(!/stunSwirl[\s\S]{0,400}'cone'/.test(read('src/render/world.js')), 'étourdissement : cercles');
+assert.match(read('src/characters/kits.js'), /elf: \{[\s\S]*?neck_01: \[0\.95, 1\.18, 0\.95\][\s\S]*?thigh_l: \[0\.9, 1\.08, 0\.9\]/, 'elfes élancés');
 console.log('OK - spécifications validées (docs/SPEC.md)');
