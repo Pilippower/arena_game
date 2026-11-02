@@ -158,6 +158,8 @@ body #resultsTeams h3.enemy {
   background-image: url(../../assets/ui/results/ribbon_enemy.webp);
 }
 body #results .resTable {
+  /* colonnes de même largeur dans les deux tableaux (maquette) ; le contenu ne peut plus élargir un tableau */
+  table-layout: fixed;
   margin-bottom: calc(6 * var(--u));
   border-collapse: separate;
   border-spacing: 0;
@@ -171,6 +173,12 @@ body #results .resTable th {
   letter-spacing: 0.06em;
   color: #e6d3a3;
   border-bottom: 1px solid #b48a3c55;
+}
+body #results .resTable th:nth-child(1) {
+  width: 25%;
+}
+body #results .resTable th:nth-child(2) {
+  width: 31%;
 }
 body #results .resTable td {
   padding: calc(4 * var(--u)) calc(6 * var(--u));
@@ -334,14 +342,19 @@ body #leaveConfirm .resButtons button:hover {
   filter: brightness(1.15) drop-shadow(0 0 10px #ffd96f88);
 }
 
-/* mobile (paysage, peu de hauteur) : panneau à la largeur de l'écran, défilement vertical si besoin */
+/* mobile (paysage, peu de hauteur) : le cadre entier tient dans l'écran, comme sur la maquette (bas et ornement
+   visibles). Hauteur du panneau ≈ largeur × (0,565 + 0,058 × lignes) ; --rows = nombre de joueurs (match.js). */
 body.mobile-mode #results {
-  align-items: flex-start;
+  /* pas d'agrandissement automatique du texte (navigateurs mobiles) : il cassait les proportions du tableau */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  align-items: center;
   overflow-y: auto;
-  padding: 8px 0 16px;
+  padding: 2cqh 0;
 }
 body.mobile-mode #results .resPanel {
-  --W: min(600px, 68cqw);
+  /* jamais sous 52 % de la largeur (texte lisible) : en 3v3 le panneau peut alors défiler un peu */
+  --W: max(min(52cqw, 600px), min(600px, 68cqw, calc(96cqh / (0.565 + 0.058 * var(--rows, 2)))));
   margin: auto;
 }
 body.mobile-mode #leaveConfirm .leavePanel {

@@ -62,6 +62,7 @@ function renderResultsTables() {
   const mine = state.player.team; // en ligne, l'invité est dans l'équipe 1
   $('resultsTeams').innerHTML =
     `<h3 class="ally">Your team</h3>${table(mine)}<h3 class="enemy">Enemy team</h3>${table(1 - mine)}`;
+  $('results').style.setProperty('--rows', $('resultsTeams').querySelectorAll('tbody tr').length); // taille mobile
   $('resultsTeams')
     .querySelectorAll('[data-sort]')
     .forEach(

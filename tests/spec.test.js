@@ -580,3 +580,13 @@ console.log('OK - spécifications validées (docs/SPEC.md)');
     return Object.keys(C).some(cls => skill(cls, n));
   }
 }
+// Fin de match mobile : cadre entier dans l'écran (bug : bas coupé, texte gonflé par le navigateur), colonnes alignées
+{
+  const css = read('src/ui/results.css');
+  assert.ok(
+    css.includes('text-size-adjust: 100%') && css.includes('var(--rows, 2)'),
+    'mobile : résultats à la hauteur'
+  );
+  assert.ok(css.includes('table-layout: fixed'), 'résultats : colonnes alignées');
+  assert.ok(read('src/game/match.js').includes("setProperty('--rows'"), 'résultats : nombre de lignes');
+}
