@@ -433,4 +433,24 @@ assert.ok(
   );
   assert.ok(read('src/ui/settings.js').includes("localStorage.setItem('arenaLastPick'"), 'race et classe mémorisées');
 }
+{
+  const cb = read('src/game/combat.js');
+  assert.ok(cb.includes('const SPELL_RANGE = 30;'), 'portée 30 m');
+  assert.match(
+    cb,
+    /if \(!\(u\.cast && u\.cast\.i === i && u\.cast\.end > now\(\)\)\) pay\(u, i\)/,
+    'ressource prise à la fin de l’incantation'
+  );
+  assert.match(
+    read('src/game/sim.js'),
+    /u\.res = Math\.max\(0, u\.res - \(ca\.cost \|\| 0\)\)/,
+    'prélèvement à la fin'
+  );
+  assert.ok(cb.includes("type === 'poly' && t.form && src?.cls === 'arcanist'"), 'formes insensibles au mouton');
+  assert.ok(
+    cb.includes("const blinkOut = u.cls === 'arcanist' && i === 4 && u.stun > 0;"),
+    'Blink sous étourdissement'
+  );
+  assert.ok(!cb.includes('if (!hit.length) return false;'), 'sorts de zone sans cible');
+}
 console.log('OK - spécifications validées (docs/SPEC.md)');

@@ -95,7 +95,7 @@ function skillTooltip(u, i) {
     : S.t === 'melee'
       ? 'Melee'
       : S.t === 'ranged' || S.t === 'heal'
-        ? '15 m'
+        ? `${SPELL_RANGE} m`
         : S.t === 'charge'
           ? '2,8–15 m'
           : S.t === 'aoe'

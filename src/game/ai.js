@@ -251,7 +251,7 @@ function aiTryKick(u, P, R) {
     for (const i of kicks) {
       const S = skillsOf(u)[i],
         d = d2(u, e);
-      if (d > (S.t === 'melee' ? 2.45 : 15) || !los(u, e) || !important) continue;
+      if (d > (S.t === 'melee' ? 2.45 : SPELL_RANGE) || !los(u, e) || !important) continue;
       if (aiCastOn(u, i, e)) return true;
     }
   }
@@ -335,7 +335,7 @@ function ai(u, dt) {
         low &&
         hpPct(low) < 0.82 &&
         los(u, low) &&
-        d2(u, low) < 15 &&
+        d2(u, low) < SPELL_RANGE &&
         !meleeOnMe.length &&
         aiCanUse(u, R.heal) &&
         useSkill(u, R.heal)
@@ -353,7 +353,7 @@ function ai(u, dt) {
         R.cc != null &&
         theirHealer &&
         pressure &&
-        d2(u, theirHealer) < 15 &&
+        d2(u, theirHealer) < SPELL_RANGE &&
         los(u, theirHealer) &&
         !(theirHealer.dr[u.cls === 'warlock' ? 'fear' : 'poly'] === 0) &&
         aiCanUse(u, R.cc) &&
@@ -366,7 +366,7 @@ function ai(u, dt) {
         ccReady(u, R.stun, t) &&
         (t.dr.stun ?? 1) > 0 &&
         aiCanUse(u, R.stun) &&
-        d < (skillsOf(u)[R.stun].t === 'melee' ? 2.45 : 15) &&
+        d < (skillsOf(u)[R.stun].t === 'melee' ? 2.45 : SPELL_RANGE) &&
         useSkill(u, R.stun)
       )
         return;
@@ -374,9 +374,10 @@ function ai(u, dt) {
         const threat = foes.find(
           e => AI_ROLE[e.cls]?.melee && friends.some(a => a !== u && d2(e, a) < 3) && (e.dr.root ?? 1) > 0
         );
-        if (threat && d2(u, threat) < 15 && aiCastOn(u, R.root, threat)) return;
+        if (threat && d2(u, threat) < SPELL_RANGE && aiCastOn(u, R.root, threat)) return;
       }
-      if (R.grip != null && (isHealer(t) || d > 6) && d < 15 && aiCanUse(u, R.grip) && useSkill(u, R.grip)) return;
+      if (R.grip != null && (isHealer(t) || d > 6) && d < SPELL_RANGE && aiCanUse(u, R.grip) && useSkill(u, R.grip))
+        return;
     }
     // gros dégâts quand la cible faiblit
     if (R.burst != null && hpPct(t) < 0.7 && Math.random() < P.burst && aiCanUse(u, R.burst) && useSkill(u, R.burst))
@@ -397,7 +398,7 @@ function ai(u, dt) {
       healer &&
       R.dmg != null &&
       friends.every(a => hpPct(a) > 0.85) &&
-      d < 15 &&
+      d < SPELL_RANGE &&
       los(u, t) &&
       aiCanUse(u, R.dmg) &&
       useSkill(u, R.dmg)

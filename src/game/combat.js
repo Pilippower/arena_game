@@ -304,6 +304,11 @@ function control(t, type, dur, src = null) {
     addFloat(t, 'Immune', '#d9c9ff');
     return false;
   }
+  // druide en forme d'ours ou de félin : insensible au mouton (Polymorph)
+  if (type === 'poly' && t.form && src?.cls === 'arcanist') {
+    addFloat(t, 'Immune', '#d9c9ff');
+    return false;
+  }
   const m = t.dr[type] ?? 1;
   // rendements décroissants épuisés : le sort part quand même, sans effet, et « Immune » s'affiche
   if (m <= 0) {
@@ -365,11 +370,9 @@ function moveSpeed(u) {
 }
 // Interruption : coupe l'incantation et verrouille son école 4 s (les sorts de cette école passent en recharge 4 s).
 // Sort non abouti sans faute du lanceur : on rend la ressource et la recharge.
+// (la ressource n'a pas été prise : elle ne l'est qu'à la fin d'une incantation réussie)
 function refundCast(u, ca) {
-  const S = CLASS[u.cls].skills[ca.i];
-  if (!S) return;
-  u.res = clamp(u.res + S.c, 0, 100);
-  u.cd[ca.i] = 0;
+  if (CLASS[u.cls].skills[ca.i]) u.cd[ca.i] = 0;
 }
 function interrupt(u, t) {
   if (!t?.cast) return false;
@@ -391,7 +394,10 @@ function interrupt(u, t) {
 function startGrip(u, t) {
   face(u, t);
   t.cast = null;
-  t.mobility = { type: 'grip', tx: u.x + Math.sin(u.yaw) * 1.5, tz: u.z + Math.cos(u.yaw) * 1.5, speed: 26, life: 0.7 };
+  const tx = u.x + Math.sin(u.yaw) * 1.5,
+    tz = u.z + Math.cos(u.yaw) * 1.5;
+  // durée calée sur la distance (portée 30 m) : la cible arrive toujours devant le chevalier
+  t.mobility = { type: 'grip', tx, tz, speed: 26, life: Math.hypot(tx - t.x, tz - t.z) / 26 + 0.15 };
   fx('chain', u.x, (u.y || 0) + 1.2, u.z, CLASS[u.cls].accent, 0.5, 0.45, [t.x, (t.y || 0) + 1.2, t.z]);
 }
 function face(u, t) {
@@ -531,6 +537,8 @@ function updateMobility(u, dt) {
   }
   return false;
 }
+// Portée des sorts à distance (lanceurs, soins, sorts à distance des mêlées) ; les ruées gardent 2,8–15 m.
+const SPELL_RANGE = 30;
 function canPay(u, i) {
   return u.res >= (skillsOf(u)[i]?.c || 0);
 }
@@ -565,7 +573,6 @@ function skillFailReason(u, i) {
   if (S.s && u.silence > 0) return "I can't do that while silenced";
   if (!canPay(u, i)) return `I don't have enough ${C.res.toLowerCase()}`;
   const t = hostileTarget(u);
-  if (S.t === 'aoe' && !enemies(u).some(e => d2(u, e) < 8)) return "I'm out of range";
   if (S.k === 'ambush' || S.k === 'sap') {
     if (!u.stealth) return 'You must be in stealth';
   }
@@ -573,7 +580,7 @@ function skillFailReason(u, i) {
     if (!t) return 'I have no target';
     const d = d2(u, t);
     if (S.t === 'charge' && d < 2.8) return "I'm too close";
-    if (d > (S.range || (S.t === 'melee' ? 2.45 : 15))) return "I'm out of range";
+    if (d > (S.range || (S.t === 'melee' ? 2.45 : S.t === 'charge' ? 15 : SPELL_RANGE))) return "I'm out of range";
     if (!los(u, t)) return 'Target not in line of sight';
   }
   if (S.kick && !t?.cast) return 'Target is not casting';
@@ -658,8 +665,20 @@ function useSkill(u, i) {
   if (!u || !skillsOf(u)[i] || u.poly > 0) return false;
   if (skillsOf(u)[i].k) return useSpecialSkill(u, i);
   const origin = { x: u?.x || 0, z: u?.z || 0 };
-  if (!u?.alive || u.stun > 0 || u.fear > 0 || u.gcd > 0 || u.cd[i] > 0 || u.cast || u.mobility || !canPay(u, i))
+  // Blink du mage : utilisable étourdi, il brise l'étourdissement
+  const blinkOut = u.cls === 'arcanist' && i === 4 && u.stun > 0;
+  if (
+    !u?.alive ||
+    (u.stun > 0 && !blinkOut) ||
+    u.fear > 0 ||
+    u.gcd > 0 ||
+    u.cd[i] > 0 ||
+    u.cast ||
+    u.mobility ||
+    !canPay(u, i)
+  )
     return false;
+  if (blinkOut) u.stun = 0;
   let t = hostileTarget(u);
   if (u.ai) u.target = t;
   else if (t && !u.target?.alive) setTarget(u, t);
@@ -672,7 +691,7 @@ function useSkill(u, i) {
   if (!t && u.cls !== 'oracle' && !selfMobility && !selfCC) return false;
   const d = t ? d2(u, t) : 999,
     melee = d < 2.45,
-    range = !!t && d < 15 && los(u, t);
+    range = !!t && d < SPELL_RANGE && los(u, t);
   if (t && !(i === 4 && (u.cls === 'arcanist' || u.cls === 'reaver')) && !(u.cls === 'arcanist' && i === 1)) face(u, t);
   let ok = true;
   // emplacement 5 = mobilité, sauf le prêtre (Smite, sort de dégâts)
@@ -751,7 +770,7 @@ function useSkill(u, i) {
       action(u, 'cast');
     } else if (i === 1) {
       const hit = enemies(u).filter(e => d2(u, e) < S.radius && los(u, e));
-      if (!hit.length) return false;
+      // sort de zone : se lance même sans ennemi à portée (recharge et ressource consommées)
       hit.forEach(e => {
         damage(u, e, e === t ? S.dmg : S.dmg2);
         // gel de 6 s qui ne casse pas sous les coups (demande de l'utilisateur)
@@ -784,7 +803,7 @@ function useSkill(u, i) {
     } else if (i === 2) {
       // Holy Terror : fear instantané de tous les ennemis à portée (rendements décroissants habituels)
       const hit = enemies(u).filter(e => d2(u, e) < S.radius && los(u, e) && !e.stealth);
-      if (!hit.length) return false;
+      // sort de zone : se lance même sans ennemi à portée (recharge et ressource consommées)
       hit.forEach(e => {
         if (control(e, 'fear', S.dur, u)) fx('fear', e.x, (e.y || 0) + 1.15, e.z, c.accent, 1.0, 1.05);
       });
@@ -861,7 +880,8 @@ function useSkill(u, i) {
   if (!ok) return false;
   spellFx(u, i, t, origin);
   spellSfx(u, i, t);
-  pay(u, i);
+  // sort à incantation : la ressource n'est prise qu'à la fin (interrompu ou annulé = rien perdu, sim.js)
+  if (!(u.cast && u.cast.i === i && u.cast.end > now())) pay(u, i);
   u.cd[i] = S.cd;
   u.gcd = u.gcdMax = i === 4 && u.cls !== 'oracle' ? 0.35 : 1.05; // mobilité : GCD court (pas Smite)
   updateUI();

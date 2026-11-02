@@ -30,7 +30,12 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Appuyer sur un autre sort pendant une incantation ne l'interrompt jamais : « Not ready yet » s'affiche ; sauter ou bouger interrompt l'incantation. 🧪
 - Valeurs (2026-11-02) : ours 45 dégâts / 2 s ; Death Grip 25 s de recharge ; Kidney Shot étourdit 6 s, 30 s de recharge ; Hamstring sans recharge propre (GCD seulement), 10 dégâts. 🧪
 - Trinket : infobulle (libère de tout contrôle, bouclier 80, 90 s) ; animation à l'usage (colonne de lumière dorée, éclats, onde au sol, bulle). 🧪
-- Sort qui échoue faute de ligne de vue : ressource et recharge rendues.
+- Ressource (mana, rage…) d'un sort à incantation prise **à la fin** de l'incantation : arrêté, interrompu ou annulé = rien perdu. 🧪
+- Portée des sorts à distance : **30 m** (`SPELL_RANGE`, ligne de vue exigée) ; les ruées (Charge, Wild Charge) gardent 2,8–15 m ; Death Grip ramène la cible de toute la portée. 🧪
+- Sorts de zone (Frost Nova, Holy Terror, Swipe…) : se lancent même si aucun ennemi n'est à portée. 🧪
+- Druide en forme d'ours ou de félin : insensible au mouton du mage (« Immune ») ; changer de forme libère des racines et ralentissements. 🧪
+- Blink du mage : utilisable étourdi, brise l'étourdissement. 🧪
+- Sort qui échoue faute de ligne de vue : recharge rendue (la ressource n'a pas été prise).
 - Prêtre : **Smite** (1,5 s, 100 dégâts sacrés = moitié de l'Arcane Bolt du mage, icône d'Angelic Step) remplace Angelic Step ; **Holy Terror** (instantané : tous les ennemis à 10 m fuient **6 s**, rendements décroissants habituels, icône de Silence) remplace Silence. L'IA s'en sert (Holy Terror contre les mêlées au contact, Smite quand personne n'a besoin de soins). 🧪
 - Chevalier de la mort : plus de Death Advance (il a déjà Death Grip). 🧪
 - Voleur : frappe 2× plus vite qu'un guerrier pour la moitié des dégâts (même DPS). 🧪

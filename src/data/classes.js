@@ -221,7 +221,7 @@ function trinketIconVector() {
   return `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="trg"><stop stop-color="#ffe88b"/><stop offset=".55" stop-color="#80632b"/><stop offset="1" stop-color="#17100b"/></radialGradient></defs><rect width="48" height="48" rx="7" fill="url(#trg)"/><circle cx="24" cy="24" r="14" fill="none" stroke="#fff0a8" stroke-width="3"/><path d="M24 8l5 11 11 5-11 5-5 11-5-11-11-5 11-5z" fill="#fff1a0"/><circle cx="24" cy="24" r="4" fill="#9a6b24"/></svg>`;
 }
 
-// Portée (t) et école de magie (s) de chaque sort. melee = 2,45 m, ranged = 15 m + ligne de vue.
+// Portée (t) et école de magie (s) de chaque sort. melee = 2,45 m, ranged = 30 m (SPELL_RANGE) + ligne de vue.
 // kick = interruption : coupe l'incantation et verrouille son école 4 s.
 const SKILL_META = {
   sentinel: [{ t: 'melee' }, { t: 'melee' }, { t: 'melee', kick: 1 }, { t: 'self' }, { t: 'charge' }],
@@ -389,7 +389,6 @@ function useSpecialSkill(u, i) {
     action(u, 'melee');
   } else if (k === 'swipe') {
     const hit = enemies(u).filter(e => d2(u, e) < S.r && !e.stealth);
-    if (!hit.length) return false;
     hit.forEach(e => damage(u, e, S.dmg));
     fx('slash', u.x, (u.y || 0) + 0.9, u.z, c.accent, 0.9, 0.5);
     action(u, 'melee');
@@ -689,7 +688,7 @@ const SPELLS = {
   },
   'Death Grip': {
     dmg: 50,
-    text: (S, D) => `Grabs an enemy within 15 m and pulls them in front of you: ${D(S.dmg)} damage.`
+    text: (S, D) => `Grabs an enemy within 30 m and pulls them in front of you: ${D(S.dmg)} damage.`
   },
   Asphyxiate: { dmg: 65, stun: 2.5, text: (S, D) => `Ranged: ${D(S.dmg)} damage and stuns for ${sec(S.stun)}.` },
   'Pillar of Frost': { burst: 7, text: S => `+35% damage and +18% speed for ${sec(S.burst)}.` },
@@ -756,7 +755,7 @@ for (const C of Object.values(CLASS))
 // Incantation décrite par les données du sort (temps, valeur).
 function castOf(u, i, target, type, value) {
   const S = skillsOf(u)[i];
-  return { i, name: S.n, target, end: now() + S.cast, dur: S.cast, type, value };
+  return { i, name: S.n, target, end: now() + S.cast, dur: S.cast, type, value, cost: S.c || 0 };
 }
 
 // ---------- Armures : réduction des dégâts selon le type d'armure de la classe ----------

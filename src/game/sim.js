@@ -95,6 +95,7 @@ function update(dt) {
         refundCast(u, ca);
         unitError(u, ca.target?.alive ? 'Target not in line of sight' : 'Invalid target');
       } else {
+        u.res = Math.max(0, u.res - (ca.cost || 0)); // ressource prise à la fin de l'incantation
         if (ca.type === 'damage') {
           const proj = u.cls === 'warlock' ? 'shadowProjectile' : 'arcaneProjectile';
           fx(proj, u.x, (u.y || 0) + 1.55, u.z, CLASS[u.cls].accent, 0.48, 0.24, [
