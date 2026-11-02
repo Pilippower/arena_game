@@ -981,10 +981,22 @@ function hfTwoHandIK(rec) {
   k.handQ = k.handQ ? k.handQ.slerp(rel, ease) : rel;
   H.quaternion.copy(H.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(mq).multiply(k.handQ));
   m.updateMatrixWorld(true);
-  // main gauche sous la droite, sur la poignée
-  const tgt = m.worldToLocal(k.grip.localToWorld(new THREE.Vector3(0, -0.11, 0)));
+  // main gauche : sa PAUME (pas son poignet) sur la poignée, juste sous la droite, paume tournée du même côté que la
+  // droite et pouce vers la lame (prise à deux mains). Repère d'une main : +y = doigts, +z = pouce, paume en +x
+  // (gauche) / -x (droite) ; centre de la paume à (±0,028 ; 0,075 ; 0) du poignet.
+  const bladeW = new THREE.Vector3(0, 1, 0).transformDirection(k.grip.matrixWorld),
+    palmN = new THREE.Vector3(-1, 0, 0).transformDirection(H.matrixWorld),
+    zL = bladeW.clone(),
+    xL = palmN.clone().addScaledVector(zL, -palmN.dot(zL)).normalize(),
+    yL = new THREE.Vector3().crossVectors(zL, xL),
+    qL = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xL, yL, zL)),
+    palmL = k.grip.localToWorld(new THREE.Vector3(0, -0.09, 0)),
+    wrist = palmL.sub(new THREE.Vector3(0.028, 0.075, 0).applyQuaternion(qL)),
+    tgt = m.worldToLocal(wrist);
   k.smooth = k.smooth ? k.smooth.lerp(tgt, ease) : tgt;
   hfArmIK(up, lo, hand, m.localToWorld(k.smooth.clone()), poleL);
+  m.updateMatrixWorld(true);
+  hand.quaternion.copy(hand.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(qL));
   bones.forEach((b, i) => (k.out[i] = (k.out[i] || new THREE.Quaternion()).copy(b.quaternion)));
 }
 function hfCreateRecord(u) {

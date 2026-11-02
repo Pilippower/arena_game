@@ -700,3 +700,8 @@ assert.ok(
     assert.equal(new Set(all).size, all.length, 'touches uniques : ' + kb.skills.join(','));
   }
 }
+// Chevalier de la mort : paume gauche sur la poignée, sous la droite (mains alignées)
+assert.ok(
+  read('src/render/heroes3d.js').includes('palmL = k.grip.localToWorld(new THREE.Vector3(0, -0.09, 0))'),
+  'DK : mains alignées sur la poignée'
+);
