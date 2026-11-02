@@ -1235,6 +1235,18 @@ function beastLoft(secs, mat, opt = {}) {
         b = a + N + 1;
       idx.push(a, a + 1, b, a + 1, b + 1, b);
     }
+  // extrémités bouchées (sinon un trou laissait voir à travers la bête, ex. l'arrière de l'ours)
+  for (const ring of [0, secs.length - 1]) {
+    const c = pos.length / 3;
+    pos.push(...C[ring].toArray());
+    col.push(...col.slice(ring * (N + 1) * 3, ring * (N + 1) * 3 + 3));
+    uv.push(0.5, ring ? 1 : 0);
+    for (let k = 0; k < N; k++) {
+      const a = ring * (N + 1) + k;
+      if (ring) idx.push(c, a, a + 1);
+      else idx.push(c, a + 1, a);
+    }
+  }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
@@ -1252,7 +1264,55 @@ function beastLoft(secs, mat, opt = {}) {
     nr.setXYZ(a, x / l, y / l, z / l);
     nr.setXYZ(b, x / l, y / l, z / l);
   }
-  return new THREE.Mesh(geo, mat);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.userData.loft = true;
+  return mesh;
+}
+// Fourrure en « coques » : copies de chaque volume poussées le long des normales, découpées en mèches par une carte
+// de bruit (alphaTest croissant vers l'extérieur) : vrai relief de poils, sans tri de transparence.
+function beastStrandTexture() {
+  if (beastStrandTexture.t) return beastStrandTexture.t;
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const g = c.getContext('2d'),
+    id = g.createImageData(256, 256);
+  for (let i = 0; i < 256 * 256; i++) {
+    const v = Math.random() ** 0.7 * 255;
+    id.data.set([v, v, v, 255], i * 4);
+  }
+  g.putImageData(id, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(10, 14);
+  t.magFilter = THREE.NearestFilter;
+  return (beastStrandTexture.t = t);
+}
+function beastFurShells(root, len, layers = 4) {
+  const lofts = [];
+  root.traverse(o => o.userData?.loft && lofts.push(o));
+  for (const m of lofts)
+    for (let k = 1; k <= layers; k++) {
+      const f = k / layers,
+        geo = m.geometry.clone(),
+        pos = geo.attributes.position,
+        nr = geo.attributes.normal;
+      for (let i = 0; i < pos.count; i++)
+        pos.setXYZ(
+          i,
+          pos.getX(i) + nr.getX(i) * len * f,
+          pos.getY(i) + nr.getY(i) * len * f,
+          pos.getZ(i) + nr.getZ(i) * len * f
+        );
+      const mat = m.material.clone();
+      mat.alphaMap = beastStrandTexture();
+      mat.alphaTest = 0.25 + f * 0.6;
+      mat.color = new THREE.Color(1, 1, 1).multiplyScalar(0.9 + f * 0.25); // pointes des poils plus claires
+      mat.emissiveMap = null;
+      mat.emissive = new THREE.Color(0);
+      const sh = new THREE.Mesh(geo, mat);
+      sh.userData.shell = true;
+      m.add(sh);
+    }
 }
 // Couleur unie par sommet pour une géométrie simple (oreilles, pattes, touffes) portée par un matériau à couleurs de sommets.
 function beastTint(geo, c) {
@@ -1346,7 +1406,13 @@ function hfMakeBeast(kind) {
     rgb = c => lin(c).toArray(),
     mix = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k],
     V = (...a) => new THREE.Vector3(...a),
-    fur = new THREE.MeshStandardMaterial({ vertexColors: true, map: beastFurTexture(), roughness: 0.85 });
+    // double face : aucune surface ne disparaît selon l'angle de vue
+    fur = new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      map: beastFurTexture(),
+      roughness: 0.85,
+      side: THREE.DoubleSide
+    });
   // fourrure : dos (haut), flancs, ventre (bas), bas des pattes (selon la hauteur au sol)
   const P = cat
     ? { back: rgb(0x3b3366), side: rgb(0x241f3e), belly: rgb(0x2e2948), low: rgb(0x18142a), glow: 0xc77dff }
@@ -1742,28 +1808,77 @@ function hfMakeBeast(kind) {
   g.userData.body = body;
   g.userData.kind = kind;
   g.userData.ice = cat ? null : ice;
+  beastFurShells(g, cat ? 0.014 : 0.03);
   g.traverse(o => {
     if (o.isMesh) o.castShadow = false;
   });
   return g;
 }
+// Animation des bêtes (procédurale, à chaque image) :
+// - repos : respiration (cage thoracique qui gonfle), tête qui regarde autour, transfert de poids, queue qui ondule ;
+// - course : foulée en diagonale (avant gauche avec arrière droite), genou plié pendant le retour de la patte,
+//   corps qui monte et descend deux fois par cycle et tangue, tête qui compense ;
+// - attaque : le félin bondit les deux pattes en avant, l'ours se cabre et frappe d'une patte (en alternance) ;
+// - étourdi : tête basse qui oscille.
 function hfAnimateBeast(g, u, t) {
-  const run = u.moving ? Math.sin(u.movePhase * 1.4) : 0,
-    atk = u.action > 0 && u.actionType === 'melee' ? Math.sin((1 - u.action / 0.36) * Math.PI) : 0,
-    cat = g.userData.kind === 'cat';
-  g.userData.legs.forEach((l, i) => {
-    const ph = i === 0 || i === 3 ? run : -run;
-    l.rotation.x = ph * (cat ? 0.75 : 0.5) - (l.userData.front ? atk * 0.9 : 0);
-    l.userData.knee.rotation.x = Math.max(0, -ph) * (l.userData.front ? -0.6 : 0.7);
+  const cat = g.userData.kind === 'cat',
+    D = g.userData,
+    mv = u.moving && !(u.stun > 0),
+    ph = u.movePhase * (cat ? 1.25 : 1.05),
+    atkT = u.action > 0 && u.actionType === 'melee' ? 1 - u.action / 0.36 : -1,
+    atk = atkT >= 0 ? Math.sin(Math.min(1, atkT) * Math.PI) : 0,
+    stun = u.stun > 0;
+  if (atkT >= 0 && !D.atkOn) D.paw = (D.paw || 0) ^ 1;
+  D.atkOn = atkT >= 0;
+  // vitesse de transition entre repos et course (pas de saut brusque)
+  D.mvK = (D.mvK || 0) + ((mv ? 1 : 0) - (D.mvK || 0)) * 0.15;
+  const k = D.mvK,
+    breath = Math.sin(t * (cat ? 2.4 : 1.7));
+  D.legs.forEach((l, i) => {
+    const front = l.userData.front,
+      // diagonale : 0 = avant +x, 1 = avant -x, 2 = arrière +x, 3 = arrière -x
+      p = ph + (i === 0 || i === 3 ? 0 : Math.PI),
+      swing = Math.sin(p),
+      lift = Math.max(0, Math.cos(p)); // phase de retour : la patte se plie
+    let rx = swing * (cat ? 0.7 : 0.48) * k,
+      knee = lift * (front ? -0.9 : 0.8) * k;
+    // repos : légère flexion qui suit la respiration
+    rx += (1 - k) * (front ? 0.03 : -0.03) * breath;
+    if (atk) {
+      if (cat && front) {
+        rx -= atk * 1.5;
+        knee += atk * -0.6;
+      } else if (!cat && front && i % 2 === D.paw) {
+        rx -= atk * 1.9;
+        knee -= atk * 0.9;
+      } else if (!front) rx += atk * (cat ? 0.5 : 0.25); // appui des pattes arrière
+    }
+    l.rotation.x = rx;
+    l.rotation.z = !cat && front && atk && i % 2 === D.paw ? (i ? -1 : 1) * atk * 0.4 : 0;
+    l.userData.knee.rotation.x = knee;
   });
-  g.position.y = u.moving ? Math.abs(run) * (cat ? 0.06 : 0.035) : 0;
-  g.userData.head.position.z = g.userData.headZ + atk * 0.22;
-  g.userData.head.rotation.x = u.moving ? Math.sin(u.movePhase * 2.8) * 0.04 : Math.sin(t * 1.2) * 0.05;
-  g.rotation.x = -atk * 0.12;
-  g.userData.body.scale.y = 1 + Math.sin(t * 2) * 0.015;
+  // corps : rebond de la foulée, tangage, respiration
+  const bob = Math.abs(Math.sin(ph)) * (cat ? 0.07 : 0.045) * k;
+  g.position.y = bob + (cat ? atk * 0.18 : 0);
+  g.position.z = cat ? atk * 0.35 : atk * 0.08;
+  g.rotation.x = Math.sin(ph * 2) * 0.035 * k - atk * (cat ? 0.2 : 0.32);
+  g.rotation.z = (1 - k) * Math.sin(t * 0.55) * (cat ? 0.012 : 0.02); // transfert de poids au repos
+  D.body.scale.set(1 + breath * 0.012, 1 + breath * (cat ? 0.025 : 0.035), 1 + breath * 0.008);
+  // tête : regarde autour au repos, compense la foulée, s'avance à l'attaque, basse si étourdi
+  const h = D.head;
+  h.position.z = D.headZ + atk * (cat ? 0.12 : 0.18);
+  h.position.y = D.headY ?? (D.headY = h.position.y);
+  h.position.y = D.headY - bob * 0.6 + breath * 0.008;
+  h.rotation.y = (1 - k) * (Math.sin(t * 0.37) * 0.32 + Math.sin(t * 1.3) * 0.05);
+  h.rotation.x = stun
+    ? 0.45 + Math.sin(t * 3) * 0.1
+    : -Math.sin(ph * 2) * 0.05 * k - atk * 0.25 + (1 - k) * breath * 0.02;
   // queue qui ondule, glace qui scintille
-  if (g.userData.tail) g.userData.tail.rotation.y = Math.sin(t * (u.moving ? 4 : 1.6)) * (u.moving ? 0.15 : 0.3);
-  if (g.userData.ice) g.userData.ice.emissiveIntensity = 0.8 + Math.sin(t * 2.4) * 0.25;
+  if (D.tail) {
+    D.tail.rotation.y = Math.sin(t * (mv ? 5 : 1.4)) * (mv ? 0.18 : 0.35);
+    D.tail.rotation.x = mv ? -0.15 : Math.sin(t * 0.8) * 0.08;
+  }
+  if (D.ice) D.ice.emissiveIntensity = 0.8 + Math.sin(t * 2.4) * 0.25;
 }
 function hfSetOpacity(root, op) {
   root.traverse(o => {

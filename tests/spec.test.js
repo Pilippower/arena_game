@@ -536,4 +536,10 @@ assert.ok(
     h3.includes("if (u.cls === 'reaver' && rec.kit && u.alive && !u.form) hfTwoHandIK(rec);"),
   'voleur deux lames, chevalier à deux mains'
 );
+assert.ok(
+  ['function beastFurShells', 'extrémités bouchées', 'respiration'].every(k =>
+    read('src/render/heroes3d.js').includes(k)
+  ),
+  'bêtes : fourrure, sans trou, animées'
+);
 console.log('OK - spécifications validées (docs/SPEC.md)');
