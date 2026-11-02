@@ -49,7 +49,7 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
   - Voleur camouflé : **Cheap Shot** (étourdit 3 s, rendements décroissants séparés de Kidney Shot).
   - Icônes fournies par l'utilisateur : `assets_src/ui/spells_extra/` (Rejuvenation, Regrowth, Cheap Shot). L'IA utilise ces sorts. 🧪
 - Téléportations et sauts courts (Blink, Demonic Gate, Shadowstep) : suivent le sol pas à pas (rampes et tablier du pont, hauteur comprise), s'arrêtent devant un pilier, un mur, le flanc d'une rampe, un garde-corps ou un vide (régression corrigée : sur une rampe on restait sur place ou on retombait en bas). Charge et ruées ne butent plus sur un poteau situé sous le pont. 🧪
-- Demonic Gate : ne libère ni des étourdissements ni des racines ; utilisable immobilisé, on reste immobilisé à l'arrivée. Blink du mage : brise les racines. 🧪
+- Demonic Gate : **vers l'avant du personnage, comme Blink, jamais vers la cible** (bug : il ramenait en arrière quand on fuyait) ; ne libère ni des étourdissements ni des racines ; utilisable immobilisé, on reste immobilisé à l'arrivée. Blink du mage : brise les racines. 🧪
 - Drain Life : aucun contrôle sur la cible (elle bouge et frappe librement) ; sa barre est une **canalisation** qui part pleine et se vide en 6 s (aussi au-dessus du personnage et en ligne). Icônes de l'utilisateur pour Drain Life et Demoralizing Roar ; Rejuvenation = l'icône bleue, Regrowth = la verte. 🧪
 - Recharges : un sort qui change de barre (sortie de camouflage, de forme) garde sa recharge dans sa propre barre (régression corrigée : Cheap Shot remettait Kidney Shot à zéro, Ambush remettait Backstab). 🧪
 - Sort qui échoue faute de ligne de vue : recharge rendue (la ressource n'a pas été prise).

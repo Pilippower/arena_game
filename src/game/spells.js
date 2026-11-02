@@ -346,6 +346,7 @@ const SPELL_CAST = {
   // ne libère ni des étourdissements ni des racines (utilisable immobilisé : on le reste)
   'Demonic Gate': {
     mobility: true,
+    noFace: true, // vers l'avant du personnage, comme Blink (bug : il se tournait vers la cible et ramenait en arrière)
     run(c) {
       blinkForward(c.u, c.S.dist, true);
       action(c.u, 'dash');

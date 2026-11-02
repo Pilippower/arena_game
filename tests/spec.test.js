@@ -592,3 +592,9 @@ console.log('OK - spécifications validées (docs/SPEC.md)');
   assert.ok(css.includes('table-layout: fixed'), 'résultats : colonnes alignées');
   assert.ok(read('src/game/match.js').includes("setProperty('--rows'"), 'résultats : nombre de lignes');
 }
+// Demonic Gate : vers l'avant du personnage (pas vers la cible), comme Blink
+assert.match(
+  read('src/game/spells.js'),
+  /'Demonic Gate': \{\s*mobility: true,\s*noFace: true/,
+  'Demonic Gate vers l’avant'
+);
