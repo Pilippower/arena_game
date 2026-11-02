@@ -646,3 +646,17 @@ assert.ok(
     'feux follets sans lumière ajoutée'
   );
 }
+// Mêlée : cri d'effort et sons de frappe enregistrés par arme, licences documentées
+{
+  const fs = require('node:fs'),
+    sfx = read('src/audio/sfx.js');
+  assert.ok(fs.existsSync(require('node:path').join(__dirname, '..', 'assets/audio/sfx_pack.js')), 'pack de sons');
+  assert.ok(read('assets/audio/LICENSES.md').includes('CC-BY 3.0'), 'licences des sons');
+  assert.ok(
+    read('index.html').indexOf('assets/audio/sfx_pack.js') < read('index.html').indexOf('src/audio/sfx.js'),
+    'pack avant sfx.js'
+  );
+  for (const k of ["'effort_m'", "'whoosh'", "'clash'", "'thud'", 'effort(u)'])
+    assert.ok(sfx.includes(k), 'sons : ' + k);
+  assert.ok(read('src/game/rules.js').includes('SFX.effort(u)'), 'cri sur les auto-attaques');
+}

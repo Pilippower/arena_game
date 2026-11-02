@@ -62,6 +62,9 @@ function autoAttack(u, dt) {
   damage(u, t, sw[1] * (0.9 + Math.random() * 0.2), Math.random() < 0.12, 'physical');
   action(u, 'melee');
   u.swing = sw[0];
+  // cri d'effort sur une partie des coups (le voleur frappe toutes les 0,65 s) ; tirage ici, pas dans SFX.effort,
+  // pour que l'ami en ligne entende le même cri que l'hôte
+  if (Math.random() < (u.cls === 'shade' ? 0.15 : 0.4)) SFX.effort(u);
   SFX.swing(u, false);
   SFX.meleeHit(u, false);
 }

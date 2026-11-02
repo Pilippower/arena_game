@@ -4,7 +4,69 @@
 function sfxCtx() {
   const ctx = musicEnsure();
   if (ctx?.state === 'suspended') ctx.resume();
+  if (ctx) sfxSamplesLoad(ctx);
   return ctx;
+}
+// ---------- Bruitages enregistrés : assets/audio/sfx_pack.js (tools/build_sfx_pack.js, licences LICENSES.md) ----------
+// Cris d'effort, lame qui fend l'air, impacts d'épée / de masse / de hache. Décodés une fois ; tant qu'ils ne sont
+// pas prêts (ou si le pack manque), les sons procéduraux d'origine prennent le relais.
+const SAMPLES = { buf: null, last: {} };
+function sfxSamplesLoad(ctx) {
+  if (SAMPLES.buf || !window.SFX_PACK) return;
+  SAMPLES.buf = {};
+  for (const [k, list] of Object.entries(window.SFX_PACK)) {
+    SAMPLES.buf[k] = [];
+    for (const u of list) {
+      const bin = Uint8Array.from(atob(u.slice(u.indexOf(',') + 1)), c => c.charCodeAt(0));
+      ctx
+        .decodeAudioData(bin.buffer)
+        .then(b => SAMPLES.buf[k].push(b))
+        .catch(() => {});
+    }
+  }
+}
+// Une variante au hasard (jamais deux fois la même d'affilée) ; rate = hauteur / vitesse, lowpass = voix étouffée.
+function sfxSample(kind, vol, pan = 0, { rate = 1, delay = 0, lowpass = 0 } = {}) {
+  const ctx = sfxCtx(),
+    list = SAMPLES.buf?.[kind];
+  if (!ctx || !list?.length) return false;
+  let i = Math.floor(Math.random() * list.length);
+  if (list.length > 1 && i === SAMPLES.last[kind]) i = (i + 1) % list.length;
+  SAMPLES.last[kind] = i;
+  const src = ctx.createBufferSource(),
+    g = ctx.createGain();
+  src.buffer = list[i];
+  src.playbackRate.value = rate;
+  g.gain.value = vol;
+  let node = src;
+  if (lowpass) {
+    const f = ctx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = lowpass;
+    src.connect(f);
+    node = f;
+  }
+  node.connect(g);
+  audioPan(g, pan).connect(MUSIC.sfxMaster);
+  src.start(ctx.currentTime + delay);
+  return true;
+}
+// Arme et voix d'une unité, d'après son kit (race + classe) : 'sword' | 'hammer' | 'axe' | 'daggers' | 'claw'.
+const SFX_WHO = new Map();
+function sfxWho(u) {
+  const key = u.race + '_' + u.cls;
+  if (!SFX_WHO.has(key)) {
+    const K = window.CharacterKits,
+      id = K?.kitFor(u.race, u.cls),
+      kit = id ? K.resolveKit(id) : null,
+      w = kit?.weapon || '';
+    SFX_WHO.set(key, {
+      weapon: /hammer/.test(w) ? 'hammer' : /axe/.test(w) ? 'axe' : /dagger/.test(w) ? 'daggers' : 'sword',
+      sex: kit?.sex || (u.cls === 'shade' || u.cls === 'warden' ? 'F' : 'M')
+    });
+  }
+  const who = SFX_WHO.get(key);
+  return u.form ? { ...who, weapon: 'claw' } : who;
 }
 // ---------- Sons de combat par catégorie ----------
 // Bruit filtré qui balaie une plage de fréquences (souffle d'une lame, d'un sort).
@@ -47,6 +109,21 @@ function sfxMetal(vol, pan, delay = 0, base = 420) {
   );
 }
 const SFX = {
+  // Cri d'effort du personnage qui frappe (voix d'homme ou de femme selon le personnage, plus grave pour un orc ou
+  // un mort-vivant, plus claire pour un elfe ; étouffée pour le mort-vivant). Pas deux cris en moins de 1,2 s.
+  effort(u) {
+    if (!u || u.form || u.stealth) return;
+    const t = performance.now();
+    if (u.effortAt && t - u.effortAt < 1200) return;
+    u.effortAt = t;
+    const a = sfxSpatial(u),
+      who = sfxWho(u),
+      rate = { orc: 0.84, undead: 0.8, dwarf: 0.9, elf: 1.08 }[u.race] || 1;
+    sfxSample(who.sex === 'F' ? 'effort_f' : 'effort_m', 0.4 * a.level, a.pan, {
+      rate: rate * (0.96 + Math.random() * 0.08),
+      lowpass: u.race === 'undead' ? 1900 : 0
+    });
+  },
   // Jingle de victoire original, bref (~1,4 s) : arpège majeur montant + accord tenu, volume modéré.
   victory(big = false) {
     const notes = [523.25, 659.25, 783.99, 1046.5];
@@ -58,14 +135,40 @@ const SFX = {
   defeat() {
     [392, 349.23, 311.13].forEach((f, i) => sfxTone(f, 0.35, 'triangle', 0.05, f * 0.97, i * 0.16, 0, 1800, 0.35));
   },
+  // lame qui fend l'air : plus grave et plus lente pour une masse ou une hache, plus vive pour des glaives
   swing(u, heavy) {
-    const a = sfxSpatial(u);
+    const a = sfxSpatial(u),
+      w = sfxWho(u).weapon,
+      rate = { hammer: 0.78, axe: 0.86, daggers: 1.25, claw: 0.9 }[w] || 1;
+    if (sfxSample('whoosh', (heavy ? 0.42 : 0.32) * a.level, a.pan, { rate: rate * (0.94 + Math.random() * 0.12) }))
+      return;
     sfxSweep(heavy ? 0.2 : 0.15, (heavy ? 0.16 : 0.12) * a.level, 600, 3200, 0, a.pan, 'bandpass', 1.5);
   },
+  // impact selon l'arme : épée = choc métallique, masse = coup sourd + résonance grave, hache = coup sourd tranchant,
+  // glaives = tintement vif, griffes (formes du druide) = coup sourd
   meleeHit(u, heavy) {
     const a = sfxSpatial(u),
-      L = a.level,
-      P = a.pan;
+      L = a.level * (heavy ? 1.15 : 1),
+      P = a.pan,
+      r = 0.94 + Math.random() * 0.12,
+      d = 0.07,
+      w = sfxWho(u).weapon;
+    let ok;
+    if (w === 'hammer') {
+      ok = sfxSample('thud', 0.7 * L, P, { rate: 0.82 * r, delay: d });
+      sfxSample('bong', 0.22 * L, P, { rate: 0.7 * r, delay: d, lowpass: 2600 });
+    } else if (w === 'axe') {
+      ok = sfxSample('thud', 0.6 * L, P, { rate: r, delay: d });
+      sfxSample('clash', 0.3 * L, P, { rate: 0.75 * r, delay: d });
+    } else if (w === 'daggers') {
+      ok = sfxSample('clash', 0.34 * L, P, { rate: 1.3 * r, delay: d * 0.6 });
+      sfxSample('clink', 0.22 * L, P, { rate: 1.1 * r, delay: d * 0.6 });
+    } else if (w === 'claw') ok = sfxSample('thud', 0.55 * L, P, { rate: 1.2 * r, delay: d });
+    else {
+      ok = sfxSample('clash', 0.45 * L, P, { rate: r, delay: d });
+      sfxSample('thud', 0.25 * L, P, { rate: 1.1 * r, delay: d });
+    }
+    if (ok) return;
     sfxMetal((heavy ? 0.09 : 0.065) * L, P, 0.06, heavy ? 360 : 470);
     sfxTone(heavy ? 95 : 120, 0.16, 'sine', (heavy ? 0.2 : 0.14) * L, 45, 0.06, P);
     sfxNoise(0.07, 0.16 * L, 2600, 0.06, P);
@@ -188,6 +291,7 @@ function sfxForSkill(u, S, i) {
     return SFX.whoosh(u);
   if (/Pillar|Vendetta|Roar/.test(n)) return SFX.power(u);
   if (S.t === 'melee' || k === 'swipe') {
+    SFX.effort(u);
     SFX.swing(u, true);
     if (!/Sap/.test(n)) SFX.meleeHit(u, true);
     return;

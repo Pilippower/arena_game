@@ -87,6 +87,7 @@ async function prepareMatch() {
     S = state,
     first = S.round === 1;
   S.loading = true;
+  if (first && MUSIC.ctx) sfxSamplesLoad(MUSIC.ctx); // bruitages enregistrés décodés avant le premier coup
   // début du match : écran affiché tout de suite (avant la moindre image du jeu) et gardé au moins 3 s ;
   // manche suivante (tout est en cache) : écran seulement si la préparation dépasse 150 ms
   const tStart = performance.now();
