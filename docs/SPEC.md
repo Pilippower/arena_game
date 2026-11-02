@@ -60,6 +60,7 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Voleur : frappe 2× plus vite qu'un guerrier pour la moitié des dégâts (même DPS). 🧪
 
 ## Classes, formes, armures
+- Barres de vie au-dessus des personnages grandes et épaisses, relatives à l'écran (PC : 110–160 px de large × 9–13 px d'épaisseur, cible 150–215 × 13–18 ; mobile 96 × 8, cible 120 × 11), contour sombre et ombre. 🧪
 - PV de base (+50 % le 02/11/2026) : guerrier 2400, chevalier de la mort 2175, druide 1875, voleur 1770, démoniste 1740, prêtre 1620, mage 1470 (ours ×1,4). Les effets dans la durée définis en % des PV de la classe (Pain, Rejuvenation, Regrowth, Corruption) suivent. 🧪
 - Armure plaque (guerrier, chevalier de la mort) > cuir (druide, voleur) > tissu (mage, prêtre, démoniste). 🧪
 - Druide : félin = +30 % de vitesse ; ours = +40 % PV, -30 % dégâts subis. 🧪

@@ -757,3 +757,9 @@ assert.deepEqual(
   assert.equal(c.bindIndex(list, ev('Digit1', { shiftKey: true })), 0, 'Shift + 1 non réglé : touche seule');
   assert.equal(c.bindCombo(ev('ShiftLeft', { shiftKey: true })), '', 'modificateur seul');
 }
+// Barres de vie des personnages assez grandes (demande : trop petites)
+assert.ok(read('index.html').includes('.nameplate .npBar{height:clamp(9px,1.15vh,13px)'), 'barres de vie épaisses');
+assert.ok(
+  read('index.html').includes('body.mobile-mode #nameplates .nameplate .npBar{height:8px}'),
+  'barres de vie mobile'
+);
