@@ -907,6 +907,18 @@ function hfTwoHandIK(rec) {
   }
   const k = rec.ik;
   if (!k) return;
+  // Le mixeur three.js ne réécrit un os que si sa valeur animée a changé : sur une pose immobile, le bras gardait la
+  // correction de l'image précédente et l'IK repartait de son propre résultat (balancier, l'arme tremblait). On repart
+  // donc toujours de la pose animée : mémorisée quand le mixeur l'a écrite, restaurée sinon.
+  const bones = [...k.L, ...k.R];
+  if (!k.anim) {
+    k.anim = bones.map(b => b.quaternion.clone());
+    k.out = bones.map(() => null);
+  }
+  bones.forEach((b, i) => {
+    if (k.out[i] && b.quaternion.equals(k.out[i])) b.quaternion.copy(k.anim[i]);
+    else k.anim[i].copy(b.quaternion);
+  });
   m.updateMatrixWorld(true);
   // coudes vers le bas, l'arrière et l'extérieur (gauche = +x du modèle)
   const q = m.getWorldQuaternion(new THREE.Quaternion()),
@@ -918,25 +930,39 @@ function hfTwoHandIK(rec) {
       sh.distanceTo(lo.getWorldPosition(new THREE.Vector3())) +
       hand.getWorldPosition(new THREE.Vector3()).distanceTo(lo.getWorldPosition(new THREE.Vector3())),
     rh = k.R[2].getWorldPosition(new THREE.Vector3());
+  // Cibles des deux mains lissées dans le repère du personnage, selon le temps écoulé (même rendu à 60 ou 175 images/s) :
+  // la frappe passe très vite au-dessus de la tête, sans lissage le bras recalé partait dans tous les sens.
+  const tNow = performance.now() / 1000,
+    dt = Math.min(0.1, tNow - (k.t ?? tNow)),
+    ease = 1 - Math.exp(-dt * 26);
+  k.t = tNow;
   // main droite trop loin de l'épaule gauche : on la ramène vers le corps (le bras droit suit), l'arme avec
-  if (sh.distanceTo(rh) > reach * 0.8) {
-    hfArmIK(
-      ...k.R,
-      sh.clone().add(
-        rh
-          .clone()
-          .sub(sh)
-          .setLength(reach * 0.8)
-      ),
-      poleR
-    );
-    m.updateMatrixWorld(true);
-  }
+  const rt =
+      sh.distanceTo(rh) > reach * 0.8
+        ? sh.clone().add(
+            rh
+              .clone()
+              .sub(sh)
+              .setLength(reach * 0.8)
+          )
+        : rh,
+    rl = m.worldToLocal(rt.clone());
+  k.smoothR = k.smoothR ? k.smoothR.lerp(rl, ease) : rl;
+  hfArmIK(...k.R, m.localToWorld(k.smoothR.clone()), poleR);
+  // orientation de la main (donc de la lame) lissée dans le repère du personnage : au début de la frappe, le fondu
+  // entre la garde et le coup (poses très différentes) la faisait basculer une image vers le bas
+  m.updateMatrixWorld(true);
+  const H = k.R[2],
+    mq = m.getWorldQuaternion(new THREE.Quaternion()),
+    rel = mq.clone().invert().multiply(H.getWorldQuaternion(new THREE.Quaternion()));
+  k.handQ = k.handQ ? k.handQ.slerp(rel, ease) : rel;
+  H.quaternion.copy(H.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(mq).multiply(k.handQ));
+  m.updateMatrixWorld(true);
   // main gauche sous la droite, sur la poignée
-  // cible lissée dans le repère du personnage : la main suit la poignée sans à-coups (la lame tourne vite en frappe)
   const tgt = m.worldToLocal(k.grip.localToWorld(new THREE.Vector3(0, -0.11, 0)));
-  k.smooth = k.smooth ? k.smooth.lerp(tgt, 0.35) : tgt;
+  k.smooth = k.smooth ? k.smooth.lerp(tgt, ease) : tgt;
   hfArmIK(up, lo, hand, m.localToWorld(k.smooth.clone()), poleL);
+  bones.forEach((b, i) => (k.out[i] = (k.out[i] || new THREE.Quaternion()).copy(b.quaternion)));
 }
 function hfCreateRecord(u) {
   if (!HF.enabled || HF.records.has(u.id)) return;

@@ -557,7 +557,7 @@ assert.ok(
 );
 for (const k of ['drain_life', 'demoralizing_roar']) assert.ok(ctx.SPELL_ART.has(k), 'icône ' + k);
 assert.ok(
-  h3.includes('function hfBladeSlash') && h3.includes('k.smooth.lerp(tgt, 0.35)'),
+  h3.includes('function hfBladeSlash') && h3.includes('k.smooth.lerp(tgt, ease)'),
   'glaives du voleur, frappe fluide du chevalier'
 );
 {
@@ -598,3 +598,12 @@ assert.match(
   /'Demonic Gate': \{\s*mobility: true,\s*noFace: true/,
   'Demonic Gate vers l’avant'
 );
+// Chevalier de la mort : l'arme ne tremble pas (IK depuis la pose animée, mains lissées dans le temps)
+{
+  const h3 = read('src/render/heroes3d.js');
+  assert.ok(
+    h3.includes('b.quaternion.equals(k.out[i])) b.quaternion.copy(k.anim[i])'),
+    'IK : repart de la pose animée'
+  );
+  assert.ok(h3.includes('ease = 1 - Math.exp(-dt * 26)') && h3.includes('k.handQ.slerp(rel, ease)'), 'IK : lissage');
+}
