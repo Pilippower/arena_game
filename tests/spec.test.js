@@ -548,4 +548,8 @@ assert.ok(
   'canalisation : barre qui se vide'
 );
 for (const k of ['drain_life', 'demoralizing_roar']) assert.ok(ctx.SPELL_ART.has(k), 'icône ' + k);
+assert.ok(
+  h3.includes('function hfBladeSlash') && h3.includes('k.smooth.lerp(tgt, 0.35)'),
+  'glaives du voleur, frappe fluide du chevalier'
+);
 console.log('OK - spécifications validées (docs/SPEC.md)');

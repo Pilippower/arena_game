@@ -833,7 +833,9 @@ function hfAimBone(bone, from, to) {
   bone.updateMatrixWorld(true);
 }
 // Bras (épaule, coude, main) dirigé vers `target` : le coude reste dans le plan du bras actuel.
-function hfArmIK(up, lo, hand, target) {
+// pole : direction vers laquelle pointe le coude (fixe dans le repère du personnage). Prendre le coude actuel le
+// faisait basculer d'un côté à l'autre quand le bras était presque tendu : la frappe « glitchait ».
+function hfArmIK(up, lo, hand, target, pole) {
   const [A, Bp, Cp] = IK_V;
   up.getWorldPosition(A);
   lo.getWorldPosition(Bp);
@@ -842,14 +844,51 @@ function hfArmIK(up, lo, hand, target) {
     l2 = Bp.distanceTo(Cp),
     d = Math.min(A.distanceTo(target), (l1 + l2) * 0.999),
     dir = target.clone().sub(A).normalize(),
-    pole = Bp.clone().sub(A),
-    side = pole.sub(dir.clone().multiplyScalar(pole.dot(dir))).normalize(),
+    side = pole
+      .clone()
+      .sub(dir.clone().multiplyScalar(pole.dot(dir)))
+      .normalize(),
     x = (l1 * l1 - l2 * l2 + d * d) / (2 * d),
     h = Math.sqrt(Math.max(0, l1 * l1 - x * x));
   hfAimBone(up, [A, Bp], A.clone().addScaledVector(dir, x).addScaledVector(side, h));
   lo.getWorldPosition(Bp);
   hand.getWorldPosition(Cp);
   hfAimBone(lo, [Bp, Cp], A.clone().addScaledVector(dir, d));
+}
+// Voleur : coup de glaive. Le coup de poing du clip (Punch_Jab = main gauche, Punch_Cross = main droite) donne l'élan ;
+// par-dessus, le bras balaie de l'extérieur vers l'intérieur en s'élevant, et le poignet roule : la lame en croissant
+// tranche en arc au lieu de frapper droit.
+function hfBladeSlash(rec) {
+  const a = rec.action,
+    n = a?.getClip().name;
+  if (rec.animKey !== 'attack' || !/^Punch_/.test(n)) return;
+  const m = rec.model,
+    left = n === 'Punch_Jab',
+    up = m.getObjectByName(left ? 'upperarm_l' : 'upperarm_r'),
+    hand = m.getObjectByName(left ? 'hand_l' : 'hand_r');
+  if (!up || !hand) return;
+  const q = clamp(a.time / a.getClip().duration, 0, 1),
+    env = Math.sin(Math.PI * clamp(q / 0.62, 0, 1)),
+    k = clamp((q - 0.04) / 0.36, 0, 1),
+    e = k * k * (3 - 2 * k),
+    side = left ? 1 : -1,
+    mq = m.getWorldQuaternion(new THREE.Quaternion()),
+    rot = new THREE.Quaternion()
+      .setFromAxisAngle(new THREE.Vector3(0, 1, 0).applyQuaternion(mq), side * (1.05 - 2 * e) * env)
+      .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0).applyQuaternion(mq), -0.35 * env)),
+    turn = (bone, r) => {
+      const pw = bone.parent.getWorldQuaternion(new THREE.Quaternion()),
+        bw = bone.getWorldQuaternion(new THREE.Quaternion());
+      bone.quaternion.copy(pw.invert().multiply(r.multiply(bw)));
+      bone.updateMatrixWorld(true);
+    };
+  turn(up, rot);
+  // roulis du poignet autour de l'avant-bras
+  const fore = hand
+    .getWorldPosition(new THREE.Vector3())
+    .sub(hand.parent.getWorldPosition(new THREE.Vector3()))
+    .normalize();
+  turn(hand, new THREE.Quaternion().setFromAxisAngle(fore, -side * 1.1 * env));
 }
 function hfTwoHandIK(rec) {
   const m = rec.model;
@@ -872,6 +911,10 @@ function hfTwoHandIK(rec) {
   const k = rec.ik;
   if (!k) return;
   m.updateMatrixWorld(true);
+  // coudes vers le bas, l'arrière et l'extérieur (gauche = +x du modèle)
+  const q = m.getWorldQuaternion(new THREE.Quaternion()),
+    poleL = new THREE.Vector3(0.7, -1, -0.6).applyQuaternion(q),
+    poleR = new THREE.Vector3(-0.7, -1, -0.6).applyQuaternion(q);
   const [up, lo, hand] = k.L,
     sh = up.getWorldPosition(new THREE.Vector3()),
     reach =
@@ -887,12 +930,16 @@ function hfTwoHandIK(rec) {
           .clone()
           .sub(sh)
           .setLength(reach * 0.8)
-      )
+      ),
+      poleR
     );
     m.updateMatrixWorld(true);
   }
   // main gauche sous la droite, sur la poignée
-  hfArmIK(up, lo, hand, k.grip.localToWorld(new THREE.Vector3(0, -0.11, 0)));
+  // cible lissée dans le repère du personnage : la main suit la poignée sans à-coups (la lame tourne vite en frappe)
+  const tgt = m.worldToLocal(k.grip.localToWorld(new THREE.Vector3(0, -0.11, 0)));
+  k.smooth = k.smooth ? k.smooth.lerp(tgt, 0.35) : tgt;
+  hfArmIK(up, lo, hand, m.localToWorld(k.smooth.clone()), poleL);
 }
 function hfCreateRecord(u) {
   if (!HF.enabled || HF.records.has(u.id)) return;
@@ -1093,6 +1140,7 @@ function hfRender() {
     }
     if (rec.mixer) rec.mixer.update(dt);
     if (u.cls === 'reaver' && rec.kit && u.alive && !u.form) hfTwoHandIK(rec);
+    if (u.cls === 'shade' && rec.kit && u.alive) hfBladeSlash(rec);
     if (
       rec.action &&
       (rec.animKey === 'run' || rec.animKey === 'back') &&
