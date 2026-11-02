@@ -612,3 +612,9 @@ assert.ok(
   read('src/ui/results.js').includes('[30, 168]') && read('src/ui/results.js').includes('[696, 168]'),
   'torches de la défaite'
 );
+// Lobby PC : les murs touchent le cadre doré quelle que soit la forme de la fenêtre
+assert.ok(
+  read('src/ui/lobby.css').includes('calc((100% - var(--mw)) / 2 + 16px)) auto') &&
+    read('src/ui/lobby.css').includes('width: var(--mw);'),
+  'lobby : murs jusqu’au cadre'
+);
