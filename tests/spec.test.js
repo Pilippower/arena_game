@@ -404,4 +404,9 @@ assert.ok(
     'lumières d’effets toujours présentes'
   );
 }
+assert.ok(
+  read('src/render/environment.js').includes('c.width = c.height = 1;') &&
+    read('index.html').includes('src/core/diag.js'),
+  'iOS : mémoire des canevas libérée, diagnostic ?diag=1'
+);
 console.log('OK - spécifications validées (docs/SPEC.md)');

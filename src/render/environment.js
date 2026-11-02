@@ -66,12 +66,18 @@
     }
     if (srgb) t.encoding = THREE.sRGBEncoding;
     t.anisotropy = 8;
+    // une fois sur le GPU, le canevas n'est plus utile : on libère sa mémoire (Safari iOS plafonne la mémoire totale
+    // des canevas ; au-delà, les canevas deviennent vides → textures noires, ex. le sol). Un canevas = une texture.
+    t.onUpdate = () => {
+      c.width = c.height = 1;
+      t.onUpdate = null;
+    };
     return t;
   }
 
   // Appareil de pierres (dallage ou maçonnerie) : pierres irrégulières, joints sombres, biseaux, grain, mousse.
   function stoneCanvas({
-    size = 1024,
+    size = E.mobile ? 512 : 1024, // mobile : 4× moins de mémoire
     rows = 6,
     minW = 0.12,
     maxW = 0.26,
@@ -1457,6 +1463,10 @@
     },
     get mapId() {
       return E.mapId;
+    },
+    // diagnostic (programmes compilés, limites du GPU)
+    get renderer() {
+      return E.renderer;
     },
     grassAmount
   };

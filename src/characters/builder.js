@@ -2783,7 +2783,13 @@
         if (!recolored.has(m.map))
           recolored.set(
             m.map,
-            recolorTexture(THREE, m.map, kit.palette, 1024, kit.sex === 'M' && /Peasant/i.test(m.name))
+            recolorTexture(
+              THREE,
+              m.map,
+              kit.palette,
+              globalThis.document?.body?.classList.contains('mobile-mode') ? 512 : 1024, // mémoire limitée sur mobile
+              kit.sex === 'M' && /Peasant/i.test(m.name)
+            )
           );
         m.map = recolored.get(m.map);
       }
