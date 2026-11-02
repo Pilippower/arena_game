@@ -8,30 +8,29 @@ let settingsOpen = false,
 function renderBindGrid() {
   const box = $('bindGrid');
   if (!box) return;
-  const names = state?.player
-    ? CLASS[state.player.cls].skills.map(s => s.n)
-    : ['Sort 1', 'Sort 2', 'Sort 3', 'Sort 4', 'Sort 5'];
+  const cls = state?.player?.cls || LOBBY_UNIT?.cls,
+    names = PREFS.keybinds.skills.map((_, i) => (cls && CLASS[cls].skills[i]?.n) || `Spell ${i + 1}`),
+    btn = (type, i, code) =>
+      `<button class="bindBtn ${captureBind?.type === type && captureBind.i === i ? 'capturing' : ''}" data-bind="${type}" data-i="${i}">${captureBind?.type === type && captureBind.i === i ? 'Press a key…' : keyLabel(code)}</button>`;
+  const MOVES = [
+    ['forward', 'Move forward'],
+    ['back', 'Move back'],
+    ['left', 'Strafe left'],
+    ['right', 'Strafe right']
+  ];
   box.innerHTML =
-    names
-      .map(
-        (n, i) =>
-          `<span>${i + 1}. ${n}</span><button class="bindBtn ${captureBind?.type === 'skill' && captureBind.i === i ? 'capturing' : ''}" data-bind-skill="${i}">${captureBind?.type === 'skill' && captureBind.i === i ? 'Appuie sur une touche…' : keyLabel(PREFS.keybinds.skills[i])}</button>`
-      )
-      .join('') +
-    `<span>Trinket PvP</span><button class="bindBtn ${captureBind?.type === 'trinket' ? 'capturing' : ''}" data-bind-trinket="1">${captureBind?.type === 'trinket' ? 'Appuie sur une touche…' : keyLabel(PREFS.keybinds.trinket)}</button>`;
-  box.querySelectorAll('[data-bind-skill]').forEach(
+    MOVES.map(([k, n]) => `<span>${n}</span>${btn('move', k, PREFS.keybinds.move[k])}`).join('') +
+    names.map((n, i) => `<span>${i + 1}. ${n}</span>${btn('skill', i, PREFS.keybinds.skills[i])}`).join('') +
+    `<span>Trinket PvP</span>${btn('trinket', 0, PREFS.keybinds.trinket)}`;
+  box.querySelectorAll('[data-bind]').forEach(
     b =>
       (b.onclick = () => {
-        captureBind = { type: 'skill', i: +b.dataset.bindSkill };
-        $('bindStatus').textContent = 'Appuie sur la nouvelle touche…';
+        const type = b.dataset.bind;
+        captureBind = { type, i: type === 'skill' ? +b.dataset.i : type === 'move' ? b.dataset.i : 0 };
+        $('bindStatus').textContent = 'Press the new key…';
         renderBindGrid();
       })
   );
-  box.querySelector('[data-bind-trinket]').onclick = () => {
-    captureBind = { type: 'trinket' };
-    $('bindStatus').textContent = 'Appuie sur la nouvelle touche…';
-    renderBindGrid();
-  };
 }
 function assignCapturedBind(code) {
   if (!captureBind) return false;
@@ -39,27 +38,21 @@ function assignCapturedBind(code) {
     $('bindStatus').textContent = `${keyLabel(code)} is reserved for movement/gameplay.`;
     return true;
   }
+  // toutes les touches (sorts, trinket, déplacements) : une touche déjà prise échange sa place avec l'ancienne
   const kb = PREFS.keybinds,
-    old = captureBind.type === 'skill' ? kb.skills[captureBind.i] : kb.trinket;
-  let otherType = null,
-    otherIdx = -1;
-  if (kb.trinket === code) {
-    otherType = 'trinket';
-  } else {
-    otherIdx = kb.skills.indexOf(code);
-    if (otherIdx >= 0) otherType = 'skill';
-  }
-  if (captureBind.type === 'skill') kb.skills[captureBind.i] = code;
-  else kb.trinket = code;
-  if (otherType) {
-    if (otherType === 'skill') kb.skills[otherIdx] = old;
-    else kb.trinket = old;
-  }
+    slots = [...kb.skills.map((_, i) => ['skill', i]), ['trinket', 0], ...Object.keys(kb.move).map(k => ['move', k])],
+    get = ([t, i]) => (t === 'skill' ? kb.skills[i] : t === 'move' ? kb.move[i] : kb.trinket),
+    set = ([t, i], c) => (t === 'skill' ? (kb.skills[i] = c) : t === 'move' ? (kb.move[i] = c) : (kb.trinket = c)),
+    me = [captureBind.type, captureBind.i],
+    old = get(me),
+    other = slots.find(s => get(s) === code && !(s[0] === me[0] && s[1] === me[1]));
+  set(me, code);
+  if (other) set(other, old);
   savePrefs();
   $('bindStatus').textContent = `Keybind set: ${keyLabel(code)}`;
   captureBind = null;
   renderBindGrid();
-  updateUI();
+  if (state) updateUI();
   return true;
 }
 function resetBindings() {
@@ -351,8 +344,16 @@ function lobbySkillBar(cls) {
 function chooseClass() {
   playLobbyMusic();
   renderMapChoices();
-  let selectedClass = state?.pcls || null,
-    selectedRace = state?.prace || null;
+  // dernière race / classe choisies : gardées dans le navigateur (aussi après fermeture du jeu)
+  const last = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('arenaLastPick') || '{}');
+    } catch (_) {
+      return {};
+    }
+  })();
+  let selectedClass = state?.pcls || (CLASS[last.cls] ? last.cls : null),
+    selectedRace = state?.prace || (RACE[last.race] ? last.race : null);
   const raceBox = $('raceChoices'),
     box = $('classChoices'),
     play = $('playBtn'),
@@ -382,6 +383,9 @@ function chooseClass() {
     box.querySelectorAll('button').forEach(b => b.classList.toggle('selected', b.dataset.c === selectedClass));
     updateSelectPreview(selectedRace, selectedClass);
     lobbySkillBar(selectedClass);
+    try {
+      localStorage.setItem('arenaLastPick', JSON.stringify({ race: selectedRace, cls: selectedClass }));
+    } catch (_) {}
     LOBBY_CHIPS();
     if (window.NET?.role === 'guest') netLobbyChoice(selectedRace, selectedClass);
     else NET_CHOICE = { race: selectedRace, cls: selectedClass };

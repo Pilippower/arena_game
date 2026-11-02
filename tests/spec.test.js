@@ -409,4 +409,20 @@ assert.ok(
     read('index.html').includes('src/core/diag.js'),
   'iOS : mémoire des canevas libérée, diagnostic ?diag=1'
 );
+{
+  const st = read('src/core/setup.js');
+  assert.ok(
+    st.includes("skills: ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'KeyQ', 'KeyE', 'Digit5']"),
+    'raccourcis : 5 = A/Q, 6 = E'
+  );
+  assert.ok(
+    st.includes("move: { forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD' }"),
+    'déplacements réglables'
+  );
+  assert.ok(
+    read('src/input/controls.js').includes('const mv = PREFS.keybinds.move'),
+    'déplacements selon les réglages'
+  );
+  assert.ok(read('src/ui/settings.js').includes("localStorage.setItem('arenaLastPick'"), 'race et classe mémorisées');
+}
 console.log('OK - spécifications validées (docs/SPEC.md)');

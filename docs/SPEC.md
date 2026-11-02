@@ -10,6 +10,7 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Glisser au **clic droit** = caméra **et** orientation/trajectoire du personnage.
 - Glisser au **clic gauche** = caméra **seule** : la trajectoire du personnage ne change pas ; au relâchement la caméra revient derrière lui. 🧪
 - Gauche + droit enfoncés (dans les deux ordres) = avancer.
+- Raccourcis par défaut (codes physiques, identiques AZERTY/QWERTY) : sorts 1, 2, 3, 4, **A** (Q en QWERTY), **E**, 5 (7ᵉ emplacement, druide), trinket R ; déplacements ZQSD en AZERTY = WASD en QWERTY. Libellés affichés selon la disposition réelle du clavier (lettres). **Tous réglables dans Settings, déplacements compris** (une touche déjà prise échange sa place). Réglages gardés dans le navigateur entre les parties et après fermeture : touches, positions des cadres, volume, musique, carte, mode, difficulté, dernière race et classe. 🧪
 - Curseur : gantelet ; épée au-dessus d'un ennemi ; gantelet vert au-dessus d'un allié.
 
 ## Contrôles (mobile) — `src/ui/mobile.js`

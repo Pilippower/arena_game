@@ -1,21 +1,22 @@
 'use strict';
 // Contrôles desktop validés (ZQSD, caméra clic droit, ciblage) — ne pas modifier les conventions.
 // ---------- controls: exact requested spec ----------
+// Déplacements : touches réglables (PREFS.keybinds.move, codes physiques : ZQSD en AZERTY = WASD en QWERTY)
+// + flèches. Traduites vers les touches logiques de GameLogic (w avant, s arrière, a gauche, d droite).
 function setMoveKey(e, down) {
   if (!state) return false;
-  const m = {
-      keyz: 'z',
-      keyw: 'w',
-      keys: 's',
-      keyq: 'q',
-      keya: 'a',
-      keyd: 'd',
-      arrowup: 'arrowup',
-      arrowdown: 'arrowdown',
-      arrowleft: 'arrowleft',
-      arrowright: 'arrowright'
+  const mv = PREFS.keybinds.move,
+    m = {
+      [mv.forward]: 'w',
+      [mv.back]: 's',
+      [mv.left]: 'a',
+      [mv.right]: 'd',
+      ArrowUp: 'arrowup',
+      ArrowDown: 'arrowdown',
+      ArrowLeft: 'arrowleft',
+      ArrowRight: 'arrowright'
     },
-    k = m[(e.code || '').toLowerCase()];
+    k = m[e.code || ''];
   if (k) {
     state.keys[k] = down;
     e.preventDefault();
