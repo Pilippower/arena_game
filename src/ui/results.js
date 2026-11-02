@@ -7,7 +7,7 @@
 const RESULT_FRAMES = {
   win: {
     w: 896,
-    fo: 150,
+    fo: 88,
     torches: [
       [38, 172],
       [858, 172]
@@ -16,7 +16,7 @@ const RESULT_FRAMES = {
   },
   loss: {
     w: 726,
-    fo: 112,
+    fo: 67,
     torches: [
       [18, 172],
       [705, 172]

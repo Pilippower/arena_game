@@ -45,7 +45,7 @@ body:not(.mobile-mode) #results .resPanel {
      --W du panneau : --g = 1 pixel de l'image du cadre, --u = unité du contenu (tableaux, boutons, rubans).
      --fo : décalage du cadre sous le bandeau ; --ft / --fb : hauteurs du haut et du bas du cadre (la bande du
      milieu est étirée selon le nombre de joueurs). */
-  --W: min(900px, 64cqw, calc(94cqh * 1.02));
+  --W: min(1000px, 59cqw, calc(92cqh * 1.06)); /* maquette : ≈ 59 % de la largeur de l'écran */
   --u: calc(var(--W) / 652);
   --g: calc(var(--W) / var(--fw));
   position: relative;
@@ -78,13 +78,13 @@ body:not(.mobile-mode) #results.win .resPanel {
   --fh: 467;
   --ft: 376;
   --fb: 75;
-  --fo: 150;
+  --fo: 88; /* bandeau à cheval sur le bord du haut (fanions pendus dans le cadre) */
   --bw: 722;
-  --bs: 0.968;
+  --bs: 0.906;
   --scy: 178;
-  --pt: 70;
-  --px: 112;
-  --pb: 62;
+  --pt: 118;
+  --px: 100;
+  --pb: 66;
   --edge: #ffc85a;
   background-image:
     url(../../assets/ui/results/banner_victory.webp), url(../../assets/ui/results/frame_victory_top.webp),
@@ -95,13 +95,13 @@ body:not(.mobile-mode) #results.loss .resPanel {
   --fh: 394;
   --ft: 302;
   --fb: 82;
-  --fo: 112;
+  --fo: 67;
   --bw: 729;
-  --bs: 0.777;
+  --bs: 0.737;
   --scy: 167.5;
-  --pt: 66;
-  --px: 66;
-  --pb: 52;
+  --pt: 92;
+  --px: 62;
+  --pb: 58;
   --edge: #ff4a2a;
   background-image:
     url(../../assets/ui/results/banner_defeat.webp), url(../../assets/ui/results/frame_defeat_top.webp),
@@ -137,7 +137,7 @@ body:not(.mobile-mode) #resultsScore {
   justify-content: center;
   white-space: nowrap;
   font-family: 'Cinzel', Georgia, serif;
-  font-size: calc(21 * var(--u));
+  font-size: calc(23 * var(--u));
   line-height: 1;
   color: #fff4d6;
   text-shadow:
@@ -146,7 +146,7 @@ body:not(.mobile-mode) #resultsScore {
 }
 /* rubans des équipes (texte peint) et tableaux */
 body:not(.mobile-mode) #resultsTeams h3 {
-  height: calc(27 * var(--u));
+  height: calc(31 * var(--u));
   aspect-ratio: 274 / 50;
   margin: calc(4 * var(--u)) 0 calc(2 * var(--u)) calc(-6 * var(--u));
   color: transparent !important;
@@ -167,15 +167,15 @@ body:not(.mobile-mode) #results .resTable {
 }
 body:not(.mobile-mode) #results .resTable th {
   padding: calc(2 * var(--u)) calc(5 * var(--u));
-  font-size: calc(7.5 * var(--u));
+  font-size: calc(10 * var(--u));
   letter-spacing: 0.06em;
   color: #e6d3a3;
   border-bottom: 1px solid #b48a3c55;
 }
 body:not(.mobile-mode) #results .resTable td {
-  padding: calc(2 * var(--u)) calc(6 * var(--u));
+  padding: calc(4 * var(--u)) calc(6 * var(--u));
   font-family: 'Cinzel', Georgia, serif;
-  font-size: calc(9.5 * var(--u));
+  font-size: calc(13 * var(--u));
   color: #f3ead2;
   border-bottom: 1px solid #ffffff10;
 }
@@ -188,8 +188,8 @@ body:not(.mobile-mode) #results .resTable td.rName {
   gap: calc(6 * var(--u));
 }
 body:not(.mobile-mode) #results .rPort {
-  width: calc(22 * var(--u));
-  height: calc(22 * var(--u));
+  width: calc(28 * var(--u));
+  height: calc(28 * var(--u));
 }
 .rPort {
   width: 30px;
@@ -214,7 +214,7 @@ body:not(.mobile-mode) #results .resButtons {
   margin-top: calc(10 * var(--u));
 }
 body:not(.mobile-mode) #results .resButtons button {
-  width: calc(150 * var(--u));
+  width: calc(165 * var(--u));
   aspect-ratio: 207 / 54;
   height: auto;
   padding: 0;
