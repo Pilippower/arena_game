@@ -808,3 +808,9 @@ assert.ok(
   read('src/game/combat.js').includes('if (d > desired + (caster ? 1.2 : 0.4)) dir = 1;'),
   'mêlée : suit la cible'
 );
+// Dispel : sans recharge, uniquement sur la cible actuelle amie
+assert.equal(skill('oracle', 'Dispel').cd, 0, 'Dispel sans recharge');
+assert.ok(
+  read('src/game/spells.js').includes('c.u.target?.team === c.u.team ? c.u.target : null'),
+  'Dispel : cible actuelle seulement'
+);

@@ -173,7 +173,8 @@ const SPELL_CAST = {
   // retire les effets magiques de la cible amie (IA : l'allié choisi par ai.js, sinon le plus blessé)
   Dispel: {
     run(c) {
-      const a = c.u.ai ? c.u.aiDispel || lowestAlly(c.u) : friendlyTarget(c.u);
+      // joueur : uniquement la cible actuelle si elle est amie (soi-même compris quand on se cible), jamais par défaut
+      const a = c.u.ai ? c.u.aiDispel || lowestAlly(c.u) : c.u.target?.team === c.u.team ? c.u.target : null;
       if (!a?.alive || (a !== c.u && (!los(c.u, a) || d2(c.u, a) > SPELL_RANGE))) return false;
       dispel(a);
       c.dispelled = a;

@@ -661,6 +661,12 @@ function skillFailReason(u, i) {
     if (!los(u, t)) return 'Target not in line of sight';
   }
   if (S.kick && !t?.cast) return 'Target is not casting';
+  if (S.n === 'Dispel') {
+    const a = u.target;
+    if (!a?.alive || a.team !== u.team) return 'You need a friendly target';
+    if (a !== u && d2(u, a) > SPELL_RANGE) return "I'm out of range";
+    if (a !== u && !los(u, a)) return 'Target not in line of sight';
+  }
   return "I can't do that right now";
 }
 // Message d'erreur pour le joueur qui contrôle l'unité : à l'écran ici, ou chez l'ami en ligne (src/net/online.js).
