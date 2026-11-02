@@ -60,6 +60,8 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Voleur camouflé : -30 % de vitesse. 🧪
 - **Icônes du druide : Cat Form = griffures, Bear Form = empreinte de patte.** 🧪
 - Druide, formes animales refaites (style des références de l'utilisateur, designs originaux) : **félin** = panthère d'ombre indigo (poitrail profond, ventre rentré, yeux violets en fente lumineux, croissant de lune sur les épaules, collier de perles violettes, bracelets de cuir, longue queue qui ondule) ; **ours** = ours de givre massif (fourrure blanche qui fonce vers le bas des pattes, grands cristaux de glace sur le dos et les membres qui scintillent, runes bleues lumineuses, crinière en pointes, tresses cerclées de cuir, griffes de glace, yeux bleus). Volumes continus (`beastLoft`, sections lissées) dans `heroes3d.js`. 🧪
+- Voleur : frappe **avec ses deux lames**, en alternance main gauche (`Punch_Jab`) / main droite (`Punch_Cross`), calées sur l'impact (`ATTACK_HIT`). 🧪
+- Chevalier de la mort : arme à **deux mains** (repos, course, frappe) : la main gauche rejoint la poignée sous la droite, la droite est ramenée vers le corps si besoin (cinématique inverse `hfTwoHandIK` dans `heroes3d.js`). 🧪
 - Voleur : deux glaives (une lame en croissant de chaque côté de la main), tranchant dans le sens de la frappe, enchantement vert lumineux, les deux mains orientées pareil.
 
 ## Interface

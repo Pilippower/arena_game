@@ -753,6 +753,11 @@ function hfSetAnim(rec, u) {
   } else if (u.action > 0 && u.actionType === 'melee') {
     key = 'attack';
     names = ['Sword_Attack', '1H_Melee_Attack_Chop', 'Unarmed_Melee_Attack_Punch_A', 'Attack'];
+    // voleur (deux lames) : frappe alternée main gauche (Punch_Jab) / main droite (Punch_Cross)
+    if (u.cls === 'shade' && !u.form) {
+      if (rec.animKey !== 'attack') rec.leftHit = !rec.leftHit;
+      names = [rec.leftHit ? 'Punch_Jab' : 'Punch_Cross', 'Sword_Attack'];
+    }
   } else if (u.cast || (u.action > 0 && u.actionType === 'cast')) {
     key = 'cast';
     names = ['Spell_Simple_Shoot', 'Spellcast_Long', 'Spellcast', 'Cast', 'Interact', 'Spell'];
@@ -805,7 +810,90 @@ function hfSetAnim(rec, u) {
 const FOOT_CONTACTS = { Jog_Fwd_Loop: [0.01, 0.51], Walk_Loop: [0.46, 0.96], default: [0.01, 0.51] };
 // Animation de frappe : instant de départ dans le clip et vitesse, pour que l'impact (vitesse max de la main,
 // 0,38 s dans Sword_Attack) coïncide avec les dégâts et les sons au lieu d'arriver 0,35 s plus tard, coupé.
-const ATTACK_HIT = { Sword_Attack: { from: 0.26, speed: 1.5 } };
+// (impact mesuré sur l'os de la main : Sword_Attack 0,38 s, Punch_Jab 0,22 s, Punch_Cross 0,30 s)
+const ATTACK_HIT = {
+  Sword_Attack: { from: 0.26, speed: 1.5 },
+  Punch_Jab: { from: 0.11, speed: 1.6 },
+  Punch_Cross: { from: 0.18, speed: 1.6 }
+};
+// Arme à deux mains (chevalier de la mort) : la main gauche rejoint la poignée sous la main droite à chaque image
+// (cinématique inverse à deux os : bras, avant-bras ; le coude garde son côté), aussi pendant la frappe.
+let IK_V = null,
+  IK_Q = null; // créés à la première utilisation (THREE peut manquer : modèle de secours)
+function hfAimBone(bone, from, to) {
+  // tourne `bone` (en espace monde) pour que la direction from→(enfant) devienne from→to
+  const [a, b] = [IK_V[4], IK_V[5]],
+    [qd, qp, qb] = IK_Q;
+  a.copy(from[1]).sub(from[0]).normalize();
+  b.copy(to).sub(from[0]).normalize();
+  qd.setFromUnitVectors(a, b);
+  bone.parent.getWorldQuaternion(qp);
+  bone.getWorldQuaternion(qb);
+  bone.quaternion.copy(qp.invert().multiply(qd.multiply(qb)));
+  bone.updateMatrixWorld(true);
+}
+// Bras (épaule, coude, main) dirigé vers `target` : le coude reste dans le plan du bras actuel.
+function hfArmIK(up, lo, hand, target) {
+  const [A, Bp, Cp] = IK_V;
+  up.getWorldPosition(A);
+  lo.getWorldPosition(Bp);
+  hand.getWorldPosition(Cp);
+  const l1 = A.distanceTo(Bp),
+    l2 = Bp.distanceTo(Cp),
+    d = Math.min(A.distanceTo(target), (l1 + l2) * 0.999),
+    dir = target.clone().sub(A).normalize(),
+    pole = Bp.clone().sub(A),
+    side = pole.sub(dir.clone().multiplyScalar(pole.dot(dir))).normalize(),
+    x = (l1 * l1 - l2 * l2 + d * d) / (2 * d),
+    h = Math.sqrt(Math.max(0, l1 * l1 - x * x));
+  hfAimBone(up, [A, Bp], A.clone().addScaledVector(dir, x).addScaledVector(side, h));
+  lo.getWorldPosition(Bp);
+  hand.getWorldPosition(Cp);
+  hfAimBone(lo, [Bp, Cp], A.clone().addScaledVector(dir, d));
+}
+function hfTwoHandIK(rec) {
+  const m = rec.model;
+  if (!IK_V) {
+    IK_V = [0, 1, 2, 3, 4, 5].map(() => new THREE.Vector3());
+    IK_Q = [new THREE.Quaternion(), new THREE.Quaternion(), new THREE.Quaternion()];
+  }
+  if (!rec.ik) {
+    const f = n => m.getObjectByName(n),
+      grip = f('Runeblade');
+    rec.ik =
+      grip && f('upperarm_l') && f('upperarm_r')
+        ? {
+            grip,
+            L: [f('upperarm_l'), f('lowerarm_l'), f('hand_l')],
+            R: [f('upperarm_r'), f('lowerarm_r'), f('hand_r')]
+          }
+        : false;
+  }
+  const k = rec.ik;
+  if (!k) return;
+  m.updateMatrixWorld(true);
+  const [up, lo, hand] = k.L,
+    sh = up.getWorldPosition(new THREE.Vector3()),
+    reach =
+      sh.distanceTo(lo.getWorldPosition(new THREE.Vector3())) +
+      hand.getWorldPosition(new THREE.Vector3()).distanceTo(lo.getWorldPosition(new THREE.Vector3())),
+    rh = k.R[2].getWorldPosition(new THREE.Vector3());
+  // main droite trop loin de l'épaule gauche : on la ramène vers le corps (le bras droit suit), l'arme avec
+  if (sh.distanceTo(rh) > reach * 0.8) {
+    hfArmIK(
+      ...k.R,
+      sh.clone().add(
+        rh
+          .clone()
+          .sub(sh)
+          .setLength(reach * 0.8)
+      )
+    );
+    m.updateMatrixWorld(true);
+  }
+  // main gauche sous la droite, sur la poignée
+  hfArmIK(up, lo, hand, k.grip.localToWorld(new THREE.Vector3(0, -0.11, 0)));
+}
 function hfCreateRecord(u) {
   if (!HF.enabled || HF.records.has(u.id)) return;
   const group = new THREE.Group();
@@ -1004,6 +1092,7 @@ function hfRender() {
       rec.group.position.y += Math.max(0, b) * 0.07;
     }
     if (rec.mixer) rec.mixer.update(dt);
+    if (u.cls === 'reaver' && rec.kit && u.alive && !u.form) hfTwoHandIK(rec);
     if (
       rec.action &&
       (rec.animKey === 'run' || rec.animKey === 'back') &&

@@ -211,7 +211,7 @@ assert.ok(read('src/render/environment.js').includes('b.position.set(u.rx ?? u.x
 assert.match(h3, /if \(!groups\.size\) return;/, 'silhouettes : pas de passe inutile');
 assert.match(read('src/render/world.js'), /CAM_VIEW\.dist = [^;]*camera\.dist/, 'zoom lissé');
 assert.match(h3, /rotation\.set\(castLean, ryaw, deathTilt \|\| rec\.lean\)/, 'inclinaison dans les virages');
-assert.match(h3, /ATTACK_HIT = \{ Sword_Attack/, 'frappe synchronisée avec les dégâts');
+assert.match(h3, /ATTACK_HIT = \{\s*Sword_Attack/, 'frappe synchronisée avec les dégâts');
 assert.match(
   read('src/game/combat.js'),
   /SCHOOL_COLOR\[school\][^;]*crit\)/,
@@ -518,5 +518,14 @@ assert.ok(
   'chargement immédiat, 3 s minimum'
 );
 assert.ok(!/stunSwirl[\s\S]{0,400}'cone'/.test(read('src/render/world.js')), 'étourdissement : cercles');
-assert.match(read('src/characters/kits.js'), /elf: \{[\s\S]*?neck_01: \[0\.95, 1\.18, 0\.95\][\s\S]*?thigh_l: \[0\.9, 1\.08, 0\.9\]/, 'elfes élancés');
+assert.match(
+  read('src/characters/kits.js'),
+  /elf: \{[\s\S]*?neck_01: \[0\.95, 1\.18, 0\.95\][\s\S]*?thigh_l: \[0\.9, 1\.08, 0\.9\]/,
+  'elfes élancés'
+);
+assert.ok(
+  h3.includes("names = [rec.leftHit ? 'Punch_Jab' : 'Punch_Cross', 'Sword_Attack']") &&
+    h3.includes("if (u.cls === 'reaver' && rec.kit && u.alive && !u.form) hfTwoHandIK(rec);"),
+  'voleur deux lames, chevalier à deux mains'
+);
 console.log('OK - spécifications validées (docs/SPEC.md)');
