@@ -725,3 +725,9 @@ assert.ok(
   read('src/input/controls.js').includes('e.code ? PREFS.keybinds.skills.indexOf(e.code) : -1'),
   'Unset : aucune touche'
 );
+// PV de base (+50 %)
+assert.deepEqual(
+  ['sentinel', 'reaver', 'warden', 'shade', 'warlock', 'oracle', 'arcanist'].map(c => C[c].hp),
+  [2400, 2175, 1875, 1770, 1740, 1620, 1470],
+  'PV de base'
+);
