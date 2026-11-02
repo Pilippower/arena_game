@@ -22,9 +22,9 @@ assert.equal(ctx.skillMotif('Bear Form'), 'paw', 'Bear Form = empreinte de patte
 assert.equal(skill('arcanist', 'Polymorph').cd, 0, 'Polymorph sans recharge');
 assert.equal(skill('warlock', 'Fear').cd, 0, 'Fear sans recharge');
 // Prêtre : Smite (moitié des dégâts du mage) et Holy Terror (fear de zone 10 m) ; chevalier de la mort sans Death Advance
-assert.equal(C.oracle.skills.map(s => s.n).join(), 'Flash Heal,Power Shield,Holy Terror,Divine Hymn,Smite');
+assert.equal(C.oracle.skills.map(s => s.n).join(), 'Flash Heal,Power Shield,Holy Terror,Divine Hymn,Smite,Pain');
 assert.ok(
-  Math.abs(skill('oracle', 'Smite').dmg * 2 - skill('arcanist', 'Arcane Bolt').dmg) <= 10,
+  Math.abs(skill('oracle', 'Smite').dmg * 2 - skill('arcanist', 'Frost Bolt').dmg) <= 10,
   'Smite = moitié de l’Arcane Bolt'
 );
 assert.equal(skill('oracle', 'Holy Terror').radius, 10);
@@ -47,6 +47,36 @@ assert.ok(
   'Hamstring 10, sans CD'
 );
 assert.ok(read('src/ui/skillbar.js').includes('function trinketTooltip'), 'infobulle du trinket');
+{
+  const names = cls => C[cls].skills.map(s => s.n).join();
+  assert.equal(names('arcanist'), 'Frost Bolt,Frost Nova,Counterspell,Arcane Barrier,Blink,Polymorph');
+  assert.equal(names('reaver'), 'Obliterate,Death Grip,Asphyxiate,Pillar of Frost,Death Coil');
+  assert.equal(names('warden'), 'Wrath,Entangling Roots,Rejuvenation,Moonfire,Regrowth,Cat Form,Bear Form');
+  assert.equal(names('warlock'), 'Shadow Bolt,Fear,Spell Lock,Corruption,Demonic Gate,Drain Life');
+  assert.ok(skill('arcanist', 'Frost Bolt').slow === 0.6 && skill('arcanist', 'Frost Bolt').dur === 12);
+  assert.ok(skill('arcanist', 'Arcane Barrier').shield === 300 && skill('arcanist', 'Arcane Barrier').cd === 15);
+  assert.equal(skill('oracle', 'Pain').dot, Math.round(C.oracle.hp * 0.15));
+  assert.equal(skill('warlock', 'Corruption').dot, Math.round(C.warlock.hp * 0.2));
+  assert.equal(skill('warden', 'Rejuvenation').hot, Math.round(C.warden.hp * 0.4));
+  assert.ok(skill('warden', 'Regrowth').cast === 1.15 && skill('warden', 'Regrowth').cd === 0);
+  assert.ok(skill('warden', 'Moonfire').dmg === 50 && skill('warden', 'Moonfire').dot === 125);
+  assert.equal(skill('warden', 'Demoralizing Roar').per, 15);
+  assert.equal(skill('shade', 'Cheap Shot').stun, 3);
+  for (const [cls, i, art] of [
+    ['arcanist', 0, 'arcane_bolt'],
+    ['arcanist', 3, 'arcane_power'],
+    ['warden', 3, 'starfall'],
+    ['warlock', 3, 'dark_soul'],
+    ['warden', 2, 'rejuvenation'],
+    ['warden', 4, 'regrowth']
+  ])
+    assert.ok(ctx.skillIconSVG(cls, i).includes(`spells/${art}.webp`), 'icône ' + art);
+  assert.match(
+    read('src/data/classes.js'),
+    /control\(t, 'stun', S\.stun, u, 'opener'\)|'opener'/,
+    'Cheap Shot : DR à part'
+  );
+}
 // Formes / camouflage
 assert.equal(ctx.FORM_INFO.cat.speed, 1.3, 'félin +30 % de vitesse');
 assert.equal(ctx.FORM_INFO.bear.hp, 1.4, 'ours +40 % PV');
@@ -204,9 +234,27 @@ assert.ok(read('index.html').includes('grid-template-rows:58px 1fr 84px;'), 'PC 
 // Buffs à côté de la barre de vie : icône du sort et temps restant (bouclier : absorption restante)
 run('src/ui/hud.js');
 {
-  const b = ctx.buffList({ cls: 'warlock', burst: 4, shield: 90, shieldName: 'Dark Soul', spellImmune: 0 });
-  assert.equal(b.length, 1, 'Dark Soul : une seule icône (dégâts + bouclier)');
-  assert.deepEqual([b[0].n, b[0].t, b[0].v], ['Dark Soul', 4, 90]);
+  const b = ctx.buffList({
+    cls: 'arcanist',
+    burst: 0,
+    shield: 90,
+    shieldName: 'Arcane Barrier',
+    spellImmune: 0,
+    auras: [{ n: 'Rejuvenation', kind: 'hot', rem: 7 }]
+  });
+  assert.equal(
+    b.map(x => `${x.n}:${x.v ?? x.t}`).join(),
+    'Arcane Barrier:90,Rejuvenation:7',
+    'bouclier + soin dans la durée'
+  );
+  assert.equal(
+    ctx
+      .debuffList({ auras: [{ n: 'Corruption', kind: 'dot', rem: 9 }] })
+      .map(x => x.n)
+      .join(),
+    'Corruption',
+    'dégâts dans la durée en débuff'
+  );
   const html = ctx.buffsHTML({ alive: true, cls: 'shade', spellImmune: 2.2, burst: 0, shield: 0 });
   assert.ok(html.includes('spells/cloak.webp') && html.includes('2.2'), 'Cloak : icône + temps restant');
   assert.ok(!read('src/ui/hud.js').includes('</div>${buffsHTML(u)}'), 'pas de buffs dans les cadres latéraux');
@@ -438,7 +486,7 @@ assert.ok(
   assert.ok(cb.includes('const SPELL_RANGE = 30;'), 'portée 30 m');
   assert.match(
     cb,
-    /if \(!\(u\.cast && u\.cast\.i === i && u\.cast\.end > now\(\)\)\) pay\(u, i\)/,
+    /if \(!\(u\.cast && u\.cast\.i === i && u\.cast\.end > now\(\) && !u\.cast\.channel\)\) pay\(u, i\)/,
     'ressource prise à la fin de l’incantation'
   );
   assert.match(

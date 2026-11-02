@@ -22,7 +22,7 @@ function drText(u) {
 // Auras au-dessus des personnages (barre de nom) : buffs à gauche de la barre de vie, débuffs à droite ;
 // icône du sort, temps restant (ou absorption restante d'un bouclier).
 // Lus dans l'état de l'unité, seule source de vérité : rien à tenir à jour dans le combat.
-const BURST_SPELL = { reaver: 'Pillar of Frost', arcanist: 'Arcane Power', shade: 'Vendetta', warlock: 'Dark Soul' };
+const BURST_SPELL = { reaver: 'Pillar of Frost', shade: 'Vendetta' };
 function buffList(u) {
   const b = [];
   if (u.burst > 0 && BURST_SPELL[u.cls]) b.push({ n: BURST_SPELL[u.cls], t: u.burst });
@@ -33,6 +33,7 @@ function buffList(u) {
     if (same) same.v = Math.ceil(u.shield);
     else b.push({ n, v: Math.ceil(u.shield) });
   }
+  for (const a of u.auras || []) if (a.kind === 'hot') b.push({ n: a.n, t: a.rem });
   if (u.stealth) b.push({ n: 'Stealth' });
   if (u.form) b.push({ n: u.form === 'cat' ? 'Cat Form' : 'Bear Form' });
   return b;
@@ -45,6 +46,7 @@ function debuffList(u) {
   for (const k of DEBUFF_KEYS) if (u[k] > 0 && src[k]) b.push({ n: src[k], t: u[k] });
   if (u.lockout?.until > now() && src.lockout) b.push({ n: src.lockout, t: u.lockout.until - now() });
   if (u.antiheal > 0.01 && src.antiheal) b.push({ n: src.antiheal, t: u.antiheal / 0.025 });
+  for (const a of u.auras || []) if (a.kind !== 'hot') b.push({ n: a.n, t: a.rem });
   return b;
 }
 function buffsHTML(u) {

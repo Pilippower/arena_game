@@ -63,6 +63,7 @@ function update(dt) {
     updateFearMovement(u, dt);
     updatePolyWander(u, dt);
     autoAttack(u, dt);
+    updateAuras(u, dt);
     // sol variable (pont, rampes) : on suit la surface, ou on tombe si elle disparaît sous les pieds
     const ground = groundAt(u);
     if (u.grounded) {
@@ -88,7 +89,26 @@ function update(dt) {
         u.drT[k] = 0;
       }
     }
-    if (u.cast && now() >= u.cast.end) {
+    // canalisation (Drain Life) : tic toutes les 0,5 s ; le lien n'exige plus la ligne de vue une fois lancé
+    if (u.cast?.channel) {
+      const ca = u.cast,
+        t = ca.target;
+      if (!t?.alive) u.cast = null;
+      else {
+        ca.tick += dt;
+        while (ca.tick >= 0.5 && u.cast) {
+          ca.tick -= 0.5;
+          SPELL_NOW = ca.name;
+          u.curSchool = 'shadow';
+          const h0 = t.hp;
+          damage(u, t, ca.value * 0.5);
+          if (h0 > t.hp) heal(u, u, h0 - t.hp);
+          fx('healBeam', t.x, (t.y || 0) + 1.2, t.z, [0.55, 1, 0.35], 0.55, 0.16, [u.x, (u.y || 0) + 1.4, u.z]);
+        }
+        if (u.cast && now() >= ca.end) u.cast = null;
+      }
+    }
+    if (u.cast && !u.cast.channel && now() >= u.cast.end) {
       const ca = u.cast;
       SPELL_NOW = ca.name;
       if (!(ca.target?.alive && los(u, ca.target))) {
@@ -105,6 +125,7 @@ function update(dt) {
           ]);
           u.curSchool = CLASS[u.cls].skills[ca.i]?.s || 'magic';
           damage(u, ca.target, ca.value);
+          if (ca.slow) applySlow(ca.target, ca.slow.pct, ca.slow.dur, true); // Frost Bolt : sans rendements décroissants
           spellImpactSfx(u, 'damage');
         } else if (ca.type === 'poly') {
           for (const e of state.units) if (e !== ca.target && e.poly > 0 && e.polyOwner === u.id) endPoly(e, false);
@@ -127,6 +148,7 @@ function update(dt) {
             ca.target.z
           ]);
           heal(u, ca.target, ca.value);
+          if (ca.hot) addAura(ca.target, u, ca.name, 'hot', ca.hot.total, ca.hot.dur, 'nature'); // Regrowth
           spellImpactSfx(u, 'heal');
         }
       }

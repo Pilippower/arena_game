@@ -29,10 +29,10 @@ const CLASS = {
     res: 'Mana',
     regen: 12,
     skills: [
-      { n: 'Arcane Bolt', cd: 1.5, c: 12 },
+      { n: 'Frost Bolt', cd: 1.5, c: 12 },
       { n: 'Frost Nova', cd: 9, c: 18 },
       { n: 'Counterspell', cd: 14, c: 10 },
-      { n: 'Arcane Power', cd: 24, c: 20 },
+      { n: 'Arcane Barrier', cd: 15, c: 20 },
       { n: 'Blink', cd: 15, c: 10 },
       { n: 'Polymorph', cd: 0, c: 18 }
     ],
@@ -52,7 +52,8 @@ const CLASS = {
       { n: 'Power Shield', cd: 8, c: 24 },
       { n: 'Holy Terror', cd: 24, c: 22 },
       { n: 'Divine Hymn', cd: 30, c: 45 },
-      { n: 'Smite', cd: 0, c: 10 }
+      { n: 'Smite', cd: 0, c: 10 },
+      { n: 'Pain', cd: 0, c: 15 }
     ],
     tags: ['heals', 'shields', 'support']
   },
@@ -69,7 +70,8 @@ const CLASS = {
       { n: 'Obliterate', cd: 5, c: 0 },
       { n: 'Death Grip', cd: 25, c: 15 },
       { n: 'Asphyxiate', cd: 12, c: 18 },
-      { n: 'Pillar of Frost', cd: 24, c: 25 }
+      { n: 'Pillar of Frost', cd: 24, c: 25 },
+      { n: 'Death Coil', cd: 15, c: 20 }
     ],
     tags: ['pressure', 'grip', 'melee']
   },
@@ -85,8 +87,9 @@ const CLASS = {
     skills: [
       { n: 'Wrath', cd: 0, c: 12 },
       { n: 'Entangling Roots', cd: 10, c: 16 },
-      { n: 'Barkskin', cd: 18, c: 22 },
-      { n: 'Starfall', cd: 20, c: 28 },
+      { n: 'Rejuvenation', cd: 0, c: 18 },
+      { n: 'Moonfire', cd: 0, c: 14 },
+      { n: 'Regrowth', cd: 0, c: 22 },
       { k: 'cat', n: 'Cat Form', cd: 0, c: 0 },
       { k: 'bear', n: 'Bear Form', cd: 0, c: 0 }
     ],
@@ -124,8 +127,9 @@ const CLASS = {
       { n: 'Shadow Bolt', cd: 1.6, c: 12 },
       { n: 'Fear', cd: 0, c: 18 },
       { n: 'Spell Lock', cd: 15, c: 12 },
-      { n: 'Dark Soul', cd: 25, c: 24 },
-      { n: 'Demonic Gate', cd: 15, c: 12 }
+      { n: 'Corruption', cd: 0, c: 14 },
+      { n: 'Demonic Gate', cd: 15, c: 12 },
+      { n: 'Drain Life', cd: 0, c: 20 }
     ],
     tags: ['DoT', 'fear', 'caster']
   }
@@ -174,6 +178,7 @@ const SPELL_ART = new Set(
     'ambush angelic_step arcane_bolt arcane_power asphyxiate backstab barkskin bear_form blink cat_form ' +
     'charge cloak counterspell dark_soul death_advance death_grip demonic_gate divine_hymn ' +
     'entangling_roots fear flash_heal frenzied_regeneration frost_nova hamstring human_form kidney_shot ' +
+    'rejuvenation regrowth cheap_shot ' +
     'maim maul mortal_strike obliterate pillar_of_frost polymorph power_shield pummel rake sap ' +
     'shadow_bolt shadowstep shield_wall shred silence spell_lock starfall stealth swipe vendetta ' +
     'wild_charge wrath'
@@ -226,7 +231,7 @@ function trinketIconVector() {
 const SKILL_META = {
   sentinel: [{ t: 'melee' }, { t: 'melee' }, { t: 'melee', kick: 1 }, { t: 'self' }, { t: 'charge' }],
   arcanist: [
-    { t: 'ranged', s: 'arcane' },
+    { t: 'ranged', s: 'frost' },
     { t: 'aoe', s: 'frost' },
     { t: 'ranged', s: 'arcane', kick: 1 },
     { t: 'self', s: 'arcane' },
@@ -238,14 +243,22 @@ const SKILL_META = {
     { t: 'heal', s: 'holy' },
     { t: 'aoe', s: 'shadow' },
     { t: 'self', s: 'holy' },
-    { t: 'ranged', s: 'holy' }
+    { t: 'ranged', s: 'holy' },
+    { t: 'ranged', s: 'shadow' }
   ],
-  reaver: [{ t: 'melee' }, { t: 'ranged', s: 'unholy' }, { t: 'ranged', s: 'unholy' }, { t: 'self', s: 'frost' }],
+  reaver: [
+    { t: 'melee' },
+    { t: 'ranged', s: 'unholy' },
+    { t: 'ranged', s: 'unholy' },
+    { t: 'self', s: 'frost' },
+    { t: 'ranged', s: 'shadow' }
+  ],
   warden: [
     { t: 'ranged', s: 'nature' },
     { t: 'ranged', s: 'nature' },
-    { t: 'self', s: 'nature' },
-    { t: 'aoe', s: 'arcane' },
+    { t: 'heal', s: 'nature' },
+    { t: 'ranged', s: 'arcane' },
+    { t: 'heal', s: 'nature' },
     { t: 'self' },
     { t: 'self' }
   ],
@@ -254,8 +267,9 @@ const SKILL_META = {
     { t: 'ranged', s: 'shadow' },
     { t: 'ranged', s: 'shadow' },
     { t: 'ranged', s: 'shadow', kick: 1 },
+    { t: 'ranged', s: 'shadow' },
     { t: 'self', s: 'shadow' },
-    { t: 'self', s: 'shadow' }
+    { t: 'ranged', s: 'shadow' }
   ]
 };
 for (const k in SKILL_META) SKILL_META[k].forEach((m, i) => Object.assign(CLASS[k].skills[i], m));
@@ -273,7 +287,7 @@ CLASS.warden.bars = {
   bear: [
     { k: 'maul', n: 'Maul', cd: 3, c: 0, t: 'melee', dmg: 120 },
     { k: 'swipe', n: 'Swipe', cd: 6, c: 0, t: 'aoe', dmg: 85, r: 5 },
-    { k: 'frenzied', n: 'Frenzied Regeneration', cd: 24, c: 0, t: 'self', heal: 380 },
+    { k: 'roar', n: 'Demoralizing Roar', cd: 20, c: 0, t: 'aoe' },
     { k: 'wildcharge', n: 'Wild Charge', cd: 14, c: 0, t: 'charge' },
     { k: 'cat', n: 'Cat Form', cd: 0, c: 0, t: 'self' },
     { k: 'human', n: 'Human Form', cd: 0, c: 0, t: 'self' }
@@ -283,6 +297,7 @@ CLASS.shade.bars = {
   stealth: [
     { k: 'ambush', n: 'Ambush', cd: 0, c: 30, t: 'melee', dmg: 330 },
     { k: 'sap', n: 'Sap', cd: 0, c: 25, t: 'ranged', range: 5, dur: 8 },
+    { k: 'cheapshot', n: 'Cheap Shot', cd: 0, c: 30, t: 'melee' },
     { k: 'stealth', n: 'Stealth', cd: 0, c: 0, t: 'self' }
   ]
 };
@@ -361,7 +376,8 @@ function useSpecialSkill(u, i) {
     melee = !!t && d < 2.45,
     c = CLASS[u.cls];
   const k = S.k;
-  let ok = true;
+  let ok = true,
+    paid = false;
   if (k === 'cat' || k === 'bear') setForm(u, k);
   else if (k === 'human') setForm(u, null);
   else if (k === 'stealth') {
@@ -392,10 +408,21 @@ function useSpecialSkill(u, i) {
     hit.forEach(e => damage(u, e, S.dmg));
     fx('slash', u.x, (u.y || 0) + 0.9, u.z, c.accent, 0.9, 0.5);
     action(u, 'melee');
-  } else if (k === 'frenzied') {
-    heal(u, u, S.heal);
-    fx('holyBurst', u.x, 0.1, u.z, [1, 0.6, 0.25], 0.9, 1);
+  } else if (k === 'roar') {
+    // cri démoralisant : les ennemis à 8 m infligent 15 dégâts physiques de moins par seconde (aura « weaken »)
+    for (const e of enemies(u)) if (d2(u, e) < S.radius) addAura(e, u, S.n, 'weaken', S.per, S.dur);
+    fx('ring', u.x, 0.1, u.z, [1, 0.55, 0.2], 0.9, S.radius / 4);
     action(u, 'cast');
+  } else if (k === 'cheapshot') {
+    // depuis le camouflage : étourdit 3 s ; rendements décroissants à part (pas partagés avec Kidney Shot)
+    if (!melee) return false;
+    face(u, t);
+    u.res = Math.max(0, u.res - (S.c || 0));
+    paid = true;
+    setStealth(u, false);
+    control(t, 'stun', S.stun, u, 'opener');
+    fx('stun', t.x, (t.y || 0) + 1.45, t.z, c.accent, 0.55, 0.7);
+    action(u, 'melee');
   } else if (k === 'wildcharge') {
     ok = beginCharge(u, t, { cc: 'root', dur: 2 });
     if (!ok) return false;
@@ -415,7 +442,7 @@ function useSpecialSkill(u, i) {
   if (!ok) return false;
   if (!['cat', 'bear', 'human'].includes(k)) fx('ring', u.x, 0.12, u.z, c.accent, 0.4, 0.6);
   spellSfxKind(u, S);
-  pay(u, i);
+  if (!paid) u.res = Math.max(0, u.res - (S.c || 0)); // coût du sort lancé (la barre a pu changer : camouflage)
   u.cd[i] = S.cd;
   if (!(k === 'stealth' && !u.stealth)) u.gcd = u.gcdMax = 1;
   updateUI();
@@ -430,7 +457,7 @@ function aiSpecial(u, P) {
   };
   if (u.cls === 'warden') {
     if (!u.form) {
-      const i = hpPct(u) < 0.4 ? 5 : 4;
+      const i = ready(hpPct(u) < 0.4 ? 'bear' : 'cat');
       if (aiCanUse(u, i) && useSkill(u, i)) return true;
       return false;
     }
@@ -454,6 +481,10 @@ function aiSpecial(u, P) {
     if (healer && healer !== focus && Math.random() < P.cc && d2(u, healer) < 5) {
       const i = ready('sap');
       if (i >= 0 && aiCastOn(u, i, healer)) return true;
+    }
+    if (focus && d2(u, focus) < 2.45 && (focus.dr.opener ?? 1) > 0 && !ccd(focus)) {
+      const i = ready('cheapshot');
+      if (i >= 0 && aiCastOn(u, i, focus)) return true;
     }
     if (focus && d2(u, focus) < 2.45) {
       const i = ready('ambush');
@@ -634,10 +665,14 @@ const SPELLS = {
     stun: 2,
     text: (S, D) => `Rush an enemy 2.8–15 m away: ${D(S.dmg)} damage and stuns for ${sec(S.stun)}.`
   },
-  'Arcane Bolt': {
+  'Frost Bolt': {
     cast: 1.35,
     dmg: 205,
-    text: (S, D) => `${sec(S.cast)} cast: arcane missile dealing ${D(S.dmg)} damage.`
+    slow: 0.6,
+    dur: 12,
+    art: 'arcane_bolt', // l'illustration de l'utilisateur était déjà une flèche de givre
+    text: (S, D) =>
+      `${sec(S.cast)} cast: ${D(S.dmg)} frost damage and slows the target by ${pct(S.slow)} for ${sec(S.dur)} (no diminishing returns).`
   },
   'Frost Nova': {
     dmg: 90,
@@ -648,7 +683,11 @@ const SPELLS = {
       `Freezes enemies within ${S.radius} m: ${D(S.dmg)} damage to the target, ${D(S.dmg2)} to others, frozen ${sec(S.root)}. Your spells always crit frozen targets.`
   },
   Counterspell: { text: () => `Interrupts the target’s cast and locks that school of magic for 4 s.` },
-  'Arcane Power': { burst: 8, text: S => `Increases your damage by 35% for ${sec(S.burst)}.` },
+  'Arcane Barrier': {
+    shield: 300,
+    art: 'arcane_power',
+    text: S => `Instant: an arcane barrier absorbs <b class="tHeal">${S.shield}</b> damage.`
+  },
   Blink: { dist: 7, text: S => `Teleports ${S.dist} m forward; breaks roots.` },
   Polymorph: {
     cast: 1.5,
@@ -691,14 +730,38 @@ const SPELLS = {
     text: (S, D) => `Grabs an enemy within 30 m and pulls them in front of you: ${D(S.dmg)} damage.`
   },
   Asphyxiate: { dmg: 65, stun: 2.5, text: (S, D) => `Ranged: ${D(S.dmg)} damage and stuns for ${sec(S.stun)}.` },
+  Pain: {
+    dot: Math.round(CLASS.oracle.hp * 0.15),
+    dur: 15,
+    text: (S, D) => `Instant: ${D(S.dot)} shadow damage over ${sec(S.dur)}.`
+  },
+  'Death Coil': {
+    pct: 0.15,
+    text: S => `Hurls a ball of shadow: steals ${pct(S.pct)} of the target's maximum health (damages it and heals you).`
+  },
   'Pillar of Frost': { burst: 7, text: S => `+35% damage and +18% speed for ${sec(S.burst)}.` },
   Wrath: { cast: 1.5, dmg: 175, text: (S, D) => `${sec(S.cast)} cast: ${D(S.dmg)} nature damage.` },
   'Entangling Roots': { root: 5, text: S => `Roots grip the target: rooted for ${sec(S.root)}.` },
-  Barkskin: { shield: 420, text: S => `Bark shield absorbing <b class="tHeal">${S.shield}</b> damage.` },
-  Starfall: {
-    dmg: 135,
-    radius: 5.3,
-    text: (S, D) => `Falling stars: ${D(S.dmg)} damage to all enemies within ${S.radius} m.`
+  // effets dans la durée en % des PV de base de la classe (demande de l'utilisateur)
+  Rejuvenation: {
+    hot: Math.round(CLASS.warden.hp * 0.4),
+    dur: 15,
+    text: (S, D, H) => `Instant: heals your friendly target for ${H(S.hot)} over ${sec(S.dur)}.`
+  },
+  Regrowth: {
+    cast: 1.15,
+    heal: Math.round(CLASS.warden.hp * 0.15),
+    hot: Math.round(CLASS.warden.hp * 0.003 * 15),
+    dur: 15,
+    text: (S, D, H) =>
+      `${sec(S.cast)} cast: heals your friendly target for ${H(S.heal)}, then ${H(S.hot)} over ${sec(S.dur)}.`
+  },
+  Moonfire: {
+    dmg: 50,
+    dot: 125,
+    dur: 15,
+    art: 'starfall',
+    text: (S, D) => `Instant: ${D(S.dmg)} arcane damage, then ${D(S.dot)} over ${sec(S.dur)}.`
   },
   'Cat Form': {
     text: (S, D) => `Cat form: +30% speed, fast melee attacks (${D(42)} every 1 s).`
@@ -713,7 +776,17 @@ const SPELLS = {
   'Wild Charge': { text: (S, D) => `Pounce on an enemy 2.8–15 m away: ${D(55)} damage and roots for 2 s.` },
   Maul: { text: (S, D) => `Paw strike: ${D(S.dmg)} damage (18% crit chance).` },
   Swipe: { text: (S, D) => `Swipe: ${D(S.dmg)} damage to all enemies within ${S.r} m.` },
-  'Frenzied Regeneration': { text: (S, D, H) => `Heals you for ${H(S.heal)}.` },
+  'Demoralizing Roar': {
+    radius: 8,
+    per: 15,
+    dur: 10,
+    text: S => `Enemies within ${S.radius} m deal ${S.per} less physical damage per second for ${sec(S.dur)}.`
+  },
+  'Cheap Shot': {
+    stun: 3,
+    text: S =>
+      `From stealth: stuns the target for ${sec(S.stun)}. Separate diminishing returns from Kidney Shot. Breaks stealth.`
+  },
   Backstab: { dmg: 150, crit: 0.22, text: (S, D) => `${D(S.dmg)} damage (${pct(S.crit)} crit chance).` },
   Cloak: {
     dur: 5,
@@ -741,10 +814,17 @@ const SPELLS = {
     text: S => `${sec(S.cast)} cast: the target flees in terror for ${sec(S.dur)} (a big hit breaks it).`
   },
   'Spell Lock': { text: () => `Interrupts the target’s cast and locks that school of magic for 4 s.` },
-  'Dark Soul': {
-    burst: 8,
-    shield: 180,
-    text: S => `+35% damage for ${sec(S.burst)} and a <b class="tHeal">${S.shield}</b> shield.`
+  Corruption: {
+    dot: Math.round(CLASS.warlock.hp * 0.2),
+    dur: 15,
+    art: 'dark_soul',
+    text: (S, D) => `Instant: ${D(S.dot)} shadow damage over ${sec(S.dur)}.`
+  },
+  'Drain Life': {
+    dur: 6,
+    dps: 50,
+    text: (S, D, H) =>
+      `Channeled ${sec(S.dur)}: a link drains ${D(S.dps)} health per second from the target and heals you for the same amount. Once started, the link follows the target even behind pillars.`
   },
   'Demonic Gate': { dist: 5, text: S => `Teleports ${S.dist} m forward.` }
 };

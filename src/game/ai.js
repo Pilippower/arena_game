@@ -50,15 +50,15 @@ const AI_PROFILES = {
 // Rôle de chaque sort dans la stratégie.
 const AI_ROLE = {
   sentinel: { melee: 1, dmg: 0, slow: 1, kick: 2, def: 3, gap: 4 },
-  arcanist: { dmg: 0, peel: 1, kick: 2, burst: 3, escape: 4, cc: 5, ccHealer: 1 },
-  oracle: { healer: 1, heal: 0, shield: 1, fear: 2, mass: 3, dmg: 4 },
-  reaver: { melee: 1, dmg: 0, grip: 1, stun: 2, kickStun: 1, burst: 3 },
-  warden: {},
+  arcanist: { dmg: 0, peel: 1, kick: 2, def: 3, escape: 4, cc: 5, ccHealer: 1 },
+  oracle: { healer: 1, heal: 0, shield: 1, fear: 2, mass: 3, dmg: 4, dot: 5 },
+  reaver: { melee: 1, dmg: 0, grip: 1, stun: 2, kickStun: 1, burst: 3, coil: 4 },
+  warden: { dmg: 0, root: 1, hot: 2, dot: 3, selfHeal: 4 },
   warden_cat: { melee: 1, dmg: 0, slow: 1, stun: 2, kickStun: 2, gap: 3 },
   warden_bear: { melee: 1, dmg: 0, aoe: 1, def: 2, gap: 3 },
   shade_stealth: { melee: 1 },
   shade: { melee: 1, dmg: 0, def: 1, stun: 2, kickStun: 1, burst: 3, gap: 4 },
-  warlock: { dmg: 0, cc: 1, ccHealer: 1, kick: 2, burst: 3, escape: 4 }
+  warlock: { dmg: 0, cc: 1, ccHealer: 1, kick: 2, dot: 3, escape: 4, drain: 5 }
 };
 let DIFFICULTY = (() => {
   try {
@@ -391,6 +391,21 @@ function ai(u, dt) {
     )
       return;
     if (R.gap != null && R.melee && d > 6 && d < 15 && aiCanUse(u, R.gap) && useSkill(u, R.gap)) return;
+    // sorts dans la durée, vol de vie, soins du druide
+    const inReach = d < SPELL_RANGE && los(u, t) && !(t.poly > 0);
+    if (R.selfHeal != null && hpPct(u) < 0.5 && aiCanUse(u, R.selfHeal) && useSkill(u, R.selfHeal)) return;
+    if (
+      R.hot != null &&
+      hpPct(u) < 0.85 &&
+      !auraOf(u, skillsOf(u)[R.hot].n, u) &&
+      aiCanUse(u, R.hot) &&
+      useSkill(u, R.hot)
+    )
+      return;
+    if (R.dot != null && inReach && !auraOf(t, skillsOf(u)[R.dot].n, u) && aiCanUse(u, R.dot) && useSkill(u, R.dot))
+      return;
+    if (R.coil != null && inReach && aiCanUse(u, R.coil) && useSkill(u, R.coil)) return;
+    if (R.drain != null && inReach && hpPct(u) < 0.7 && aiCanUse(u, R.drain) && useSkill(u, R.drain)) return;
     if (R.dmg != null && !healer && aiCanUse(u, R.dmg) && !(t.poly > 0) && useSkill(u, R.dmg)) return;
     // prêtre : Holy Terror quand des mêlées le serrent, Smite quand personne n'a besoin de soins
     if (R.fear != null && meleeOnMe.length && aiCanUse(u, R.fear) && useSkill(u, R.fear)) return;

@@ -39,6 +39,14 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Boucliers (Power Shield, Shield Wall, Trinket…) : les dégâts absorbés comptent comme soins du poseur dans le récapitulatif. 🧪
 - Étourdissement : deux cercles jaunes lumineux au-dessus de la tête (pas de bulles), qui tournent en sens contraire. 🧪
 - Début de match : écran de chargement affiché dès le clic sur Play (aucune image du jeu avant), gardé **au moins 3 s** ; IA, chrono et déplacements arrêtés tant qu'il est affiché. 🧪
+- Sorts (2026-11-02) — effets dans la durée = **auras** (`addAura` / `updateAuras`, tic chaque seconde, soins comptés au récap, icône en buff/débuff au-dessus du personnage) :
+  - Mage : **Frost Bolt** remplace Arcane Bolt (mêmes dégâts, ralentit 60 % 12 s sans rendements décroissants, icône de flèche de givre) ; **Arcane Barrier** remplace Arcane Power (bouclier 300, 15 s, icône d'Arcane Power).
+  - Prêtre : **Pain** (dégâts dans la durée = 15 % des PV de base du prêtre sur 15 s, sans dégât initial).
+  - Chevalier de la mort : **Death Coil** (boule d'ombre, vole 15 % des PV max de la cible, 15 s).
+  - Démoniste : **Corruption** remplace Dark Soul (20 % des PV de base du démoniste sur 15 s, icône de Dark Soul) ; **Drain Life** (canalisé 6 s, vol de vie 50/s compté en soins, le lien suit la cible même derrière un pilier une fois lancé ; bouger, sauter, étourdissement ou interruption le coupent).
+  - Druide : **Rejuvenation** remplace Barkskin (40 % des PV de base sur 15 s) ; **Regrowth** (1,15 s, 15 % direct puis 0,3 %/s pendant 15 s, sans recharge) ; **Moonfire** remplace Starfall (50 puis 125 sur 15 s, icône de Starfall) ; ours : **Demoralizing Roar** remplace Frenzied Regeneration (ennemis à 8 m : −15 dégâts physiques par seconde de cadence, 10 s).
+  - Voleur camouflé : **Cheap Shot** (étourdit 3 s, rendements décroissants séparés de Kidney Shot).
+  - Icônes fournies par l'utilisateur : `assets_src/ui/spells_extra/` (Rejuvenation, Regrowth, Cheap Shot). L'IA utilise ces sorts. 🧪
 - Sort qui échoue faute de ligne de vue : recharge rendue (la ressource n'a pas été prise).
 - Prêtre : **Smite** (1,5 s, 100 dégâts sacrés = moitié de l'Arcane Bolt du mage, icône d'Angelic Step) remplace Angelic Step ; **Holy Terror** (instantané : tous les ennemis à 10 m fuient **6 s**, rendements décroissants habituels, icône de Silence) remplace Silence. L'IA s'en sert (Holy Terror contre les mêlées au contact, Smite quand personne n'a besoin de soins). 🧪
 - Chevalier de la mort : plus de Death Advance (il a déjà Death Grip). 🧪

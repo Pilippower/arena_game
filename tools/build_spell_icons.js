@@ -119,5 +119,18 @@ function findFrames(data, W, H) {
         .toFile(path.join(out, slug(NAMES[r][c]) + '.webp'));
       done.push(slug(NAMES[r][c]));
     }
+  // icônes fournies une par une (assets_src/ui/spells_extra/<sort>.png, cadre décoratif autour) : intérieur du cadre
+  const EXTRA = path.join(root, 'assets_src/ui/spells_extra');
+  if (fs.existsSync(EXTRA))
+    for (const f of fs.readdirSync(EXTRA).filter(f => f.endsWith('.png'))) {
+      const m = await sharp(path.join(EXTRA, f)).metadata(),
+        inset = Math.round(m.width * 0.13);
+      await sharp(path.join(EXTRA, f))
+        .extract({ left: inset, top: inset, width: m.width - 2 * inset, height: m.height - 2 * inset })
+        .resize(128, 128)
+        .webp({ quality: 88 })
+        .toFile(path.join(out, f.replace('.png', '.webp')));
+      done.push(f.replace('.png', ''));
+    }
   console.log(done.length + ' icônes : ' + done.join(' '));
 })();

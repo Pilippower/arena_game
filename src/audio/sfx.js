@@ -180,20 +180,21 @@ function sfxForSkill(u, S, i) {
   const n = S.n || '',
     k = S.k;
   if (S.kick) return SFX.kick(u);
-  if (/Heal|Hymn|Frenzied/.test(n)) return SFX.holy(u, /Hymn/.test(n));
-  if (/Shield|Barkskin|Cloak|Shield Wall/.test(n)) return SFX.shield(u);
+  if (/Heal|Hymn|Rejuvenation|Regrowth/.test(n)) return SFX.holy(u, /Hymn/.test(n));
+  if (/Shield|Barrier|Cloak|Shield Wall/.test(n)) return SFX.shield(u);
   if (/Charge/.test(n)) return SFX.charge(u);
   if (/Frost Nova/.test(n)) return SFX.frost(u);
   if (/Blink|Step|Advance|Gate|Shadowstep/.test(n) || k === 'stealth' || k === 'cat' || k === 'bear' || k === 'human')
     return SFX.whoosh(u);
-  if (/Power|Pillar|Vendetta|Dark Soul/.test(n)) return SFX.power(u);
+  if (/Pillar|Vendetta|Roar/.test(n)) return SFX.power(u);
   if (S.t === 'melee' || k === 'swipe') {
     SFX.swing(u, true);
     if (!/Sap/.test(n)) SFX.meleeHit(u, true);
     return;
   }
-  if (/Sap|Maim|Kidney|Asphyx|Silence|Terror|Roots|Grip/.test(n)) return SFX.cc(u);
-  if (/Starfall|Swipe/.test(n)) return SFX.spellHit(u, 'arcane');
+  if (/Sap|Maim|Kidney|Cheap|Asphyx|Silence|Terror|Roots|Grip/.test(n)) return SFX.cc(u);
+  if (/Moonfire|Swipe|Coil/.test(n)) return SFX.spellHit(u, 'arcane');
+  if (/Pain|Corruption|Drain/.test(n)) return SFX.cc(u);
   if (u.cast) return SFX.castStart(u, S.s);
   SFX.spellHit(u, S.s);
 }

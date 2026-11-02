@@ -232,6 +232,7 @@ function netUnitState(u) {
     at: u.actionType,
     mob: u.mobility?.type || (u.mobility ? 'move' : null),
     tg: netIdx(u.target),
+    au: (u.auras || []).map(a => ({ n: a.n, k: a.kind, r: r2(a.rem), s: netIdx(a.src) })),
     ds: u.debuffSpell || null,
     lo: u.lockout && u.lockout.until > now() ? r2(u.lockout.until - now()) : 0,
     ah: r2(u.antiheal || 0),
@@ -345,6 +346,7 @@ const NET_COPY = u => s => {
   u.actionType = s.at;
   u.mobility = s.mob ? { type: s.mob } : null;
   u.target = state.units[s.tg] || null;
+  u.auras = (s.au || []).map(a => ({ n: a.n, kind: a.k, rem: a.r, src: state.units[a.s] }));
   u.debuffSpell = s.ds;
   u.lockout = s.lo ? { until: now() + s.lo } : null;
   u.antiheal = s.ah;
