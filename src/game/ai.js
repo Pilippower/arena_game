@@ -592,6 +592,7 @@ function playerMove(dt) {
     p.moving = true;
     return;
   }
+  keyboardTurn(dt);
   // En l'air (saut ou chute) : la trajectoire du décollage est gardée jusqu'à l'atterrissage, les touches ne la
   // changent plus (seul le regard peut tourner).
   if (!p.grounded) {

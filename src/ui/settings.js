@@ -16,7 +16,9 @@ function renderBindGrid() {
     ['forward', 'Move forward'],
     ['back', 'Move back'],
     ['left', 'Strafe left'],
-    ['right', 'Strafe right']
+    ['right', 'Strafe right'],
+    ['turnLeft', 'Turn left'],
+    ['turnRight', 'Turn right']
   ];
   box.innerHTML =
     MOVES.map(([k, n]) => `<span>${n}</span>${btn('move', k, PREFS.keybinds.move[k])}`).join('') +

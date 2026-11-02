@@ -11,6 +11,8 @@ function setMoveKey(e, down) {
       [mv.back]: 's',
       [mv.left]: 'a',
       [mv.right]: 'd',
+      ...(mv.turnLeft && { [mv.turnLeft]: 'turnleft' }),
+      ...(mv.turnRight && { [mv.turnRight]: 'turnright' }),
       ArrowUp: 'arrowup',
       ArrowDown: 'arrowdown',
       ArrowLeft: 'arrowleft',
@@ -83,6 +85,17 @@ window.addEventListener('keyup', e => setMoveKey(e, false));
 window.addEventListener('blur', () => {
   if (state) state.keys = {};
 });
+// Tourner au clavier (Turn left / Turn right, non réglés par défaut) : même rotation qu'un glisser au clic droit
+// (GameLogic.applyLook, convention validée), personnage et caméra ensemble ; ~180°/s.
+const TURN_PX_PER_S = Math.PI / 0.0045;
+function keyboardTurn(dt) {
+  const k = state?.keys,
+    dir = (k?.turnright ? 1 : 0) - (k?.turnleft ? 1 : 0);
+  if (!dir) return;
+  const next = GameLogic.applyLook(camera.yaw, camera.pitch, dir * TURN_PX_PER_S * dt, 0);
+  camera.yaw = next.yaw;
+  state.player.yaw = camera.yaw;
+}
 // Rotation de la caméra. `looking` (clic droit) tourne aussi le personnage ; `orbiting` (glisser au clic gauche) tourne la caméra seule.
 let orbiting = false;
 function applyLook(dx, dy) {

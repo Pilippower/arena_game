@@ -496,8 +496,8 @@ assert.ok(
     'raccourcis : 5 = A/Q, 6 = E'
   );
   assert.ok(
-    st.includes("move: { forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD' }"),
-    'déplacements réglables'
+    st.includes("move: { forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', turnLeft: '', turnRight: '' }"),
+    'déplacements réglables, tourner à gauche / à droite non réglés par défaut'
   );
   assert.ok(
     read('src/input/controls.js').includes('const mv = PREFS.keybinds.move'),
@@ -791,4 +791,9 @@ assert.ok(read('src/audio/sfx.js').includes("cat ? 'snarl_cat' : 'roar_bear'"), 
 assert.ok(
   read('assets/audio/LICENSES.md').includes('roar_bear') && read('assets/audio/LICENSES.md').includes('snarl_cat'),
   'licences des cris de bêtes'
+);
+// Tourner au clavier : même rotation que le glisser au clic droit (convention validée)
+assert.ok(
+  read('src/input/controls.js').includes('GameLogic.applyLook(camera.yaw, camera.pitch, dir * TURN_PX_PER_S * dt, 0)'),
+  'tourner au clavier'
 );

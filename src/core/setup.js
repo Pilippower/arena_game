@@ -26,7 +26,8 @@ const DEFAULT_PREFS = {
   keybinds: {
     skills: ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'KeyQ', 'KeyE', 'Digit5'],
     trinket: 'KeyR',
-    move: { forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD' }
+    // tourner à gauche / à droite au clavier : non réglé par défaut (« Unset »)
+    move: { forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', turnLeft: '', turnRight: '' }
   },
   ui: {}
 };
