@@ -33,11 +33,19 @@ window.addEventListener('keydown', e => {
       renderBindGrid();
       return;
     }
-    assignCapturedBind(e.code);
+    // modificateur seul : on attend la touche (Shift + E…) ; déplacements : touche simple (tenue en continu)
+    if (isModifierCode(e.code)) {
+      if (captureBind.type !== 'move') $('bindStatus').textContent = `${e.code.replace(/(Left|Right)$/, '')} + …`;
+      return;
+    }
+    assignCapturedBind(captureBind.type === 'move' ? e.code : bindCombo(e));
     return;
   }
   if (settingsOpen) return;
-  if (setMoveKey(e, true)) return;
+  // une combinaison réglée (ex. Shift + W) passe avant le déplacement de la touche seule
+  const comboSkill = e.ctrlKey || e.altKey || e.shiftKey ? PREFS.keybinds.skills.indexOf(bindCombo(e)) : -1,
+    comboTrinket = (e.ctrlKey || e.altKey || e.shiftKey) && bindCombo(e) === PREFS.keybinds.trinket;
+  if (comboSkill < 0 && !comboTrinket && setMoveKey(e, true)) return;
   if (!state || $('overlay').style.display !== 'none') return;
   if (e.code === 'Tab') {
     e.preventDefault();
@@ -49,14 +57,14 @@ window.addEventListener('keydown', e => {
     }
     return;
   }
-  const skillIndex = e.code ? PREFS.keybinds.skills.indexOf(e.code) : -1;
+  const skillIndex = bindIndex(PREFS.keybinds.skills, e);
   if (skillIndex >= 0) {
     e.preventDefault();
     const o = slotOrder(state.player);
     if (o[skillIndex] != null) tryPlayerSkill(o[skillIndex]);
     return;
   }
-  if (e.code && e.code === PREFS.keybinds.trinket) {
+  if (bindIndex([PREFS.keybinds.trinket], e) === 0) {
     e.preventDefault();
     useTrinket(state.player);
     return;

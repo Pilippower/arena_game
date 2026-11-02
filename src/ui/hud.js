@@ -150,10 +150,10 @@ function renderSkillBar(p) {
       order
         .map((i, slot) => {
           const s = bar[i];
-          return `<button class="skill" data-i="${i}" data-slot="${slot}"><span class="icon">${skillIconSVG(p.cls, i, s)}</span><span class="cdw"></span><span class="skillName">${s.n}</span><span class="cost">${s.c || ''}</span><span class="key">${keyLabel(PREFS.keybinds.skills[slot])}</span></button>`;
+          return `<button class="skill" data-i="${i}" data-slot="${slot}"><span class="icon">${skillIconSVG(p.cls, i, s)}</span><span class="cdw"></span><span class="skillName">${s.n}</span><span class="cost">${s.c || ''}</span><span class="key">${keyLabel(PREFS.keybinds.skills[slot], true)}</span></button>`;
         })
         .join('') +
-      `<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(PREFS.keybinds.trinket)}</span><span class="cdw"></span></button>`;
+      `<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(PREFS.keybinds.trinket, true)}</span><span class="cdw"></span></button>`;
     box.querySelectorAll('.skill[data-i]').forEach(b => {
       b.onclick = () => {
         if (!MOBILE.enabled) tryPlayerSkill(+b.dataset.i);

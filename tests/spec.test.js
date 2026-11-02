@@ -722,7 +722,8 @@ assert.ok(read('src/game/ai.js').includes('u.aiShrine = true'), 'IA : va cherche
 // Réglages : une touche reprise rend l'ancienne action « Unset » (pas de permutation)
 assert.ok(read('src/ui/settings.js').includes("if (other) set(other, '');"), 'touche reprise : ancienne action Unset');
 assert.ok(
-  read('src/input/controls.js').includes('e.code ? PREFS.keybinds.skills.indexOf(e.code) : -1'),
+  read('src/core/setup.js').includes('if (!combo) return -1;') &&
+    read('src/input/controls.js').includes('bindIndex(PREFS.keybinds.skills, e)'),
   'Unset : aucune touche'
 );
 // PV de base (+50 %)
@@ -731,3 +732,28 @@ assert.deepEqual(
   [2400, 2175, 1875, 1770, 1740, 1620, 1470],
   'PV de base'
 );
+// Raccourcis combinés (Shift + E…) : la combinaison exacte d'abord, sinon la touche seule
+{
+  const vm = require('node:vm'),
+    src = read('src/core/setup.js'),
+    c = {};
+  vm.createContext(c);
+  vm.runInContext(
+    [
+      /const BIND_MODS = \[[\s\S]*?\];/,
+      /const isModifierCode[^\n]*/,
+      /function bindCombo[\s\S]*?\n\}/,
+      /function bindIndex[\s\S]*?\n\}/
+    ]
+      .map(re => src.match(re)[0])
+      .join('\n'),
+    c
+  );
+  const ev = (code, mods = {}) => ({ code, shiftKey: false, ctrlKey: false, altKey: false, ...mods });
+  const list = ['Digit1', 'KeyE', 'Shift+KeyE', 'Ctrl+Digit1'];
+  assert.equal(c.bindIndex(list, ev('KeyE', { shiftKey: true })), 2, 'Shift + E');
+  assert.equal(c.bindIndex(list, ev('KeyE')), 1, 'E seul');
+  assert.equal(c.bindIndex(list, ev('Digit1', { ctrlKey: true })), 3, 'Ctrl + 1');
+  assert.equal(c.bindIndex(list, ev('Digit1', { shiftKey: true })), 0, 'Shift + 1 non réglé : touche seule');
+  assert.equal(c.bindCombo(ev('ShiftLeft', { shiftKey: true })), '', 'modificateur seul');
+}

@@ -78,7 +78,37 @@ try {
     if (typeof updateUI === 'function' && state) updateUI();
   });
 } catch (_) {}
-function keyLabel(code) {
+// Raccourcis combinés (sorts et trinket) : « Shift+KeyE », « Ctrl+Digit1 », « Alt+KeyQ »… (modificateurs dans cet ordre).
+const BIND_MODS = [
+  ['ctrlKey', 'Ctrl'],
+  ['altKey', 'Alt'],
+  ['shiftKey', 'Shift']
+];
+const isModifierCode = code => /^(Shift|Control|Alt|Meta)(Left|Right)$/.test(code || '');
+// combinaison pressée (touche + modificateurs tenus) ; '' pour un modificateur seul
+function bindCombo(e) {
+  if (!e.code || isModifierCode(e.code)) return '';
+  return (
+    BIND_MODS.filter(([k]) => e[k])
+      .map(([, n]) => n + '+')
+      .join('') + e.code
+  );
+}
+// emplacement réglé pour cette touche : la combinaison exacte d'abord, sinon la touche seule (comme avant)
+function bindIndex(list, e) {
+  const combo = bindCombo(e);
+  if (!combo) return -1;
+  const i = list.indexOf(combo);
+  return i >= 0 ? i : e.ctrlKey || e.altKey || e.shiftKey ? list.indexOf(e.code) : -1;
+}
+// libellé : « Shift + E » (short : « ⇧E » sur la barre de sorts)
+function keyLabel(code, short = false) {
+  if (code && code.includes('+')) {
+    const parts = code.split('+'),
+      key = keyLabel(parts.pop(), short);
+    if (short) return parts.map(m => ({ Shift: '⇧', Ctrl: '^', Alt: 'Alt' })[m] || m).join('') + key;
+    return [...parts, key].join(' + ');
+  }
   const lay = KEY_LAYOUT?.get?.(code);
   if (lay && /^Key[A-Z]$/.test(code)) return lay.toUpperCase(); // chiffres : toujours 1, 2, 3…
   const m = {

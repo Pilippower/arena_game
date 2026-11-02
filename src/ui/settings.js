@@ -34,7 +34,8 @@ function renderBindGrid() {
 }
 function assignCapturedBind(code) {
   if (!captureBind) return false;
-  if (RESERVED_BIND_CODES.has(code)) {
+  if (!code) return true;
+  if (RESERVED_BIND_CODES.has(code.split('+').pop())) {
     $('bindStatus').textContent = `${keyLabel(code)} is reserved for movement/gameplay.`;
     return true;
   }
