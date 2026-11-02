@@ -609,8 +609,10 @@ assert.match(
 }
 // Fin de match : flammes animées sur les flammes peintes des torches
 assert.ok(
-  read('src/ui/results.js').includes('[30, 168]') && read('src/ui/results.js').includes('[696, 168]'),
-  'torches de la défaite'
+  ['[30, 168]', '[696, 168]', '[37, 176]', '[859, 176]', 'flame: 1.6'].every(k =>
+    read('src/ui/results.js').includes(k)
+  ),
+  'torches : flammes animées centrées sur les coupes peintes, plus grandes pour la victoire'
 );
 // Lobby PC : les murs touchent le cadre doré quelle que soit la forme de la fenêtre
 assert.ok(
@@ -660,3 +662,5 @@ assert.ok(
     assert.ok(sfx.includes(k), 'sons : ' + k);
   assert.ok(read('src/game/rules.js').includes('SFX.effort(u)'), 'cri sur les auto-attaques');
 }
+// Chevalier de la mort : en course, garde de Sword_Idle (lame devant, pas à travers le corps)
+assert.ok(read('src/render/heroes3d.js').includes('/^(run|back|air|land)$/.test(rec.animKey)'), 'DK : garde en course');

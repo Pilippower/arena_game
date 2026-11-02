@@ -901,7 +901,8 @@ function hfTwoHandIK(rec) {
         ? {
             grip,
             L: [f('upperarm_l'), f('lowerarm_l'), f('hand_l')],
-            R: [f('upperarm_r'), f('lowerarm_r'), f('hand_r')]
+            R: [f('upperarm_r'), f('lowerarm_r'), f('hand_r')],
+            C: [f('clavicle_l'), f('clavicle_r')].filter(Boolean)
           }
         : false;
   }
@@ -910,7 +911,7 @@ function hfTwoHandIK(rec) {
   // Le mixeur three.js ne réécrit un os que si sa valeur animée a changé : sur une pose immobile, le bras gardait la
   // correction de l'image précédente et l'IK repartait de son propre résultat (balancier, l'arme tremblait). On repart
   // donc toujours de la pose animée : mémorisée quand le mixeur l'a écrite, restaurée sinon.
-  const bones = [...k.L, ...k.R];
+  const bones = [...k.L, ...k.R, ...k.C];
   if (!k.anim) {
     k.anim = bones.map(b => b.quaternion.clone());
     k.out = bones.map(() => null);
@@ -919,6 +920,29 @@ function hfTwoHandIK(rec) {
     if (k.out[i] && b.quaternion.equals(k.out[i])) b.quaternion.copy(k.anim[i]);
     else k.anim[i].copy(b.quaternion);
   });
+  // En course (et en saut), les bras gardent la garde de Sword_Idle, lame tenue devant soi : le jogging est un clip à
+  // mains nues dont le balancement du bras envoyait la lame au-dessus de la tête puis à travers le corps.
+  if (k.guard === undefined) {
+    const clip = rec.clips.find(c => c.name === 'Sword_Idle');
+    k.guard = clip
+      ? clip.tracks
+          .map(t => ({ bone: m.getObjectByName(t.name.split('.')[0]), t }))
+          .filter(g => g.t.name.endsWith('.quaternion') && bones.includes(g.bone))
+          .map(g => ({ bone: g.bone, it: g.t.createInterpolant() }))
+      : null;
+    k.guardDur = clip?.duration || 1;
+    k.carry = 0;
+  }
+  if (k.guard) {
+    const tc = performance.now() / 1000,
+      want = /^(run|back|air|land)$/.test(rec.animKey) ? 1 : 0;
+    k.carry += (want - k.carry) * (1 - Math.exp(-Math.min(0.1, tc - (k.tc ?? tc)) * 10));
+    k.tc = tc;
+    if (k.carry > 0.001) {
+      const q = new THREE.Quaternion();
+      for (const g of k.guard) g.bone.quaternion.slerp(q.fromArray(g.it.evaluate(tc % k.guardDur)), k.carry);
+    }
+  }
   m.updateMatrixWorld(true);
   // coudes vers le bas, l'arrière et l'extérieur (gauche = +x du modèle)
   const q = m.getWorldQuaternion(new THREE.Quaternion()),
