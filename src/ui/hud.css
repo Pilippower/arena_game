@@ -516,3 +516,9 @@ body.mobile-mode:not(.lobby) #top {
   border-image: url(../../assets/ui/hud/top_bar.webp) 20 70 fill / 8px 26px round stretch !important;
   background: #2a1a10 !important;
 }
+/* emplacement vide d'une barre de forme (druide, voleur camouflé) : la case et sa touche restent visibles */
+#skills .skill.empty {
+  opacity: 0.4;
+  cursor: default;
+  filter: grayscale(1);
+}

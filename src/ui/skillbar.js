@@ -1,18 +1,44 @@
 'use strict';
 // Barre de sorts : ordre personnalisé (Shift + glisser) et infobulles.
 // ---------- Barre de sorts : ordre personnalisé (Shift + glisser) et infobulles ----------
+// Ordre de la barre : emplacement (touche) → numéro du sort dans la barre courante, null = emplacement vide.
+// Barres de forme (druide) et de camouflage (voleur) : autant d'emplacements que la barre de base, pour que chaque
+// touche garde son emplacement quelle que soit la forme. Le bouton de forme reste là où on a appuyé : la touche de
+// Bear Form devient Human Form en ours (on rappuie pour revenir), Cat Form garde sa touche, etc.
 function slotOrder(p) {
-  const bar = skillsOf(p),
-    key = p.cls + ':' + barKey(p),
-    o = PREFS.ui?.order?.[key];
-  return Array.isArray(o) &&
-    o.length === bar.length &&
-    o
-      .slice()
-      .sort((a, b) => a - b)
-      .every((v, i) => v === i)
-    ? o
-    : bar.map((_, i) => i);
+  const bk = barKey(p),
+    bar = skillsOf(p),
+    o = PREFS.ui?.order?.[p.cls + ':' + bk],
+    base = bk ? CLASS[p.cls].skills : bar,
+    valid =
+      Array.isArray(o) &&
+      o.length === base.length &&
+      o
+        .filter(v => v != null)
+        .sort((a, b) => a - b)
+        .join() === bar.map((_, i) => i).join();
+  if (valid) return o;
+  if (!bk) return bar.map((_, i) => i);
+  const baseOrder = slotOrder({ cls: p.cls, form: null, stealth: 0 }),
+    out = baseOrder.map(() => null),
+    used = new Set();
+  baseOrder.forEach((bi, slot) => {
+    const k = base[bi]?.k;
+    if (!k) return;
+    let j = k === bk ? bar.findIndex(s => s.k === 'human') : -1;
+    if (j < 0) j = bar.findIndex(s => s.k === k);
+    if (j >= 0 && !used.has(j)) {
+      out[slot] = j;
+      used.add(j);
+    }
+  });
+  let next = 0;
+  bar.forEach((_, j) => {
+    if (used.has(j)) return;
+    while (next < out.length && out[next] != null) next++;
+    if (next < out.length) out[next] = j;
+  });
+  return out;
 }
 function swapSlots(a, b) {
   const p = state?.player;

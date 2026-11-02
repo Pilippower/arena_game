@@ -777,3 +777,12 @@ assert.ok(
 // Pain : icône de l'utilisateur
 assert.ok(ctx.skillIconSVG('oracle', 5).includes('spells/pain.webp'), 'Pain : icône de l’utilisateur');
 assert.ok(read('index.html').includes('animation:npTargetGlow'), 'cible : contour doré qui pulse');
+// Barres de forme : mêmes emplacements (touches) que la barre de base, bouton de forme à l'emplacement appuyé
+{
+  const sb = read('src/ui/skillbar.js');
+  assert.ok(
+    sb.includes("let j = k === bk ? bar.findIndex(s => s.k === 'human') : -1;"),
+    'forme : retour humain sur la même touche'
+  );
+  assert.ok(read('src/ui/hud.js').includes("if (b.classList.contains('empty')) continue;"), 'emplacement vide');
+}
