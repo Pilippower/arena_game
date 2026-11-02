@@ -21,6 +21,8 @@ const PREF_KEY = 'arenaAscendantPrefs_v1';
 const DEFAULT_PREFS = {
   musicOn: true,
   volume: 0.65,
+  // après un glisser au clic gauche (caméra seule), la caméra revient derrière le personnage
+  cameraReturn: true,
   // Codes physiques (identiques en AZERTY et QWERTY) : KeyQ = touche A en AZERTY / Q en QWERTY, KeyE = E ;
   // déplacements KeyW/KeyA/KeyS/KeyD = ZQSD en AZERTY, WASD en QWERTY. 7 emplacements (le druide a 7 sorts).
   keybinds: {
@@ -62,6 +64,7 @@ function loadPrefs() {
     });
     if (v.ui && typeof v.ui === 'object') d.ui = v.ui;
     if (typeof v.musicOn === 'boolean') d.musicOn = v.musicOn;
+    if (typeof v.cameraReturn === 'boolean') d.cameraReturn = v.cameraReturn;
   } catch (_) {}
   return d;
 }

@@ -569,6 +569,9 @@ function moveBaseYaw(dt) {
     camReturn = true;
     return orbitBase;
   }
+  // réglage « Camera returns behind you » désactivé : la caméra reste où on l'a laissée, les déplacements suivent sa
+  // direction
+  if (camReturn && PREFS.cameraReturn === false) camReturn = false;
   if (camReturn && orbitBase !== null && !looking) {
     const d = Math.atan2(Math.sin(orbitBase - camera.yaw), Math.cos(orbitBase - camera.yaw));
     if (Math.abs(d) < 0.01) camReturn = false;

@@ -797,3 +797,9 @@ assert.ok(
   read('src/input/controls.js').includes('GameLogic.applyLook(camera.yaw, camera.pitch, dir * TURN_PX_PER_S * dt, 0)'),
   'tourner au clavier'
 );
+// Réglage : la caméra revient (ou non) derrière le personnage après un glisser au clic gauche
+assert.ok(
+  read('index.html').includes('id="camReturnToggle"') &&
+    read('src/game/ai.js').includes('PREFS.cameraReturn === false'),
+  'réglage retour caméra'
+);

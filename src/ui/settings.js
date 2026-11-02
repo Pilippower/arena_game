@@ -454,5 +454,10 @@ $('resetUiBtn').onclick = resetFramePositions;
 $('resetBindsBtn').onclick = resetBindings;
 $('musicVolume').oninput = e => setMusicVolume(e.target.value / 100);
 $('volumeMini').oninput = e => setMusicVolume(e.target.value / 100);
+$('camReturnToggle').checked = PREFS.cameraReturn !== false;
+$('camReturnToggle').onchange = e => {
+  PREFS.cameraReturn = e.target.checked;
+  savePrefs();
+};
 setMusicVolume(PREFS.volume);
 requestAnimationFrame(applyFramePositions);
