@@ -557,4 +557,13 @@ assert.ok(
   h3.includes('function hfBladeSlash') && h3.includes('k.smooth.lerp(tgt, 0.35)'),
   'glaives du voleur, frappe fluide du chevalier'
 );
+{
+  const on = read('src/net/online.js');
+  assert.ok(
+    on.includes('guests: new Map()') && on.includes('function netRenderGuests') && on.includes('With me'),
+    'en ligne : plusieurs amis, avec / contre'
+  );
+  assert.ok(read('src/game/combat.js').includes('function netTeamsFor'), 'en ligne : IA pour les places libres');
+  assert.ok(!read('src/ui/settings.js').includes('size: online ? 1'), 'en ligne : mode du lobby respecté');
+}
 console.log('OK - spécifications validées (docs/SPEC.md)');

@@ -75,6 +75,16 @@ let TEAM_SIZE = (() => {
 })();
 // Équipes selon le format : en 2v2 un soigneur et un combattant de chaque côté ; en 1v1 un adversaire
 // qui peut mourir (pas de soigneur seul en face).
+// En ligne : amis placés par l'hôte, places libres complétées comme hors ligne (soigneur/combattant, Kargan…).
+function netTeamsFor(on, pcls, size) {
+  const base = teamsFor(pcls, 3),
+    fillA = base.allies.map((c, i) => [c, ['Lyra', 'Torren'][i], i ? 'dwarf' : raceForClass(c, 0, 1)]),
+    allies = on.allies.map(g => [g.cls, g.name, g.race, g.gid]),
+    foes = on.foes.map(g => [g.cls, g.name, g.race, g.gid]);
+  for (const f of fillA) if (allies.length < size - 1) allies.push(f);
+  for (const f of base.foes) if (foes.length < size) foes.push(f);
+  return { allies: allies.slice(0, size - 1), foes: foes.slice(0, size) };
+}
 function teamsFor(pcls, size) {
   const allies = compForPlayer(pcls),
     foes = [
@@ -89,9 +99,7 @@ function teamsFor(pcls, size) {
 function resetRound() {
   const o = state || {},
     size = o.size || TEAM_SIZE,
-    T = o.online
-      ? { allies: [], foes: [[o.online.cls, o.online.name, o.online.race]] }
-      : teamsFor(o.pcls || 'sentinel', size),
+    T = o.online ? netTeamsFor(o.online, o.pcls || 'sentinel', size) : teamsFor(o.pcls || 'sentinel', size),
     allies = T.allies,
     spot = (i, n, gap) => (i - (n - 1) / 2) * gap; // en 3v3 : mêmes places qu'avant (alliés tous les 5, adversaires tous les 6)
   state = {
@@ -102,7 +110,7 @@ function resetRound() {
     round: (o.round || 0) + 1,
     stats: o.stats && o.round ? o.stats : [],
     map: o.map,
-    online: o.online || null, // en ligne : l'adversaire est l'ami connecté (src/net/online.js)
+    online: o.online || null, // en ligne : amis avec / contre l'hôte (src/net/online.js)
     size,
     t: 150,
     elapsed: 0,
@@ -115,22 +123,28 @@ function resetRound() {
     splash: 1.8,
     uiTick: 0
   };
-  const mates = [
-    [allies[0], 'Lyra', raceForClass(allies[0], 0, 1)],
-    [allies[1], 'Torren', 'dwarf']
-  ].slice(0, allies.length);
+  const mates = o.online
+    ? allies
+    : [
+        [allies[0], 'Lyra', raceForClass(allies[0], 0, 1)],
+        [allies[1], 'Torren', 'dwarf']
+      ].slice(0, allies.length);
   state.units = [
     makeUnit(state.pcls, -26, spot(0, size, 5), 0, 'You', false, state.prace, 0),
-    ...mates.map(([c, n, r], i) => makeUnit(c, -26, spot(i + 1, size, 5), 0, n, true, r, i + 1)),
-    ...T.foes.map(([c, n, r], i) => makeUnit(c, 26, spot(i, size, 6), 1, n, true, r, i))
+    ...mates.map(([c, n, r, gid], i) =>
+      Object.assign(makeUnit(c, -26, spot(i + 1, size, 5), 0, n, true, r, i + 1), { remoteId: gid ?? null })
+    ),
+    ...T.foes.map(([c, n, r, gid], i) =>
+      Object.assign(makeUnit(c, 26, spot(i, size, 6), 1, n, true, r, i), { remoteId: gid ?? null })
+    )
   ];
   state.units.forEach((u, i) => (u.slotIndex = i));
-  if (state.online)
-    for (const u of state.units)
-      if (u.team === 1) {
-        u.remote = true;
-        u.ai = false;
-      }
+  // en ligne : chaque ami pilote son personnage (pas d'IA)
+  for (const u of state.units)
+    if (u.remoteId != null) {
+      u.remote = true;
+      u.ai = false;
+    }
   state.player = state.units[0];
   setTarget(state.player, state.units[size]);
   applyDifficulty();
@@ -624,7 +638,7 @@ function skillFailReason(u, i) {
 // Message d'erreur pour le joueur qui contrôle l'unité : à l'écran ici, ou chez l'ami en ligne (src/net/online.js).
 function unitError(u, text) {
   if (u === state?.player) showError(text);
-  else if (u?.remote) netSend({ t: 'err', text });
+  else if (u?.remote) netSendTo(netGuestOf(u), { t: 'err', text }); // au joueur qui contrôle ce personnage
 }
 function tryPlayerSkill(i) {
   const p = state?.player;

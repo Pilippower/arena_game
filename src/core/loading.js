@@ -152,9 +152,9 @@ async function prepareMatch() {
   // en ligne : l'hôte attend que son ami soit prêt ; l'invité le signale
   if (window.NET?.role === 'guest') netSend({ t: 'ready', round: S.round });
   if (window.NET?.role === 'host' && S.online) {
-    loadingProgress(0.97, 'Waiting for your friend…');
+    loadingProgress(0.97, 'Waiting for your friends…');
     const t2 = performance.now();
-    while (!NET.guestReady && NET.conn?.open && performance.now() - t2 < 30000) {
+    while ([...NET.guests.values()].some(g => g.ready !== S.round && g.conn?.open) && performance.now() - t2 < 30000) {
       await sleep(80);
       if (stale()) return;
     }

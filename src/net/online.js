@@ -1,6 +1,8 @@
 'use strict';
-// Jeu en ligne entre amis (étape 1 : 1v1) — connexion directe entre navigateurs (WebRTC via PeerJS, chargé
-// seulement quand on clique « Online » ; le service public PeerJS ne sert qu'à se trouver).
+// Jeu en ligne entre amis (1v1, 2v2, 3v3 : le mode du lobby) — connexion directe entre navigateurs (WebRTC via
+// PeerJS, chargé seulement quand on clique « Online » ; le service public PeerJS ne sert qu'à se trouver).
+// L'hôte reçoit plusieurs amis (une connexion chacun) et place chacun dans son équipe ou en face (salon « Online ») ;
+// les places libres sont jouées par l'IA.
 // L'hôte fait autorité : il simule la partie (dégâts, sorts, contrôles, manches) et envoie l'état 20 fois/s.
 // L'invité se déplace en local avec les mêmes contrôles (pas de latence) et envoie sa position ; ses sorts, sa cible
 // et son trinket partent chez l'hôte, qui lui renvoie les mêmes messages d'erreur que hors ligne (unitError). Pendant un déplacement imposé par l'hôte (ruée, blink, peur, étourdissement,
@@ -11,22 +13,35 @@ var NET = {
   // var : visible comme window.NET par les points d'accroche
   role: null, // 'host' | 'guest' | null
   peer: null,
-  conn: null,
+  conn: null, // invité : la connexion à l'hôte
   code: '',
-  guest: null, // hôte : { cls, race, name } de l'invité
+  guests: new Map(), // hôte : id → { id, conn, name, cls, race, team: 'ally' | 'enemy', input, ready }
+  gid: 0,
   events: [],
   sendT: 0,
   inT: 0,
   snap: null,
-  remote: null, // hôte : dernière entrée de l'invité
   lastEnded: false
 };
 const NET_PREFIX = 'arena-ascendant-';
 const netIdx = u => (state?.units ? state.units.indexOf(u) : -1);
 const r2 = v => Math.round(v * 100) / 100;
+// invité : vers l'hôte ; hôte : à tous les amis
 function netSend(m) {
-  if (NET.conn?.open) NET.conn.send(m);
+  if (NET.role === 'host') for (const g of NET.guests.values()) netSendTo(g, m);
+  else if (NET.conn?.open) NET.conn.send(m);
 }
+function netSendTo(g, m) {
+  if (g?.conn?.open) g.conn.send(m);
+}
+const netGuestOf = u => (u?.remoteId != null ? NET.guests.get(u.remoteId) : null);
+let NET_NAME = (() => {
+  try {
+    return localStorage.getItem('arenaNetName') || '';
+  } catch (_) {
+    return '';
+  }
+})();
 function netStatus(t) {
   const el = $('netStatus');
   if (el) el.textContent = t;
@@ -48,11 +63,90 @@ function netCode() {
 function netClose(msg) {
   try {
     NET.conn?.close();
+    for (const g of NET.guests.values()) g.conn?.close();
     NET.peer?.destroy();
   } catch (_) {}
-  Object.assign(NET, { role: null, peer: null, conn: null, guest: null, remote: null, snap: null, events: [] });
+  NET.guests.clear();
+  Object.assign(NET, { role: null, peer: null, conn: null, snap: null, events: [] });
   netStatus(msg || 'Offline');
   netLobbyButtons();
+  netRenderGuests();
+}
+// ---------- salon de l'hôte : amis connectés, avec moi / contre moi ----------
+const NET_MAX = 5; // 3v3 : 2 alliés + 3 adversaires
+function netSlots() {
+  const size = TEAM_SIZE,
+    gs = [...NET.guests.values()];
+  return {
+    size,
+    ally: gs.filter(g => g.team === 'ally').length,
+    enemy: gs.filter(g => g.team === 'enemy').length,
+    allyMax: size - 1,
+    enemyMax: size
+  };
+}
+function netRenderGuests() {
+  const box = $('netGuests');
+  if (!box) return;
+  if (NET.role !== 'host') return (box.innerHTML = '');
+  const S = netSlots(),
+    gs = [...NET.guests.values()];
+  box.innerHTML =
+    `<div class="netMode">Mode ${S.size}v${S.size} · with you ${S.ally}/${S.allyMax} · against you ${S.enemy}/${S.enemyMax} · empty slots: AI</div>` +
+    (gs.length
+      ? gs
+          .map(
+            g =>
+              `<div class="netGuest"><b>${g.name}</b><span>${g.cls ? `${RACE[g.race]?.name || ''} ${CLASS[g.cls].name}` : 'choosing…'}</span><button data-g="${g.id}" data-t="ally" class="${g.team === 'ally' ? 'selected' : ''}">With me</button><button data-g="${g.id}" data-t="enemy" class="${g.team === 'enemy' ? 'selected' : ''}">Against me</button></div>`
+          )
+          .join('')
+      : '<div class="netHint">No friend connected yet.</div>');
+  box.querySelectorAll('[data-g]').forEach(
+    b =>
+      (b.onclick = () => {
+        const g = NET.guests.get(+b.dataset.g),
+          S2 = netSlots();
+        if (!g || g.team === b.dataset.t) return;
+        if (b.dataset.t === 'ally' ? S2.ally >= S2.allyMax : S2.enemy >= S2.enemyMax)
+          return netStatus(
+            `No free slot ${b.dataset.t === 'ally' ? 'in your team' : 'in the enemy team'} in ${S2.size}v${S2.size}.`
+          );
+        g.team = b.dataset.t;
+        netRenderGuests();
+      })
+  );
+}
+function netGuestJoined(c) {
+  if (NET.guests.size >= NET_MAX) return c.close();
+  const S = netSlots(),
+    g = {
+      id: ++NET.gid,
+      conn: c,
+      name: 'Friend ' + NET.gid,
+      cls: null,
+      race: null,
+      team: S.enemy < S.enemyMax ? 'enemy' : 'ally',
+      ready: 0
+    };
+  NET.guests.set(g.id, g);
+  c.on('data', m => netOnData(m, g));
+  c.on('close', () => netGuestLeft(g));
+  netRenderGuests();
+}
+function netGuestLeft(g) {
+  if (!NET.guests.delete(g.id)) return;
+  if (state?.units)
+    for (const u of state.units)
+      if (u.remoteId === g.id) {
+        // son personnage passe à l'IA, la partie continue
+        u.remote = false;
+        u.remoteId = null;
+        u.ai = true;
+        u.aiP = u.aiP || AI_PROFILES.medium;
+        showError?.(`${g.name} left — an AI takes over`);
+      }
+  netStatus(`${g.name} left.`);
+  netRenderGuests();
 }
 function netLobbyButtons() {
   const b = $('onlineBtn');
@@ -73,16 +167,12 @@ async function netHost() {
   NET.peer = new Peer(NET_PREFIX + NET.code);
   NET.peer.on('open', () => {
     $('netCode').textContent = NET.code;
-    netStatus('Share this code with your friend, then wait for them to join.');
+    netStatus('Share this code with your friends, place each one with you or against you, then press Play.');
   });
   NET.peer.on('error', e => netStatus('Error: ' + (e.type || e.message)));
-  NET.peer.on('connection', c => {
-    if (NET.conn?.open) return c.close(); // une seule place en 1v1
-    NET.conn = c;
-    c.on('data', netOnData);
-    c.on('close', () => netLost('Your friend left.'));
-  });
+  NET.peer.on('connection', netGuestJoined);
   netLobbyButtons();
+  netRenderGuests();
 }
 async function netJoin(code) {
   code = (code || '').trim().toUpperCase();
@@ -113,20 +203,11 @@ async function netJoin(code) {
 let NET_CHOICE = { race: null, cls: null };
 function netLobbyChoice(race, cls) {
   if (race !== undefined) NET_CHOICE = { race, cls };
-  if (NET.role === 'guest') netSend({ t: 'hello', race: NET_CHOICE.race, cls: NET_CHOICE.cls });
+  if (NET.role === 'guest') netSend({ t: 'hello', race: NET_CHOICE.race, cls: NET_CHOICE.cls, name: NET_NAME });
   netLobbyButtons();
 }
 function netLost(msg) {
   const wasGuestInGame = NET.role === 'guest' && state?.units;
-  if (NET.role === 'host' && state?.units) {
-    // l'invité est parti : son personnage passe à l'IA, la partie continue
-    for (const u of state.units)
-      if (u.remote) {
-        u.remote = false;
-        u.ai = true;
-      }
-    showError?.('Your friend left — an AI takes over');
-  }
   netClose(msg);
   if (wasGuestInGame) {
     leaveMatch();
@@ -134,22 +215,25 @@ function netLost(msg) {
   }
 }
 // ---------- messages ----------
-function netOnData(m) {
+function netOnData(m, g) {
   if (!m || !m.t) return;
   if (NET.role === 'host') {
     if (m.t === 'hello') {
-      NET.guest = m.cls && m.race ? { cls: m.cls, race: m.race, name: 'Friend' } : null;
+      g.cls = CLASS[m.cls] ? m.cls : null;
+      g.race = RACE[m.race] ? m.race : null;
+      if (typeof m.name === 'string' && m.name.trim()) g.name = m.name.trim().slice(0, 16);
       netStatus(
-        NET.guest
-          ? `Your friend is ready: ${RACE[m.race].name} ${CLASS[m.cls].name}. Press Play to start the 1v1.`
-          : 'Your friend joined — waiting for their race and class…'
+        g.cls
+          ? `${g.name} is ready: ${RACE[g.race].name} ${CLASS[g.cls].name}.`
+          : `${g.name} joined — choosing a class…`
       );
+      netRenderGuests();
       return;
     }
-    const u = state?.units?.find(v => v.remote);
+    const u = state?.units?.find(v => v.remoteId === g.id);
     if (!u) return;
-    if (m.t === 'ready') NET.guestReady = m.round === state.round;
-    else if (m.t === 'in') NET.remote = m;
+    if (m.t === 'ready') g.ready = m.round;
+    else if (m.t === 'in') g.input = m;
     else if (m.t === 'skill') {
       // comme tryPlayerSkill : un sort appuyé juste avant la fin du GCD ou de sa recharge part dès que possible
       if (u.alive && !(u.poly > 0) && !useSkill(u, m.i)) {
@@ -175,29 +259,40 @@ function netOnData(m) {
   }
 }
 // ---------- hôte ----------
-// Composition en ligne : l'hôte contre son ami (1v1).
-function netRoster() {
-  return state.units.map(u => ({
-    cls: u.cls,
-    race: u.race,
-    team: u.team,
-    name: u.remote ? 'You' : u === state.player ? 'Host' : u.name
-  }));
+// Composition en ligne (state.online, construit au clic sur Play) : hôte + amis avec lui + IA contre amis d'en face + IA.
+function netOnlineTeams() {
+  const gs = [...NET.guests.values()].filter(g => g.cls),
+    S = netSlots();
+  if (!gs.length || gs.length < NET.guests.size) return null;
+  if (S.ally > S.allyMax || S.enemy > S.enemyMax) {
+    netStatus(`Too many friends for ${S.size}v${S.size}: choose a bigger Mode or move someone.`);
+    return null;
+  }
+  const pick = t => gs.filter(g => g.team === t).map(g => ({ cls: g.cls, race: g.race, name: g.name, gid: g.id }));
+  return { allies: pick('ally'), foes: pick('enemy'), host: NET_NAME || 'Host' };
 }
+// chaque ami reçoit la composition vue de chez lui (son personnage = « You »)
 function netSendRoster() {
   if (NET.role !== 'host' || !state?.units) return;
   $('netPanel').style.display = 'none';
-  NET.guestReady = false;
-  netSend({
-    t: 'roster',
-    map: MAP_ID,
-    round: state.round,
-    size: state.size,
-    scoreA: state.scoreA,
-    scoreB: state.scoreB,
-    me: state.units.findIndex(u => u.remote),
-    units: netRoster()
-  });
+  for (const g of NET.guests.values()) {
+    g.ready = 0;
+    netSendTo(g, {
+      t: 'roster',
+      map: MAP_ID,
+      round: state.round,
+      size: state.size,
+      scoreA: state.scoreA,
+      scoreB: state.scoreB,
+      me: state.units.findIndex(u => u.remoteId === g.id),
+      units: state.units.map(u => ({
+        cls: u.cls,
+        race: u.race,
+        team: u.team,
+        name: u.remoteId === g.id ? 'You' : u === state.player ? state.online.host : u.name
+      }))
+    });
+  }
 }
 function netUnitState(u) {
   return {
@@ -244,11 +339,11 @@ function netUnitState(u) {
     cd: u.cd.map(r2)
   };
 }
-// Chaque pas de simulation de l'hôte (appelé par update) : position de l'invité, envoi de l'état 20 fois/s.
+// Chaque pas de simulation de l'hôte (appelé par update) : position de chaque ami, envoi de l'état 20 fois/s.
 function netHostUpdate(dt) {
-  const u = state.units.find(v => v.remote),
-    m = NET.remote;
-  if (u && m && u.alive) {
+  for (const u of state.units) {
+    const m = netGuestOf(u)?.input;
+    if (!u.remote || !m || !u.alive) continue;
     const forced = u.mobility || u.fear > 0 || u.stun > 0 || u.poly > 0 || u.root > 0;
     if (!forced && Math.hypot(m.x - u.x, m.z - u.z) < 3) {
       u.x = m.x;
@@ -484,6 +579,14 @@ $('onlineBtn').onclick = () => ($('netPanel').style.display = 'flex');
 $('netClose').onclick = () => ($('netPanel').style.display = 'none');
 $('netHostBtn').onclick = () => netHost();
 $('netJoinBtn').onclick = () => netJoin($('netJoinCode').value);
+$('netName').value = NET_NAME;
+$('netName').onchange = () => {
+  NET_NAME = $('netName').value.trim().slice(0, 16);
+  try {
+    localStorage.setItem('arenaNetName', NET_NAME);
+  } catch (_) {}
+  if (NET.role === 'guest') netLobbyChoice();
+};
 $('netLeaveBtn').onclick = () => {
   netClose('Offline');
   $('netCode').textContent = '—';

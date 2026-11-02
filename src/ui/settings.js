@@ -425,6 +425,7 @@ function chooseClass() {
         } catch (_) {}
         sizeRefresh();
         LOBBY_CHIPS();
+        if (typeof netRenderGuests === 'function') netRenderGuests();
       })
   );
   sizeRefresh();
@@ -440,16 +441,19 @@ function chooseClass() {
     if (!selectedClass || !selectedRace) return;
     if (MOBILE.enabled) mobileRequestFullscreen();
     // en ligne (hôte avec un ami prêt) : 1v1 contre lui
-    const online = window.NET?.role === 'host' && NET.conn?.open && NET.guest ? { ...NET.guest } : null;
-    if (window.NET?.role === 'host' && !online) return netStatus('Waiting for your friend to join and pick a class…');
+    // en ligne (hôte) : le mode du lobby, amis placés avec / contre lui, IA pour les places libres
+    const online = window.NET?.role === 'host' ? netOnlineTeams() : null;
+    if (window.NET?.role === 'host' && !online) {
+      $('netPanel').style.display = 'flex';
+      return netStatus('Waiting for your friends to join and pick a class…');
+    }
     state = {
       pcls: selectedClass,
       prace: selectedRace,
       scoreA: 0,
       scoreB: 0,
       round: 0,
-      online,
-      size: online ? 1 : undefined
+      online
     };
     $('overlay').style.display = 'none';
     resetRound();
