@@ -52,14 +52,9 @@ const PACK = {
     ['beasts/yell-GrizzlyEating010315.mp3', 0.9, null, 20.6],
     ['beasts/yell-YELLGrizzlyBearVocalizations20160520Android1.mp3', 0.9, null, 33.0]
   ],
-  // druide en forme de chat : feulements d'attaque (joués plus aigus en jeu)
-  snarl_cat: [
-    ['beasts/monster-snarl-attack.ogg', 0.45, null, 0.1],
-    ['beasts/monster-snarl-attack.ogg', 0.45, null, 2.15],
-    ['beasts/monster-snarl-attack.ogg', 0.6, null, 3.45],
-    ['beasts/monster-snarl-attack.ogg', 0.6, null, 5.4],
-    ['beasts/monster-snarls-2_0.ogg', 0.6, null, 2.75]
-  ]
+  // druide en forme de chat : grognements et feulements d'un vrai tigre (« angry tiger », schots, CC0), hauteur
+  // naturelle (les feulements de monstre accélérés sonnaient comme un cochon)
+  snarl_cat: [0.32, 3.1, 5.68, 6.5, 9.18, 11.13].map(at => ['beasts/angry-tiger.wav', 0.75, null, at])
 };
 
 const wav = (pcm, sr) => {

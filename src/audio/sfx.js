@@ -114,7 +114,7 @@ const SFX = {
   // Cri d'effort du personnage qui frappe (voix d'homme ou de femme selon le personnage, plus grave pour un orc ou
   // un mort-vivant, plus claire pour un elfe ; jamais étouffée : un filtre rendait le cri du mort-vivant
   // méconnaissable). Pas deux cris en moins de 1,2 s.
-  // Formes du druide : feulement de félin (chat) ou grognement d'ours (ours) à la place du cri.
+  // Formes du druide : grognement de tigre (chat) ou grognement d'ours (ours) à la place du cri.
   effort(u) {
     if (!u || u.stealth) return;
     const t = performance.now();
@@ -124,7 +124,7 @@ const SFX = {
       const a = sfxSpatial(u),
         cat = u.form === 'cat';
       sfxSample(cat ? 'snarl_cat' : 'roar_bear', (cat ? 0.5 : 0.65) * a.level, a.pan, {
-        rate: (cat ? 1.35 : 0.95) * (0.94 + Math.random() * 0.12)
+        rate: (cat ? 1.02 : 0.95) * (0.94 + Math.random() * 0.12)
       });
       return;
     }
