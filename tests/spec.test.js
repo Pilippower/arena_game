@@ -151,6 +151,15 @@ run('src/game/ai.js');
 }
 assert.match(read('src/game/ai.js'), /u\.aiKite \? 5 : 3\.2/, 'IA : fuit une mêlée jusqu’à 5 m (pas de va-et-vient)');
 assert.match(read('src/game/ai.js'), /u\.aiRegroup \? 7 : 13/, 'IA : rejoint un allié jusqu’à 7 m');
+// Téléportation sur la rampe du pont : monte en suivant la pente (n'est plus renvoyée au départ)
+{
+  vm.runInContext(read('src/game/combat.js').match(/function pointWalkable[\s\S]*?\n\}/)[0], ctx);
+  vm.runInContext(read('src/game/combat.js').match(/function blinkForward[\s\S]*?\n\}/)[0], ctx);
+  const u = { x: B.rampX, z: B.halfW + 10, y: ctx.surfaceAt(B.rampX, B.halfW + 10).h, yaw: Math.PI, root: 2 };
+  ctx.blinkForward(u, 7, true);
+  assert.ok(u.z < B.halfW + 4 && u.y > 2, 'Blink monte la rampe');
+  assert.equal(u.root, 2, 'Demonic Gate : racines gardées');
+}
 // Formats de match : 1v1, 2v2, 3v3
 {
   const ctx2 = {

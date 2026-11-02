@@ -47,6 +47,8 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
   - Druide : **Rejuvenation** remplace Barkskin (40 % des PV de base sur 15 s) ; **Regrowth** (1,15 s, 15 % direct puis 0,3 %/s pendant 15 s, sans recharge) ; **Moonfire** remplace Starfall (50 puis 125 sur 15 s, icône de Starfall) ; ours : **Demoralizing Roar** remplace Frenzied Regeneration (ennemis à 8 m : −15 dégâts physiques par seconde de cadence, 10 s).
   - Voleur camouflé : **Cheap Shot** (étourdit 3 s, rendements décroissants séparés de Kidney Shot).
   - Icônes fournies par l'utilisateur : `assets_src/ui/spells_extra/` (Rejuvenation, Regrowth, Cheap Shot). L'IA utilise ces sorts. 🧪
+- Téléportations et sauts courts (Blink, Demonic Gate, Shadowstep) : suivent le sol pas à pas (rampes et tablier du pont, hauteur comprise), s'arrêtent devant un pilier, un mur, le flanc d'une rampe, un garde-corps ou un vide (régression corrigée : sur une rampe on restait sur place ou on retombait en bas). Charge et ruées ne butent plus sur un poteau situé sous le pont. 🧪
+- Demonic Gate : ne libère ni des étourdissements ni des racines ; utilisable immobilisé, on reste immobilisé à l'arrivée. Blink du mage : brise les racines. 🧪
 - Sort qui échoue faute de ligne de vue : recharge rendue (la ressource n'a pas été prise).
 - Prêtre : **Smite** (1,5 s, 100 dégâts sacrés = moitié de l'Arcane Bolt du mage, icône d'Angelic Step) remplace Angelic Step ; **Holy Terror** (instantané : tous les ennemis à 10 m fuient **6 s**, rendements décroissants habituels, icône de Silence) remplace Silence. L'IA s'en sert (Holy Terror contre les mêlées au contact, Smite quand personne n'a besoin de soins). 🧪
 - Chevalier de la mort : plus de Death Advance (il a déjà Death Grip). 🧪

@@ -435,39 +435,47 @@ function dashToward(u, t, a) {
   let dx = t.x - u.x,
     dz = t.z - u.z,
     d = Math.hypot(dx, dz) || 1;
-  const step = Math.max(0, Math.min(a, d - 1.6));
-  u.x += (dx / d) * step;
-  u.z += (dz / d) * step;
-  resolveWalls(u);
-  u.visualSnap = true;
+  // même déplacement que Blink : suit le sol (rampes du pont), s'arrête devant un obstacle ; racines gardées
+  blinkForward(u, Math.max(0, Math.min(a, d - 1.6)), true, Math.atan2(dx, dz));
 }
-function pointWalkable(x, z, margin = 0.68) {
+function pointWalkable(x, z, margin = 0.68, y = 0) {
   if (x < -arena.halfX + margin || x > arena.halfX - margin || z < -arena.halfZ + margin || z > arena.halfZ - margin)
     return false;
-  return !arena.pillars.some(p => Math.hypot(x - p.x, z - p.z) < p.r + margin);
+  // un obstacle plus bas que soi (sous le pont) ne gêne pas
+  return !arena.pillars.some(p => p.h > y && Math.hypot(x - p.x, z - p.z) < p.r + margin);
 }
-function blinkForward(u, distance = 7.0) {
+// Téléportation vers l'avant (Blink, Demonic Gate…) : on avance pas à pas en suivant le sol (rampes, tablier du
+// pont) comme une marche ; on s'arrête devant un pilier, un mur, le flanc d'une rampe, un garde-corps ou un vide.
+// keepRoot : la cible reste immobilisée à l'arrivée (Demonic Gate) ; sinon les racines sont brisées (Blink).
+function blinkForward(u, distance = 7.0, keepRoot = false, yaw = u.yaw) {
   const ox = u.x,
     oz = u.z,
-    sx = Math.sin(u.yaw),
-    sz = Math.cos(u.yaw),
-    step = 0.18;
-  let bestX = ox,
-    bestZ = oz;
+    oy = u.y || 0,
+    sx = Math.sin(yaw),
+    sz = Math.cos(yaw),
+    step = 0.18,
+    probe = { x: ox, z: oz, y: oy };
+  let best = { x: ox, z: oz, y: oy };
   for (let d = step; d <= distance + 1e-6; d += step) {
-    const x = ox + sx * d,
-      z = oz + sz * d;
-    if (!pointWalkable(x, z)) break;
-    bestX = x;
-    bestZ = z;
+    Object.assign(probe, { x: ox + sx * d, z: oz + sz * d, y: best.y });
+    if (!pointWalkable(probe.x, probe.z, 0.68, best.y) || blockedBySurface(probe)) break;
+    const pz = probe.z;
+    bridgeRail(probe);
+    if (Math.abs(probe.z - pz) > 1e-6) break; // garde-corps du pont
+    const g = groundAt(probe);
+    if (g < best.y - STEP) break; // bord d'un tablier ou d'une rampe : pas de chute
+    best = { x: probe.x, z: probe.z, y: g };
   }
-  u.x = bestX;
-  u.z = bestZ;
+  u.x = best.x;
+  u.z = best.z;
+  u.y = best.y;
+  u.vy = 0;
+  u.grounded = true;
   resolveWalls(u);
-  u.root = 0;
+  if (!keepRoot) u.root = 0;
   u.visualSnap = true;
   return {
-    from: [ox, (u.y || 0) + 0.75, oz],
+    from: [ox, oy + 0.75, oz],
     to: [u.x, (u.y || 0) + 0.75, u.z],
     distance: Math.hypot(u.x - ox, u.z - oz)
   };
@@ -515,7 +523,7 @@ function updateMobility(u, dt) {
     const st = Math.min(d, m.speed * dt),
       nx = u.x + (dx / d) * st,
       nz = u.z + (dz / d) * st;
-    if (!pointWalkable(nx, nz, 0.64)) {
+    if (!pointWalkable(nx, nz, 0.64, u.y || 0)) {
       u.mobility = null;
       u.moving = false;
       return false;
@@ -544,7 +552,7 @@ function updateMobility(u, dt) {
     const step = Math.min(m.speed * dt, Math.max(0, d - m.stop)),
       nx = u.x + (dx / d) * step,
       nz = u.z + (dz / d) * step;
-    if (!pointWalkable(nx, nz, 0.64)) {
+    if (!pointWalkable(nx, nz, 0.64, u.y || 0)) {
       finishCharge(u, false);
       return false;
     }
@@ -735,7 +743,8 @@ function useSkill(u, i) {
       u.root = 0;
       action(u, 'dash');
     } else if (u.cls === 'warlock') {
-      blinkForward(u, S.dist);
+      // Demonic Gate : ne libère ni des étourdissements ni des racines (utilisable immobilisé : on le reste)
+      blinkForward(u, S.dist, true);
       action(u, 'dash');
     } else if (u.cls === 'reaver') {
       const b = blinkForward(u, S.dist);
