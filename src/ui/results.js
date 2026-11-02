@@ -2,21 +2,24 @@
 // Écran de fin de match (design de l'utilisateur, src/ui/results.css) : tout ce qui brille est vivant.
 // Canevas par-dessus le panneau (mélange additif) : flammes des deux torches du cadre, étincelles dorées qui
 // montent autour du cadre (victoire) ou braises rouges (défaite) ; la lueur du cadre respire (CSS).
-// Torches : base de la flamme dans l'image du cadre (pixels de l'image, centre des flammes peintes mesuré dans
-// frame_*_top.webp ; w = largeur du cadre, fo = décalage du cadre, mêmes valeurs que results.css).
+// Torches : base de la flamme dans l'image du cadre (pixels de l'image, centre de la coupe des torches peintes
+// mesuré dans frame_*_top.webp ; flame = taille des flammes animées ; w = largeur du cadre, fo = décalage du cadre, mêmes valeurs que results.css).
 const RESULT_FRAMES = {
   win: {
     w: 896,
     fo: 0,
+    // grandes torches peintes (flamme ≈ 78 px) : flammes animées plus hautes et plus larges
+    flame: 1.6,
     torches: [
-      [43, 172],
-      [851, 172]
+      [37, 176],
+      [859, 176]
     ],
     spark: [255, 214, 120]
   },
   loss: {
     w: 726,
     fo: 0,
+    flame: 1,
     torches: [
       [30, 168],
       [696, 168]
@@ -45,6 +48,7 @@ function resultsFxStart(win) {
       br = box.getBoundingClientRect(),
       pr = panel.getBoundingClientRect(),
       u = pr.width / F.w,
+      fs = F.flame * u, // taille des flammes animées
       ox = pr.left - br.left,
       oy = pr.top - br.top + F.fo * u; // haut du cadre (sous le bandeau)
     // flammes des torches
@@ -52,14 +56,14 @@ function resultsFxStart(win) {
       for (let k = 0; k < 3; k++)
         parts.push({
           fire: true,
-          x: ox + tx * u + (Math.random() - 0.5) * 12 * u,
+          x: ox + tx * u + (Math.random() - 0.5) * 12 * fs,
           y: oy + ty * u,
           bx: ox + tx * u,
-          vx: (Math.random() - 0.5) * 8 * u,
-          vy: -(55 + Math.random() * 45) * u,
+          vx: (Math.random() - 0.5) * 8 * fs,
+          vy: -(55 + Math.random() * 45) * fs,
           life: 0,
           max: 0.45 + Math.random() * 0.35,
-          r: (5 + Math.random() * 5) * u,
+          r: (5 + Math.random() * 5) * fs,
           ph: Math.random() * 6.28
         });
     // étincelles (victoire) ou braises (défaite) qui montent autour du cadre
