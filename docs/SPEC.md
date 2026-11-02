@@ -14,6 +14,7 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Curseur : gantelet ; épée au-dessus d'un ennemi ; gantelet vert au-dessus d'un allié.
 
 ## Contrôles (mobile) — `src/ui/mobile.js`
+- Mobile à jour (TODO LIST, 2026-11-02) : mêmes cadres d'unité (portraits, emblèmes, barres peintes), cases de sorts dorées, icônes de buffs/débuffs, écran de chargement, fenêtre Leave et écrans Victory/Defeat que sur PC ; barre du haut en bois. Mise en page sans chevauchement : soi + équipe à gauche au-dessus du joystick (réduit à 118 px), cible + adversaires à droite au-dessus des sorts, TARGET / JUMP à gauche des sorts ; fin de match défilable si l'écran est trop bas. 🧪
 - Joystick : la déviation franche = vitesse pleine (pas de vitesse réduite à mi-course). 🧪
 - Toucher un personnage à l'écran = le cibler.
 - Cadres de son équipe (et le sien) collés au bord gauche de l'écran (4 px, sans la marge de l'encoche). 🧪

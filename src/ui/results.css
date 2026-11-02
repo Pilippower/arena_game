@@ -2,11 +2,11 @@
    results_defeat.png ; images assets/ui/results/ découpées par tools/build_results_assets.js). Chargé après hud.css.
    Cadre en 3 couches : haut et bas à leurs proportions, bande du milieu étirée selon le nombre de joueurs.
    --u = 1 pixel de l'image source du cadre. Flammes, étincelles et braises : src/ui/results.js. */
-body:not(.mobile-mode) #results {
+body #results {
   container-type: size;
   background: radial-gradient(ellipse at 50% 45%, #0000 30%, #000c 100%), #05070fa8 !important;
 }
-body:not(.mobile-mode) #results::before {
+body #results::before {
   content: '';
   position: absolute;
   left: 50%;
@@ -18,10 +18,10 @@ body:not(.mobile-mode) #results::before {
   animation: resGlow 2.6s ease-in-out infinite alternate;
   pointer-events: none;
 }
-body:not(.mobile-mode) #results.win {
+body #results.win {
   --glow: #ffb43a55;
 }
-body:not(.mobile-mode) #results.loss {
+body #results.loss {
   --glow: #d0201a4d;
 }
 @keyframes resGlow {
@@ -40,7 +40,7 @@ body:not(.mobile-mode) #results.loss {
   z-index: 2;
   pointer-events: none;
 }
-body:not(.mobile-mode) #results .resPanel {
+body #results .resPanel {
   /* Bandeau (titre + plaque de score) posé au-dessus du cadre, qu'il chevauche. Tout est relatif à la largeur
      --W du panneau : --g = 1 pixel de l'image du cadre, --u = unité du contenu (tableaux, boutons, rubans).
      --fo : décalage du cadre sous le bandeau ; --ft / --fb : hauteurs du haut et du bas du cadre (la bande du
@@ -73,7 +73,7 @@ body:not(.mobile-mode) #results .resPanel {
     0 calc((var(--fo) + var(--ft)) * var(--g) - 1px) !important;
   animation: resFrameGlow 2.6s ease-in-out infinite alternate;
 }
-body:not(.mobile-mode) #results.win .resPanel {
+body #results.win .resPanel {
   --fw: 896;
   --fh: 467;
   --ft: 376;
@@ -90,7 +90,7 @@ body:not(.mobile-mode) #results.win .resPanel {
     url(../../assets/ui/results/banner_victory.webp), url(../../assets/ui/results/frame_victory_top.webp),
     url(../../assets/ui/results/frame_victory_bottom.webp), url(../../assets/ui/results/frame_victory_mid.webp) !important;
 }
-body:not(.mobile-mode) #results.loss .resPanel {
+body #results.loss .resPanel {
   --fw: 726;
   --fh: 394;
   --ft: 302;
@@ -117,7 +117,7 @@ body:not(.mobile-mode) #results.loss .resPanel {
   }
 }
 /* titre peint dans le cadre : le texte reste pour l'accessibilité */
-body:not(.mobile-mode) #resultsTitle {
+body #resultsTitle {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -125,7 +125,7 @@ body:not(.mobile-mode) #resultsTitle {
   clip: rect(0 0 0 0);
 }
 /* score centré sur la plaque peinte du bandeau (--scy : centre mesuré, en pixels de l'image du bandeau) */
-body:not(.mobile-mode) #resultsScore {
+body #resultsScore {
   position: absolute;
   left: 50%;
   top: calc(var(--scy) * var(--bs) * var(--g) - 14 * var(--u));
@@ -145,7 +145,7 @@ body:not(.mobile-mode) #resultsScore {
     0 1px 2px #000;
 }
 /* rubans des équipes (texte peint) et tableaux */
-body:not(.mobile-mode) #resultsTeams h3 {
+body #resultsTeams h3 {
   height: calc(31 * var(--u));
   aspect-ratio: 274 / 50;
   margin: calc(4 * var(--u)) 0 calc(2 * var(--u)) calc(-6 * var(--u));
@@ -153,11 +153,11 @@ body:not(.mobile-mode) #resultsTeams h3 {
   font-size: 0;
   background: url(../../assets/ui/results/ribbon_ally.webp) left center / contain no-repeat;
 }
-body:not(.mobile-mode) #resultsTeams h3.enemy {
+body #resultsTeams h3.enemy {
   aspect-ratio: 249 / 50;
   background-image: url(../../assets/ui/results/ribbon_enemy.webp);
 }
-body:not(.mobile-mode) #results .resTable {
+body #results .resTable {
   margin-bottom: calc(6 * var(--u));
   border-collapse: separate;
   border-spacing: 0;
@@ -165,29 +165,29 @@ body:not(.mobile-mode) #results .resTable {
   border-radius: 6px;
   background: #070b1cb8;
 }
-body:not(.mobile-mode) #results .resTable th {
+body #results .resTable th {
   padding: calc(2 * var(--u)) calc(5 * var(--u));
   font-size: calc(10 * var(--u));
   letter-spacing: 0.06em;
   color: #e6d3a3;
   border-bottom: 1px solid #b48a3c55;
 }
-body:not(.mobile-mode) #results .resTable td {
+body #results .resTable td {
   padding: calc(4 * var(--u)) calc(6 * var(--u));
   font-family: 'Cinzel', Georgia, serif;
   font-size: calc(13 * var(--u));
   color: #f3ead2;
   border-bottom: 1px solid #ffffff10;
 }
-body:not(.mobile-mode) #results .resTable tbody tr:last-child td {
+body #results .resTable tbody tr:last-child td {
   border-bottom: 0;
 }
-body:not(.mobile-mode) #results .resTable td.rName {
+body #results .resTable td.rName {
   display: flex;
   align-items: center;
   gap: calc(6 * var(--u));
 }
-body:not(.mobile-mode) #results .rPort {
+body #results .rPort {
   width: calc(28 * var(--u));
   height: calc(28 * var(--u));
 }
@@ -200,20 +200,20 @@ body:not(.mobile-mode) #results .rPort {
   border: 2px solid #c99a4a;
   background: #0a0f26;
 }
-body:not(.mobile-mode) #results .resTable td.rNum i {
+body #results .resTable td.rNum i {
   height: 4px;
   border-radius: 2px;
   background: linear-gradient(90deg, #3a5ec8, #7fb2ff);
 }
-body:not(.mobile-mode) #results .resTable td.rNum.sorted i {
+body #results .resTable td.rNum.sorted i {
   background: linear-gradient(90deg, #c88a1c, #ffd56a);
 }
 /* boutons de la panoplie (texte peint) */
-body:not(.mobile-mode) #results .resButtons {
+body #results .resButtons {
   gap: calc(18 * var(--u));
   margin-top: calc(10 * var(--u));
 }
-body:not(.mobile-mode) #results .resButtons button {
+body #results .resButtons button {
   width: calc(165 * var(--u));
   aspect-ratio: 207 / 54;
   height: auto;
@@ -226,25 +226,25 @@ body:not(.mobile-mode) #results .resButtons button {
   background: center / 100% 100% no-repeat !important;
   filter: drop-shadow(0 4px 8px #000a);
 }
-body:not(.mobile-mode) #results.win #resultsAgain {
+body #results.win #resultsAgain {
   background-image: url(../../assets/ui/results/btn_again_win.webp) !important;
 }
-body:not(.mobile-mode) #results.loss #resultsAgain {
+body #results.loss #resultsAgain {
   background-image: url(../../assets/ui/results/btn_again_loss.webp) !important;
 }
-body:not(.mobile-mode) #results #resultsLobby {
+body #results #resultsLobby {
   background-image: url(../../assets/ui/results/btn_lobby.webp) !important;
 }
-body:not(.mobile-mode) #results .resButtons button:hover {
+body #results .resButtons button:hover {
   filter: brightness(1.18) drop-shadow(0 0 10px #ffd96f88);
 }
 /* ---------- Fenêtre « Leave the match? » (PC) : maquette de l'utilisateur (assets_src/ui/leave_mockup.png ;
    images assets/ui/leave/ par tools/build_leave_assets.js). Positions en % de l'image du cadre (1055 × 425). ---------- */
-body:not(.mobile-mode) #leaveConfirm {
+body #leaveConfirm {
   background: #05070f8c;
   backdrop-filter: blur(3px) brightness(0.75);
 }
-body:not(.mobile-mode) #leaveConfirm .leavePanel {
+body #leaveConfirm .leavePanel {
   position: relative;
   isolation: isolate;
   container-type: inline-size;
@@ -260,7 +260,7 @@ body:not(.mobile-mode) #leaveConfirm .leavePanel {
   filter: drop-shadow(0 18px 40px #000c);
 }
 /* cadre doré par-dessus (intérieur transparent, laisse passer les clics) */
-body:not(.mobile-mode) #leaveConfirm .leavePanel::after {
+body #leaveConfirm .leavePanel::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -268,7 +268,7 @@ body:not(.mobile-mode) #leaveConfirm .leavePanel::after {
   pointer-events: none;
 }
 /* intérieur bleu nuit sous le cadre doré */
-body:not(.mobile-mode) #leaveConfirm .leavePanel::before {
+body #leaveConfirm .leavePanel::before {
   content: '';
   position: absolute;
   z-index: -1;
@@ -280,7 +280,7 @@ body:not(.mobile-mode) #leaveConfirm .leavePanel::before {
   background: radial-gradient(ellipse at 50% 35%, #1c2a52 0%, #0e1530 60%, #080c1c 100%), #0b1126;
   box-shadow: inset 0 0 3cqw #000a;
 }
-body:not(.mobile-mode) #leaveConfirm h2 {
+body #leaveConfirm h2 {
   position: absolute;
   left: 15%;
   width: 70%;
@@ -291,7 +291,7 @@ body:not(.mobile-mode) #leaveConfirm h2 {
   color: transparent !important;
   background: url(../../assets/ui/leave/title.webp) center / contain no-repeat;
 }
-body:not(.mobile-mode) #leaveConfirm p {
+body #leaveConfirm p {
   position: absolute;
   left: 5%;
   right: 5%;
@@ -304,10 +304,10 @@ body:not(.mobile-mode) #leaveConfirm p {
   color: #f3ead2 !important;
   text-shadow: 0 2px 3px #000;
 }
-body:not(.mobile-mode) #leaveConfirm .resButtons {
+body #leaveConfirm .resButtons {
   margin: 0;
 }
-body:not(.mobile-mode) #leaveConfirm .resButtons button {
+body #leaveConfirm .resButtons button {
   position: absolute;
   top: 60.7%;
   width: 30.6%;
@@ -322,14 +322,28 @@ body:not(.mobile-mode) #leaveConfirm .resButtons button {
   background: center / 100% 100% no-repeat !important;
   filter: drop-shadow(0 4px 8px #000a);
 }
-body:not(.mobile-mode) #leaveConfirm #leaveYes {
+body #leaveConfirm #leaveYes {
   left: 17.3%;
   background-image: url(../../assets/ui/leave/btn_leave.webp) !important;
 }
-body:not(.mobile-mode) #leaveConfirm #leaveNo {
+body #leaveConfirm #leaveNo {
   left: 52.4%;
   background-image: url(../../assets/ui/leave/btn_stay.webp) !important;
 }
-body:not(.mobile-mode) #leaveConfirm .resButtons button:hover {
+body #leaveConfirm .resButtons button:hover {
   filter: brightness(1.15) drop-shadow(0 0 10px #ffd96f88);
+}
+
+/* mobile (paysage, peu de hauteur) : panneau à la largeur de l'écran, défilement vertical si besoin */
+body.mobile-mode #results {
+  align-items: flex-start;
+  overflow-y: auto;
+  padding: 8px 0 16px;
+}
+body.mobile-mode #results .resPanel {
+  --W: min(600px, 68cqw);
+  margin: auto;
+}
+body.mobile-mode #leaveConfirm .leavePanel {
+  width: min(560px, 90vw);
 }

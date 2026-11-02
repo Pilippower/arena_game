@@ -301,7 +301,12 @@ run('src/ui/hud.js');
     'bottom_bar'
   ])
     assert.ok(fs.existsSync(require('node:path').join(__dirname, '..', 'assets/ui/hud', f + '.webp')), 'HUD : ' + f);
-  assert.ok(!css.replace(/:not\(\.mobile-mode\)/g, '').includes('.mobile-mode'), 'HUD PC : rien pour le mobile');
+  // mobile : mêmes cadres et cases de sorts, tailles et positions propres (pas de chevauchement des commandes)
+  assert.ok(
+    css.includes('body.mobile-mode #partyFrames') && css.includes('body.mobile-mode #mobileActions'),
+    'HUD mobile'
+  );
+  assert.ok(!read('src/ui/results.css').includes('body:not(.mobile-mode)'), 'fin de match et Leave aussi sur mobile');
   assert.ok(css.includes('.unitInfo:has(.castBar) .nm'), 'incantation adverse à la place du nom');
   assert.match(
     read('src/ui/hud.js'),

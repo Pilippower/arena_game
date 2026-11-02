@@ -30,7 +30,7 @@ function resultsFxStart(win) {
   const box = $('results'),
     c = $('resultsFx'),
     panel = box.querySelector('.resPanel');
-  if (!c || !panel || MOBILE.enabled) return;
+  if (!c || !panel) return;
   const g = c.getContext('2d'),
     F = RESULT_FRAMES[win ? 'win' : 'loss'],
     parts = (RESULTS_FX.parts = []);

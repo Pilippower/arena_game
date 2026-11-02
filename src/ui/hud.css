@@ -1,6 +1,7 @@
 /* Interface en jeu (PC) : design de l'utilisateur (maquette assets_src/ui/interface_in_game.png, docs/SPEC.md).
    Images : assets/ui/hud/, découpées de sa panoplie par tools/build_hud_assets.js. Chargé après lobby.css.
-   Le mobile garde son interface (body.mobile-mode) ; le lobby garde ses barres (body.lobby).
+   Barres du haut et du bas, panneau des contrôles : PC seulement. Cadres d'unité et cases de sorts : PC et mobile
+   (tailles et positions mobiles en fin de fichier) ; le lobby garde ses barres (body.lobby).
    Cadres d'unité : images à proportions fixes ; portrait, barres et textes placés en % de l'image source
    (coordonnées mesurées dans le script). Les barres peintes servent de remplissage : la partie vide est recouverte. */
 .ico {
@@ -94,13 +95,13 @@ body:not(.mobile-mode):not(.lobby) #timer {
   font-size: 23px;
   line-height: 1.05;
 }
-body:not(.mobile-mode) .skill {
+body .skill {
   border: 0 !important;
   background: #0a0f26 !important;
   border-radius: 10px !important;
   box-shadow: 0 3px 8px #000a !important;
 }
-body:not(.mobile-mode) .skill::before {
+body .skill::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -108,27 +109,27 @@ body:not(.mobile-mode) .skill::before {
   background: url(../../assets/ui/hud/slot.webp) center / 100% 100% no-repeat;
   pointer-events: none;
 }
-body:not(.mobile-mode) .skill .icon,
-body:not(.mobile-mode) .skill .sweep {
+body .skill .icon,
+body .skill .sweep {
   inset: 7% !important;
   border-radius: 6px !important;
 }
-body:not(.mobile-mode) .skill .skillName {
+body .skill .skillName {
   left: 7%;
   right: 7%;
   bottom: 7%;
   border-radius: 0 0 6px 6px;
 }
-body:not(.mobile-mode) .skill .cost {
+body .skill .cost {
   left: 11%;
   top: 8%;
 }
-body:not(.mobile-mode) .skill .key {
+body .skill .key {
   right: 11%;
   top: 8%;
 }
-body:not(.mobile-mode) .skill.queued,
-body:not(.mobile-mode) .skill.pressed {
+body .skill.queued,
+body .skill.pressed {
   box-shadow:
     0 0 14px #ffc85d,
     0 0 4px #fff3c0 !important;
@@ -163,9 +164,9 @@ body:not(.mobile-mode) #pointerHint {
 }
 
 /* ---------- cadres d'unité ---------- */
-body:not(.mobile-mode) #selfFrame,
-body:not(.mobile-mode) #targetFrame,
-body:not(.mobile-mode) .unitRow {
+body #selfFrame,
+body #targetFrame,
+body .unitRow {
   border: 0 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
@@ -176,34 +177,34 @@ body:not(.mobile-mode) .unitRow {
   color: #f3ead2;
 }
 /* image du cadre au-dessus du portrait (qui passe dans le cercle transparent), sous les textes */
-body:not(.mobile-mode) #selfFrame::before,
-body:not(.mobile-mode) #targetFrame::before,
-body:not(.mobile-mode) .unitRow::before {
+body #selfFrame::before,
+body #targetFrame::before,
+body .unitRow::before {
   content: '';
   position: absolute;
   inset: 0;
   background: var(--fimg) center / 100% 100% no-repeat;
   pointer-events: none;
 }
-body:not(.mobile-mode) #selfFrame,
-body:not(.mobile-mode) #targetFrame {
+body #selfFrame,
+body #targetFrame {
   width: var(--hud-self);
   aspect-ratio: 643 / 243;
 }
-body:not(.mobile-mode) #selfFrame {
+body #selfFrame {
   --fimg: url(../../assets/ui/hud/frame_self.webp);
 }
-body:not(.mobile-mode) #targetFrame {
+body #targetFrame {
   --fimg: url(../../assets/ui/hud/frame_target.webp);
 }
-body:not(.mobile-mode) #targetFrame.noTarget {
+body #targetFrame.noTarget {
   display: none;
 }
-body:not(.mobile-mode) .hud.uiEdit #targetFrame.noTarget {
+body .hud.uiEdit #targetFrame.noTarget {
   display: block;
 }
-body:not(.mobile-mode) #partyFrames,
-body:not(.mobile-mode) #arenaFrames {
+body #partyFrames,
+body #arenaFrames {
   width: var(--hud-row);
   top: calc(14px + var(--hud-self) * 243 / 643 + 8px);
   padding: 0;
@@ -212,24 +213,24 @@ body:not(.mobile-mode) #arenaFrames {
   box-shadow: none !important;
   backdrop-filter: none;
 }
-body:not(.mobile-mode) .unitRow {
+body .unitRow {
   display: block;
   aspect-ratio: 433 / 129;
   --fimg: url(../../assets/ui/hud/frame_party.webp);
 }
-body:not(.mobile-mode) .unitRow.foe {
+body .unitRow.foe {
   --fimg: url(../../assets/ui/hud/frame_enemy.webp);
 }
-body:not(.mobile-mode) .unitRow + .unitRow {
+body .unitRow + .unitRow {
   margin-top: 5px;
 }
-body:not(.mobile-mode) .unitRow.sel {
+body .unitRow.sel {
   filter: drop-shadow(0 0 6px #ffd96f) drop-shadow(0 5px 10px #000b);
 }
 /* portraits dans le cercle transparent, emblème de classe dans le médaillon */
-body:not(.mobile-mode) .frame > .portrait,
-body:not(.mobile-mode) .unitRow > .portrait,
-body:not(.mobile-mode) .badge {
+body .frame > .portrait,
+body .unitRow > .portrait,
+body .badge {
   display: block;
   position: absolute;
   aspect-ratio: 1;
@@ -239,68 +240,68 @@ body:not(.mobile-mode) .badge {
   overflow: hidden;
   z-index: -1;
 }
-body:not(.mobile-mode) .badge {
+body .badge {
   z-index: 1;
   background: #0a0f26;
 }
-body:not(.mobile-mode) .badge img {
+body .badge img {
   width: 100%;
   height: 100%;
   display: block;
   object-fit: cover;
 }
-body:not(.mobile-mode) #selfFrame > .portrait {
+body #selfFrame > .portrait {
   left: 5.1%;
   top: 14.8%;
   width: 19.6%;
 }
-body:not(.mobile-mode) #targetFrame > .portrait {
+body #targetFrame > .portrait {
   left: 75.1%;
   top: 14.8%;
   width: 19.6%;
 }
-body:not(.mobile-mode) #selfFrame > .badge,
-body:not(.mobile-mode) #targetFrame > .badge {
+body #selfFrame > .badge,
+body #targetFrame > .badge {
   top: 57.6%;
   width: 6.5%;
   left: 4.4%;
 }
-body:not(.mobile-mode) #targetFrame > .badge {
+body #targetFrame > .badge {
   left: 89.1%;
 }
-body:not(.mobile-mode) .unitRow > .portrait {
+body .unitRow > .portrait {
   left: 6%;
   top: 16.3%;
   width: 18.5%;
 }
-body:not(.mobile-mode) .unitRow > .badge {
+body .unitRow > .badge {
   left: 6%;
   top: 67.4%;
   width: 6.2%;
 }
 /* textes du joueur / de la cible */
-body:not(.mobile-mode) #selfFrame > div:not(.portrait):not(.badge):not(.buffs):not(.castBar),
-body:not(.mobile-mode) #targetFrame > div:not(.portrait):not(.badge):not(.buffs):not(.castBar) {
+body #selfFrame > div:not(.portrait):not(.badge):not(.buffs):not(.castBar),
+body #targetFrame > div:not(.portrait):not(.badge):not(.buffs):not(.castBar) {
   position: absolute;
   left: 28.9%;
   right: 5.6%;
   margin: 0;
 }
-body:not(.mobile-mode) #targetFrame > div:not(.portrait):not(.badge):not(.buffs):not(.castBar) {
+body #targetFrame > div:not(.portrait):not(.badge):not(.buffs):not(.castBar) {
   left: 5.5%;
   right: 29%;
 }
-body:not(.mobile-mode) .frame .nameRow {
+body .frame .nameRow {
   top: 11%;
   font-size: 14px;
   line-height: 1.1;
   text-shadow: 0 1px 2px #000;
 }
-body:not(.mobile-mode) .frame .nameRow b {
+body .frame .nameRow b {
   font-family: 'Cinzel', Georgia, serif;
   color: #fff3d0;
 }
-body:not(.mobile-mode) .frame .fClass {
+body .frame .fClass {
   top: 27%;
   font-size: 10px;
   white-space: nowrap;
@@ -308,64 +309,64 @@ body:not(.mobile-mode) .frame .fClass {
   text-overflow: ellipsis;
   color: #e7c27a !important;
 }
-body:not(.mobile-mode) .frame .fInfo,
-body:not(.mobile-mode) .frame .fLos {
+body .frame .fInfo,
+body .frame .fLos {
   top: 74%;
   font-size: 10.5px;
   line-height: 12px;
   color: #dfe5ff !important;
 }
-body:not(.mobile-mode) .frame .fLos {
+body .frame .fLos {
   top: 84%;
 }
 /* incantation de la cible : à gauche du cadre, sous ses buffs (dessous, elle couvrirait les adversaires) */
-body:not(.mobile-mode) #targetFrame > .castBar {
+body #targetFrame > .castBar {
   position: absolute;
   top: 66%;
   right: calc(100% + 10px);
   width: 210px;
   margin: 0;
 }
-body:not(.mobile-mode) .castBar .cbTrack {
+body .castBar .cbTrack {
   height: 16px;
   border-color: #c99a4a;
 }
-body:not(.mobile-mode) .castBar .cbName {
+body .castBar .cbName {
   font-size: 10px;
   line-height: 16px;
   font-weight: 700;
 }
-body:not(.mobile-mode) .castBar .cbIcon {
+body .castBar .cbIcon {
   width: 18px;
   height: 18px;
 }
 /* barres : la peinture du cadre fait le remplissage, la partie vide est recouverte à droite */
-body:not(.mobile-mode) .frame .fHp {
+body .frame .fHp {
   top: 43.2%;
   height: 6.6%;
 }
-body:not(.mobile-mode) .frame .fRes {
+body .frame .fRes {
   top: 56.8%;
   height: 7.4%;
 }
-body:not(.mobile-mode) .frame .bar,
-body:not(.mobile-mode) .unitRow .hpb,
-body:not(.mobile-mode) .unitRow .rsb {
+body .frame .bar,
+body .unitRow .hpb,
+body .unitRow .rsb {
   background: none !important;
   box-shadow: none;
   border-radius: 99px;
   overflow: hidden;
 }
-body:not(.mobile-mode) .frame .bar .fill,
-body:not(.mobile-mode) .unitRow .hpb > div,
-body:not(.mobile-mode) .unitRow .rsb > div {
+body .frame .bar .fill,
+body .unitRow .hpb > div,
+body .unitRow .rsb > div {
   position: relative;
   background: none !important;
   transition: width 0.15s linear;
 }
-body:not(.mobile-mode) .frame .bar .fill::after,
-body:not(.mobile-mode) .unitRow .hpb > div::after,
-body:not(.mobile-mode) .unitRow .rsb > div::after {
+body .frame .bar .fill::after,
+body .unitRow .hpb > div::after,
+body .unitRow .rsb > div::after {
   content: '';
   position: absolute;
   left: 100%;
@@ -376,14 +377,14 @@ body:not(.mobile-mode) .unitRow .rsb > div::after {
   box-shadow: inset 2px 0 3px #000;
 }
 /* lignes de l'équipe et des adversaires */
-body:not(.mobile-mode) .unitRow .unitInfo {
+body .unitRow .unitInfo {
   position: absolute;
   left: 30.3%;
   right: 6.4%;
   top: 0;
   bottom: 0;
 }
-body:not(.mobile-mode) .unitRow .nm {
+body .unitRow .nm {
   position: absolute;
   left: 0;
   right: 0;
@@ -391,12 +392,12 @@ body:not(.mobile-mode) .unitRow .nm {
   font-size: 12px;
   text-shadow: 0 1px 2px #000;
 }
-body:not(.mobile-mode) .unitRow .nm span {
+body .unitRow .nm span {
   font-size: 10px;
   color: #e7c27a;
   opacity: 1;
 }
-body:not(.mobile-mode) .unitRow .hpb {
+body .unitRow .hpb {
   position: absolute;
   left: 0;
   right: 0;
@@ -404,7 +405,7 @@ body:not(.mobile-mode) .unitRow .hpb {
   height: 11.6%;
   margin: 0;
 }
-body:not(.mobile-mode) .unitRow .rsb {
+body .unitRow .rsb {
   position: absolute;
   left: 0;
   right: 0;
@@ -413,7 +414,7 @@ body:not(.mobile-mode) .unitRow .rsb {
   margin: 0;
 }
 /* incantation d'une ligne : à la place du nom */
-body:not(.mobile-mode) .unitRow .castBar {
+body .unitRow .castBar {
   position: absolute;
   left: 0;
   right: 0;
@@ -421,10 +422,10 @@ body:not(.mobile-mode) .unitRow .castBar {
   margin: 0;
   z-index: 2;
 }
-body:not(.mobile-mode) .unitRow .unitInfo:has(.castBar) .nm {
+body .unitRow .unitInfo:has(.castBar) .nm {
   visibility: hidden;
 }
-body:not(.mobile-mode) .unitRow .dr {
+body .unitRow .dr {
   position: absolute;
   left: 0;
   top: 84%;
@@ -437,6 +438,81 @@ body:not(.mobile-mode) .unitRow .dr {
   line-height: 12px;
   white-space: nowrap;
 }
-body:not(.mobile-mode) .unitRow .dr:empty {
+body .unitRow .dr:empty {
   display: none;
+}
+
+/* ---------- mobile (paysage) : mêmes cadres et cases, en petit, sans chevaucher les commandes tactiles ----------
+   colonne gauche : soi + équipe, au-dessus du joystick ; colonne droite : cible + adversaires, au-dessus des sorts ;
+   TARGET / JUMP à gauche des sorts. */
+body.mobile-mode {
+  --hud-self: 156px;
+  --hud-row: 128px;
+}
+body.mobile-mode #selfFrame,
+body.mobile-mode #targetFrame,
+body.mobile-mode #partyFrames,
+body.mobile-mode #arenaFrames {
+  padding: 0 !important;
+  background: none !important;
+  border: 0 !important;
+}
+body.mobile-mode #selfFrame,
+body.mobile-mode #targetFrame {
+  width: var(--hud-self) !important;
+  top: 4px !important;
+}
+body.mobile-mode #partyFrames,
+body.mobile-mode #arenaFrames {
+  width: var(--hud-row) !important;
+  top: calc(8px + var(--hud-self) * 243 / 643) !important;
+}
+body.mobile-mode .unitRow + .unitRow {
+  margin-top: 2px;
+}
+body.mobile-mode .frame .nameRow {
+  font-size: 9.5px;
+}
+body.mobile-mode .frame .fClass,
+body.mobile-mode .frame .fInfo,
+body.mobile-mode .frame .fLos {
+  font-size: 7px !important;
+  line-height: 8px;
+}
+body.mobile-mode .unitRow .nm {
+  font-size: 8.5px;
+}
+body.mobile-mode .unitRow .nm span {
+  font-size: 7px;
+}
+body.mobile-mode .unitRow .dr,
+body.mobile-mode #targetFrame > .castBar {
+  display: none;
+}
+body.mobile-mode #mobileJoystick {
+  width: 118px;
+  height: 118px;
+  bottom: 12px;
+}
+body.mobile-mode #mobileStick {
+  width: 52px;
+  height: 52px;
+  margin: -26px;
+}
+body.mobile-mode #mobileActions {
+  right: calc(max(8px, env(safe-area-inset-right)) + 4 * 68px + 10px);
+  bottom: 10px;
+  grid-template-columns: 50px;
+  gap: 6px;
+}
+body.mobile-mode .mobileAction {
+  width: 50px;
+  height: 50px;
+  font-size: 17px;
+}
+/* barre du haut en bois cerclée d'or (le blason resterait sous le chrono : pas sur mobile) */
+body.mobile-mode:not(.lobby) #top {
+  border: 0 !important;
+  border-image: url(../../assets/ui/hud/top_bar.webp) 20 70 fill / 8px 26px round stretch !important;
+  background: #2a1a10 !important;
 }
