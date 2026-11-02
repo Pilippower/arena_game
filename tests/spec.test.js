@@ -758,9 +758,9 @@ assert.deepEqual(
   assert.equal(c.bindCombo(ev('ShiftLeft', { shiftKey: true })), '', 'modificateur seul');
 }
 // Barres de vie des personnages assez grandes (demande : trop petites)
-assert.ok(read('index.html').includes('.nameplate .npBar{height:clamp(9px,1.15vh,13px)'), 'barres de vie épaisses');
+assert.ok(read('index.html').includes('.nameplate .npBar{height:clamp(7px,0.9vh,10px)'), 'barres de vie épaisses');
 assert.ok(
-  read('index.html').includes('body.mobile-mode #nameplates .nameplate .npBar{height:8px}'),
+  read('index.html').includes('body.mobile-mode #nameplates .nameplate .npBar{height:7px}'),
   'barres de vie mobile'
 );
 // Prêtre : Dispel (effets magiques) à la place de Divine Hymn, même icône ; soins fixes doublés
@@ -776,3 +776,4 @@ assert.ok(
 }
 // Pain : icône de l'utilisateur
 assert.ok(ctx.skillIconSVG('oracle', 5).includes('spells/pain.webp'), 'Pain : icône de l’utilisateur');
+assert.ok(read('index.html').includes('animation:npTargetGlow'), 'cible : contour doré qui pulse');
