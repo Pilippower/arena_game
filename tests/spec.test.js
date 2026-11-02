@@ -800,7 +800,7 @@ assert.ok(
 // Réglage : la caméra revient (ou non) derrière le personnage après un glisser au clic gauche
 assert.ok(
   read('index.html').includes('id="camReturnToggle"') &&
-    read('src/game/ai.js').includes('PREFS.cameraReturn === false'),
+    read('src/game/ai.js').includes('PREFS.cameraReturn === false && orbitBase !== null && !looking) return orbitBase'),
   'réglage retour caméra'
 );
 // IA de mêlée : suit un pas en arrière (repart dès la sortie de l'allonge)

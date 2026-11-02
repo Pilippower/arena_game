@@ -92,9 +92,12 @@ function keyboardTurn(dt) {
   const k = state?.keys,
     dir = (k?.turnright ? 1 : 0) - (k?.turnleft ? 1 : 0);
   if (!dir) return;
-  const next = GameLogic.applyLook(camera.yaw, camera.pitch, dir * TURN_PX_PER_S * dt, 0);
+  const next = GameLogic.applyLook(camera.yaw, camera.pitch, dir * TURN_PX_PER_S * dt, 0),
+    delta = next.yaw - camera.yaw;
   camera.yaw = next.yaw;
-  state.player.yaw = camera.yaw;
+  // caméra laissée de côté (glisser au clic gauche) : le personnage tourne du même angle, sans se recaler sur elle
+  if (orbitBase !== null) orbitBase += delta;
+  state.player.yaw = orbitBase ?? camera.yaw;
 }
 // Rotation de la caméra. `looking` (clic droit) tourne aussi le personnage ; `orbiting` (glisser au clic gauche) tourne la caméra seule.
 let orbiting = false;
@@ -178,7 +181,10 @@ document.addEventListener('mousemove', e => {
   MOUSE.moved += Math.abs(dx) + Math.abs(dy);
   if (!MOUSE.dragging && MOUSE.moved > DRAG_PX) {
     MOUSE.dragging = true;
-    if (MOUSE.down & 1 && !looking) orbiting = true;
+    if (MOUSE.down & 1 && !looking) {
+      orbiting = true;
+      if (orbitBase === null) orbitBase = camera.yaw; // direction d'avant le glisser (avant toute rotation)
+    }
     lockPointer();
   }
   if (MOUSE.dragging) applyLook(dx, dy);
