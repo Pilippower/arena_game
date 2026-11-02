@@ -876,10 +876,17 @@ function useTrinket(u) {
     u.fearOwner = null;
     u.rootBreakDamage = 0;
     u.rootMin = 0;
-    u.trinket = 90;
-    u.shield += 80;
+    u.trinket = TRINKET.cd;
+    u.shield += TRINKET.shield;
     u.shieldName = 'Trinket';
-    fx('ring', u.x, 0.15, u.z, [1, 0.82, 0.28], 0.8, 1);
+    // animation : colonne de lumière dorée, chaînes brisées (éclats), onde au sol
+    const y = u.y || 0,
+      gold = [1, 0.82, 0.28];
+    fx('holyBurst', u.x, y + 0.1, u.z, gold, 1.1, 1.6);
+    fx('blinkBurst', u.x, y + 1.1, u.z, gold, 0.8, 1.1);
+    fx('aura', u.x, y + 0.08, u.z, gold, 1.2, 1.3);
+    fx('ring', u.x, y + 0.15, u.z, gold, 0.8, 1.6);
+    fx('shield', u.x, y + 1.1, u.z, gold, 0.9, 0.85);
     addFloat(u, 'Trinket !', '#ffe17d');
     updateUI();
   }

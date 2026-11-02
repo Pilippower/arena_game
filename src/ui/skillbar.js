@@ -106,10 +106,17 @@ function skillTooltip(u, i) {
   <div class="tRow"><span>${castT ? `${fmtS(castT)} cast` : 'Instant'}</span><span>${S.cd ? `${fmtS(S.cd)} cooldown` : 'No cooldown'}</span></div>
   <div class="tDesc">${S.text ? S.text(S, D, H) : ''}</div>${burst > 1 ? '<div class="tNote">Burst active: damage +35% included</div>' : ''}${dmp < 1 ? `<div class="tNote">Dampening: healing -${Math.round((1 - dmp) * 100)}% included</div>` : ''}`;
 }
+// Trinket PvP : mêmes valeurs que useTrinket (combat.js)
+const TRINKET = { cd: 90, shield: 80 };
+function trinketTooltip(u) {
+  return `<div class="tName">PvP Trinket</div><div class="tRow"><span>Free</span><span>Self</span></div>
+  <div class="tRow"><span>Instant · usable while controlled</span><span>${fmtS(TRINKET.cd)} cooldown</span></div>
+  <div class="tDesc">Breaks free from every loss of control (stun, fear, sheep, sap, root, silence) and grants a shield absorbing <b class="tHeal">${TRINKET.shield}</b> damage.</div>${u?.trinket > 0 ? `<div class="tNote">Ready in ${Math.ceil(u.trinket)} s</div>` : ''}`;
+}
 let TIP_SLOT = null;
 document.addEventListener('pointermove', e => {
   if (e.pointerType === 'touch') return;
-  const b = e.target.closest?.('#skills .skill[data-i]');
+  const b = e.target.closest?.('#skills .skill[data-i], #skills #trinketBtn');
   const tip = $('skillTip');
   if (!tip) return;
   // au lobby, la barre montre la classe choisie (LOBBY_UNIT, settings.js)
@@ -119,10 +126,10 @@ document.addEventListener('pointermove', e => {
     TIP_SLOT = null;
     return;
   }
-  const i = +b.dataset.i;
+  const i = b.id === 'trinketBtn' ? 'trinket' : +b.dataset.i;
   if (TIP_SLOT !== u.cls + i) {
     TIP_SLOT = u.cls + i;
-    tip.innerHTML = skillTooltip(u, i);
+    tip.innerHTML = i === 'trinket' ? trinketTooltip(u) : skillTooltip(u, i);
   }
   tip.style.display = 'block';
   if (tip.parentNode !== document.body) document.body.appendChild(tip);

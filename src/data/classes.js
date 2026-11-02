@@ -12,7 +12,7 @@ const CLASS = {
     regen: 9,
     skills: [
       { n: 'Mortal Strike', cd: 6, c: 0 },
-      { n: 'Hamstring', cd: 7, c: 15 },
+      { n: 'Hamstring', cd: 0, c: 15 }, // pas de recharge propre : seulement le GCD
       { n: 'Pummel', cd: 12, c: 10 },
       { n: 'Shield Wall', cd: 22, c: 25 },
       { n: 'Charge', cd: 14, c: 18 }
@@ -67,7 +67,7 @@ const CLASS = {
     regen: 10,
     skills: [
       { n: 'Obliterate', cd: 5, c: 0 },
-      { n: 'Death Grip', cd: 10, c: 15 },
+      { n: 'Death Grip', cd: 25, c: 15 },
       { n: 'Asphyxiate', cd: 12, c: 18 },
       { n: 'Pillar of Frost', cd: 24, c: 25 }
     ],
@@ -104,7 +104,7 @@ const CLASS = {
     skills: [
       { n: 'Backstab', cd: 2.5, c: 15 },
       { n: 'Cloak', cd: 30, c: 20 },
-      { n: 'Kidney Shot', cd: 11, c: 22 },
+      { n: 'Kidney Shot', cd: 30, c: 22 },
       { n: 'Vendetta', cd: 24, c: 25 },
       { n: 'Shadowstep', cd: 13, c: 18 },
       { k: 'stealth', n: 'Stealth', cd: 0, c: 0 }
@@ -286,7 +286,7 @@ CLASS.shade.bars = {
     { k: 'stealth', n: 'Stealth', cd: 0, c: 0, t: 'self' }
   ]
 };
-const FORM_INFO = { cat: { speed: 1.3, swing: [1.0, 42] }, bear: { speed: 1, hp: 1.4, armor: 0.7, swing: [2.0, 58] } };
+const FORM_INFO = { cat: { speed: 1.3, swing: [1.0, 42] }, bear: { speed: 1, hp: 1.4, armor: 0.7, swing: [2.0, 45] } };
 const barKey = u => u.form || (u.stealth ? 'stealth' : '');
 function skillsOf(u) {
   return (u && CLASS[u.cls].bars?.[barKey(u)]) || CLASS[u.cls].skills;
@@ -620,7 +620,7 @@ const SPELLS = {
       `Brutal strike: ${D(S.dmg)} damage (${pct(S.crit)} crit chance). Reduces healing taken by ${pct(S.antiheal)} (stacks to 50%, fades slowly).`
   },
   Hamstring: {
-    dmg: 45,
+    dmg: 10,
     slow: 0.5,
     dur: 15,
     text: (S, D) => `${D(S.dmg)} damage and slows the target by ${pct(S.slow)} for ${sec(S.dur)}.`
@@ -721,7 +721,7 @@ const SPELLS = {
     text: S =>
       `Cloak of shadows: immune to spells (not to weapon attacks) for ${sec(S.dur)}. Removes magical roots and slows.`
   },
-  'Kidney Shot': { dmg: 55, stun: 3, text: (S, D) => `${D(S.dmg)} damage and stuns for ${sec(S.stun)}.` },
+  'Kidney Shot': { dmg: 55, stun: 6, text: (S, D) => `${D(S.dmg)} damage and stuns for ${sec(S.stun)}.` },
   Vendetta: { burst: 6.5, text: S => `+35% damage for ${sec(S.burst)}.` },
   Shadowstep: {
     dmg: 55,

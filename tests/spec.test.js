@@ -39,6 +39,14 @@ assert.match(
   'mage : critique sur cible gelée'
 );
 assert.match(read('src/game/combat.js'), /if \(u\.cast\) return 'Not ready yet'/, 'incantation en cours : message');
+assert.equal(ctx.FORM_INFO.bear.swing[1], 45, 'ours : 45 / 2 s');
+assert.equal(skill('reaver', 'Death Grip').cd, 25);
+assert.ok(skill('shade', 'Kidney Shot').stun === 6 && skill('shade', 'Kidney Shot').cd === 30, 'Kidney 6 s / 30 s');
+assert.ok(
+  skill('sentinel', 'Hamstring').cd === 0 && skill('sentinel', 'Hamstring').dmg === 10,
+  'Hamstring 10, sans CD'
+);
+assert.ok(read('src/ui/skillbar.js').includes('function trinketTooltip'), 'infobulle du trinket');
 // Formes / camouflage
 assert.equal(ctx.FORM_INFO.cat.speed, 1.3, 'félin +30 % de vitesse');
 assert.equal(ctx.FORM_INFO.bear.hp, 1.4, 'ours +40 % PV');
