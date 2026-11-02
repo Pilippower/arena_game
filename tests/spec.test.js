@@ -664,3 +664,35 @@ assert.ok(
 }
 // Chevalier de la mort : en course, garde de Sword_Idle (lame devant, pas à travers le corps)
 assert.ok(read('src/render/heroes3d.js').includes('/^(run|back|air|land)$/.test(rec.animKey)'), 'DK : garde en course');
+// Raccourcis : jamais deux sorts sur la même touche, même avec d'anciens réglages à 6 cases (bug : druide, 2 sorts sur 5)
+{
+  const vm = require('node:vm'),
+    src = read('src/core/setup.js'),
+    pick = re => src.match(re)[0];
+  for (const stored of [
+    ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'KeyE'],
+    ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'KeyQ', 'Digit5'],
+    ['Digit1', 'Digit1', 'KeyW', 'Digit4', 'KeyQ', 'KeyE']
+  ]) {
+    const c = {
+      clamp: (v, a, b) => Math.min(b, Math.max(a, v)),
+      localStorage: { getItem: () => JSON.stringify({ keybinds: { skills: stored } }) }
+    };
+    vm.createContext(c);
+    vm.runInContext(
+      [
+        /const PREF_KEY[^\n]*/,
+        /const DEFAULT_PREFS = \{[\s\S]*?\n\};/,
+        /function cloneDefaults[\s\S]*?\n\}/,
+        /function loadPrefs[\s\S]*?\n\}/
+      ]
+        .map(pick)
+        .join('\n') + '\nvar out = loadPrefs();',
+      c
+    );
+    const kb = c.out.keybinds,
+      all = [...kb.skills, kb.trinket, ...Object.values(kb.move)];
+    assert.equal(kb.skills.length, 7, '7 cases');
+    assert.equal(new Set(all).size, all.length, 'touches uniques : ' + kb.skills.join(','));
+  }
+}

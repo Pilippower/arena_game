@@ -42,15 +42,21 @@ function loadPrefs() {
     if (Number.isFinite(v.volume)) d.volume = clamp(v.volume, 0, 2.0);
     // anciens réglages par défaut (1–6) : remplacés par les nouveaux ; réglages personnalisés gardés et complétés
     const old = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6'];
-    const sk = v.keybinds?.skills;
-    if (Array.isArray(sk) && sk.length >= 5 && !old.every((c, i) => sk[i] === c || (i === 5 && sk.length === 5)))
-      d.keybinds.skills = d.keybinds.skills.map((c, i) =>
-        typeof sk[i] === 'string' && !sk.slice(0, i).includes(sk[i]) ? sk[i] : c
-      );
+    const sk = v.keybinds?.skills,
+      custom = Array.isArray(sk) && sk.length >= 5 && !old.every((c, i) => sk[i] === c || (i === 5 && sk.length === 5));
     if (v.keybinds?.move && typeof v.keybinds.move === 'object')
       for (const k of Object.keys(d.keybinds.move))
         if (typeof v.keybinds.move[k] === 'string') d.keybinds.move[k] = v.keybinds.move[k];
     if (typeof v.keybinds?.trinket === 'string') d.keybinds.trinket = v.keybinds.trinket;
+    // une touche ne commande jamais deux choses : une case sans touche valide (ou en double) prend sa touche par
+    // défaut si elle est libre, sinon la première libre (bug : la 7e case du druide héritait du « 5 » déjà pris)
+    const used = new Set([...Object.values(d.keybinds.move), d.keybinds.trinket]),
+      spare = ['Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'KeyF', 'KeyG', 'KeyT', 'KeyV', 'KeyC', 'KeyX'];
+    d.keybinds.skills = d.keybinds.skills.map((def, i) => {
+      const c = [custom && sk[i], def, ...spare].find(k => typeof k === 'string' && k && !used.has(k));
+      used.add(c);
+      return c;
+    });
     if (v.ui && typeof v.ui === 'object') d.ui = v.ui;
     if (typeof v.musicOn === 'boolean') d.musicOn = v.musicOn;
   } catch (_) {}
