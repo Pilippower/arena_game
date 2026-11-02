@@ -2,21 +2,24 @@
 // Écran de fin de match (design de l'utilisateur, src/ui/results.css) : tout ce qui brille est vivant.
 // Canevas par-dessus le panneau (mélange additif) : flammes des deux torches du cadre, étincelles dorées qui
 // montent autour du cadre (victoire) ou braises rouges (défaite) ; la lueur du cadre respire (CSS).
-// Torches : position de la base de la flamme dans l'image du cadre (pixels de assets_src/ui/results_kit.png).
+// Torches : base de la flamme dans l'image du cadre (pixels de l'image ; w = largeur du cadre, fo = décalage du
+// cadre sous le bandeau, mêmes valeurs que results.css).
 const RESULT_FRAMES = {
   win: {
-    w: 652,
+    w: 896,
+    fo: 150,
     torches: [
-      [27, 162],
-      [624, 165]
+      [38, 172],
+      [858, 172]
     ],
     spark: [255, 214, 120]
   },
   loss: {
-    w: 613,
+    w: 726,
+    fo: 112,
     torches: [
-      [20, 172],
-      [589, 172]
+      [18, 172],
+      [705, 172]
     ],
     spark: [255, 90, 40]
   }
@@ -43,7 +46,7 @@ function resultsFxStart(win) {
       pr = panel.getBoundingClientRect(),
       u = pr.width / F.w,
       ox = pr.left - br.left,
-      oy = pr.top - br.top;
+      oy = pr.top - br.top + F.fo * u; // haut du cadre (sous le bandeau)
     // flammes des torches
     for (const [tx, ty] of F.torches)
       for (let k = 0; k < 3; k++)

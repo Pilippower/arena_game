@@ -340,7 +340,15 @@ assert.match(
 // Écran de fin de match : panoplie de l'utilisateur, animé (flammes, étincelles / braises)
 {
   const fs = require('node:fs');
-  for (const f of ['frame_victory_top', 'frame_victory_mid', 'frame_defeat_top', 'btn_again_loss', 'ribbon_ally'])
+  for (const f of [
+    'frame_victory_top',
+    'frame_victory_mid',
+    'frame_defeat_top',
+    'banner_victory',
+    'banner_defeat',
+    'btn_again_loss',
+    'ribbon_ally'
+  ])
     assert.ok(
       fs.existsSync(require('node:path').join(__dirname, '..', 'assets/ui/results', f + '.webp')),
       'résultats : ' + f
@@ -446,9 +454,9 @@ assert.ok(
   );
 }
 assert.ok(
-  read('src/ui/results.css').includes('--scy: 118.5;') &&
-    read('src/ui/results.css').includes('top: calc((var(--scy) - 14) * var(--u));'),
-  'score centré sur la plaque (victoire et défaite)'
+  read('src/ui/results.css').includes('banner_victory.webp') &&
+    read('src/ui/results.css').includes('top: calc(var(--scy) * var(--bs) * var(--g) - 14 * var(--u));'),
+  'bandeau HD, score centré sur sa plaque'
 );
 for (const m of Object.values(ctx.MAPS)) assert.ok(m.desc.length <= 40, 'description d’arène courte : ' + m.name);
 assert.ok(

@@ -41,52 +41,71 @@ body:not(.mobile-mode) #results.loss {
   pointer-events: none;
 }
 body:not(.mobile-mode) #results .resPanel {
-  /* tout est en --u : le panneau garde ses proportions et tient dans la hauteur (3 joueurs par équipe ≈ 525 u) */
-  --u: min(calc(900px / var(--fw)), calc(64cqw / var(--fw)), calc(94cqh / 525));
+  /* Bandeau (titre + plaque de score) posé au-dessus du cadre, qu'il chevauche. Tout est relatif à la largeur
+     --W du panneau : --g = 1 pixel de l'image du cadre, --u = unité du contenu (tableaux, boutons, rubans).
+     --fo : décalage du cadre sous le bandeau ; --ft / --fb : hauteurs du haut et du bas du cadre (la bande du
+     milieu est étirée selon le nombre de joueurs). */
+  --W: min(900px, 64cqw, calc(94cqh * 1.02));
+  --u: calc(var(--W) / 652);
+  --g: calc(var(--W) / var(--fw));
   position: relative;
-  width: calc(var(--fw) * var(--u));
+  width: var(--W);
   max-width: none;
   max-height: none;
-  min-height: calc(var(--fh) * var(--u));
+  min-height: calc((var(--fo) + var(--fh)) * var(--g));
   overflow: visible;
-  padding: calc(160 * var(--u)) calc(58 * var(--u)) calc(44 * var(--u));
+  padding: calc((var(--fo) + var(--pt)) * var(--g)) calc(var(--px) * var(--g)) calc(var(--pb) * var(--g));
   border: 0 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
   background-color: transparent !important;
   background-repeat: no-repeat !important;
   background-size:
+    calc(var(--bw) * var(--bs) * var(--g)) auto,
     100% auto,
     100% auto,
-    100% calc(100% - (210 + var(--fb)) * var(--u) + 2px) !important;
+    100% calc(100% - (var(--fo) + var(--ft) + var(--fb)) * var(--g) + 2px) !important;
   /* bande du milieu : 1 px sous chaque raccord (sinon une fine ligne apparaît selon l'arrondi) */
   background-position:
     top center,
+    0 calc(var(--fo) * var(--g)),
     bottom center,
-    0 calc(210 * var(--u) - 1px) !important;
+    0 calc((var(--fo) + var(--ft)) * var(--g) - 1px) !important;
   animation: resFrameGlow 2.6s ease-in-out infinite alternate;
 }
 body:not(.mobile-mode) #results.win .resPanel {
-  --fw: 652;
-  --fh: 354;
-  --fb: 119;
-  --scx: 330.5;
-  --scy: 125;
+  --fw: 896;
+  --fh: 467;
+  --ft: 376;
+  --fb: 75;
+  --fo: 150;
+  --bw: 722;
+  --bs: 0.968;
+  --scy: 178;
+  --pt: 70;
+  --px: 112;
+  --pb: 62;
   --edge: #ffc85a;
   background-image:
-    url(../../assets/ui/results/frame_victory_top.webp), url(../../assets/ui/results/frame_victory_bottom.webp),
-    url(../../assets/ui/results/frame_victory_mid.webp) !important;
+    url(../../assets/ui/results/banner_victory.webp), url(../../assets/ui/results/frame_victory_top.webp),
+    url(../../assets/ui/results/frame_victory_bottom.webp), url(../../assets/ui/results/frame_victory_mid.webp) !important;
 }
 body:not(.mobile-mode) #results.loss .resPanel {
-  --fw: 613;
-  --fh: 352;
-  --fb: 117;
-  --scx: 307;
-  --scy: 118.5;
+  --fw: 726;
+  --fh: 394;
+  --ft: 302;
+  --fb: 82;
+  --fo: 112;
+  --bw: 729;
+  --bs: 0.777;
+  --scy: 167.5;
+  --pt: 66;
+  --px: 66;
+  --pb: 52;
   --edge: #ff4a2a;
   background-image:
-    url(../../assets/ui/results/frame_defeat_top.webp), url(../../assets/ui/results/frame_defeat_bottom.webp),
-    url(../../assets/ui/results/frame_defeat_mid.webp) !important;
+    url(../../assets/ui/results/banner_defeat.webp), url(../../assets/ui/results/frame_defeat_top.webp),
+    url(../../assets/ui/results/frame_defeat_bottom.webp), url(../../assets/ui/results/frame_defeat_mid.webp) !important;
 }
 /* la lumière du cadre respire */
 @keyframes resFrameGlow {
@@ -105,12 +124,11 @@ body:not(.mobile-mode) #resultsTitle {
   overflow: hidden;
   clip: rect(0 0 0 0);
 }
-/* score centré sur la plaque peinte : centre mesuré sur chaque cadre (--scx, --scy en pixels de l'image source),
-   tout en unités --u, donc relatif à la taille du panneau */
+/* score centré sur la plaque peinte du bandeau (--scy : centre mesuré, en pixels de l'image du bandeau) */
 body:not(.mobile-mode) #resultsScore {
   position: absolute;
-  left: calc(var(--scx) * var(--u));
-  top: calc((var(--scy) - 14) * var(--u));
+  left: 50%;
+  top: calc(var(--scy) * var(--bs) * var(--g) - 14 * var(--u));
   height: calc(28 * var(--u));
   transform: translateX(-50%);
   margin: 0;
