@@ -662,8 +662,12 @@ assert.ok(
     assert.ok(sfx.includes(k), 'sons : ' + k);
   assert.ok(read('src/game/rules.js').includes('SFX.effort(u)'), 'cri sur les auto-attaques');
 }
-// Chevalier de la mort : en course, garde de Sword_Idle (lame devant, pas à travers le corps)
-assert.ok(read('src/render/heroes3d.js').includes('/^(run|back|air|land)$/.test(rec.animKey)'), 'DK : garde en course');
+// Chevalier de la mort : garde à deux mains devant lui hors frappe (mains jamais derrière le dos)
+assert.ok(
+  read('src/render/heroes3d.js').includes("(rec.animKey === 'attack' ? 0 : 1)") &&
+    read('src/render/heroes3d.js').includes('new THREE.Vector3(-0.1, 1.0 * hy, 0.3 * hy)'),
+  'DK : garde à deux mains devant lui'
+);
 // Raccourcis : jamais deux sorts sur la même touche, même avec d'anciens réglages à 6 cases (bug : druide, 2 sorts sur 5)
 {
   const vm = require('node:vm'),
