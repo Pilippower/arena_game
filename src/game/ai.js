@@ -47,19 +47,74 @@ const AI_PROFILES = {
     heal: 1.04
   }
 };
-// Rôle de chaque sort dans la stratégie.
+// Rôle de chaque sort dans la stratégie, par nom de sort (converti ci-dessous en numéro de case de la barre).
+// melee: 1 = drapeau « combattant au corps à corps ». Clé cls_bar = barre de forme (CLASS[cls].bars[bar]).
 const AI_ROLE = {
-  sentinel: { melee: 1, dmg: 0, slow: 1, kick: 2, def: 3, gap: 4 },
-  arcanist: { dmg: 0, peel: 1, kick: 2, def: 3, escape: 4, cc: 5, ccHealer: 1 },
-  oracle: { healer: 1, heal: 0, shield: 1, fear: 2, mass: 3, dmg: 4, dot: 5 },
-  reaver: { melee: 1, dmg: 0, grip: 1, stun: 2, kickStun: 1, burst: 3, coil: 4 },
-  warden: { dmg: 0, root: 1, hot: 2, dot: 3, selfHeal: 4 },
-  warden_cat: { melee: 1, dmg: 0, slow: 1, stun: 2, kickStun: 2, gap: 3 },
-  warden_bear: { melee: 1, dmg: 0, aoe: 1, def: 2, gap: 3 },
+  sentinel: {
+    melee: 1,
+    dmg: 'Mortal Strike',
+    slow: 'Hamstring',
+    kick: 'Pummel',
+    def: 'Shield Wall',
+    gap: 'Charge'
+  },
+  arcanist: {
+    dmg: 'Frost Bolt',
+    peel: 'Frost Nova',
+    kick: 'Counterspell',
+    def: 'Arcane Barrier',
+    escape: 'Blink',
+    cc: 'Polymorph'
+  },
+  oracle: {
+    heal: 'Flash Heal',
+    shield: 'Power Shield',
+    fear: 'Holy Terror',
+    mass: 'Divine Hymn',
+    dmg: 'Smite',
+    dot: 'Pain'
+  },
+  reaver: {
+    melee: 1,
+    dmg: 'Obliterate',
+    grip: 'Death Grip',
+    stun: 'Asphyxiate',
+    kickStun: 'Death Grip',
+    burst: 'Pillar of Frost',
+    coil: 'Death Coil'
+  },
+  warden: { dmg: 'Wrath', root: 'Entangling Roots', hot: 'Rejuvenation', dot: 'Moonfire', selfHeal: 'Regrowth' },
+  warden_cat: { melee: 1, dmg: 'Shred', slow: 'Rake', stun: 'Maim', kickStun: 'Maim', gap: 'Wild Charge' },
+  warden_bear: { melee: 1, dmg: 'Maul', aoe: 'Swipe', def: 'Demoralizing Roar', gap: 'Wild Charge' },
   shade_stealth: { melee: 1 },
-  shade: { melee: 1, dmg: 0, def: 1, stun: 2, kickStun: 1, burst: 3, gap: 4 },
-  warlock: { dmg: 0, cc: 1, ccHealer: 1, kick: 2, dot: 3, escape: 4, drain: 5 }
+  shade: {
+    melee: 1,
+    dmg: 'Backstab',
+    def: 'Cloak',
+    stun: 'Kidney Shot',
+    kickStun: 'Cloak',
+    burst: 'Vendetta',
+    gap: 'Shadowstep'
+  },
+  warlock: {
+    dmg: 'Shadow Bolt',
+    cc: 'Fear',
+    kick: 'Spell Lock',
+    dot: 'Corruption',
+    escape: 'Demonic Gate',
+    drain: 'Drain Life'
+  }
 };
+for (const [key, R] of Object.entries(AI_ROLE)) {
+  const [cls, bar] = key.split('_'),
+    skills = bar ? CLASS[cls].bars[bar] : CLASS[cls].skills;
+  for (const r in R)
+    if (typeof R[r] === 'string') {
+      const i = skills.findIndex(s => s.n === R[r]);
+      if (i < 0) console.warn('AI_ROLE : sort inconnu', key, R[r]);
+      R[r] = i < 0 ? null : i;
+    }
+}
 let DIFFICULTY = (() => {
   try {
     return localStorage.getItem('arenaDifficulty') || 'medium';

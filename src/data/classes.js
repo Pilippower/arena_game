@@ -472,7 +472,8 @@ function aiSpecial(u, P) {
   if (u.cls === 'shade') {
     const foes = enemies(u).filter(e => !e.stealth);
     if (!u.stealth) {
-      if (!inCombat(u) && aiCanUse(u, 5) && foes.every(e => d2(u, e) > 9) && useSkill(u, 5)) return true;
+      const i = ready('stealth');
+      if (!inCombat(u) && i >= 0 && foes.every(e => d2(u, e) > 9) && useSkill(u, i)) return true;
       return false;
     }
     const healer = foes.find(e => isHealer(e) && !ccd(e) && (e.dr.poly ?? 1) > 0),

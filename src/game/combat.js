@@ -659,66 +659,18 @@ function tryPlayerSkill(i) {
   showError(skillFailReason(p, i));
   return false;
 }
-function spellFx(u, i, t, origin) {
-  const c = CLASS[u.cls].accent,
-    at = t || u;
-  if (i === 4 && MOBILITY_SLOT.has(u.cls)) {
-    if (u.cls === 'arcanist') {
-      fx('blinkBurst', origin.x, (u.y || 0) + 0.9, origin.z, c, 0.5, 0.72);
-      fx('blinkBurst', u.x, (u.y || 0) + 0.9, u.z, c, 0.6, 0.82);
-      fx('blinkRibbon', origin.x, (u.y || 0) + 0.8, origin.z, c, 0.42, 0.18, [u.x, (u.y || 0) + 0.8, u.z]);
-    } else if (u.cls === 'sentinel') {
-      /* Charge crée son trail pendant la ruée */
-    } else fx('trail', origin.x, (u.y || 0) + 0.6, origin.z, c, 0.36, 0.24, [u.x, (u.y || 0) + 0.6, u.z]);
-    return;
-  }
-  if (u.cls === 'arcanist') {
-    if (i === 0) fx('castArcane', u.x, (u.y || 0) + 1.25, u.z, c, 0.8, 0.55);
-    else if (i === 1) fx('nova', u.x, 0.1, u.z, c, 0.82, 1.65);
-    else if (i === 2) fx('silence', at.x, (at.y || 0) + 1.25, at.z, c, 0.52, 0.72);
-    else if (i === 3) fx('aura', u.x, 0.08, u.z, c, 1.0, 1.1);
-    else if (i === 5) fx('castArcane', u.x, (u.y || 0) + 1.25, u.z, [0.95, 0.8, 1], 0.8, 0.55);
-  } else if (u.cls === 'oracle') {
-    if (i === 0) fx('healCast', u.x, (u.y || 0) + 1.35, u.z, c, 0.85, 0.5, at ? [at.x, (at.y || 0) + 1.3, at.z] : null);
-    else if (i === 1) fx('shield', at.x, (at.y || 0) + 1.1, at.z, c, 0.85, 0.78);
-    else if (i === 2) fx('nova', u.x, 0.1, u.z, [0.7, 0.45, 1], 1.4, 1.2);
-    else if (i === 3) fx('holyBurst', u.x, 0.12, u.z, c, 1.05, 1.7);
-  } else if (u.cls === 'warden') {
-    if (i === 0) fx('slash', at.x, (at.y || 0) + 1.1, at.z, c, 0.32, 0.55);
-    else if (i === 1) fx('roots', at.x, 0.08, at.z, c, 0.9, 0.85);
-    else if (i === 2) fx('holyBurst', at.x, 0.1, at.z, [0.35, 1, 0.45], 0.9, 1);
-    else if (i === 3) fx('arcaneImpact', at.x, (at.y || 0) + 1.2, at.z, [0.7, 0.75, 1], 0.6, 0.7);
-  } else if (u.cls === 'warlock') {
-    if (i === 0) fx('castShadow', u.x, (u.y || 0) + 1.25, u.z, c, 0.9, 0.55);
-    else if (i === 1) fx('fear', at.x, (at.y || 0) + 1.1, at.z, c, 0.85, 0.85);
-    else if (i === 2) fx('silence', at.x, (at.y || 0) + 1.25, at.z, c, 0.55, 0.72);
-    else if (i === 3) fx('silence', at.x, (at.y || 0) + 1.25, at.z, [0.6, 0.35, 0.9], 0.6, 0.7);
-  } else if (u.cls === 'reaver') {
-    if (i === 0) fx('slash', at.x, (at.y || 0) + 1.1, at.z, c, 0.34, 0.65);
-    else if (i === 1) fx('chain', u.x, (u.y || 0) + 1.2, u.z, c, 0.42, 0.18, [at.x, (at.y || 0) + 1.2, at.z]);
-    else if (i === 2) fx('stun', at.x, (at.y || 0) + 1.45, at.z, c, 0.55, 0.7);
-    else if (i === 3) fx('frostAura', u.x, 0.1, u.z, c, 1.1, 1.2);
-  } else if (u.cls === 'sentinel') {
-    if (i === 0) fx('slash', at.x, (at.y || 0) + 1.1, at.z, c, 0.32, 0.62);
-    else if (i === 1) fx('snare', at.x, 0.1, at.z, c, 0.62, 0.75);
-    else if (i === 2) fx('silence', at.x, (at.y || 0) + 1.2, at.z, c, 0.38, 0.6);
-    else if (i === 3) fx('shield', u.x, (u.y || 0) + 1.05, u.z, c, 0.9, 0.86);
-  } else if (u.cls === 'shade') {
-    if (i === 0) fx('slash', at.x, (at.y || 0) + 1.0, at.z, c, 0.28, 0.55);
-    else if (i === 1) fx('cloak', u.x, (u.y || 0) + 1.0, u.z, c, 0.8, 0.9);
-    else if (i === 2) fx('stun', at.x, (at.y || 0) + 1.45, at.z, c, 0.52, 0.65);
-    else if (i === 3) fx('darkAura', u.x, 0.1, u.z, c, 0.9, 1.0);
-  }
-}
-const MOBILITY_SLOT = new Set(['sentinel', 'arcanist', 'warlock', 'shade']);
+// Sorts de la barre de base : conditions communes ici, effet propre à chaque sort dans SPELL_CAST (game/spells.js).
 function useSkill(u, i) {
   if (!u || !skillsOf(u)[i] || u.poly > 0) return false;
   if (skillsOf(u)[i].k) return useSpecialSkill(u, i);
-  const origin = { x: u?.x || 0, z: u?.z || 0 };
+  const S = skillsOf(u)[i],
+    C = SPELL_CAST[S.n];
+  if (!C) return false;
+  const origin = { x: u.x || 0, z: u.z || 0 };
   // Blink du mage : utilisable étourdi, il brise l'étourdissement
-  const blinkOut = u.cls === 'arcanist' && i === 4 && u.stun > 0;
+  const blinkOut = C.usableStunned && u.stun > 0;
   if (
-    !u?.alive ||
+    !u.alive ||
     (u.stun > 0 && !blinkOut) ||
     u.fear > 0 ||
     u.gcd > 0 ||
@@ -729,242 +681,32 @@ function useSkill(u, i) {
   )
     return false;
   if (blinkOut) u.stun = 0;
-  let t = hostileTarget(u);
+  const t = hostileTarget(u);
   if (u.ai) u.target = t;
   else if (t && !u.target?.alive) setTarget(u, t);
-  const c = CLASS[u.cls],
-    S = skillsOf(u)[i];
   u.curSchool = S.s || 'physical';
   SPELL_NOW = S.n;
-  const selfMobility = i === 4 && ['arcanist', 'warlock'].includes(u.cls),
-    selfCC = u.cls === 'arcanist' && i === 1;
-  // soins, boucliers et sorts sur soi : pas besoin d'une cible ennemie
-  if (!t && u.cls !== 'oracle' && S.t !== 'heal' && S.t !== 'self' && !selfMobility && !selfCC) return false;
   const d = t ? d2(u, t) : 999,
-    melee = d < 2.45,
-    range = !!t && d < SPELL_RANGE && los(u, t);
-  if (t && S.t !== 'heal' && !(i === 4 && u.cls === 'arcanist') && !(u.cls === 'arcanist' && i === 1)) face(u, t);
-  let ok = true;
-  // emplacement 5 = mobilité (Charge, Blink, Demonic Gate, Shadowstep) ; ailleurs, un sort comme les autres
-  if (i === 4 && MOBILITY_SLOT.has(u.cls)) {
-    if (u.cls === 'arcanist') {
-      blinkForward(u, S.dist);
-      action(u, 'dash');
-    } else if (u.cls === 'sentinel') {
-      ok = beginCharge(u, t);
-    } else if (u.cls === 'oracle') {
-      const b = blinkForward(u, S.dist);
-      u.root = 0;
-      action(u, 'dash');
-    } else if (u.cls === 'warlock') {
-      // Demonic Gate : ne libère ni des étourdissements ni des racines (utilisable immobilisé : on le reste)
-      blinkForward(u, S.dist, true);
-      action(u, 'dash');
-    } else if (u.cls === 'reaver') {
-      const b = blinkForward(u, S.dist);
-      u.visualSnap = true;
-      u.speedBuff = Math.max(u.speedBuff, 3);
-      action(u, 'dash');
-    } else {
-      if (!t || !range) ok = false;
-      else {
-        dashToward(u, t, 8);
-        if (d2(u, t) < 2.7) damage(u, t, S.dmg);
-        action(u, 'dash');
-      }
-    }
-    if (ok && u.cls !== 'sentinel') {
-      resolveWalls(u);
-      fx('ring', u.x, 0.12, u.z, c.accent, 0.5, 0.75);
-    }
-  } else if (u.cls === 'sentinel') {
-    if (i === 0 && melee) {
-      damage(u, t, S.dmg, Math.random() < S.crit);
-      t.antiheal = Math.min(0.5, t.antiheal + S.antiheal);
-      markDebuff(t, 'antiheal');
-      action(u, 'melee');
-    } else if (i === 1 && melee) {
-      applySlow(t, S.slow, S.dur);
-      damage(u, t, S.dmg);
-      action(u, 'melee');
-    } else if (i === 2 && melee) {
-      interrupt(u, t);
-      action(u, 'melee');
-    } else if (i === 3) {
-      u.shield += S.shield;
-      u.shieldName = S.n;
-      u.shieldSrc = u;
-      fx('ring', u.x, 0.5, u.z, c.accent, 0.8, 1);
-      action(u, 'cast');
-    } else ok = false;
-  } else if (u.cls === 'reaver') {
-    if (i === 0 && melee) {
-      damage(u, t, S.dmg, Math.random() < S.crit);
-      t.antiheal = Math.min(0.5, t.antiheal + S.antiheal);
-      markDebuff(t, 'antiheal');
-      action(u, 'melee');
-    } else if (i === 1 && range) {
-      damage(u, t, S.dmg);
-      startGrip(u, t);
-      action(u, 'cast');
-    } else if (i === 2 && range) {
-      damage(u, t, S.dmg);
-      control(t, 'stun', S.stun);
-      action(u, 'cast');
-    } else if (i === 3) {
-      u.burst = S.burst;
-      u.speedBuff = S.burst;
-      fx('ring', u.x, 0.1, u.z, [1, 0.25, 0.05], 1, 1.15);
-      action(u, 'cast');
-    } else if (i === 4 && range) {
-      // Death Coil : vole 15 % des PV max de la cible (soin compté dans le récap)
-      fx('shadowProjectile', u.x, (u.y || 0) + 1.5, u.z, [0.55, 1, 0.45], 0.45, 0.3, [t.x, (t.y || 0) + 1.2, t.z]);
-      const h0 = t.hp;
-      damage(u, t, t.maxHp * S.pct);
-      if (h0 > t.hp) heal(u, u, h0 - t.hp);
-      action(u, 'cast');
-    } else ok = false;
-  } else if (u.cls === 'arcanist') {
-    if (i === 0 && range && u.silence <= 0) {
-      // Frost Bolt : ralentit à l'impact (sim.js)
-      u.cast = castOf(u, i, t, 'damage', S.dmg);
-      u.cast.slow = { pct: S.slow, dur: S.dur };
-      action(u, 'cast');
-    } else if (i === 1) {
-      const hit = enemies(u).filter(e => d2(u, e) < S.radius && los(u, e));
-      // sort de zone : se lance même sans ennemi à portée (recharge et ressource consommées)
-      hit.forEach(e => {
-        damage(u, e, e === t ? S.dmg : S.dmg2);
-        // gel de 6 s qui ne casse pas sous les coups (demande de l'utilisateur)
-        if (control(e, 'root', S.root, u)) e.rootKind = 'ice';
-        fx('nova', e.x, 0.1, e.z, c.accent, 0.72, 0.75);
-      });
-      fx('nova', u.x, 0.1, u.z, c.accent, 1.15, 1.8);
-      action(u, 'cast');
-    } else if (i === 2 && range) {
-      interrupt(u, t);
-      action(u, 'cast');
-    } else if (i === 3) {
-      // Arcane Barrier
-      u.shield += S.shield;
-      u.shieldName = S.n;
-      u.shieldSrc = u;
-      fx('shield', u.x, (u.y || 0) + 1.1, u.z, [0.7, 0.55, 1], 0.9, 0.85);
-      action(u, 'cast');
-    } else if (i === 5 && range && u.silence <= 0) {
-      u.cast = castOf(u, i, t, 'poly', S.dur);
-      action(u, 'cast');
-    } else ok = false;
-  } else if (u.cls === 'oracle') {
-    const a = u.ai ? lowestAlly(u) : friendlyTarget(u);
-    if (i === 0 && a && los(u, a) && u.silence <= 0) {
-      u.cast = castOf(u, i, a, 'heal', S.heal);
-      action(u, 'cast');
-    } else if (i === 1 && a) {
-      a.shield += S.shield;
-      a.shieldName = S.n;
-      a.shieldSrc = u; // l'absorption est comptée en soins pour le prêtre (récap)
-      fx('ring', a.x, 0.2, a.z, c.accent, 0.8, 0.8);
-      action(u, 'cast');
-    } else if (i === 2) {
-      // Holy Terror : fear instantané de tous les ennemis à portée (rendements décroissants habituels)
-      const hit = enemies(u).filter(e => d2(u, e) < S.radius && los(u, e) && !e.stealth);
-      // sort de zone : se lance même sans ennemi à portée (recharge et ressource consommées)
-      hit.forEach(e => {
-        if (control(e, 'fear', S.dur, u)) fx('fear', e.x, (e.y || 0) + 1.15, e.z, c.accent, 1.0, 1.05);
-      });
-      action(u, 'cast');
-    } else if (i === 4 && range && u.silence <= 0) {
-      u.cast = castOf(u, i, t, 'damage', S.dmg);
-      action(u, 'cast');
-    } else if (i === 5 && range && u.silence <= 0) {
-      // Pain : dégâts dans la durée, sans dégât initial
-      addAura(t, u, S.n, 'dot', S.dot, S.dur, 'shadow');
-      fx('silence', t.x, (t.y || 0) + 1.25, t.z, [0.6, 0.35, 0.9], 0.55, 0.7);
-      action(u, 'cast');
-    } else if (i === 3) {
-      allies(u).forEach(v => heal(u, v, S.heal));
-      fx('ring', u.x, 0.1, u.z, c.accent, 1, 2);
-      action(u, 'cast');
-    } else ok = false;
-  } else if (u.cls === 'warden') {
-    if (i === 0 && range && u.silence <= 0) {
-      u.cast = castOf(u, i, t, 'damage', S.dmg);
-      action(u, 'cast');
-    } else if (i === 1 && range) {
-      if (control(t, 'root', S.root, u)) t.rootKind = 'vines';
-      fx('roots', t.x, 0.1, t.z, c.accent, 0.8, 0.7);
-      action(u, 'cast');
-    } else if (i === 2 || i === 4) {
-      // Rejuvenation (instantané, soin dans la durée) / Regrowth (incantation, soin direct puis dans la durée)
-      const a = u.ai ? lowestAlly(u) : friendlyTarget(u);
-      if (!a || !los(u, a) || d2(u, a) > SPELL_RANGE || (i === 4 && u.silence > 0)) ok = false;
-      else if (i === 2) {
-        addAura(a, u, S.n, 'hot', S.hot, S.dur, 'nature');
-        action(u, 'cast');
-      } else {
-        u.cast = castOf(u, i, a, 'heal', S.heal);
-        u.cast.hot = { total: S.hot, dur: S.dur };
-        action(u, 'cast');
-      }
-    } else if (i === 3 && range) {
-      // Moonfire : dégâts directs puis dans la durée
-      damage(u, t, S.dmg);
-      addAura(t, u, S.n, 'dot', S.dot, S.dur, 'arcane');
-      action(u, 'cast');
-    } else ok = false;
-  } else if (u.cls === 'shade') {
-    if (i === 0 && melee) {
-      damage(u, t, S.dmg, Math.random() < S.crit);
-      action(u, 'melee');
-    } else if (i === 1) {
-      // Cloak of Shadows : immunité aux sorts, libère des racines et ralentissements magiques
-      u.spellImmune = S.dur;
-      if (u.root > 0 && u.rootSchool !== 'physical') {
-        u.root = 0;
-        u.rootBreakDamage = 0;
-      }
-      if (u.slow > 0 && u.slowMagic) u.slow = 0;
-      u.cast = null;
-      fx('cloak', u.x, (u.y || 0) + 1, u.z, [0.6, 0.4, 0.9], 0.9, 0.7);
-      fx('ring', u.x, 0.1, u.z, c.accent, 0.7, 0.9);
-      action(u, 'cast');
-    } else if (i === 2 && melee) {
-      damage(u, t, S.dmg);
-      control(t, 'stun', S.stun);
-      action(u, 'melee');
-    } else if (i === 3) {
-      u.burst = S.burst;
-      action(u, 'cast');
-    } else ok = false;
-  } else if (u.cls === 'warlock') {
-    if (i === 0 && range && u.silence <= 0) {
-      u.cast = castOf(u, i, t, 'damage', S.dmg);
-      action(u, 'cast');
-    } else if (i === 1 && range && u.silence <= 0) {
-      u.cast = castOf(u, i, t, 'fear', S.dur);
-      action(u, 'cast');
-    } else if (i === 2 && range) {
-      interrupt(u, t);
-      action(u, 'cast');
-    } else if (i === 3 && range) {
-      // Corruption : dégâts dans la durée
-      addAura(t, u, S.n, 'dot', S.dot, S.dur, 'shadow');
-      action(u, 'cast');
-    } else if (i === 5 && range && u.silence <= 0) {
-      // Drain Life : canalisé 6 s, lien qui suit la cible même derrière un pilier (sim.js)
-      u.cast = { ...castOf(u, i, t, 'channel', S.dps), end: now() + S.dur, dur: S.dur, channel: true, tick: 0 };
-      action(u, 'cast');
-    } else ok = false;
-  }
-  if (!ok) return false;
-  spellFx(u, i, t, origin);
+    c = {
+      u,
+      t,
+      S,
+      i,
+      d,
+      melee: d < 2.45,
+      range: !!t && d < SPELL_RANGE && los(u, t),
+      col: CLASS[u.cls].accent,
+      origin
+    };
+  if (t && S.t !== 'heal' && !C.noFace) face(u, t);
+  if (C.run(c) === false) return false;
+  C.fx?.(c);
   spellSfx(u, i, t);
   // sort à incantation : la ressource n'est prise qu'à la fin (interrompu ou annulé = rien perdu, sim.js)
   // (canalisation : prise au lancement)
   if (!(u.cast && u.cast.i === i && u.cast.end > now() && !u.cast.channel)) pay(u, i);
   u.cd[i] = S.cd;
-  u.gcd = u.gcdMax = i === 4 && MOBILITY_SLOT.has(u.cls) ? 0.35 : 1.05; // mobilité : GCD court
+  u.gcd = u.gcdMax = C.mobility ? 0.35 : 1.05; // mobilité : GCD court
   updateUI();
   return true;
 }

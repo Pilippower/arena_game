@@ -517,11 +517,12 @@ assert.ok(
     'prélèvement à la fin'
   );
   assert.ok(cb.includes("type === 'poly' && t.form && src?.cls === 'arcanist'"), 'formes insensibles au mouton');
+  const sp = read('src/game/spells.js');
   assert.ok(
-    cb.includes("const blinkOut = u.cls === 'arcanist' && i === 4 && u.stun > 0;"),
+    cb.includes('const blinkOut = C.usableStunned && u.stun > 0;') && /Blink: \{[^}]*usableStunned: true/.test(sp),
     'Blink sous étourdissement'
   );
-  assert.ok(!cb.includes('if (!hit.length) return false;'), 'sorts de zone sans cible');
+  assert.ok(!sp.includes('if (!hit.length) return false;'), 'sorts de zone sans cible');
 }
 assert.ok(read('src/game/ai.js').includes('if (!p.airVel) p.airVel = p.lastVel'), 'saut : trajectoire figée');
 assert.ok(read('src/game/combat.js').includes('recordHeal(t.shieldSrc || t, q)'), 'boucliers comptés en soins');
@@ -567,3 +568,15 @@ assert.ok(
   assert.ok(!read('src/ui/settings.js').includes('size: online ? 1'), 'en ligne : mode du lobby respecté');
 }
 console.log('OK - spécifications validées (docs/SPEC.md)');
+// Sorts : chaque sort de la barre de base a sa mécanique dans SPELL_CAST (game/spells.js), chaque rôle d'IA un vrai sort
+{
+  const sp = read('src/game/spells.js'),
+    keys = new Set([...sp.matchAll(/^ {2}(?:'([^']+)'|(\w+)): \{/gm)].map(m => m[1] || m[2]));
+  for (const cls in C)
+    for (const s of C[cls].skills) if (!s.k) assert.ok(keys.has(s.n), 'SPELL_CAST sans entrée pour ' + s.n);
+  const roles = read('src/game/ai.js').match(/const AI_ROLE = \{[\s\S]*?\n\};/)[0];
+  for (const [, n] of roles.matchAll(/: '([^']+)'/g)) assert.ok(skill_any(n), 'AI_ROLE : sort inconnu ' + n);
+  function skill_any(n) {
+    return Object.keys(C).some(cls => skill(cls, n));
+  }
+}
