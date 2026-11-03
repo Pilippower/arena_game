@@ -22,7 +22,10 @@ if (count !== 1) {
 }
 let result;
 try {
-  fs.writeFileSync(target, original.replace(search, () => replace));
+  fs.writeFileSync(
+    target,
+    original.replace(search, () => replace)
+  );
   result = spawnSync(process.execPath, [path.join(root, test)], { encoding: 'utf8' });
 } finally {
   fs.writeFileSync(target, original);
