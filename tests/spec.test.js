@@ -582,6 +582,8 @@ assert.ok(
     'feux follets sans lumière ajoutée'
   );
 }
+// Auras au-dessus des personnages : icônes agrandies (cadres d'unité inchangés)
+assert.ok(read('index.html').includes('.npAuras .buff{width:34px;height:34px}'), 'auras flottantes : 34 px');
 // Chevalier de la mort elfe : lame runique 20 % plus courte (les autres races gardent la longueur normale)
 {
   const K = require('../src/characters/kits.js');
