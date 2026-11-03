@@ -642,7 +642,8 @@ assert.ok(
   'DK : mains alignées sur la poignée'
 );
 // Régressions signalées : icône d'origine de Death Coil, cri du mort-vivant non étouffé
-assert.ok(!/'Death Coil': \{[^}]*art:/.test(read('src/data/classes.js')), 'Death Coil : icône d’origine');
+assert.ok(!/'Death Coil': \{[^}]*art:/.test(read('src/data/classes.js')), 'Death Coil : pas l’icône d’un autre sort');
+assert.ok(ctx.skillIconSVG('reaver', 4).includes('spells/death_coil.webp'), 'Death Coil : illustration de l’utilisateur');
 assert.ok(!read('src/audio/sfx.js').includes("lowpass: u.race === 'undead'"), 'cri du mort-vivant audible');
 // Soins de la carte : pris par tout personnage (tests/gameplay.test.js), l'IA blessée va les chercher
 // IA blessée qui va chercher le soin de la carte : tests/combat.test.js

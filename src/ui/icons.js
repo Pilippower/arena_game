@@ -41,7 +41,7 @@ function skillMotif(name) {
 const SPELL_ART = new Set(
   (
     'ambush angelic_step arcane_bolt arcane_power asphyxiate backstab barkskin bear_form blink cat_form ' +
-    'charge cloak counterspell dark_soul death_advance death_grip demonic_gate divine_hymn ' +
+    'charge cloak counterspell dark_soul death_advance death_coil death_grip demonic_gate divine_hymn ' +
     'entangling_roots fear flash_heal frenzied_regeneration frost_nova hamstring human_form kidney_shot ' +
     'rejuvenation regrowth cheap_shot drain_life demoralizing_roar pain dispel ' +
     'maim maul mortal_strike obliterate pillar_of_frost polymorph power_shield pummel rake sap ' +
