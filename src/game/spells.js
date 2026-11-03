@@ -6,7 +6,7 @@
 // c = { u: lanceur, t: cible ennemie ou null, S: sort, i: emplacement, d: distance, melee, range (30 m + ligne de vue),
 //       col: couleur de la classe, origin: position avant un déplacement }.
 // Options : mobility (GCD court 0,35 s), noFace (ne se tourne pas vers la cible), usableStunned (brise l'étourdissement).
-// Les sorts de forme / camouflage (champ k) passent par useSpecialSkill (combat.js).
+// Les sorts de forme / camouflage (champ k) passent par useSpecialSkill (game/forms.js).
 // Ajouter un sort : valeurs + texte dans SPELLS, place dans CLASS[cls].skills et SKILL_META, puis une entrée ici.
 const allyOf = u => (u.ai ? lowestAlly(u) : friendlyTarget(u));
 const chest = (o, h = 1.1) => [o.x, (o.y || 0) + h, o.z];

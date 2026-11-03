@@ -326,6 +326,52 @@ function aiMoveDir(u, d, desired, caster) {
   u.aiDir = dir;
   return dir;
 }
+// Stratégie des formes (druide) et du camouflage (voleur) avant la logique générale.
+function aiSpecial(u, P) {
+  const ready = k => {
+    const bar = skillsOf(u),
+      i = bar.findIndex(s => s.k === k);
+    return i >= 0 && aiCanUse(u, i) ? i : -1;
+  };
+  if (u.cls === 'warden') {
+    if (!u.form) {
+      const i = ready(hpPct(u) < 0.4 ? 'bear' : 'cat');
+      if (aiCanUse(u, i) && useSkill(u, i)) return true;
+      return false;
+    }
+    if (u.form === 'cat' && hpPct(u) < 0.35 && Math.random() < P.defensive) {
+      const i = ready('bear');
+      if (i >= 0 && useSkill(u, i)) return true;
+    }
+    if (u.form === 'bear' && hpPct(u) > 0.8) {
+      const i = ready('cat');
+      if (i >= 0 && useSkill(u, i)) return true;
+    }
+  }
+  if (u.cls === 'shade') {
+    const foes = enemies(u).filter(e => !e.stealth);
+    if (!u.stealth) {
+      const i = ready('stealth');
+      if (!inCombat(u) && i >= 0 && foes.every(e => d2(u, e) > 9) && useSkill(u, i)) return true;
+      return false;
+    }
+    const healer = foes.find(e => isHealer(e) && !ccd(e) && (e.dr.poly ?? 1) > 0),
+      focus = teamFocus(u);
+    if (healer && healer !== focus && Math.random() < P.cc && d2(u, healer) < 5) {
+      const i = ready('sap');
+      if (i >= 0 && aiCastOn(u, i, healer)) return true;
+    }
+    if (focus && d2(u, focus) < 2.45 && (focus.dr.opener ?? 1) > 0 && !ccd(focus)) {
+      const i = ready('cheapshot');
+      if (i >= 0 && aiCastOn(u, i, focus)) return true;
+    }
+    if (focus && d2(u, focus) < 2.45) {
+      const i = ready('ambush');
+      if (i >= 0 && aiCastOn(u, i, focus)) return true;
+    }
+  }
+  return false;
+}
 function ai(u, dt) {
   if (!u.alive) {
     u.moving = false;

@@ -11,6 +11,14 @@ function scripts() {
 function all() {
   return [read('index.html'), ...scripts().map(read)].join('\n');
 }
+// Code d'un dossier (ex. 'src/characters/'), fichiers dans l'ordre de chargement : les tests ne dépendent pas
+// du découpage en fichiers.
+function code(dir) {
+  return scripts()
+    .filter(f => f.startsWith(dir))
+    .map(read)
+    .join('\n');
+}
 // Code sans espaces : les tests ne dépendent pas de la mise en forme (Prettier).
 function flat() {
   return all().replace(/\s+/g, '');
@@ -32,4 +40,4 @@ function sandbox(globals = {}) {
     }
   };
 }
-module.exports = { read, scripts, all, flat, sandbox, ROOT };
+module.exports = { read, scripts, all, flat, code, sandbox, ROOT };

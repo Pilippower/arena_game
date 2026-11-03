@@ -3,7 +3,7 @@
 // Les données de jeu sont des scripts navigateur : on les évalue dans un contexte minimal.
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
-const { read } = require('./sources.js');
+const { read, code } = require('./sources.js');
 
 const ctx = { console, Math, window: {}, document: { addEventListener() {} } };
 ctx.globalThis = ctx;
@@ -12,6 +12,7 @@ const run = f => vm.runInContext(read(f).replace(/^(const|let) /gm, 'var '), ctx
 // stubs des dépendances navigateur appelées au chargement des fichiers de données
 vm.runInContext('var $=()=>({});var now=()=>0;var clamp=(v,a,b)=>Math.max(a,Math.min(b,v));', ctx);
 run('src/data/classes.js');
+run('src/ui/icons.js');
 const C = ctx.CLASS;
 const skill = (cls, n) => [C[cls].skills, ...Object.values(C[cls].bars || {})].flat().find(s => s.n === n);
 
@@ -72,7 +73,7 @@ assert.ok(read('src/ui/skillbar.js').includes('function trinketTooltip'), 'infob
   ])
     assert.ok(ctx.skillIconSVG(cls, i).includes(`spells/${art}.webp`), 'icône ' + art);
   assert.match(
-    read('src/data/classes.js'),
+    read('src/game/forms.js'),
     /control\(t, 'stun', S\.stun, u, 'opener'\)|'opener'/,
     'Cheap Shot : DR à part'
   );
@@ -192,7 +193,7 @@ assert.ok(
   'cadre du lobby : panoplie, angles continus'
 );
 // The Bridge : personnages cachés par le tablier dessinés en silhouette translucide (pas les camouflés)
-const h3 = read('src/render/heroes3d.js');
+const h3 = code('src/render/');
 assert.match(h3, /function hfRenderGhosts[\s\S]*GreaterDepth/, 'silhouette des personnages sous le pont');
 assert.ok(h3.includes('(rec.opacity ?? 1) >= 1'), 'pas de silhouette pour les unités camouflées');
 // Fluidité : qualité adaptative, ombres interpolées, passe des silhouettes seulement si besoin
@@ -201,9 +202,9 @@ assert.match(
   /PERF\.fps < 50[\s\S]*PERF\.locked = true|PERF\.locked = true[\s\S]*PERF\.fps < 50/,
   'qualité adaptative'
 );
-assert.ok(read('src/render/environment.js').includes('b.position.set(u.rx ?? u.x'), 'ombre au sol interpolée');
+assert.ok(code('src/render/').includes('b.position.set(u.rx ?? u.x'), 'ombre au sol interpolée');
 assert.match(h3, /if \(!groups\.size\) return;/, 'silhouettes : pas de passe inutile');
-assert.match(read('src/render/world.js'), /CAM_VIEW\.dist = [^;]*camera\.dist/, 'zoom lissé');
+assert.match(code('src/render/'), /CAM_VIEW\.dist = [^;]*camera\.dist/, 'zoom lissé');
 assert.match(h3, /rotation\.set\(castLean, ryaw, deathTilt \|\| rec\.lean\)/, 'inclinaison dans les virages');
 assert.match(h3, /ATTACK_HIT = \{\s*Sword_Attack/, 'frappe synchronisée avec les dégâts');
 assert.match(
@@ -270,7 +271,7 @@ run('src/ui/hud.js');
     'débuff : sort qui l’a posé, tant qu’il dure'
   );
   assert.ok(
-    read('src/render/world.js').includes("aurasHTML(debuffList(u), 'buffs debuffs')"),
+    code('src/render/').includes("aurasHTML(debuffList(u), 'buffs debuffs')"),
     'auras au-dessus des personnages'
   );
   assert.match(
@@ -332,7 +333,7 @@ assert.match(
   'fin de manche : pas de tremblement'
 );
 assert.match(
-  read('src/render/heroes3d.js'),
+  code('src/render/'),
   /state\.winTeam === u\.team\) \{\s*\/\/[^\n]*\n\s*key = 'cheer'/,
   'vainqueurs : geste de joie'
 );
@@ -402,13 +403,13 @@ for (const f of ['frame', 'title', 'btn_leave', 'btn_stay'])
   );
 assert.ok(read('src/ui/results.css').includes('#leaveConfirm #leaveYes'), 'Leave : boutons de la maquette');
 assert.match(
-  read('src/characters/builder.js'),
+  code('src/characters/'),
   /function dwarfBeard[\s\S]*?Beard_Mass[\s\S]*?16, face \* 0\.2/,
   'barbe de nain tressée jusqu’à la ceinture'
 );
 assert.ok(
   ['function beastLoft', 'function beastSmooth', 'croissant de lune', 'cristaux de glace'].every(k =>
-    read('src/render/heroes3d.js').includes(k)
+    code('src/render/').includes(k)
   ),
   'druide : panthère d’ombre et ours de givre'
 );
@@ -418,7 +419,7 @@ assert.ok(
   'lobby : cartes peintes de l’utilisateur'
 );
 assert.ok(
-  /Masse runique du nain[\s\S]*?0\.62 \* s[\s\S]*?AdditiveBlending/.test(read('src/characters/builder.js')),
+  /Masse runique du nain[\s\S]*?0\.62 \* s[\s\S]*?AdditiveBlending/.test(code('src/characters/')),
   'masse du nain : grosse, lumineuse, plus courte'
 );
 // Jeu en ligne : points d'accroche présents, réseau isolé dans src/net/online.js (pas de chargement hors ligne)
@@ -468,19 +469,18 @@ assert.ok(
   assert.match(read('src/game/sim.js'), /if \(state\.loading\) return;/, 'chargement : simulation arrêtée');
   assert.match(read('src/game/combat.js'), /prepareMatch\(\);/, 'chargement à chaque manche');
   assert.match(
-    read('src/render/world.js'),
+    code('src/render/'),
     /function render\(\) \{\s*if \(!gl\) return;[^]*?style\.display !== 'none'\) return;/,
     'lobby : arène cachée non dessinée'
   );
-  assert.ok(!/PointLight/.test(read('src/characters/builder.js')), 'pas de lumière ponctuelle sur les personnages');
+  assert.ok(!/PointLight/.test(code('src/characters/')), 'pas de lumière ponctuelle sur les personnages');
   assert.ok(
     !/l\.visible = false|light\.l\.visible/.test(read('src/render/effects.js')),
     'lumières d’effets toujours présentes'
   );
 }
 assert.ok(
-  read('src/render/environment.js').includes('c.width = c.height = 1;') &&
-    read('index.html').includes('src/core/diag.js'),
+  code('src/render/').includes('c.width = c.height = 1;') && read('index.html').includes('src/core/diag.js'),
   'iOS : mémoire des canevas libérée, diagnostic ?diag=1'
 );
 {
@@ -526,7 +526,7 @@ assert.ok(
     read('src/core/loading.js').includes("if (first) loadingShow('Entering the arena');"),
   'chargement immédiat, 3 s minimum'
 );
-assert.ok(!/stunSwirl[\s\S]{0,400}'cone'/.test(read('src/render/world.js')), 'étourdissement : cercles');
+assert.ok(!/stunSwirl[\s\S]{0,400}'cone'/.test(code('src/render/')), 'étourdissement : cercles');
 assert.match(
   read('src/characters/kits.js'),
   /elf: \{[\s\S]*?neck_01: \[0\.95, 1\.18, 0\.95\][\s\S]*?thigh_l: \[0\.9, 1\.08, 0\.9\]/,
@@ -538,12 +538,10 @@ assert.ok(
   'voleur deux lames, chevalier à deux mains'
 );
 assert.ok(
-  ['function beastFurShells', 'extrémités bouchées', 'respiration'].every(k =>
-    read('src/render/heroes3d.js').includes(k)
-  ),
+  ['function beastFurShells', 'extrémités bouchées', 'respiration'].every(k => code('src/render/').includes(k)),
   'bêtes : fourrure, sans trou, animées'
 );
-assert.ok(read('src/data/classes.js').includes('  cds[i] = S.cd;'), 'recharge dans la barre du sort lancé');
+assert.ok(read('src/game/forms.js').includes('  cds[i] = S.cd;'), 'recharge dans la barre du sort lancé');
 assert.ok(
   read('src/ui/hud.js').includes('return u.cast.channel ? left : 1 - left;'),
   'canalisation : barre qui se vide'
@@ -593,7 +591,7 @@ assert.match(
 );
 // Chevalier de la mort : l'arme ne tremble pas (IK depuis la pose animée, mains lissées dans le temps)
 {
-  const h3 = read('src/render/heroes3d.js');
+  const h3 = code('src/render/');
   assert.ok(
     h3.includes('b.quaternion.equals(k.out[i])) b.quaternion.copy(k.anim[i])'),
     'IK : repart de la pose animée'
@@ -637,7 +635,7 @@ assert.ok(
 }
 // Armes enchantées lumineuses (toutes les armes de mêlée) et feux follets des lanceurs
 {
-  const bd = read('src/characters/builder.js');
+  const bd = code('src/characters/');
   assert.ok((bd.match(/weaponEnchant\(\s*THREE/g) || []).length >= 5, 'enchantements sur toutes les armes de mêlée');
   assert.ok(
     bd.includes('function flameWisp') && !/new THREE\.PointLight/.test(bd),
@@ -660,8 +658,8 @@ assert.ok(
 }
 // Chevalier de la mort : garde à deux mains devant lui hors frappe (mains jamais derrière le dos)
 assert.ok(
-  read('src/render/heroes3d.js').includes('k.guardKey = K(-0.1, 1.0, 0.3, 0.25, 0.8, 0.55)') &&
-    read('src/render/heroes3d.js').includes('const STRIKE_T = 0.6;'),
+  code('src/render/').includes('k.guardKey = K(-0.1, 1.0, 0.3, 0.25, 0.8, 0.55)') &&
+    code('src/render/').includes('const STRIKE_T = 0.6;'),
   'DK : garde à deux mains devant lui et frappe calculée (pas de mélange avec le clip)'
 );
 // Raccourcis : jamais deux sorts sur la même touche, même avec d'anciens réglages à 6 cases (bug : druide, 2 sorts sur 5)
@@ -700,7 +698,7 @@ assert.ok(
 }
 // Chevalier de la mort : paume gauche sur la poignée, sous la droite (mains alignées)
 assert.ok(
-  read('src/render/heroes3d.js').includes('palmL = k.grip.localToWorld(new THREE.Vector3(0, -0.09, 0))'),
+  code('src/render/').includes('palmL = k.grip.localToWorld(new THREE.Vector3(0, -0.09, 0))'),
   'DK : mains alignées sur la poignée'
 );
 // Régressions signalées : icône d'origine de Death Coil, cri du mort-vivant non étouffé
