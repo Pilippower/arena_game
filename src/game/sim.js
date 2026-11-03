@@ -29,7 +29,7 @@ function update(dt) {
   }
   state.t = Math.max(0, state.t - dt);
   state.elapsed = (state.elapsed || 0) + dt;
-  state.dampening = clamp(((state.elapsed - 35) / 90) * 0.45, 0, 0.45);
+  state.dampening = dampeningAt(state.elapsed);
   playerMove(dt);
   if (window.NET?.role === 'host') netHostUpdate(dt);
   for (const u of state.units) {
@@ -82,13 +82,7 @@ function update(dt) {
         fx('ring', u.x, 0.04, u.z, [0.65, 0.58, 0.45], 0.35, 0.5);
       }
     }
-    for (const k in u.drT) {
-      u.drT[k] -= dt;
-      if (u.drT[k] <= 0) {
-        u.dr[k] = 1;
-        u.drT[k] = 0;
-      }
-    }
+    tickDR(u, dt);
     // canalisation (Drain Life) : tic toutes les 0,5 s ; le lien n'exige plus la ligne de vue une fois lancé
     if (u.cast?.channel) {
       const ca = u.cast,

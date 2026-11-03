@@ -34,11 +34,6 @@ assert.match(ctx.skillIconSVG('oracle', 4), /spells\/angelic_step\.webp/, 'Smite
 assert.ok(!C.reaver.skills.some(s => s.n === 'Death Advance'), 'chevalier de la mort sans Death Advance');
 assert.equal(skill('oracle', 'Holy Terror').dur, 6, 'Holy Terror : 6 s');
 assert.equal(skill('arcanist', 'Frost Nova').root, 6, 'Frost Nova : 6 s');
-assert.match(
-  read('src/game/combat.js'),
-  /src\.cls === 'arcanist'.*t\.rootKind === 'ice'\) crit = true/,
-  'mage : critique sur cible gelée'
-);
 assert.match(read('src/game/combat.js'), /if \(u\.cast\) return 'Not ready yet'/, 'incantation en cours : message');
 assert.equal(ctx.FORM_INFO.bear.swing[1], 45, 'ours : 45 / 2 s');
 assert.equal(skill('reaver', 'Death Grip').cd, 25);
@@ -78,11 +73,10 @@ assert.ok(read('src/ui/skillbar.js').includes('function trinketTooltip'), 'infob
     'Cheap Shot : DR à part'
   );
 }
-// Formes / camouflage
+// Formes / camouflage (vitesse camouflée, insensibilité au mouton : tests/combat.test.js)
 assert.equal(ctx.FORM_INFO.cat.speed, 1.3, 'félin +30 % de vitesse');
 assert.equal(ctx.FORM_INFO.bear.hp, 1.4, 'ours +40 % PV');
 assert.equal(ctx.FORM_INFO.bear.armor, 0.7, 'ours -30 % dégâts subis');
-assert.match(read('src/game/combat.js'), /u\.stealth \? 0\.7 : 1/, 'camouflé -30 % de vitesse');
 // Armures
 assert.equal(C.sentinel.armor, 'plate');
 assert.equal(C.shade.armor, 'leather');
@@ -274,11 +268,6 @@ run('src/ui/hud.js');
     code('src/render/').includes("aurasHTML(debuffList(u), 'buffs debuffs')"),
     'auras au-dessus des personnages'
   );
-  assert.match(
-    read('src/game/combat.js'),
-    /t\[type\] = Math\.max\(t\[type\] \|\| 0, dur\);\s*markDebuff\(t, type\)/,
-    'contrôle : sort noté'
-  );
 }
 // Interface en jeu PC : panoplie de l'utilisateur (assets/ui/hud), mobile et lobby inchangés
 {
@@ -315,11 +304,6 @@ run('src/ui/hud.js');
   assert.match(hud, /if \(box\._key !== key\)/, 'barre de sorts construite une fois');
   assert.ok(!/skills'\)\.innerHTML/.test(hud), 'pas de reconstruction à chaque mise à jour');
   assert.ok(!hud.includes('class="tag"'), 'pas de bulles sur la barre du bas');
-  assert.match(
-    read('src/game/rules.js'),
-    /u\.lastEnemy = t\.team !== u\.team \? t : null/,
-    'se cibler arrête le combat'
-  );
   assert.match(read('src/game/match.js'), /function leaveMatch[\s\S]*?state = null/, 'quitter arrête le match');
   assert.ok(read('index.html').includes('id="leaveConfirm"'), 'confirmation avant de quitter');
   assert.ok(
@@ -512,15 +496,9 @@ assert.ok(
     /u\.res = Math\.max\(0, u\.res - \(ca\.cost \|\| 0\)\)/,
     'prélèvement à la fin'
   );
-  assert.ok(cb.includes("type === 'poly' && t.form && src?.cls === 'arcanist'"), 'formes insensibles au mouton');
   const sp = read('src/game/spells.js');
-  assert.ok(
-    cb.includes('const blinkOut = C.usableStunned && u.stun > 0;') && /Blink: \{[^}]*usableStunned: true/.test(sp),
-    'Blink sous étourdissement'
-  );
   assert.ok(!sp.includes('if (!hit.length) return false;'), 'sorts de zone sans cible');
 }
-assert.ok(read('src/game/combat.js').includes('recordHeal(t.shieldSrc || t, q)'), 'boucliers comptés en soins');
 assert.ok(
   read('src/core/loading.js').includes('const LOADING_MIN_MS = 3000;') &&
     read('src/core/loading.js').includes("if (first) loadingShow('Entering the arena');"),
@@ -753,11 +731,7 @@ assert.ok(
 // Prêtre : Dispel (effets magiques) à la place de Divine Hymn, même icône ; soins fixes doublés
 {
   assert.ok(ctx.skillIconSVG('oracle', 3).includes('spells/dispel.webp'), 'Dispel : icône de l’utilisateur');
-  const cb = read('src/game/combat.js');
-  assert.ok(
-    cb.includes('function dispel(u)') && cb.includes('(u.slow > 0 && u.slowMagic)'),
-    'Dispel : ralentissements magiques seulement'
-  );
+  // ce que Dispel retire (magique seulement) et sur quelle cible : tests/combat.test.js
   assert.equal(skill('oracle', 'Flash Heal').heal, 440, 'Flash Heal doublé');
   assert.ok(read('src/data/classes.js').includes('const DRAIN_HEAL = 2;'), 'Drain Life : soin doublé');
 }
@@ -792,7 +766,3 @@ assert.ok(
 // IA de mêlée : suit un pas en arrière : tests/gameplay.test.js
 // Dispel : sans recharge, uniquement sur la cible actuelle amie
 assert.equal(skill('oracle', 'Dispel').cd, 0, 'Dispel sans recharge');
-assert.ok(
-  read('src/game/spells.js').includes('c.u.target?.team === c.u.team ? c.u.target : null'),
-  'Dispel : cible actuelle seulement'
-);

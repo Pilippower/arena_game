@@ -303,6 +303,9 @@ function damage(src, t, v, crit = false, school = src.curSchool || 'physical') {
     addFloat(t, 'K.O.', '#ffe6a6');
   }
 }
+// Dampening : les soins baissent au fil de la manche (0 % jusqu'à 35 s, puis montée sur 90 s jusqu'à 45 %).
+const DAMPENING = { start: 35, ramp: 90, max: 0.45 };
+const dampeningAt = elapsed => clamp(((elapsed - DAMPENING.start) / DAMPENING.ramp) * DAMPENING.max, 0, DAMPENING.max);
 function heal(src, t, v) {
   if (!t?.alive) return;
   v *= src.aiHeal || 1;
@@ -368,6 +371,18 @@ const auraOf = (u, n, src) => u?.auras?.find(a => a.n === n && (!src || a.src ==
 // notent sur la cible le sort qui a posé chaque effet (icônes des débuffs au-dessus des personnages).
 let SPELL_NOW = null;
 const markDebuff = (t, k) => SPELL_NOW && ((t.debuffSpell = t.debuffSpell || {})[k] = SPELL_NOW);
+// Rendements décroissants : chaque contrôle d'une même famille dure 100 %, 50 %, 25 % puis plus rien (« Immune »),
+// et la famille revient à 100 % DR_RESET secondes après le dernier contrôle.
+const DR_RESET = 20;
+function tickDR(u, dt) {
+  for (const k in u.drT) {
+    u.drT[k] -= dt;
+    if (u.drT[k] <= 0) {
+      u.dr[k] = 1;
+      u.drT[k] = 0;
+    }
+  }
+}
 function control(t, type, dur, src = null, drKey = type) {
   if (t.spellImmune > 0 && src && src.team !== t.team && (src.curSchool || 'physical') !== 'physical') {
     addFloat(t, 'Immune', '#d9c9ff');
@@ -389,7 +404,7 @@ function control(t, type, dur, src = null, drKey = type) {
   markDebuff(t, type);
   if (type === 'root') t.rootSchool = src?.curSchool || 'magic';
   t.dr[drKey] = m === 1 ? 0.5 : m === 0.5 ? 0.25 : 0;
-  t.drT[drKey] = 20;
+  t.drT[drKey] = DR_RESET;
   if (type === 'stun' || type === 'fear' || type === 'silence' || type === 'poly') t.cast = null;
   if (type === 'poly') {
     t.polyOwner = src?.id ?? null;
