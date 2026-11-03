@@ -150,18 +150,6 @@ body.lobby:not(.mobile-mode) #overlay .modal {
   font-size: clamp(12px, 1.05vw, 18px);
   color: #ece6d6;
 }
-#overlay .features {
-  margin: 0 0 6px;
-  gap: 10px;
-}
-#overlay .feature {
-  border-radius: 999px !important;
-  border: 1px solid #56688f !important;
-  background: linear-gradient(180deg, #172238, #0d1424) !important;
-  color: #e6e9f2 !important;
-  padding: 4px 16px;
-  font-size: 12px;
-}
 /* ---------- titres de section en ruban (plaque de bois cerclée d'or, gemme à gauche) ---------- */
 #overlay .selectorTitle,
 #overlay .pvHead > span:first-child {
@@ -239,10 +227,6 @@ body.lobby:not(.mobile-mode) .pickLeft > div:not(.selectorTitle) {
   flex-direction: column;
   gap: 8px;
   min-height: 0;
-}
-.lobbyStart {
-  display: grid;
-  gap: 6px;
 }
 .playRow {
   display: flex;

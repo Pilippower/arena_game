@@ -15,4 +15,21 @@ function all() {
 function flat() {
   return all().replace(/\s+/g, '');
 }
-module.exports = { read, scripts, all, flat, ROOT };
+// Tests unitaires : contexte vm où l'on charge le vrai code du jeu (scripts navigateur classiques).
+// load(f) : fichier entier (const/let deviennent des var, lisibles sur le contexte) ; fn(f, nom) : une seule
+// fonction de premier niveau, pour tester une règle sans charger les dépendances du fichier.
+function sandbox(globals = {}) {
+  const vm = require('node:vm');
+  const ctx = vm.createContext({ console, Math, ...globals });
+  const exec = (code, filename) => vm.runInContext(code.replace(/^(const|let) /gm, 'var '), ctx, { filename });
+  return {
+    ctx,
+    load: f => exec(read(f), f),
+    fn(f, name) {
+      const src = read(f).match(new RegExp(`^function ${name}\\([\\s\\S]*?\\n\\}`, 'm'));
+      if (!src) throw new Error(`${f} : function ${name} introuvable`);
+      exec(src[0], f);
+    }
+  };
+}
+module.exports = { read, scripts, all, flat, sandbox, ROOT };

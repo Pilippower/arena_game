@@ -104,13 +104,7 @@ assert.match(
   /if \(looking && state\?\.player\?\.alive\) state\.player\.yaw = camera\.yaw/,
   'seul le clic droit oriente le personnage'
 );
-assert.match(
-  read('src/game/ai.js'),
-  /orbiting/,
-  'déplacement : base de trajectoire figée pendant le glisser au clic gauche'
-);
-// Mobile : déviation franche du joystick = vitesse pleine
-assert.match(read('src/game/ai.js'), /mobileStickBoost/, 'joystick mobile : vitesse pleine');
+// base de trajectoire figée pendant le glisser au clic gauche, joystick mobile : tests/gameplay.test.js
 // The Bridge : tablier praticable, 2 rampes à chaque extrémité qui descendent jusqu'au sable
 vm.runInContext('var arena={};var HEALTH_SPOTS=[];', ctx);
 run('src/data/maps.js');
@@ -526,7 +520,6 @@ assert.ok(
   );
   assert.ok(!sp.includes('if (!hit.length) return false;'), 'sorts de zone sans cible');
 }
-assert.ok(read('src/game/ai.js').includes('if (!p.airVel) p.airVel = p.lastVel'), 'saut : trajectoire figée');
 assert.ok(read('src/game/combat.js').includes('recordHeal(t.shieldSrc || t, q)'), 'boucliers comptés en soins');
 assert.ok(
   read('src/core/loading.js').includes('const LOADING_MIN_MS = 3000;') &&
@@ -713,11 +706,7 @@ assert.ok(
 // Régressions signalées : icône d'origine de Death Coil, cri du mort-vivant non étouffé
 assert.ok(!/'Death Coil': \{[^}]*art:/.test(read('src/data/classes.js')), 'Death Coil : icône d’origine');
 assert.ok(!read('src/audio/sfx.js').includes("lowpass: u.race === 'undead'"), 'cri du mort-vivant audible');
-// Soins de la carte : pris par tout personnage (adversaires compris), l'IA blessée va les chercher
-assert.ok(
-  read('src/ui/skillbar.js').includes('state.units.find(u => u.alive && u.hp < u.maxHp'),
-  'sanctuaires pour tous'
-);
+// Soins de la carte : pris par tout personnage (tests/gameplay.test.js), l'IA blessée va les chercher
 assert.ok(read('src/game/ai.js').includes('u.aiShrine = true'), 'IA : va chercher le soin de la carte');
 // Réglages : une touche reprise rend l'ancienne action « Unset » (pas de permutation)
 assert.ok(read('src/ui/settings.js').includes("if (other) set(other, '');"), 'touche reprise : ancienne action Unset');
@@ -799,15 +788,10 @@ assert.ok(
 );
 // Réglage : la caméra revient (ou non) derrière le personnage après un glisser au clic gauche
 assert.ok(
-  read('index.html').includes('id="camReturnToggle"') &&
-    read('src/game/ai.js').includes('PREFS.cameraReturn === false && orbitBase !== null && !looking) return orbitBase'),
-  'réglage retour caméra'
+  read('index.html').includes('id="camReturnToggle"') && read('src/ui/settings.js').includes('cameraReturn'),
+  'réglage retour caméra (comportement : tests/gameplay.test.js)'
 );
-// IA de mêlée : suit un pas en arrière (repart dès la sortie de l'allonge)
-assert.ok(
-  read('src/game/combat.js').includes('if (d > desired + (caster ? 1.2 : 0.4)) dir = 1;'),
-  'mêlée : suit la cible'
-);
+// IA de mêlée : suit un pas en arrière : tests/gameplay.test.js
 // Dispel : sans recharge, uniquement sur la cible actuelle amie
 assert.equal(skill('oracle', 'Dispel').cd, 0, 'Dispel sans recharge');
 assert.ok(

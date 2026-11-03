@@ -6,7 +6,7 @@ Documentation complète (mécaniques, historique des régressions, décisions va
 
 L'utilisateur communique en français : répondre en français.
 
-## État réel du repo (vérifié au 02/11/2026, fait foi sur HANDOFF.md)
+## État réel du repo (vérifié au 03/11/2026, fait foi sur HANDOFF.md)
 
 - `index.html` : HTML + CSS + liste ordonnée des scripts (~30 Ko). Tout le JS est dans `src/` (scripts classiques, pas de bundler : le jeu se lance en double-clic, `file://`). **L'ordre des balises <script> compte** (code exécuté au chargement).
 - `src/` (un fichier par rôle) :
@@ -16,7 +16,7 @@ L'utilisateur communique en français : répondre en français.
   - Format 1v1 / 2v2 / 3v3 : `TEAM_SIZE` + `teamsFor()` dans `game/combat.js` (composition des équipes), choix « Mode » du lobby (`#sizeChoices`, `ui/settings.js`), `?size=` dans l'URL.
   - Match : `game/match.js` (3 manches `MATCH_ROUNDS`, stats dégâts/soins/kills par place `slotIndex`, écran de résultats, Play again / Back to lobby).
   - Cartes : `data/maps.js` (`MAPS` : dimensions, obstacles = cercles de LOS/collision, sanctuaires ; `applyMap(id)` remplit `arena` + `HEALTH_SPOTS`, reconstruit décor et occultants). Décor : `castle` dans `render/environment.js` (`buildCastleMap`), autres cartes dans `render/map_<id>.js` via `ArenaEnv.registerMap`. Vignettes du lobby : `assets/ui/map_thumbs.js` (captures du jeu `?map=<id>`). URL de test : `?autoplay=<classe>&race=<race>&map=<id>`.
-  - `game/` : `combat.js` (dégâts, contrôles + DR, interruptions, ruées, `useSkill`), `spells.js` (`SPELL_CAST`), `ai.js` (IA + difficulté ; `aiSpecial` des formes est dans `data/classes.js`), `rules.js` (mouton, auto-attaque, cibles), `sim.js` (pas de simulation 120 Hz).
+  - `game/` : `combat.js` (dégâts, contrôles + DR, fuite du fear `updateFearMovement`, interruptions, ruées, `useSkill`), `spells.js` (`SPELL_CAST`), `ai.js` (IA + difficulté, `aiMoveDir` avancer/reculer ; `aiSpecial` des formes est dans `data/classes.js`), `player.js` (déplacement du joueur `playerMove` : clavier, souris, joystick, base de trajectoire `moveBaseYaw` / `orbitBase` partagée avec `input/controls.js` et le réglage « Camera returns behind you »), `rules.js` (mouton, auto-attaque, cibles `hostileTarget` / `friendlyTarget`, sanctuaires de soin `updateHealthShrines`), `sim.js` (pas de simulation 120 Hz).
   - `render/` : `heroes3d.js` (personnages three.js, preview, portraits), `world.js` (décor + rendu de secours + noms), `environment.js` (décor), `effects.js` (effets de sorts).
   - `characters/` : `kits.js` (données des 35 kits, lu aussi par `tools/build_characters.js`), `builder.js` (assemblage three.js).
   - Bruitages : `audio/sfx.js` (synthèse) + sons enregistrés sous licences libres `assets/audio/sfx_pack.js` (base64, généré par `node tools/build_sfx_pack.js` depuis `assets_src/audio/`, licences dans `assets/audio/LICENSES.md`) : `sfxSample(kind…)`, arme et voix d'une unité `sfxWho(u)`, cri `SFX.effort(u)`. Ajouter un son : le déposer dans `assets_src/audio/`, l'ajouter à `PACK` dans l'outil, compléter LICENSES.md.
@@ -30,7 +30,7 @@ L'utilisateur communique en français : répondre en français.
   - Curseurs (gantelet / épée sur ennemi / main verte sur allié) : `src/ui/cursor.js` (`unitAtScreen` sert aussi au ciblage au clic).
   - Jeu en ligne : `src/net/online.js` (PeerJS/WebRTC chargé à la demande, hôte qui fait autorité, invités qui se déplacent en local ; l'hôte garde `NET.guests` (id → connexion, nom, classe, équipe ally/enemy), les unités pilotées ont `remoteId` ; composition `netTeamsFor` dans combat.js). Points d'accroche : `update()` (sim.js), `resetRound` / `tryPlayerSkill` / `useTrinket` (combat.js), `setTarget` (rules.js), `showResults` / `playAgain` / `leaveMatch` (match.js), Play du lobby (settings.js). `NET` est un `var` (lu comme `window.NET`). Test à deux navigateurs : voir l'historique (nécessite Internet, hors `npm test`).
   - Chargement : `src/core/loading.js` (`prepareMatch` à chaque manche, `warmPreview` à l'ouverture). Règles de performance : ne jamais faire varier le nombre de lumières d'une scène three.js (recompile tout), compiler les nouveaux matériaux pendant un chargement (`renderer.compile`), ne rien dessiner de caché.
-  - `ui/` (hud, skillbar, settings, mobile), `audio/` (music, sfx), `input/controls.js` (contrôles validés), `core/` (setup, webgl, main = boucle, `perf.js` = compteur `?fps=1` + qualité adaptative `PERF.scale` appliquée aux 3 canevas).
+  - `ui/` (hud, skillbar = barre de sorts + infobulles, settings, mobile), `audio/` (music, sfx), `input/controls.js` (contrôles validés), `core/` (setup = `$`, `PREFS`, touches ; webgl, main = boucle, `perf.js` = compteur `?fps=1` + qualité adaptative `PERF.scale` appliquée aux 3 canevas, `diag.js` = panneau de diagnostic sur l'appareil `?diag=1`, chargé en premier).
 - Mise en forme : `npm run format` (Prettier, `.prettierrc.json`). Les tests statiques ignorent les espaces.
 - `mobile.html` : simple redirection vers `index.html?mobile=1` (le jeu n'existe qu'en un exemplaire). Ne jamais y recopier le jeu.
 - `game_logic.js` : **source unique** de GameLogic (mouvement/caméra), chargé par `index.html` avant `src/` (plus de copie inline).
@@ -45,11 +45,46 @@ L'utilisateur communique en français : répondre en français.
 
 ```bash
 npm install        # une fois : playwright-core (pilote le Edge/Chrome installé), prettier
-npm test           # ~15 s : tests de code (logique, intégration, pas) + partie lancée dans le navigateur (tests/browser/smoke.test.js)
+npm test           # ~15 s : tests unitaires (gameplay.test.js, game_logic.test.js), spécifications (spec.test.js), intégration + partie lancée dans le navigateur (tests/browser/smoke.test.js)
 npm run test:all   # ~1 min 30 : + test navigateur complet (sélection, 35 kits, 7 classes, Polymorph/saut/pas chassé, mobile)
 ```
 
 `npm test` après chaque modification ; `npm run test:all` avant de publier. Le navigateur utilise la carte graphique (`tests/browser/browser.js`) ; `SOFTWARE_GL=1` force le rendu logiciel, `BROWSER_PATH` choisit le navigateur. Captures de personnages : `tools/shoot.js` (même lanceur).
+
+## Bonnes pratiques de code (demandées par l'utilisateur, à appliquer à chaque tâche)
+
+But : un code **maintenable**, où l'on sait **tout de suite où regarder et quoi modifier**. Chaque demande doit pouvoir se traiter en lisant peu de fichiers.
+
+**Trouver vite**
+- Partir de la carte « État réel du repo » ci-dessus et des « Recettes » : elles disent quel fichier possède quoi. Lire la zone concernée, pas tout le projet.
+- **Tenir cette carte à jour dans le même commit** : nouveau fichier, rôle déplacé, nouvelle table de données ou nouveau point d'accroche → une ligne ici (ou dans les Recettes). Une carte fausse fait perdre plus de temps que pas de carte.
+- Un concept = un endroit = un nom cherchable (`SPELLS`, `SPELL_CAST`, `AI_ROLE`, `MAPS`…). Préférer une **table de données** lue par le code à des `if (nom === …)` dispersés.
+
+**Écrire**
+- Pas de duplication : avant d'écrire une fonction, chercher (Grep) si elle existe déjà ; si un bloc apparaît deux fois, l'extraire dans le fichier qui possède ce rôle.
+- Fonctions courtes à un seul rôle, noms explicites (pas d'abréviation obscure ; les valeurs magiques deviennent des constantes nommées en tête de fichier ou dans `data/`).
+- Mettre le code dans le fichier du **rôle** (`game/` règles, `render/` dessin, `ui/` interface, `data/` valeurs), pas là où il est pratique de l'ajouter. Un fichier qui dépasse ~800 lignes ou mélange deux rôles se découpe (en respectant l'ordre des `<script>`).
+- Commentaires : le **pourquoi** (règle validée, piège, mesure), pas le quoi.
+
+**Code mort : zéro**
+- Supprimer immédiatement ce que l'on remplace : ancienne fonction, variable, CSS, image, son, branche `if` inatteignable, paramètre jamais passé, code commenté. L'historique git suffit pour revenir en arrière.
+- Avant de supprimer : Grep du nom dans `index.html`, `src/`, `tests/`, `tools/` (attention aux appels indirects : noms lus dans une table, `window[...]`, chaînes CSS/HTML). Si les tests lisent ce texte, mettre le test à jour en gardant la règle.
+
+**Refactoring**
+- Petits pas, **comportement identique**, une couche à la fois (règle 10). Ne jamais mélanger refactoring et changement de comportement dans un même commit.
+- Refactorer en continu ce que l'on touche (règle du boy-scout) : si la tâche passe par un code confus ou dupliqué, le simplifier au passage dans la même zone, sans partir dans un chantier non demandé. Un chantier plus large se propose à l'utilisateur, il ne s'improvise pas.
+- Jamais de « correction » de ce qui est validé dans `docs/SPEC.md` ou les règles non négociables sous prétexte de propreté.
+
+**Code review (avant chaque commit / publication)**
+- Relire son propre diff (`git diff`) : bugs, cas limites (unité morte, cible absente, en ligne / hors ligne, mobile), duplication, code mort laissé, noms, fichier du bon rôle, carte de `CLAUDE.md` à jour.
+- Pour un changement non trivial : lancer la revue `/code-review` puis `/simplify` sur le diff et corriger ce qui est confirmé.
+
+**Tests : unitaires d'abord**
+- Toute règle de gameplay ou fonction pure se teste **en unitaire** dans Node (rapide, quelques ms) dans `tests/gameplay.test.js` : `sandbox(stubs)` de `tests/sources.js` donne `load(fichier)` (fichier entier) et `fn(fichier, nom)` (une seule fonction de premier niveau), avec des stubs minimaux ; puis vérifier le **résultat** (PV, durée, position, état), pas le texte du code. `game_logic.js` se charge par `require`.
+- Rendre le code testable : séparer le calcul (fonction pure, entrées → sortie) des effets (DOM, three.js, son, réseau).
+- Le test navigateur (`tests/browser/`) est réservé à ce qui ne peut être vérifié qu'en vrai : démarrage, rendu, chargement des modèles, interactions d'interface. Ne pas y ajouter ce qu'un test unitaire couvre.
+- Tests « texte du code » (expressions régulières sur `flat()`) : seulement pour interdire une régression connue (ancienne formule, copie inline) ; sinon préférer un test de comportement.
+- Un bug corrigé = un test unitaire qui l'aurait attrapé.
 
 ## Recettes (pour aller vite)
 

@@ -50,9 +50,6 @@ const TAGS = {
   await save(await clearBg(crop('lobby_assets.png', 632, 390, 450, 125)), 'play');
   await save(await clearBg(crop('lobby_assets.png', 672, 82, 89, 24)), 'orn_l');
   await save(await clearBg(crop('lobby_assets.png', 1367, 82, 112, 24)), 'orn_r');
-  // illustrations des arènes (grandes cartes, au-dessus du bandeau du titre)
-  await save(crop('maps_lobby_assets.png', 56, 42, 540, 292).resize(640), 'map_castle', 84);
-  await save(crop('maps_lobby_assets.png', 667, 38, 550, 300).resize(640), 'map_bridge', 84);
   // cartes d'arène complètes (illustration + blason + nom + description peints), sans le cadre de la planche
   // la description peinte (rangées 427-453) est effacée : le jeu écrit une phrase courte à sa place
   const noDesc = async (x, y, w, h) => {

@@ -2982,7 +2982,7 @@
     root.traverse(o => {
       if (o.isSkinnedMesh && /_(Body|Legs)$/.test(o.name)) fit.push(o);
     }); // pièces déjà déplacées sur le squelette du corps
-    const robeMesh = kit.robe ? buildRobe(THREE, body, bones, kit.robe, fit) : null;
+    if (kit.robe) buildRobe(THREE, body, bones, kit.robe, fit);
     if (kit.staff) buildStaff(THREE, body, bones, { ...kit.staff, behindCape: !!kit.cape }, height, fit);
     if (kit.weapon) buildWeapon(THREE, body, bones, kit.weapon, height, fit);
     headFeatures(THREE, kit, root, body, bones, skinColor || new THREE.Color(0.6, 0.45, 0.35));

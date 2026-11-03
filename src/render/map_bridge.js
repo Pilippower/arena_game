@@ -86,25 +86,6 @@
     g.putImageData(id, 0, 0);
     return c;
   }
-  function rockCanvas(size = 256) {
-    const c = canvas(size),
-      g = c.getContext('2d'),
-      id = g.createImageData(size, size),
-      d = id.data;
-    for (let y = 0; y < size; y++)
-      for (let x = 0; x < size; x++) {
-        const n = noise((x / size) * 6, (y / size) * 6, 6, 5),
-          s = Math.abs(Math.sin((y / size) * 30 + n * 6)),
-          k = 0.55 + 0.4 * n - 0.12 * (s > 0.97 ? 1 : 0);
-        const o = (y * size + x) * 4;
-        d[o] = 128 * k;
-        d[o + 1] = 104 * k;
-        d[o + 2] = 92 * k;
-        d[o + 3] = 255;
-      }
-    g.putImageData(id, 0, 0);
-    return c;
-  }
   // Bannière rouge déchirée, emblème original : trois griffes.
   function bannerCanvas() {
     const c = canvas(128, 256),

@@ -568,11 +568,6 @@ function hfRaceDecor(rec, u, model = null) {
   rec.group.add(g);
   const skin = u.race === 'orc' ? 0x4c8b42 : u.race === 'undead' ? 0x9aa7a6 : u.race === 'elf' ? 0xdab092 : 0xd2a477;
   const skinMat = new THREE.MeshStandardMaterial({ color: skin, roughness: 0.72, metalness: 0.01 });
-  const darkMat = new THREE.MeshStandardMaterial({
-    color: u.race === 'orc' ? 0x261c16 : 0x624a3c,
-    roughness: 0.9,
-    metalness: 0.03
-  });
   const ivory = new THREE.MeshStandardMaterial({ color: 0xeee0bd, roughness: 0.82 });
   const headPos = model ? hfHeadAnchor(model, rec.group) : new THREE.Vector3(0, 1.78, 0);
   const face = new THREE.Group();
@@ -2204,12 +2199,6 @@ function hfEnsureInit() {
   if (!ok) characterCanvas.style.display = 'none';
   return ok;
 }
-
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v)),
-  now = () => performance.now() / 1000,
-  lerp = (a, b, t) => a + (b - a) * t;
-PREFS = loadPrefs();
-const css = c => `rgb(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)})`;
 
 // Géométrie invisible (profondeur seule) des piliers et murs de la carte courante : cache les personnages derrière.
 function hfRebuildOccluders() {

@@ -430,6 +430,22 @@ function applySlow(t, pct = 0.5, dur = 8, magic = false) {
   markDebuff(t, 'slow');
   addFloat(t, `Slowed ${Math.round(t.slowPct * 100)}%`, '#9ed7ff');
 }
+// Fear : fuite réelle à l'opposé de la source, avec une légère oscillation.
+function updateFearMovement(u, dt) {
+  if (!u?.alive || u.fear <= 0 || u.root > 0 || u.stun > 0) return;
+  const ax = u.x - (u.fearSourceX ?? u.x),
+    az = u.z - (u.fearSourceZ ?? u.z),
+    base = Math.atan2(ax, az),
+    wobble = Math.sin((state.elapsed || 0) * 4.2 + (u.fearPhase || 0)) * 0.72,
+    ang = base + wobble,
+    sp = CLASS[u.cls].speed * 1.12;
+  u.x += Math.sin(ang) * sp * dt;
+  u.z += Math.cos(ang) * sp * dt;
+  u.yaw = ang;
+  u.moving = true;
+  u.movePhase += dt * 7.5;
+  resolveWalls(u);
+}
 function moveSpeed(u) {
   const buff = u.speedBuff > 0 ? 1.18 : 1,
     slow = u.slow > 0 ? 1 - clamp(u.slowPct || 0, 0, 0.8) : 1,
@@ -768,18 +784,4 @@ function useTrinket(u) {
     addFloat(u, 'Trinket !', '#ffe17d');
     updateUI();
   }
-}
-// Avance tant qu'on n'est pas revenu à portée, ne repart qu'au-delà d'une marge ; seuls les lanceurs reculent (kite).
-function aiMoveDir(u, d, desired, caster) {
-  let dir = u.aiDir || 0;
-  if (dir === 1 && d <= desired + 0.2) dir = 0;
-  else if (dir === -1 && d >= desired) dir = 0;
-  if (!dir) {
-    // mêlée : on repart dès que la cible sort de l'allonge (2,45 m) ; avant, un pas en arrière (2,5 à 3,1 m) laissait
-    // l'adversaire planté sans frapper, comme si le combat s'arrêtait
-    if (d > desired + (caster ? 1.2 : 0.4)) dir = 1;
-    else if (caster && d < desired - 2.5) dir = -1;
-  }
-  u.aiDir = dir;
-  return dir;
 }

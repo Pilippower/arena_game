@@ -109,11 +109,6 @@ button:active:not(:disabled) {
 #overlay {
   background: radial-gradient(circle at 50% 25%, #26357acc, #050816f2 72%) !important;
 }
-.feature {
-  background: #0e1840 !important;
-  border-color: #3d55a8 !important;
-  color: var(--muted) !important;
-}
 .selectorTitle {
   color: var(--gold) !important;
   text-shadow: 0 0 8px #e3bf6855;

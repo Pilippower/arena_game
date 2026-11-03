@@ -1,7 +1,11 @@
 'use strict';
-// Raccourcis DOM, détection mobile, préférences (volume, raccourcis), contexte WebGL du jeu.
+// Raccourcis DOM, aides de calcul communes, détection mobile, préférences (volume, raccourcis), contexte WebGL du jeu.
 const $ = id => document.getElementById(id),
   canvas = $('c');
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v)),
+  now = () => performance.now() / 1000,
+  lerp = (a, b, t) => a + (b - a) * t,
+  css = c => `rgb(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)})`;
 const MOBILE = {
   enabled: false,
   moveForward: 0,
@@ -68,7 +72,7 @@ function loadPrefs() {
   } catch (_) {}
   return d;
 }
-let PREFS = null;
+let PREFS = loadPrefs();
 function savePrefs() {
   try {
     localStorage.setItem(PREF_KEY, JSON.stringify(PREFS));

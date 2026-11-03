@@ -80,3 +80,33 @@ function friendlyTarget(u) {
   const t = u.target;
   return t?.alive && t.team === u.team ? t : u;
 }
+// Cible hostile d'une unité : sa cible si c'est un ennemi vivant, sinon le dernier ennemi visé, sinon le plus proche.
+function hostileTarget(u, fallback = true) {
+  const t = u.target;
+  if (t?.alive && t.team !== u.team) return t;
+  if (u.lastEnemy?.alive) return u.lastEnemy;
+  return fallback ? nearestEnemy(u) : null;
+}
+// Sanctuaires de soin de la carte (state.shrines) : PV au maximum, réapparition 45 s.
+function updateHealthShrines(dt) {
+  if (!state?.shrines) return;
+  for (const sh of state.shrines) {
+    if (!sh.active) {
+      sh.respawn = Math.max(0, sh.respawn - dt);
+      if (sh.respawn <= 0) sh.active = true;
+    }
+  }
+  // tout personnage blessé qui passe dessus le prend : joueur, amis en ligne, IA alliées et adversaires
+  for (const sh of state.shrines) {
+    if (!sh.active) continue;
+    const p = state.units.find(u => u.alive && u.hp < u.maxHp && Math.hypot(u.x - sh.x, u.z - sh.z) < 1.45);
+    if (!p) continue;
+    p.hp = p.maxHp;
+    p.shield = 0;
+    sh.active = false;
+    sh.respawn = 45;
+    fx('holyBurst', sh.x, 0.55, sh.z, [0.25, 1, 0.42], 1.25, 1.35);
+    addFloat(p, 'FULL HP', '#8dff9d');
+    updateUI();
+  }
+}
