@@ -582,6 +582,12 @@ assert.ok(
     'feux follets sans lumière ajoutée'
   );
 }
+// Chevalier de la mort elfe : lame runique 20 % plus courte (les autres races gardent la longueur normale)
+{
+  const K = require('../src/characters/kits.js');
+  assert.equal(K.resolveKit('elf_reaver').weaponLength, 0.8, 'DK elfe : lame à 80 %');
+  for (const r of ['human', 'orc', 'dwarf', 'undead']) assert.equal(K.resolveKit(r + '_reaver').weaponLength, 1, r);
+}
 // Mêlée : cri d'effort et sons de frappe enregistrés par arme, licences documentées
 {
   const fs = require('node:fs'),

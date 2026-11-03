@@ -285,7 +285,7 @@
     }); // pièces déjà déplacées sur le squelette du corps
     if (kit.robe) buildRobe(THREE, body, bones, kit.robe, fit);
     if (kit.staff) buildStaff(THREE, body, bones, { ...kit.staff, behindCape: !!kit.cape }, height, fit);
-    if (kit.weapon) buildWeapon(THREE, body, bones, kit.weapon, height, fit);
+    if (kit.weapon) buildWeapon(THREE, body, bones, kit.weapon, height, fit, kit.weaponLength);
     headFeatures(THREE, kit, root, body, bones, skinColor || new THREE.Color(0.6, 0.45, 0.35));
     if (kit.orbs) buildOrbs(THREE, root, bones, kit.orbs, height);
     if (kit.eyeGlow) {
