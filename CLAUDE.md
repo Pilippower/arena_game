@@ -57,56 +57,45 @@ npm run test:all   # ~1 min 30 : + test navigateur complet (sélection, 35 kits,
 
 ## Bonnes pratiques de code (demandées par l'utilisateur, à appliquer à chaque tâche)
 
-But : un code **maintenable**, où l'on sait **tout de suite où regarder et quoi modifier**. Chaque demande doit pouvoir se traiter en lisant peu de fichiers.
+But : un code **maintenable**, où l'on sait **tout de suite où regarder et quoi modifier**, pour aller vite sans régression. Si une règle devient contre-productive, le signaler à l'utilisateur au lieu de l'appliquer aveuglément.
 
 **Trouver vite**
-- Partir de la carte « État réel du repo » ci-dessus et des « Recettes » : elles disent quel fichier possède quoi. Lire la zone concernée, pas tout le projet.
-- **Tenir cette carte à jour dans le même commit** : nouveau fichier, rôle déplacé, nouvelle table de données ou nouveau point d'accroche → une ligne ici (ou dans les Recettes). Une carte fausse fait perdre plus de temps que pas de carte.
-- Un concept = un endroit = un nom cherchable (`SPELLS`, `SPELL_CAST`, `AI_ROLE`, `MAPS`…). Préférer une **table de données** lue par le code à des `if (nom === …)` dispersés.
+- Partir de la carte « État réel du repo » et des « Recettes » ; lire la zone concernée, pas tout le projet.
+- Un concept = un endroit = un nom cherchable (`SPELLS`, `SPELL_CAST`, `AI_ROLE`, `MAPS`…) ; une **table de données** lue par le code plutôt que des `if (nom === …)` dispersés.
 
-**Écrire**
-- Pas de duplication : avant d'écrire une fonction, chercher (Grep) si elle existe déjà ; si un bloc apparaît deux fois, l'extraire dans le fichier qui possède ce rôle.
-- Fonctions courtes à un seul rôle, noms explicites (pas d'abréviation obscure ; les valeurs magiques deviennent des constantes nommées en tête de fichier ou dans `data/`).
-- Mettre le code dans le fichier du **rôle** (`game/` règles, `render/` dessin, `ui/` interface, `data/` valeurs), pas là où il est pratique de l'ajouter. Un fichier qui dépasse ~800 lignes ou mélange deux rôles se découpe (en respectant l'ordre des `<script>`).
+**SOLID, adapté au projet** (scripts classiques sans classes : les modules sont des fichiers et des tables)
+- **S** : un fichier = un rôle (`game/` règles, `render/` dessin, `ui/` interface, `data/` valeurs), une fonction = une action (`dampeningAt` calcule, `heal` applique). Fichier de plus de ~800 lignes ou à deux rôles : le découper.
+- **O** : étendre en ajoutant une entrée (`SPELL_CAST` / `SPELLS`, `ArenaEnv.registerMap`, `AI_ROLE`, pièce `characters/` sur `CharacterParts`), pas en ajoutant un `if` dans `useSkill`, `setMap` ou `build`.
+- **L** : même contrat pour toutes les entrées d'une table (`run(c)` renvoie `false` si impossible ; carte = `(THREE, S, arena, E)`) ; joueur, IA et ami en ligne passent par les mêmes fonctions.
+- **I** : chaque fichier n'importe que ce qu'il utilise (`const { … } = ArenaEnv.helpers` / `root.CharacterParts`).
+- **D** : les règles passent par des points d'entrée (`SFX.*`, `fx()`, `addFloat`, `unitError`, `NET`), jamais directement par le DOM, three.js ou le réseau : c'est ce qui les rend testables.
+
+**Écrire et factoriser**
+- Chercher (Grep) avant d'écrire une fonction ; à la 3e copie d'un bloc, l'extraire dans le point de partage du rôle (`core/setup.js`, `ArenaEnv.helpers`, `rig.js`, `tests/sources.js`).
+- Code neuf : fonctions courtes (~60 lignes max), noms explicites, constantes nommées plutôt que valeurs magiques. Les longues fonctions existantes (`ai`, `renderCharacter`, `hfRender`, `build`…) ne se découpent que si la tâche porte sur elles, dans un commit à part.
 - Commentaires : le **pourquoi** (règle validée, piège, mesure), pas le quoi.
 
-**Principes SOLID, appliqués à ce projet** (scripts classiques sans classes : les « modules » sont des fichiers et des tables)
-- **S, responsabilité unique** : un fichier = un rôle, une fonction = une action. Une fonction qui calcule ne dessine pas et ne joue pas de son (ex. `dampeningAt` calcule, `heal` applique).
-- **O, ouvert à l'extension, fermé à la modification** : on ajoute une entrée, on ne modifie pas le moteur. Nouveau sort = entrée `SPELL_CAST` / `SPELLS`, nouvelle carte = `ArenaEnv.registerMap` dans `map_<id>.js`, nouveau rôle d'IA = `AI_ROLE`, nouvelle pièce de personnage = fichier `characters/` branché sur `CharacterParts`. Pas de `if (nom === 'X')` ajouté dans `useSkill`, `setMap` ou `build`.
-- **L, substitution** : toutes les entrées d'une même table respectent le même contrat (`run(c)` renvoie `false` si impossible ; un constructeur de carte reçoit `(THREE, S, arena, E)`) ; toute unité (joueur, IA, ami en ligne) passe par les mêmes fonctions (`useSkill`, `damage`, `control`).
-- **I, interfaces minimales** : chaque fichier n'importe que ce qu'il utilise (`const { … } = ArenaEnv.helpers` / `root.CharacterParts`) ; pas d'objet fourre-tout.
-- **D, dépendre des abstractions** : les règles appellent des points d'entrée (`SFX.*`, `fx()`, `addFloat`, `unitError`, `NET`) et jamais directement le DOM, three.js ou le réseau ; c'est ce qui permet de les tester avec des stubs (`sandbox`).
+**Code mort : zéro** — supprimer tout de suite ce que l'on remplace (fonction, variable, CSS, image, son, branche morte, code commenté), après un Grep dans `index.html`, `src/`, `tests/`, `tools/` (attention aux noms lus dans une table ou une chaîne).
 
-**Factorisation**
-- Règle de trois : la 2e copie d'un bloc est tolérée le temps de comprendre ; à la 3e, extraire une fonction dans le fichier qui possède ce rôle. Les outils communs vont dans le point de partage existant (`core/setup.js` pour le jeu, `ArenaEnv.helpers` pour le décor, `rig.js` pour les personnages, `tests/sources.js` pour les tests).
-- Après une modification, vérifier la taille des fonctions touchées : au-delà d'environ 60 lignes, découper par étapes nommées.
-
-**Code mort : zéro**
-- Supprimer immédiatement ce que l'on remplace : ancienne fonction, variable, CSS, image, son, branche `if` inatteignable, paramètre jamais passé, code commenté. L'historique git suffit pour revenir en arrière.
-- Avant de supprimer : Grep du nom dans `index.html`, `src/`, `tests/`, `tools/` (attention aux appels indirects : noms lus dans une table, `window[...]`, chaînes CSS/HTML). Si les tests lisent ce texte, mettre le test à jour en gardant la règle.
-
-**Refactoring**
-- Petits pas, **comportement identique**, une couche à la fois (règle 10). Ne jamais mélanger refactoring et changement de comportement dans un même commit.
-- Refactorer en continu ce que l'on touche (règle du boy-scout) : si la tâche passe par un code confus ou dupliqué, le simplifier au passage dans la même zone, sans partir dans un chantier non demandé. Un chantier plus large se propose à l'utilisateur, il ne s'improvise pas.
-- Jamais de « correction » de ce qui est validé dans `docs/SPEC.md` ou les règles non négociables sous prétexte de propreté.
-
-**Documentation : fonctionnelle et technique, dans le même commit que le code**
-- **Fonctionnelle = `docs/SPEC.md`** : ce que le jeu fait, tel que validé par l'utilisateur (règles de jeu, contrôles, écrans), en français clair, sans détail d'implémentation inutile. Chaque nouvelle demande validée = une ligne (marquée 🧪 si un test la vérifie) ; une règle modifiée = sa ligne mise à jour, jamais deux versions contradictoires.
-- **Technique = `CLAUDE.md`** : carte des fichiers (qui possède quoi), recettes (comment ajouter / modifier), pièges, conventions de test. Mise à jour dès qu'un fichier, une table, un point d'accroche ou un contrat change.
-- Les commentaires d'en-tête de chaque fichier disent son rôle et renvoient aux fichiers voisins ; les tenir justes lors d'un déplacement.
-- Avant de publier : relire les lignes de `SPEC.md` et de `CLAUDE.md` qui parlent de la zone touchée, et corriger celles qui ne sont plus vraies.
-
-**Code review (avant chaque commit / publication)**
-- Relire son propre diff (`git diff`) : bugs, cas limites (unité morte, cible absente, en ligne / hors ligne, mobile), duplication, code mort laissé, noms, fichier du bon rôle, SOLID (extension par table plutôt que `if` ajouté), test unitaire de la règle, `SPEC.md` et `CLAUDE.md` à jour.
-- Un nouveau test doit être vérifié par une régression volontaire (modifier la règle, constater l'échec, restaurer) : un test qui ne peut pas échouer ne protège rien.
-- Pour un changement non trivial : lancer la revue `/code-review` puis `/simplify` sur le diff et corriger ce qui est confirmé.
+**Refactoring et livraison**
+- Une fonctionnalité demandée = une tranche complète livrée d'un coup (données + mécanique + IA + icône…). « Une couche à la fois » (règle 10) veut dire : ne pas toucher au visuel ou aux contrôles par effet de bord d'une autre tâche.
+- Refactoring = comportement identique, commit à part. Simplifier au passage ce que la tâche touche ; un chantier plus large se propose, il ne s'improvise pas. Ne jamais « corriger » ce que `docs/SPEC.md` valide.
 
 **Tests : unitaires d'abord**
-- Toute règle de gameplay ou fonction pure se teste **en unitaire** dans Node (rapide, quelques ms) : combat (contrôles, DR, dégâts, soins, sorts) dans `tests/combat.test.js` (`combatWorld()` = vrai code de combat, IA et pas de simulation sur une arène vide, `unit(classe, x, z, équipe)`, `run(ctx, secondes)` fait avancer `update`, `sounds` = bruitages demandés, `ctx.Math.random` fixable), déplacement / IA / cibles dans `tests/gameplay.test.js` ; `sandbox(stubs)` de `tests/sources.js` donne `load(fichier)` (fichier entier) et `fn(fichier, nom)` (une seule fonction de premier niveau), avec des stubs minimaux ; puis vérifier le **résultat** (PV, durée, position, état), pas le texte du code. `game_logic.js` se charge par `require`.
-- Rendre le code testable : séparer le calcul (fonction pure, entrées → sortie) des effets (DOM, three.js, son, réseau).
-- Le test navigateur (`tests/browser/`) est réservé à ce qui ne peut être vérifié qu'en vrai : démarrage, rendu, chargement des modèles, interactions d'interface. Ne pas y ajouter ce qu'un test unitaire couvre.
-- Tests « texte du code » (expressions régulières sur `flat()`) : seulement pour interdire une régression connue (ancienne formule, copie inline) ; sinon préférer un test de comportement.
-- Un bug corrigé = un test unitaire qui l'aurait attrapé.
+- Règle de jeu ou fonction pure = test unitaire Node qui vérifie le **résultat** (PV, durée, position, état) :
+  - combat (contrôles, DR, dégâts, soins, sorts, incantations, IA) : `tests/combat.test.js`, `combatWorld()` = vrai code sur une arène vide ; `unit(classe, x, z, équipe)`, `run(ctx, secondes)` fait avancer `update`, `sounds` = bruitages demandés, `ctx.Math.random` fixable ;
+  - déplacement, caméra, cibles : `tests/gameplay.test.js` ;
+  - outils : `sandbox(stubs)` de `tests/sources.js` (`load(fichier)`, `fn(fichier, nom)`), `code('src/<dossier>/')` pour lire un dossier.
+- Chaque règle nouvelle : une régression volontaire qui doit faire échouer son test, `node tools/mutate.js <test> <fichier> "<extrait>" "<remplacement>"` (fichier toujours restauré).
+- Navigateur (`tests/browser/`) : seulement démarrage, rendu, modèles, interface. Tests « texte du code » : seulement pour interdire une régression connue, ou quand le comportement dépend du hasard / du réseau.
+- Un bug corrigé = un test qui l'aurait attrapé.
+
+**Documentation, dans le même commit que le code**
+- **Fonctionnelle = `docs/SPEC.md`** : ce que le jeu fait, tel que validé par l'utilisateur ; une ligne par demande validée (🧪 si testée), mise à jour quand la règle change, jamais deux versions contradictoires.
+- **Technique = `CLAUDE.md`** : carte des fichiers, recettes, pièges. Garder court : ne pas y recopier ce que le code ou `SPEC.md` disent déjà ; le nettoyer quand il grossit.
+- En-têtes de fichiers justes (rôle + fichiers voisins). Avant de publier, relire les lignes des deux documents qui parlent de la zone touchée.
+
+**Relecture avant commit** : relire son `git diff` (bugs, cas limites : unité morte, cible absente, en ligne, mobile ; duplication, code mort, SOLID, test de la règle, docs à jour). Revue complète `/code-review` + `/simplify` seulement pour un gros changement (nouveau système, refactoring large) ou à la demande de l'utilisateur.
 
 ## Recettes (pour aller vite)
 
@@ -122,7 +111,7 @@ But : un code **maintenable**, où l'on sait **tout de suite où regarder et quo
 
 - Fichiers en CRLF et en LF mélangés : les scripts d'édition doivent conserver les fins de ligne (`newline=''` en Python).
 - Heredoc bash : pas d'apostrophes ni de `$(` non échappés ; pour un gros script, l'écrire dans un fichier.
-- `tests/spec.test.js` lit souvent le texte du code (expressions régulières) : un renommage peut casser un test sans casser le jeu, mettre le test à jour en gardant la règle. Pour un dossier découpé en plusieurs fichiers, lire `code('src/<dossier>/')` (`tests/sources.js`) plutôt qu'un fichier précis.
+- `tests/spec.test.js` lit encore souvent le texte du code : un renommage peut casser un test sans casser le jeu ; mettre le test à jour en gardant la règle (ou le convertir en test de comportement).
 - three.js : ne jamais changer le nombre de lumières d'une scène (recompilation de tous les shaders, saccade en combat) ; mettre l'intensité à 0 à la place.
 - `NET` doit rester un `var` (lu comme `window.NET`).
 - `docs/HANDOFF.md` est historique (démarrage du projet) : `CLAUDE.md` et `docs/SPEC.md` font foi.
@@ -138,7 +127,7 @@ But : un code **maintenable**, où l'on sait **tout de suite où regarder et quo
 7. Fallback personnage uniquement si chargement `failed` (pas `pending`). Garder `previewFallbackModel()` et un seul canvas preview.
 8. Mobile = couche d'input/UI supplémentaire sur le même gameplay ; pas de ligne Grid vide sous l'arène.
 9. **Aucun asset Blizzard/WoW** (modèles, textures, sons, icônes). Assets originaux ou licences permissives uniquement.
-10. **Une seule couche à la fois** (graphisme ≠ UI ≠ gameplay ≠ contrôles). Petits pas, pas de rewrite.
+10. **Une seule couche à la fois** (graphisme ≠ UI ≠ gameplay ≠ contrôles) : ne pas toucher une couche par effet de bord d'une tâche sur une autre ; une fonctionnalité demandée se livre en tranche complète. Petits pas, pas de rewrite.
 
 ## Priorités de travail
 
