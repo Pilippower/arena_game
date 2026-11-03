@@ -84,7 +84,7 @@ But : un code **maintenable**, où l'on sait **tout de suite où regarder et quo
 - Pour un changement non trivial : lancer la revue `/code-review` puis `/simplify` sur le diff et corriger ce qui est confirmé.
 
 **Tests : unitaires d'abord**
-- Toute règle de gameplay ou fonction pure se teste **en unitaire** dans Node (rapide, quelques ms) : combat (contrôles, DR, dégâts, soins, sorts) dans `tests/combat.test.js` (`combatWorld()` = vrai code de combat sur une arène vide, `unit(classe, x, z, équipe)`), déplacement / IA / cibles dans `tests/gameplay.test.js` ; `sandbox(stubs)` de `tests/sources.js` donne `load(fichier)` (fichier entier) et `fn(fichier, nom)` (une seule fonction de premier niveau), avec des stubs minimaux ; puis vérifier le **résultat** (PV, durée, position, état), pas le texte du code. `game_logic.js` se charge par `require`.
+- Toute règle de gameplay ou fonction pure se teste **en unitaire** dans Node (rapide, quelques ms) : combat (contrôles, DR, dégâts, soins, sorts) dans `tests/combat.test.js` (`combatWorld()` = vrai code de combat, IA et pas de simulation sur une arène vide, `unit(classe, x, z, équipe)`, `run(ctx, secondes)` fait avancer `update`, `sounds` = bruitages demandés, `ctx.Math.random` fixable), déplacement / IA / cibles dans `tests/gameplay.test.js` ; `sandbox(stubs)` de `tests/sources.js` donne `load(fichier)` (fichier entier) et `fn(fichier, nom)` (une seule fonction de premier niveau), avec des stubs minimaux ; puis vérifier le **résultat** (PV, durée, position, état), pas le texte du code. `game_logic.js` se charge par `require`.
 - Rendre le code testable : séparer le calcul (fonction pure, entrées → sortie) des effets (DOM, three.js, son, réseau).
 - Le test navigateur (`tests/browser/`) est réservé à ce qui ne peut être vérifié qu'en vrai : démarrage, rendu, chargement des modèles, interactions d'interface. Ne pas y ajouter ce qu'un test unitaire couvre.
 - Tests « texte du code » (expressions régulières sur `flat()`) : seulement pour interdire une régression connue (ancienne formule, copie inline) ; sinon préférer un test de comportement.
@@ -124,7 +124,7 @@ But : un code **maintenable**, où l'on sait **tout de suite où regarder et quo
 
 ## Priorités de travail
 
-- P0 : tests unitaires de combat en place (`tests/combat.test.js` : DR, contrôles, Hamstring, Charge, Blink, dampening, Dispel ; chaque test vérifié par une régression volontaire). À compléter : ressource prise à la fin de l’incantation, interruptions, auras (dot / hot), mort et fin de manche.
+- P0 : tests unitaires de combat en place (`tests/combat.test.js` : DR, contrôles, Hamstring, Charge, Blink, dampening, Dispel ; chaque test vérifié par une régression volontaire). Aussi : incantations (ressource prise à la fin, interruption, ligne de vue perdue), auras, auto-attaque, IA (sanctuaire), mort et fin de manche, chargement. Restent vérifiés par le texte du code : seuils de fuite / regroupement de l’IA (aléatoires), jeu en ligne, écrans du match.
 - P2 : **chantier principal souhaité** — personnages 3D fantasy adultes (Orc massif, Elf élancé, pas de look chibi/Lego), assets permissifs bundlés localement.
 - P3 : samples audio CC0/CC-BY + manifest de licences, fallback procédural.
 - P4 : décor plus organique (textures, végétation, props).

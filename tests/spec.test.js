@@ -34,7 +34,6 @@ assert.match(ctx.skillIconSVG('oracle', 4), /spells\/angelic_step\.webp/, 'Smite
 assert.ok(!C.reaver.skills.some(s => s.n === 'Death Advance'), 'chevalier de la mort sans Death Advance');
 assert.equal(skill('oracle', 'Holy Terror').dur, 6, 'Holy Terror : 6 s');
 assert.equal(skill('arcanist', 'Frost Nova').root, 6, 'Frost Nova : 6 s');
-assert.match(read('src/game/combat.js'), /if \(u\.cast\) return 'Not ready yet'/, 'incantation en cours : message');
 assert.equal(ctx.FORM_INFO.bear.swing[1], 45, 'ours : 45 / 2 s');
 assert.equal(skill('reaver', 'Death Grip').cd, 25);
 assert.ok(skill('shade', 'Kidney Shot').stun === 6 && skill('shade', 'Kidney Shot').cd === 30, 'Kidney 6 s / 30 s');
@@ -67,11 +66,6 @@ assert.ok(read('src/ui/skillbar.js').includes('function trinketTooltip'), 'infob
     ['warden', 4, 'regrowth']
   ])
     assert.ok(ctx.skillIconSVG(cls, i).includes(`spells/${art}.webp`), 'icône ' + art);
-  assert.match(
-    read('src/game/forms.js'),
-    /control\(t, 'stun', S\.stun, u, 'opener'\)|'opener'/,
-    'Cheap Shot : DR à part'
-  );
 }
 // Formes / camouflage (vitesse camouflée, insensibilité au mouton : tests/combat.test.js)
 assert.equal(ctx.FORM_INFO.cat.speed, 1.3, 'félin +30 % de vitesse');
@@ -201,11 +195,6 @@ assert.match(h3, /if \(!groups\.size\) return;/, 'silhouettes : pas de passe inu
 assert.match(code('src/render/'), /CAM_VIEW\.dist = [^;]*camera\.dist/, 'zoom lissé');
 assert.match(h3, /rotation\.set\(castLean, ryaw, deathTilt \|\| rec\.lean\)/, 'inclinaison dans les virages');
 assert.match(h3, /ATTACK_HIT = \{\s*Sword_Attack/, 'frappe synchronisée avec les dégâts');
-assert.match(
-  read('src/game/combat.js'),
-  /SCHOOL_COLOR\[school\][^;]*crit\)/,
-  'dégâts colorés par école, critiques en gros'
-);
 assert.ok(read('index.html').includes('.nameplate.enemy .npCast'), "barre d'incantation ennemie lisible");
 const aiSrc = read('src/game/ai.js');
 for (const k of ['function aiSteer', 'function aiCover', 'u.aiPeel', 'const ccReady'])
@@ -311,11 +300,6 @@ run('src/ui/hud.js');
     'lobby épuré'
   );
 }
-assert.match(
-  read('src/game/sim.js'),
-  /if \(state\.ended\) \{[\s\S]*?u\.prevX = u\.x;[\s\S]*?u\.moving = false;/,
-  'fin de manche : pas de tremblement'
-);
 assert.match(
   code('src/render/'),
   /state\.winTeam === u\.team\) \{\s*\/\/[^\n]*\n\s*key = 'cheer'/,
@@ -450,7 +434,6 @@ assert.ok(
   'cartes : illustration collée en haut (pas de bande vide)'
 );
 {
-  assert.match(read('src/game/sim.js'), /if \(state\.loading\) return;/, 'chargement : simulation arrêtée');
   assert.match(read('src/game/combat.js'), /prepareMatch\(\);/, 'chargement à chaque manche');
   assert.match(
     code('src/render/'),
@@ -483,22 +466,7 @@ assert.ok(
   );
   assert.ok(read('src/ui/settings.js').includes("localStorage.setItem('arenaLastPick'"), 'race et classe mémorisées');
 }
-{
-  const cb = read('src/game/combat.js');
-  assert.ok(cb.includes('const SPELL_RANGE = 30;'), 'portée 30 m');
-  assert.match(
-    cb,
-    /if \(!\(u\.cast && u\.cast\.i === i && u\.cast\.end > now\(\) && !u\.cast\.channel\)\) pay\(u, i\)/,
-    'ressource prise à la fin de l’incantation'
-  );
-  assert.match(
-    read('src/game/sim.js'),
-    /u\.res = Math\.max\(0, u\.res - \(ca\.cost \|\| 0\)\)/,
-    'prélèvement à la fin'
-  );
-  const sp = read('src/game/spells.js');
-  assert.ok(!sp.includes('if (!hit.length) return false;'), 'sorts de zone sans cible');
-}
+// Portée 30 m, ressource prise à la fin de l'incantation, sorts de zone sans cible : tests/combat.test.js
 assert.ok(
   read('src/core/loading.js').includes('const LOADING_MIN_MS = 3000;') &&
     read('src/core/loading.js').includes("if (first) loadingShow('Entering the arena');"),
@@ -519,7 +487,6 @@ assert.ok(
   ['function beastFurShells', 'extrémités bouchées', 'respiration'].every(k => code('src/render/').includes(k)),
   'bêtes : fourrure, sans trou, animées'
 );
-assert.ok(read('src/game/forms.js').includes('  cds[i] = S.cd;'), 'recharge dans la barre du sort lancé');
 assert.ok(
   read('src/ui/hud.js').includes('return u.cast.channel ? left : 1 - left;'),
   'canalisation : barre qui se vide'
@@ -561,12 +528,7 @@ console.log('OK - spécifications validées (docs/SPEC.md)');
   assert.ok(css.includes('table-layout: fixed'), 'résultats : colonnes alignées');
   assert.ok(read('src/game/match.js').includes("setProperty('--rows'"), 'résultats : nombre de lignes');
 }
-// Demonic Gate : vers l'avant du personnage (pas vers la cible), comme Blink
-assert.match(
-  read('src/game/spells.js'),
-  /'Demonic Gate': \{\s*mobility: true,\s*noFace: true/,
-  'Demonic Gate vers l’avant'
-);
+// Demonic Gate : vers l'avant du personnage (pas vers la cible), comme Blink : tests/combat.test.js
 // Chevalier de la mort : l'arme ne tremble pas (IK depuis la pose animée, mains lissées dans le temps)
 {
   const h3 = code('src/render/');
@@ -632,7 +594,7 @@ assert.ok(
   );
   for (const k of ["'effort_m'", "'whoosh'", "'clash'", "'thud'", 'effort(u)'])
     assert.ok(sfx.includes(k), 'sons : ' + k);
-  assert.ok(read('src/game/rules.js').includes('SFX.effort(u)'), 'cri sur les auto-attaques');
+  // cri sur les auto-attaques : tests/combat.test.js
 }
 // Chevalier de la mort : garde à deux mains devant lui hors frappe (mains jamais derrière le dos)
 assert.ok(
@@ -683,7 +645,7 @@ assert.ok(
 assert.ok(!/'Death Coil': \{[^}]*art:/.test(read('src/data/classes.js')), 'Death Coil : icône d’origine');
 assert.ok(!read('src/audio/sfx.js').includes("lowpass: u.race === 'undead'"), 'cri du mort-vivant audible');
 // Soins de la carte : pris par tout personnage (tests/gameplay.test.js), l'IA blessée va les chercher
-assert.ok(read('src/game/ai.js').includes('u.aiShrine = true'), 'IA : va chercher le soin de la carte');
+// IA blessée qui va chercher le soin de la carte : tests/combat.test.js
 // Réglages : une touche reprise rend l'ancienne action « Unset » (pas de permutation)
 assert.ok(read('src/ui/settings.js').includes("if (other) set(other, '');"), 'touche reprise : ancienne action Unset');
 assert.ok(

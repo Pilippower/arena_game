@@ -5,17 +5,33 @@ const assert = require('node:assert/strict');
 const { sandbox } = require('./sources.js');
 
 function combatWorld() {
+  const sounds = []; // bruitages demandés (SFX.<nom>), pour vérifier les cris
   const S = sandbox({
+    Math: Object.create(Math), // propre au monde : un test peut fixer Math.random
     window: {},
     document: { addEventListener() {} },
     location: { search: '' },
     URLSearchParams,
-    $: () => ({}),
+    $: () => ({ classList: { add() {}, remove() {} } }),
     now: () => S.ctx.clock,
     clamp: (v, a, b) => Math.max(a, Math.min(b, v)),
     updateUI() {},
     spellSfx() {},
-    SFX: { effort() {} }
+    spellImpactSfx() {},
+    spellSfxKind() {},
+    showSplash() {},
+    setTimeout() {},
+    clearTimeout() {},
+    playerMove() {},
+    SFX: new Proxy(
+      {},
+      {
+        get:
+          (o, name) =>
+          (...args) =>
+            sounds.push({ name, unit: args[0] })
+      }
+    )
   });
   S.ctx.clock = 100;
   S.load('src/data/classes.js');
@@ -26,19 +42,33 @@ function combatWorld() {
     'src/game/forms.js',
     'src/game/combat.js',
     'src/game/spells.js',
+    'src/game/ai.js',
     'src/game/rules.js',
-    'src/game/match.js'
+    'src/game/match.js',
+    'src/game/sim.js'
   ])
     S.load(f);
   S.ctx.applyMap('castle');
   S.ctx.arena.pillars = []; // arène vide : les règles, pas la géométrie
-  S.ctx.state = { units: [], floaters: [], fx: [], dampening: 0, elapsed: 0, stats: [] };
+  S.ctx.state = {
+    units: [],
+    floaters: [],
+    fx: [],
+    dampening: 0,
+    elapsed: 0,
+    stats: [],
+    t: 180,
+    uiTick: 1,
+    round: 1,
+    scoreA: 0,
+    scoreB: 0
+  };
   const unit = (cls, x, z, team, extra = {}) => {
     const u = Object.assign(S.ctx.makeUnit(cls, x, z, team, cls), { slotIndex: S.ctx.state.units.length }, extra);
     S.ctx.state.units.push(u);
     return u;
   };
-  return { ctx: S.ctx, unit };
+  return { ctx: S.ctx, unit, sounds };
 }
 const spell = (ctx, cls, n) => ctx.CLASS[cls].skills.findIndex(s => s.n === n);
 
@@ -216,6 +246,191 @@ const spell = (ctx, cls, n) => ctx.CLASS[cls].skills.findIndex(s => s.n === n);
   u.stealth = true;
   assert.ok(Math.abs(ctx.moveSpeed(u) - base * 0.7) < 1e-9, 'camouflé : -30 % de vitesse');
 }
+// ---------- Incantations (pas de simulation réel : update de sim.js) ----------
+// avance la simulation de `sec` secondes (horloge comprise)
+const run = (ctx, sec, dt = 1 / 120) => {
+  for (let k = 0; k < Math.round(sec / dt); k++) {
+    ctx.clock += dt;
+    ctx.update(dt);
+  }
+};
+{
+  // ressource prise à la fin de l'incantation, dégâts à l'impact ; portée 30 m
+  const { ctx, unit } = combatWorld();
+  const mage = unit('arcanist', 0, 0, 0),
+    foe = unit('sentinel', 0, 20, 1);
+  ctx.state.player = mage;
+  mage.target = foe;
+  assert.equal(ctx.SPELL_RANGE, 30, 'portée des sorts : 30 m');
+  const FB = spell(ctx, 'arcanist', 'Frost Bolt');
+  assert.ok(ctx.useSkill(mage, FB) && mage.cast, 'Frost Bolt : incantation lancée');
+  assert.equal(mage.res, 100, 'incantation en cours : ressource pas encore prise');
+  assert.equal(
+    ctx.skillFailReason(mage, spell(ctx, 'arcanist', 'Polymorph')),
+    'Not ready yet',
+    'autre sort pendant l’incantation : message'
+  );
+  run(ctx, mage.cast.end - ctx.clock + 0.02);
+  assert.ok(!mage.cast && mage.res < 100, 'fin de l’incantation : ressource prise');
+  assert.ok(foe.hp < foe.maxHp && foe.slow > 0, 'Frost Bolt : dégâts et ralentissement à l’impact');
+}
+{
+  // interruption : l'incantation s'arrête, rien n'est dépensé, l'école est verrouillée 4 s
+  const { ctx, unit } = combatWorld();
+  const mage = unit('arcanist', 0, 0, 0),
+    war = unit('sentinel', 0, 1.5, 1);
+  ctx.state.player = mage;
+  mage.target = war;
+  const FB = spell(ctx, 'arcanist', 'Frost Bolt');
+  ctx.useSkill(mage, FB);
+  assert.ok(ctx.interrupt(war, mage), 'interruption');
+  assert.ok(!mage.cast && mage.res === 100, 'interrompu : rien dépensé');
+  assert.ok(mage.cd[FB] >= 4 && mage.lockout.school === ctx.CLASS.arcanist.skills[FB].s, 'école verrouillée 4 s');
+  assert.equal(ctx.skillFailReason(mage, FB), 'That school is locked', 'école verrouillée : message');
+}
+{
+  // cible perdue de vue à la fin : sort annulé, recharge rendue, rien dépensé
+  const { ctx, unit } = combatWorld();
+  const mage = unit('arcanist', 0, 0, 0),
+    foe = unit('sentinel', 0, 20, 1);
+  ctx.state.player = mage;
+  mage.target = foe;
+  const FB = spell(ctx, 'arcanist', 'Frost Bolt');
+  ctx.useSkill(mage, FB);
+  assert.ok(mage.cd[FB] > 0, 'Frost Bolt : recharge lancée');
+  ctx.arena.pillars.push({ x: 0, z: 10, r: 2, h: 8 });
+  run(ctx, mage.cast.end - ctx.clock + 0.02);
+  assert.ok(foe.hp === foe.maxHp && mage.res === 100 && mage.cd[FB] === 0, 'hors de vue : annulé et remboursé');
+}
+{
+  // effets dans la durée : tic chaque seconde, total sur la durée, puis l'aura disparaît
+  const { ctx, unit } = combatWorld();
+  const priest = unit('oracle', 0, 0, 0),
+    foe = unit('arcanist', 0, 8, 1),
+    ally = unit('sentinel', 1, 0, 0);
+  ctx.addAura(foe, priest, 'Pain', 'dot', 120, 6, 'shadow');
+  ally.hp = 1000;
+  ctx.addAura(ally, priest, 'Rejuvenation', 'hot', 120, 6);
+  const hp0 = foe.hp;
+  for (let k = 0; k < 720; k++) {
+    ctx.updateAuras(foe, 1 / 120);
+    ctx.updateAuras(ally, 1 / 120);
+  }
+  const expected = 120 * (1 - ctx.armorReduction(foe, 'shadow'));
+  assert.ok(Math.abs(hp0 - foe.hp - expected) <= 6, 'dot : total sur 6 s');
+  assert.equal(ally.hp, 1120, 'hot : total sur 6 s');
+  assert.ok(!foe.auras.length && !ally.auras.length, 'auras terminées');
+  ctx.addAura(foe, priest, 'Pain', 'dot', 120, 6, 'shadow');
+  ctx.addAura(foe, priest, 'Pain', 'dot', 120, 6, 'shadow');
+  assert.equal(foe.auras.length, 1, 'réappliquer rafraîchit (pas de cumul)');
+}
+{
+  // dégâts colorés par école, critiques en gros
+  const { ctx, unit } = combatWorld();
+  const lock = unit('warlock', 0, 5, 0),
+    t = unit('sentinel', 0, 0, 1);
+  ctx.damage(lock, t, 50, true, 'shadow');
+  const f = ctx.state.floaters.find(x => x.text.startsWith('-'));
+  assert.ok(f.color === ctx.SCHOOL_COLOR.shadow && f.big, 'chiffre de dégâts : couleur de l’école, critique en gros');
+}
+{
+  // sort de zone sans ennemi à portée : se lance quand même
+  const { ctx, unit } = combatWorld();
+  const mage = unit('arcanist', 0, 0, 0);
+  unit('sentinel', 0, 25, 1);
+  const FN = spell(ctx, 'arcanist', 'Frost Nova');
+  assert.ok(ctx.useSkill(mage, FN) && mage.cd[FN] > 0, 'Frost Nova sans cible proche');
+}
+{
+  // Demonic Gate : vers l'avant (pas vers la cible), racines gardées
+  const { ctx, unit } = combatWorld();
+  const lock = unit('warlock', 0, 0, 0, { yaw: -Math.PI / 2, root: 3 }),
+    foe = unit('sentinel', 0, 10, 1);
+  lock.target = foe;
+  assert.ok(ctx.useSkill(lock, spell(ctx, 'warlock', 'Demonic Gate')), 'Demonic Gate lancé');
+  assert.ok(lock.x < -3 && Math.abs(lock.z) < 0.01, 'Demonic Gate : vers l’avant du personnage');
+  assert.equal(lock.root, 3, 'Demonic Gate : racines gardées');
+}
+{
+  // formes : chaque barre garde ses recharges (la recharge du sort lancé va dans sa barre, pas dans celle d'arrivée) ;
+  // Cheap Shot a ses propres DR (opener)
+  const { ctx, unit } = combatWorld();
+  const druid = unit('warden', 0, 0, 0);
+  const CAT = ctx.CLASS.warden.skills.findIndex(s => s.k === 'cat');
+  const catBar = ctx.CLASS.warden.bars.cat.map(() => 0);
+  catBar[CAT] = 9; // recharge en cours sur la barre du félin, à la même place que Cat Form
+  druid.cdSets = { '': druid.cd, cat: catBar };
+  assert.ok(ctx.useSkill(druid, CAT) && druid.form === 'cat', 'forme de félin');
+  assert.equal(druid.cd, catBar, 'barre du félin active');
+  assert.equal(catBar[CAT], 9, 'changer de forme garde les recharges de la barre d’arrivée');
+  const rogue = unit('shade', 0, 0, 0),
+    t = unit('sentinel', 0, 1.5, 1);
+  rogue.target = t;
+  ctx.setStealth(rogue, true);
+  const CS = ctx.skillsOf(rogue).findIndex(s => s.k === 'cheapshot');
+  assert.ok(ctx.useSkill(rogue, CS) && t.stun > 0, 'Cheap Shot étourdit');
+  assert.ok(t.dr.opener < 1 && t.dr.stun === 1, 'Cheap Shot : DR à part (opener)');
+}
+
+// ---------- Auto-attaque et IA ----------
+{
+  // auto-attaque au contact, avec cri d'effort (tirage fixé)
+  const { ctx, unit, sounds } = combatWorld();
+  ctx.Math.random = () => 0;
+  const war = unit('sentinel', 0, 0, 0),
+    foe = unit('arcanist', 0, 1.5, 1);
+  ctx.setTarget(war, foe);
+  ctx.autoAttack(war, 1 / 120);
+  assert.ok(foe.hp < foe.maxHp, 'auto-attaque au contact');
+  assert.ok(
+    sounds.some(s => s.name === 'effort' && s.unit === war),
+    'cri sur les auto-attaques'
+  );
+}
+{
+  // IA blessée : va chercher le soin de la carte s'il est actif à moins de 22 m
+  const { ctx, unit } = combatWorld();
+  const player = unit('sentinel', -20, -20, 0),
+    me = unit('sentinel', 5, 5, 1, { ai: true, hp: 300 });
+  ctx.state.player = player;
+  ctx.state.shrines = [{ x: 10, z: 10, active: true }];
+  ctx.applyDifficulty();
+  const d0 = Math.hypot(me.x - 10, me.z - 10);
+  for (let k = 0; k < 120; k++) {
+    ctx.clock += 1 / 120;
+    ctx.ai(me, 1 / 120);
+  }
+  assert.ok(me.aiShrine && Math.hypot(me.x - 10, me.z - 10) < d0 - 1, 'IA blessée : va chercher le soin de la carte');
+}
+
+// ---------- Mort et fin de manche ----------
+{
+  const { ctx, unit } = combatWorld();
+  const war = unit('sentinel', 0, 0, 0),
+    foe = unit('arcanist', 0, 1.5, 1);
+  ctx.state.player = war;
+  foe.cast = { i: 0, end: ctx.clock + 2 };
+  ctx.damage(war, foe, foe.maxHp * 10);
+  assert.ok(!foe.alive && foe.hp === 0 && !foe.cast, 'mort : plus de PV, incantation coupée');
+  assert.equal(ctx.state.stats[war.slotIndex].kills, 1, 'élimination comptée');
+  ctx.update(1 / 120);
+  assert.ok(
+    ctx.state.ended && ctx.state.winTeam === 0 && ctx.state.scoreA === 1,
+    'équipe adverse éliminée : manche gagnée'
+  );
+  // fin de manche : plus de mouvement ni de tremblement
+  Object.assign(war, { x: 3, prevX: 0, moving: true });
+  ctx.update(1 / 120);
+  assert.ok(war.prevX === war.x && !war.moving, 'fin de manche : personnage immobile');
+}
+{
+  // écran de chargement : la simulation est arrêtée
+  const { ctx, unit } = combatWorld();
+  unit('sentinel', 0, 0, 0);
+  ctx.state.loading = true;
+  ctx.update(1);
+  assert.equal(ctx.state.elapsed, 0, 'chargement : chrono arrêté');
+}
 console.log(
-  'OK - règles de combat (tests unitaires : DR, contrôles, dégâts, dampening, Hamstring, Charge, Blink, Dispel)'
+  'OK - règles de combat (tests unitaires : DR, contrôles, dégâts, soins, sorts, incantations, auras, fin de manche)'
 );
