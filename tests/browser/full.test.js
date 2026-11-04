@@ -321,6 +321,58 @@ async function run() {
       await ctx.close();
     }
 
+    // Nain qui marche : barbe, tresses, cheveux et yeux suivent la tête (demande du 04/11/2026 : « une partie de la
+    // barbe reste figée ») ; mesure dans le repère de l'os Head, la cape (qui bouge) sert de témoin
+    {
+      const ctx = await browser.newContext({ viewport: { width: 800, height: 600 } });
+      const page = await ctx.newPage();
+      await page.goto(url('index.html', '?autoplay=reaver&race=dwarf&gates=0&size=1'));
+      await page.waitForFunction(() => HF.records.get(state?.player?.id)?.model, null, { timeout: 60000 });
+      await page.evaluate(() => (window.__headDrift = { first: null, max: {} }));
+      await page.keyboard.down('KeyW');
+      for (let i = 0; i < 10; i++) {
+        await page.waitForTimeout(100);
+        await page.evaluate(() => {
+          const m = HF.records.get(state.player.id).model,
+            D = window.__headDrift,
+            v = new THREE.Vector3(),
+            snap = {};
+          let head = null,
+            k = 0;
+          m.traverse(o => o.isBone && o.name === 'Head' && (head = o));
+          const inv = head.matrixWorld.clone().invert(),
+            onHead = o => {
+              for (let a = o.parent; a; a = a.parent) if (a === head) return true;
+              return false;
+            };
+          m.traverse(o => {
+            if (!o.isMesh || !o.visible || !(onHead(o) || /Hair|Beard|Eye|Cape/.test(o.name))) return;
+            const pos = o.geometry.attributes.position,
+              pts = [];
+            for (let j = 0; j < pos.count; j += Math.max(1, Math.floor(pos.count / 30))) {
+              v.fromBufferAttribute(pos, j);
+              if (o.isSkinnedMesh) o.boneTransform(j, v);
+              v.applyMatrix4(o.matrixWorld).applyMatrix4(inv);
+              pts.push(v.x, v.y, v.z);
+            }
+            snap[(o.name || 'pièce') + '#' + k++] = pts;
+          });
+          D.first ||= snap;
+          for (const key in snap)
+            D.max[key] = Math.max(D.max[key] || 0, ...snap[key].map((x, j) => Math.abs(x - D.first[key][j])));
+        });
+      }
+      await page.keyboard.up('KeyW');
+      const drift = await page.evaluate(() => window.__headDrift.max);
+      assert.ok(
+        Object.entries(drift).some(([k, d]) => k.startsWith('Cape') && d > 0.05),
+        'témoin : la cape bouge par rapport à la tête'
+      );
+      const loose = Object.entries(drift).filter(([k, d]) => !k.startsWith('Cape') && d > 0.005);
+      assert.deepEqual(loose, [], 'nain qui marche : toute la barbe suit la tête');
+      await ctx.close();
+    }
+
     // 3. Mobile paysage via mobile.html
     {
       const ctx = await browser.newContext({

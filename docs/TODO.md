@@ -8,8 +8,6 @@ validé dans `docs/SPEC.md`.
 Du plus simple au plus compliqué, un commit par tâche. Images de référence des épaules (planches de classe génériques
 fournies par l'utilisateur, à suivre au plus près) : `assets_src/ui/ref_shoulders_{mage,warlock,rogue,priest}.png`.
 
-7. Nain : une petite barbe reste figée dans l'air quand il marche (une partie de la barbe ne suit pas la tête) : le
-   vérifier soi-même en marchant, corriger.
 8. Ours : ses sons ressemblent encore à un cochon ; nouvelle étude des sons (enregistrements d'ours libres de droits).
 9. Sons de sorts encore plats et fades : état des lieux du design sonore des sorts de World of Warcraft (sources
    publiques, sans copier ni extraire leurs sons), puis propositions ; Drain Life du démoniste très gênant.
