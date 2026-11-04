@@ -109,6 +109,30 @@ const lastParty = c => c.sent.filter(m => m.t === 'party').at(-1);
   assert.equal(lastParty(a.c).members.length, 3, 'groupe mis à jour');
 }
 
+// ---------- Auto-Balance : amis répartis au plus près de l'égalité, hôte compris ----------
+{
+  const w = netWorld(),
+    side = () => {
+      const gs = [...w.ctx.NET.guests.values()];
+      return gs.filter(g => g.team === 'ally').length + 1 + ' vs ' + gs.filter(g => g.team === 'enemy').length;
+    };
+  const a = join(w, 'Lyra');
+  w.ctx.netAutoBalance();
+  assert.equal(side(), '1 vs 1', '1 ami : en face');
+  for (const n of ['Torren', 'Seris', 'Nyx']) join(w, n);
+  for (let i = 0; i < 5; i++) {
+    w.ctx.netAutoBalance();
+    assert.equal(side(), '3 vs 2', '3v3, 4 amis : 3 contre 2 (hôte compris)');
+  }
+  join(w, 'Kargan');
+  w.ctx.netAutoBalance();
+  assert.equal(side(), '3 vs 3', '5 amis : 3 contre 3');
+  w.ctx.TEAM_SIZE = 2;
+  w.ctx.netAutoBalance();
+  assert.equal(side(), '2 vs 4', '2v2 : jamais plus d’alliés que de places (les amis en trop restent en face)');
+  assert.equal(lastParty(a.c).members.filter(m => m.team === 'ally').length, 2, 'équipes envoyées à tous');
+}
+
 // ---------- IA des places libres : race et classe choisies par l'hôte ----------
 {
   const w = netWorld();
@@ -232,7 +256,7 @@ function partyTests() {
   w.ctx.partyRender = undefined;
   // onglet chargé sur le même monde (boutons des onglets)
   w.els('tabSolo');
-  w.els('tabMulti');
+  w.els('tabMultiN');
   w.load('src/ui/party.js');
   w.ctx.NET.code = 'ABCDE';
   join(w, '<img src=x onerror=alert(1)>');
@@ -247,7 +271,7 @@ function partyTests() {
   const slots = () => (box.innerHTML.match(/class="pSlot/g) || []).length,
     aiSlots = () => (box.innerHTML.match(/pSlot ai/g) || []).length;
   assert.equal(slots() + ' ' + aiSlots(), '6 4', '3v3 : 6 places, libres jouées par l’IA');
-  assert.equal(w.els('tabMulti').textContent, 'Multiplayer (2)', 'onglet : nombre de membres');
+  assert.equal(w.els('tabMultiN').textContent, '(2)', 'onglet : nombre de membres');
   assert.match(box.innerHTML, /pOpt selected" data-map="bridge"/, 'arène choisie affichée');
   assert.match(box.innerHTML, /pOpt selected" data-diff="hard"/, 'difficulté affichée');
   // 1v1 avec deux amis en face : 2 places, l'ami en trop est signalé

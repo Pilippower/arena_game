@@ -4,7 +4,9 @@
 // de l'IA : l'hôte les change, les amis les voient) ; deux équipes avec exactement autant de places que le mode (places
 // libres : IA) ; l'hôte change un ami de côté ou l'exclut et lance le match ; « Leave party » / « Disband party ».
 // Le groupe reste formé entre les matchs. Réseau : net/online.js (NET, netHost, netJoin, netMoveGuest, netKick,
-// netClose, netPartyMembers, netSetName) ; héros et réglages en solo : onglet Solo (settings.js, dont les boutons
+// netAutoBalance, netSetAI, netClose, netPartyMembers, netSetName) ; mise en page : maquette de l'utilisateur
+// assets_src/ui/party_interface.png (pièces peintes : node tools/build_party_assets.js → assets/ui/party/) ; héros et
+// réglages en solo : onglet Solo (settings.js, dont les boutons
 // restent la seule source des réglages : ceux de l'onglet Multiplayer les actionnent). Styles : fin de ui/lobby.css.
 const PARTY_ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 // les noms viennent des autres navigateurs : jamais de HTML
@@ -52,29 +54,31 @@ const partyFaceHTML = (race, cls) =>
   `<span class="pFace">${RACE[race] ? `<img src="assets/ui/lobby2/race_${race}.webp" alt="">` : ''}${CLASS[cls] ? `<img class="pBadge" src="assets/ui/lobby2/class_${cls}.webp" alt="">` : ''}</span>`;
 const partyHeroName = (race, cls) => `${RACE[race]?.name || ''} · ${CLASS[cls]?.name || ''}`;
 // place libre : l'IA qui la jouera (a) ; l'hôte choisit sa race et sa classe
-function partyAiSlotHTML(a, v, n, team, k) {
+function partyAiSlotHTML(a, v, team, k) {
   if (!a)
-    return `<div class="pSlot ai"><span class="pNum">${n}</span><span class="pFace"></span><span class="pInfo"><b>AI</b><small>Open slot</small></span></div>`;
+    return `<div class="pSlot ai"><span class="pCrown"></span><span class="pFace"></span><span class="pInfo"><b>AI</b><small>Open slot</small></span></div>`;
   const pick = (kind, cur, table) =>
     `<select data-ai="${team}:${k}" data-kind="${kind}" title="AI ${kind}">${Object.entries(table)
       .map(([id, x]) => `<option value="${id}"${id === cur ? ' selected' : ''}>${x.name}</option>`)
       .join('')}</select>`;
-  return `<div class="pSlot ai"><span class="pNum">${n}</span>${partyFaceHTML(a.race, a.cls)}<span class="pInfo"><b>AI</b>${
+  return `<div class="pSlot ai"><span class="pCrown"></span>${partyFaceHTML(a.race, a.cls)}<span class="pInfo"><b>AI</b>${
     v.lead
       ? `<span class="pPick">${pick('race', a.race, RACE)}${pick('cls', a.cls, CLASS)}</span>`
       : `<small>${partyHeroName(a.race, a.cls)}</small>`
   }</span></div>`;
 }
 // une place d'ami (ou de l'hôte) : portrait, nom, outils
-function partySlotHTML(m, v, n, over) {
+const PARTY_GEAR =
+  '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 6.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8zm7 2.2-1.6-.3a5.6 5.6 0 0 0-.6-1.5l.9-1.4-1.5-1.5-1.4.9a5.6 5.6 0 0 0-1.5-.6L11 2.8H9l-.3 1.6a5.6 5.6 0 0 0-1.5.6l-1.4-.9-1.5 1.5.9 1.4a5.6 5.6 0 0 0-.6 1.5L3 8.8v2l1.6.3c.1.5.3 1 .6 1.5l-.9 1.4 1.5 1.5 1.4-.9c.5.3 1 .5 1.5.6l.3 1.6h2l.3-1.6c.5-.1 1-.3 1.5-.6l1.4.9 1.5-1.5-.9-1.4c.3-.5.5-1 .6-1.5l1.6-.3z" fill="currentColor"/></svg>';
+function partySlotHTML(m, v, over) {
   const me = m.id === v.me,
     who = m.cls ? partyHeroName(m.race, m.cls) : 'Choosing a hero…',
     tools = me
-      ? '<button data-hero title="Pick your race and class">Change hero</button>'
+      ? `<button data-hero title="Pick your race and class">${PARTY_GEAR}Change</button>`
       : v.lead
         ? `<button data-move="${m.id}" title="Switch side">⇄</button><button data-kick="${m.id}" title="Remove from the party">Kick</button>`
         : '';
-  return `<div class="pSlot${me ? ' me' : ''}${over ? ' over' : ''}"><span class="pNum">${n}</span>${partyFaceHTML(m.race, m.cls)}<span class="pInfo"><b>${m.host ? '♛ ' : ''}${partyEsc(m.name)}${me ? ' (you)' : ''}</b><small>${over ? `No slot in ${v.size}v${v.size}` : partyEsc(who)}</small></span><span class="pTools">${tools}</span></div>`;
+  return `<div class="pSlot${me ? ' me' : ''}${over ? ' over' : ''}"><span class="pCrown">${m.host ? '♛' : ''}</span>${partyFaceHTML(m.race, m.cls)}<span class="pInfo"><b>${partyEsc(m.name)}${me ? ' (you)' : ''}</b><small>${over ? `No slot in ${v.size}v${v.size}` : partyEsc(who)}</small></span><span class="pTools">${tools}</span></div>`;
 }
 // deux équipes face à face, mon équipe à gauche ; autant de places que le mode, les libres jouées par l'IA
 function partyTeamsHTML(v) {
@@ -83,13 +87,16 @@ function partyTeamsHTML(v) {
       const list = v.members.filter(m => m.team === team),
         slots = Array.from({ length: Math.max(v.size, list.length) }, (_, k) =>
           k < list.length
-            ? partySlotHTML(list[k], v, k + 1, k >= v.size)
-            : partyAiSlotHTML(v.ai?.[team]?.[k - list.length], v, k + 1, team, k - list.length)
+            ? partySlotHTML(list[k], v, k >= v.size)
+            : partyAiSlotHTML(v.ai?.[team]?.[k - list.length], v, team, k - list.length)
         );
-      return `<div class="pTeam ${team === mine ? 'mine' : 'foe'}"><h3>${title}</h3>${slots.join('')}</div>`;
+      // bandeau peint (titre compris) : le texte reste pour les lecteurs d'écran
+      return `<div class="pTeam ${team === mine ? 'mine' : 'foe'}"><h3 class="pRibbon"><span>${title}</span></h3>${slots.join('')}</div>`;
     };
-  return `<div class="pTeams">${col(mine, 'Your team')}<div class="pVs">VS</div>${col(mine === 'ally' ? 'enemy' : 'ally', 'Enemy team')}</div>`;
+  return `<div class="pTeams">${col(mine, 'Your team')}<div class="pVs"><img src="assets/ui/party/vs.webp" alt="VS"></div>${col(mine === 'ally' ? 'enemy' : 'ally', 'Enemy team')}</div>`;
 }
+const PARTY_COPY =
+  '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="6" y="5" width="10" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 14V3.5C4 2.7 4.7 2 5.5 2H13" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
 function partyJoinHTML() {
   return `<p class="partyHint">Play with or against your friends, browser to browser. Empty slots are played by the AI.</p>
 <div class="pRow"><input id="partyName" maxlength="16" placeholder="Your name" autocomplete="off" spellcheck="false"></div>
@@ -98,10 +105,10 @@ function partyJoinHTML() {
 }
 function partyRender() {
   const box = $('partyBox'),
-    tab = $('tabMulti');
+    tab = $('tabMultiN');
   if (!box) return;
   const v = partyView();
-  if (tab) tab.textContent = v ? `Multiplayer (${v.members.length})` : 'Multiplayer';
+  if (tab) tab.textContent = v ? `(${v.members.length})` : '';
   if (!v) {
     box.innerHTML = partyJoinHTML();
     $('partyName').value = NET_NAME;
@@ -111,16 +118,21 @@ function partyRender() {
     $('partyJoin').onclick = () => netJoin($('partyCode').value);
     return;
   }
-  box.innerHTML = `<div class="pRow partyCode">Party code <b>${partyEsc(v.code)}</b><button id="partyCopy">Copy</button></div>
+  box.innerHTML = `<div class="pRow partyCode">Party Code: <b>${partyEsc(v.code)}</b><button id="partyCopy">${PARTY_COPY}Copy</button></div>
 ${partySettingsHTML(v)}
 ${partyTeamsHTML(v)}
-<div class="pRow">${v.lead ? '<button id="partyStart">Start match</button><button id="partyLeave">Disband party</button>' : '<button id="partyLeave">Leave party</button>'}</div>`;
+<div class="pRow pActions">${
+    v.lead
+      ? '<button id="partyBalance" class="pArt balance" aria-label="Auto-Balance" title="Spread your friends evenly between the two teams"></button><button id="partyStart" class="pArt start" aria-label="Start match"></button><button id="partyLeave" class="pSmall">Disband party</button>'
+      : '<button id="partyLeave">Leave party</button>'
+  }</div>`;
   $('partyCopy').onclick = () => navigator.clipboard?.writeText(v.code).then(() => netStatus('Code copied.'));
   $('partyLeave').onclick = () => netClose(v.lead ? 'Party disbanded.' : 'You left the party.');
   const hero = box.querySelector?.('[data-hero]');
   if (hero) hero.onclick = () => lobbyTab('solo');
   if (v.lead) {
     $('partyStart').onclick = () => $('playBtn').click();
+    $('partyBalance').onclick = () => netAutoBalance();
     // réglages : on actionne les boutons de l'onglet Solo (même effet, même sauvegarde, groupe synchronisé)
     box
       .querySelectorAll('[data-size]')

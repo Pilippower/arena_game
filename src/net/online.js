@@ -153,6 +153,19 @@ function netMoveGuest(id, team) {
   netPartySync();
   return true;
 }
+// hôte : « Auto-Balance » répartit les amis au hasard entre les deux équipes, au plus près de l'égalité (hôte
+// compris), dans les places du mode
+function netAutoBalance() {
+  const gs = [...NET.guests.values()],
+    S = netSlots();
+  for (let i = gs.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [gs[i], gs[j]] = [gs[j], gs[i]];
+  }
+  const allies = Math.min(S.allyMax, Math.ceil((gs.length + 1) / 2) - 1);
+  gs.forEach((g, i) => (g.team = i < allies ? 'ally' : 'enemy'));
+  netPartySync();
+}
 // hôte : retire un ami du groupe (il est prévenu, puis la connexion est fermée)
 function netKick(id) {
   const g = NET.guests.get(id);
