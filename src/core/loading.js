@@ -116,7 +116,8 @@ async function prepareMatch() {
   await nextFrame();
   if (HF.enabled)
     try {
-      // tout ce qui peut apparaître en combat est compilé maintenant : formes du druide, mouton de la Métamorphose
+      // tout ce qui peut apparaître en combat est compilé maintenant : formes du druide, mouton de la Métamorphose,
+      // paupières de l'étourdissement
       const shown = [];
       for (const u of S.units) {
         const rec = HF.records.get(u.id);
@@ -128,6 +129,7 @@ async function prepareMatch() {
         }
         if (!rec.sheep) rec.group.add((rec.sheep = hfMakeSheep()));
         shown.push(rec.sheep);
+        rec.model?.traverse(o => o.name === 'Eyelid' && shown.push(o)); // yeux fermés de l'étourdissement
       }
       const vis = shown.map(o => o.visible);
       shown.forEach(o => (o.visible = true));

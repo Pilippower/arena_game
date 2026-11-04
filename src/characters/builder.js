@@ -24,6 +24,7 @@
     headLandmarks,
     skullFace,
     dwarfBeard,
+    eyelids,
     buildArmor
   } = root.CharacterParts;
   // ASSEMBLAGE 3D des personnages (three.js). Les données (classes, races, kits) sont dans src/characters/kits.js.
@@ -75,7 +76,12 @@
     });
     for (const o of list) {
       for (const m of [].concat(o.material)) stylizeMaterial(THREE, m, rim);
-      if (!outline || o.material.transparent || /^(Eyes|Eyebrows|Mask)$/.test(o.name) || !o.geometry.attributes.normal)
+      if (
+        !outline ||
+        o.material.transparent ||
+        /^(Eyes|Eyebrows|Mask|Eyelid)$/.test(o.name) ||
+        !o.geometry.attributes.normal
+      )
         continue;
       const thick = /Hair|Beard/i.test(o.name) ? 0.007 : 0.014;
       if (o.isSkinnedMesh) {
@@ -287,6 +293,7 @@
     if (kit.staff) buildStaff(THREE, body, bones, { ...kit.staff, behindCape: !!kit.cape }, height, fit);
     if (kit.weapon) buildWeapon(THREE, body, bones, kit.weapon, height, fit, kit.weaponLength);
     headFeatures(THREE, kit, root, body, bones, skinColor || new THREE.Color(0.6, 0.45, 0.35));
+    eyelids(THREE, root, body, bones, skinColor || new THREE.Color(0.6, 0.45, 0.35));
     if (kit.orbs) buildOrbs(THREE, root, bones, kit.orbs, height);
     if (kit.eyeGlow) {
       const inv = new THREE.Matrix4().copy(body.matrixWorld).invert(),

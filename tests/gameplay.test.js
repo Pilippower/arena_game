@@ -373,6 +373,257 @@ function playerWorld() {
   const c = S.ctx.shieldSpan(1000, 1000, 5000);
   assert.ok(near(c.left, 0) && near(c.width, 100) && c.over, 'bouclier énorme : toute la barre, pas plus');
 }
+// ---------- Étourdi : tête penchée en avant qui tourne lentement, yeux fermés (src/render/hero_anim.js) ----------
+// Bug du 04/11/2026 : le clip Hit_Chest en boucle rejetait la tête en arrière à chaque tour (« on dirait qu'il bug »).
+{
+  const THREE = require('three');
+  const S = sandbox({
+    THREE,
+    clamp: (v, a, b) => Math.max(a, Math.min(b, v)),
+    now: () => 0,
+    state: {},
+    performance: { now: () => 0 }
+  });
+  S.load('src/render/hero_anim.js');
+  const { stunPose, hfBodyPose, hfSetAnim, STUN_CIRCLE } = S.ctx;
+  // courbe : rien sans poids, penché vers l'avant (cou + tête), petits cercles lents et réguliers
+  assert.ok(
+    Object.values(stunPose(1.3, 0)).every(v => v === 0),
+    'poids nul : pose du clip'
+  );
+  const P = Array.from({ length: 261 }, (_, i) => stunPose(i / 100, 1));
+  assert.ok(
+    P.every(p => p.neck > 0.05 && p.head > 0.08 && p.neck + p.head < 0.45),
+    'tête légèrement penchée en avant'
+  );
+  const roll = P.map(p => p.roll),
+    pitch = P.map(p => p.head);
+  assert.ok(Math.max(...roll) - Math.min(...roll) > 0.1, 'la tête décrit un cercle (sur le côté)');
+  assert.ok(Math.max(...pitch) - Math.min(...pitch) > 0.06, 'la tête décrit un cercle (avant / arrière)');
+  assert.ok(Math.max(...roll.map(Math.abs)) < 0.12, 'petits cercles');
+  assert.ok(STUN_CIRCLE >= 2, `cercles lents (${STUN_CIRCLE} s par tour)`);
+  // squelette minimal : buste, cou, tête (+ paupières cachées, lueur des yeux)
+  const model = new THREE.Group(),
+    names = ['spine_01', 'spine_02', 'spine_03', 'neck_01', 'Head'];
+  let parent = model;
+  for (const n of names) {
+    const b = new THREE.Bone();
+    b.name = n;
+    b.position.y = n === 'spine_01' ? 1 : 0.15;
+    parent.add(b);
+    parent = b;
+  }
+  const head = parent,
+    lid = Object.assign(new THREE.Mesh(), { name: 'Eyelid', visible: false }),
+    glow = Object.assign(new THREE.Sprite(), { name: 'EyeGlow' });
+  head.add(lid, glow);
+  const rec = { model, kit: true, animKey: 'idle' },
+    u = { cls: 'arcanist', race: 'human', alive: true, stun: 0 },
+    face = () => new THREE.Vector3(0, 1, 0).transformDirection(head.matrixWorld), // haut de la tête
+    track = [];
+  for (let f = 0; f < 6 * 60; f++) {
+    u.stun = f >= 60 && f < 4 * 60 ? 1 : 0; // étourdi de 1 s à 4 s
+    hfBodyPose(rec, u, 1 / 60);
+    model.updateMatrixWorld(true);
+    track.push({ f, up: face(), closed: lid.visible && !glow.visible });
+  }
+  assert.ok(track[59].up.distanceTo(new THREE.Vector3(0, 1, 0)) < 1e-9, 'avant : pose du clip');
+  assert.ok(track[150].up.z > 0.15, `tête penchée vers l'avant (${track[150].up.z.toFixed(2)})`);
+  assert.ok(track[150].closed && !track[59].closed, 'yeux fermés pendant l’étourdissement seulement');
+  assert.ok(track[5 * 60].up.distanceTo(new THREE.Vector3(0, 1, 0)) < 1e-9, 'après : retour exact à la pose du clip');
+  assert.ok(!track[5 * 60].closed && glow.visible, 'yeux rouverts, lueur rallumée');
+  // départ et fin en douceur, cercles sans à-coup : vitesse de la tête qui change peu d'une image à l'autre
+  const v = track.slice(1).map((x, i) => x.up.clone().sub(track[i].up)),
+    jerk = Math.max(...v.slice(1).map((x, i) => x.distanceTo(v[i])));
+  assert.ok(jerk < 0.004, `aucun à-coup (${jerk.toFixed(4)})`);
+  assert.ok(Math.max(...v.slice(120, 230).map(x => x.length())) < 0.006, 'cercles lents une fois la tête penchée');
+  // clip : repos (plus de Hit_Chest qui rejette la tête en arrière) ; Death Grip garde son clip de choc
+  const clips = ['Idle_Loop', 'Hit_Chest'].map(name => ({ name })),
+    action = c => ({
+      c,
+      reset() {},
+      setLoop() {},
+      fadeIn() {
+        return this;
+      },
+      fadeOut() {},
+      play() {},
+      getClip: () => c
+    }),
+    anim = unit => {
+      const r = { clips, mixer: { clipAction: action } };
+      hfSetAnim(r, { alive: true, grounded: true, action: 0, ...unit });
+      return r.action.getClip().name;
+    };
+  assert.equal(anim({ stun: 2 }), 'Idle_Loop', 'étourdi : clip de repos');
+  assert.equal(anim({ stun: 0, mobility: { type: 'grip' } }), 'Hit_Chest', 'Death Grip : clip de choc');
+  // repos → étourdi : même clip, il continue (le relancer depuis le début faisait sauter la tête)
+  const cache = {},
+    r = { clips, mixer: { clipAction: c => (cache[c.name] = cache[c.name] || { ...action(c), resets: 0 }) } };
+  cache.Idle_Loop = {
+    ...action(clips[0]),
+    resets: 0,
+    reset() {
+      this.resets++;
+    }
+  };
+  hfSetAnim(r, { alive: true, grounded: true, action: 0, stun: 0 });
+  hfSetAnim(r, { alive: true, grounded: true, action: 0, stun: 2 });
+  assert.equal(r.animKey, 'stun');
+  assert.equal(cache.Idle_Loop.resets, 1, 'repos → étourdi : le clip de repos n’est pas relancé');
+}
+// ---------- Nain : la barbe suit la tête (src/characters/head.js) ----------
+// Bug du 04/11/2026 : la barbe skinnée du pack (Hair_Beard) recevait un matériau sans `skinning` (three r128) : elle
+// restait figée en pose de repos quand la tête bougeait. Tout le reste de la barbe est attaché à l'os de la tête.
+{
+  const THREE = require('three');
+  const ctx2d = { fillRect() {}, beginPath() {}, moveTo() {}, bezierCurveTo() {}, stroke() {} };
+  const S = sandbox({ THREE, document: { createElement: () => ({ getContext: () => ctx2d }) } });
+  S.ctx.globalThis = S.ctx;
+  S.load('src/characters/rig.js');
+  S.load('src/characters/head.js');
+  const root = new THREE.Group(),
+    neck = new THREE.Bone(),
+    head = new THREE.Bone();
+  head.name = 'Head';
+  head.position.y = 0.1;
+  neck.position.y = 1.4;
+  neck.add(head);
+  root.add(neck);
+  const packBeard = new THREE.SkinnedMesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshStandardMaterial());
+  packBeard.name = 'Hair_Beard';
+  root.add(packBeard);
+  root.updateMatrixWorld(true);
+  const L = { eye: new THREE.Vector3(0, 1.62, 0.08), chin: 1.5, cx: 0, mouthY: 1.54, mouthZ: 0.1 };
+  S.ctx.CharacterParts.dwarfBeard(THREE, root, { Head: head }, L, new THREE.Color(0.5, 0.3, 0.2));
+  assert.equal(packBeard.material.skinning, true, 'barbe du pack : matériau skinné (suit la tête)');
+  const beard = root.getObjectByName('DwarfBeard');
+  assert.ok(beard.parent === head, 'barbe tressée attachée à l’os de la tête');
+  // la tête bascule (étourdi, frappe) : la pointe de la barbe tourne avec elle, à la même distance du menton
+  const mass = beard.getObjectByName('Beard_Mass'),
+    last = mass.geometry.attributes.position.count - 1, // pointe de la barbe
+    tip = () => {
+      root.updateMatrixWorld(true);
+      return new THREE.Vector3()
+        .fromBufferAttribute(mass.geometry.attributes.position, last)
+        .applyMatrix4(mass.matrixWorld);
+    };
+  const t0 = tip(),
+    local0 = head.worldToLocal(t0.clone());
+  head.rotation.x = -0.5; // tête en arrière
+  const t1 = tip();
+  assert.ok(t1.distanceTo(t0) > 0.1, 'la barbe bouge avec la tête');
+  assert.ok(head.worldToLocal(t1.clone()).distanceTo(local0) < 1e-3, 'même place dans le repère de la tête');
+}
+// ---------- Voleur : les glaives tranchent en arc, pas en coup de poing (src/render/hero_anim.js) ----------
+// Régression du 04/11/2026 : la main gauche de Punch_Jab n'a qu'une pose fixe, le mixeur ne la réécrit jamais ; la
+// surcouche repartait de son propre résultat et le glaive tournoyait au hasard (selon la cadence d'images) au lieu de
+// trancher. Squelette minimal : bras pendants, glaive (axe y) le long de l'avant-bras, comme au repos.
+{
+  const THREE = require('three');
+  const S = sandbox({ THREE, clamp: (v, a, b) => Math.max(a, Math.min(b, v)), performance: { now: () => S.ctx.ms } });
+  S.load('src/render/hero_anim.js');
+  const rig = () => {
+    const model = new THREE.Group();
+    for (const [side, x] of [
+      ['l', 0.2],
+      ['r', -0.2]
+    ]) {
+      const up = new THREE.Bone(),
+        lo = new THREE.Bone(),
+        hand = new THREE.Bone(),
+        glaive = new THREE.Object3D();
+      up.name = 'upperarm_' + side;
+      hand.name = 'hand_' + side;
+      glaive.name = 'Dagger';
+      up.position.set(x, 1.4, 0);
+      up.rotation.x = Math.PI; // bras vers le bas
+      lo.position.y = 0.3;
+      hand.position.y = 0.25;
+      model.add(up);
+      up.add(lo);
+      lo.add(hand);
+      hand.add(glaive);
+    }
+    model.rotation.y = 0.7; // personnage tourné : tout se mesure dans son repère
+    model.updateMatrixWorld(true);
+    return model;
+  };
+  // une frappe de la main gauche (Punch_Jab) vue à `fps` images/s ; direction de la lame dans le repère du personnage
+  const strike = (race, fps, clip = 'Punch_Jab') => {
+    const model = rig(),
+      rec = { model, animKey: 'idle', action: { time: 0, getClip: () => ({ name: clip, duration: 0.87 }) } },
+      u = { race, cls: 'shade' },
+      glaive = model.getObjectByName(clip === 'Punch_Jab' ? 'hand_l' : 'hand_r').children[0],
+      inv = () => new THREE.Quaternion().copy(model.quaternion).invert(),
+      dirs = [];
+    S.ctx.ms = 1000;
+    S.ctx.hfBladeSlash(rec, u); // pose de repos mémorisée
+    rec.animKey = 'attack';
+    for (let f = 0; f <= Math.round(0.5 * fps); f++) {
+      S.ctx.ms = 1000 + (f * 1000) / fps;
+      rec.action.time = (f / fps) * 1.6;
+      S.ctx.hfBladeSlash(rec, u);
+      model.updateMatrixWorld(true);
+      dirs.push({
+        t: f / fps,
+        d: new THREE.Vector3(0, 1, 0).transformDirection(glaive.matrixWorld).applyQuaternion(inv())
+      });
+    }
+    // glaive à deux lames symétriques : on suit la moitié couchée vers l'extérieur à l'armé
+    const out = clip === 'Punch_Jab' ? 1 : -1,
+      sign = Math.sign(dirs.find(x => x.t >= 0.07).d.x * out);
+    return dirs.map(x => ({ t: x.t, d: x.d.multiplyScalar(sign) }));
+  };
+  const at = (dirs, t) => dirs.reduce((a, b) => (Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a)).d;
+  const yaw = d => Math.atan2(d.z, d.x); // 0 = vers sa gauche (extérieur de la main gauche), π/2 = devant
+  for (const race of ['human', 'elf', 'dwarf', 'orc', 'undead']) {
+    const D = strike(race, 60),
+      tp = p => (p * 0.36) / S.ctx.RACE_STRIKE[race].speed; // instant d'une avancée du coup (vitesse de la race)
+    // lame couchée (presque horizontale) et pointée vers l'extérieur à l'armé, devant au milieu, à l'intérieur à la fin
+    const mid = D.filter(x => x.t > tp(0.15) && x.t < tp(0.6));
+    assert.ok(
+      mid.every(x => Math.abs(x.d.y) < 0.6),
+      `${race} : lame couchée pendant le coup (pas dressée comme un poing)`
+    );
+    const yaws = mid.map(x => Math.abs(yaw(x.d)));
+    const sweep = Math.max(...yaws) - Math.min(...yaws);
+    assert.ok(sweep > 1.5, `${race} : la lame balaie un arc horizontal (${sweep.toFixed(2)} rad)`);
+    assert.ok(at(D, tp(0.12)).x > 0.3 && at(D, tp(0.6)).x < -0.3, `${race} : de l'extérieur vers l'intérieur`);
+    // retour exact à la pose du clip après le coup (rien ne s'accumule)
+    assert.ok(Math.abs(D[D.length - 1].d.y) > 1 - 1e-3, `${race} : retour à la pose du clip`);
+    // même pose à 30 et à 120 images/s : la frappe ne dépend pas de la cadence d'images (l'ancienne surcouche
+    // ajoutait son roulis à chaque image)
+    const slow = strike(race, 30),
+      fast = strike(race, 120);
+    for (const t of [3 / 30, 5 / 30, 6 / 30])
+      assert.ok(
+        at(slow, t).distanceTo(at(fast, t)) < 0.03,
+        `${race} : même pose à 30 et 120 images/s (t=${t.toFixed(2)})`
+      );
+    // sans à-coup : à 120 images/s, la vitesse de la lame (angle parcouru par image) change en douceur ; un saut ou
+    // une bascule donne un pic isolé (mesuré : 0,06 au plus, vitesse max 0,2)
+    const steps = fast.slice(1).map((x, i) => x.d.angleTo(fast[i].d)),
+      jerk = Math.max(...steps.slice(1).map((v, i) => Math.abs(v - steps[i])));
+    assert.ok(jerk < 0.1, `${race} : lame sans saut (variation de vitesse ${jerk.toFixed(3)} rad par image)`);
+  }
+  // main droite (Punch_Cross) : arc symétrique, de sa droite vers sa gauche
+  const R = strike('human', 60, 'Punch_Cross');
+  assert.ok(at(R, 0.04).x < -0.3 && at(R, 0.2).x > 0.3, 'main droite : de l’extérieur vers l’intérieur');
+  // l'elfe trace un plus grand arc que le nain
+  const span = race => {
+    const y = strike(race, 60).map(x => Math.abs(yaw(x.d)));
+    return Math.max(...y) - Math.min(...y);
+  };
+  assert.ok(span('elf') > span('dwarf'), 'arc plus ample pour l’elfe que pour le nain');
+  // la surcouche est bien appelée à chaque image pour le voleur, après le mixeur
+  const h3 = require('node:fs').readFileSync(require('node:path').join(__dirname, '../src/render/heroes3d.js'), 'utf8');
+  assert.match(
+    h3,
+    /mixer\.update\(dt\);[\s\S]{0,200}u\.cls === 'shade'[^\n]*hfBladeSlash\(rec, u\)/,
+    'hfBladeSlash appelé'
+  );
+}
 console.log(
-  'OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic, contrôles, IK, glaives, frappes par race, torches du lobby, bouclier sur les barres)'
+  'OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic, contrôles, IK, glaives, frappe des glaives en arc, frappes par race, étourdi, barbe, torches du lobby, bouclier sur les barres)'
 );

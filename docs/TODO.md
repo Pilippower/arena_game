@@ -5,12 +5,7 @@ validé dans `docs/SPEC.md`.
 
 ## Liste du 04/11/2026 (priorité, dans cet ordre : du plus simple au plus compliqué, un commit par tâche)
 
-21. Régression des glaives du voleur : il frappait en tranchant avec ses glaives, il frappe de nouveau comme des coups de
-    poing. Corriger et ajouter un test de non-régression.
 22. Les sorts des lanceurs suivent la cible en mouvement et frappent son corps.
-23. Étourdissement : la tête ne doit plus partir en arrière ; animation dédiée (tête légèrement penchée en avant, yeux
-    fermés, petits cercles lents).
-24. Nain : la barbe reste immobile quand la tête bouge (capture de l'utilisateur) : elle doit suivre la tête.
 26. Cartes : une salle de chaque côté, reliée à l'arène, où chaque équipe apparaît ; compte à rebours de 20 s affiché ;
     à 0, les portes s'ouvrent avec un son qui marque le début de l'arène.
 

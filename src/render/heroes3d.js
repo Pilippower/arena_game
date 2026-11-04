@@ -326,7 +326,7 @@ function hfRender() {
       rec.group.position.y += Math.max(0, b) * 0.07;
     }
     if (rec.mixer) rec.mixer.update(dt);
-    if (rec.kit) hfRaceStrike(rec, u);
+    if (rec.kit) hfBodyPose(rec, u, dt);
     if (u.cls === 'reaver' && rec.kit && u.alive && !u.form) hfTwoHandIK(rec, u);
     if (u.cls === 'shade' && rec.kit && u.alive) hfBladeSlash(rec, u);
     if (
