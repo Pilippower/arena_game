@@ -2,75 +2,7 @@
 // Tests unitaires des règles de combat (docs/SPEC.md, priorité P0) : le vrai code (données, formes, combat, sorts,
 // règles, carte) est chargé dans un contexte vm, sur une arène vide ; on vérifie le résultat, pas le texte du code.
 const assert = require('node:assert/strict');
-const { sandbox } = require('./sources.js');
-
-function combatWorld() {
-  const sounds = []; // bruitages demandés (SFX.<nom>), pour vérifier les cris
-  const S = sandbox({
-    Math: Object.create(Math), // propre au monde : un test peut fixer Math.random
-    window: {},
-    document: { addEventListener() {} },
-    location: { search: '' },
-    URLSearchParams,
-    $: () => ({ classList: { add() {}, remove() {} } }),
-    now: () => S.ctx.clock,
-    clamp: (v, a, b) => Math.max(a, Math.min(b, v)),
-    updateUI() {},
-    spellSfx() {},
-    spellImpactSfx() {},
-    spellSfxKind() {},
-    showSplash() {},
-    setTimeout() {},
-    clearTimeout() {},
-    playerMove() {},
-    SFX: new Proxy(
-      {},
-      {
-        get:
-          (o, name) =>
-          (...args) =>
-            sounds.push({ name, unit: args[0] })
-      }
-    )
-  });
-  S.ctx.clock = 100;
-  S.load('src/data/classes.js');
-  S.ctx.arena = {};
-  S.ctx.HEALTH_SPOTS = [];
-  for (const f of [
-    'src/data/maps.js',
-    'src/game/forms.js',
-    'src/game/combat.js',
-    'src/game/spells.js',
-    'src/game/ai.js',
-    'src/game/rules.js',
-    'src/game/match.js',
-    'src/game/sim.js'
-  ])
-    S.load(f);
-  S.ctx.applyMap('castle');
-  S.ctx.arena.pillars = []; // arène vide : les règles, pas la géométrie
-  S.ctx.state = {
-    units: [],
-    floaters: [],
-    fx: [],
-    dampening: 0,
-    elapsed: 0,
-    stats: [],
-    t: 180,
-    uiTick: 1,
-    round: 1,
-    scoreA: 0,
-    scoreB: 0
-  };
-  const unit = (cls, x, z, team, extra = {}) => {
-    const u = Object.assign(S.ctx.makeUnit(cls, x, z, team, cls), { slotIndex: S.ctx.state.units.length }, extra);
-    S.ctx.state.units.push(u);
-    return u;
-  };
-  return { ctx: S.ctx, unit, sounds };
-}
-const spell = (ctx, cls, n) => ctx.CLASS[cls].skills.findIndex(s => s.n === n);
+const { combatWorld, spell, run } = require('./combat_world.js');
 
 // ---------- Contrôles et rendements décroissants ----------
 {
@@ -247,13 +179,6 @@ const spell = (ctx, cls, n) => ctx.CLASS[cls].skills.findIndex(s => s.n === n);
   assert.ok(Math.abs(ctx.moveSpeed(u) - base * 0.7) < 1e-9, 'camouflé : -30 % de vitesse');
 }
 // ---------- Incantations (pas de simulation réel : update de sim.js) ----------
-// avance la simulation de `sec` secondes (horloge comprise)
-const run = (ctx, sec, dt = 1 / 120) => {
-  for (let k = 0; k < Math.round(sec / dt); k++) {
-    ctx.clock += dt;
-    ctx.update(dt);
-  }
-};
 {
   // ressource prise à la fin de l'incantation, dégâts à l'impact ; portée 30 m
   const { ctx, unit } = combatWorld();

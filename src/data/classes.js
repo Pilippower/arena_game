@@ -506,6 +506,8 @@ function castOf(u, i, target, type, value) {
 
 // ---------- Armures : réduction des dégâts selon le type d'armure de la classe ----------
 // physical = coups d'arme (sorts sans école + auto-attaques) ; magic = sorts avec école (arcane, ombre, nature…).
+// Trinket PvP (touche R) : brise tous les contrôles et donne un bouclier ; recharge en secondes.
+const TRINKET = { cd: 90, shield: 80 };
 const ARMOR = {
   plate: { label: 'Plate', physical: 0.3, magic: 0.05 },
   leather: { label: 'Leather', physical: 0.15, magic: 0.08 },

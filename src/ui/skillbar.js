@@ -133,7 +133,6 @@ function skillTooltip(u, i) {
   <div class="tDesc">${S.text ? S.text(S, D, H) : ''}</div>${burst > 1 ? '<div class="tNote">Burst active: damage +35% included</div>' : ''}${dmp < 1 ? `<div class="tNote">Dampening: healing -${Math.round((1 - dmp) * 100)}% included</div>` : ''}`;
 }
 // Trinket PvP : mêmes valeurs que useTrinket (combat.js)
-const TRINKET = { cd: 90, shield: 80 };
 function trinketTooltip(u) {
   return `<div class="tName">PvP Trinket</div><div class="tRow"><span>Free</span><span>Self</span></div>
   <div class="tRow"><span>Instant · usable while controlled</span><span>${fmtS(TRINKET.cd)} cooldown</span></div>

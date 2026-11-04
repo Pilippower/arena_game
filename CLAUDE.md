@@ -12,7 +12,7 @@ L'utilisateur communique en français : répondre en français.
 - `src/` (un fichier par rôle) :
   - `data/classes.js` : classes, races, barres de forme/camouflage (données ; mécanique des formes et du camouflage : `game/forms.js`), accès `skillsOf` et **`SPELLS` = source unique des valeurs et textes de chaque sort** (dégâts, soins, durées, temps d'incantation, infobulle). Pour changer une valeur : modifier `SPELLS` ; `ui/skillbar.js` (infobulles) et `game/spells.js` les lisent. Portée/école de chaque case : `SKILL_META` (même fichier, aligné sur l'ordre de `CLASS[cls].skills`).
   - `game/spells.js` : **`SPELL_CAST` = mécanique de chaque sort, par nom** (`run(c)` effet, renvoie `false` si impossible ; `fx(c)` visuel ; options `mobility`, `noFace`, `usableStunned`). `useSkill` (combat.js) ne fait que les vérifications communes (étourdi, recharges, ressource, cible) puis appelle l'entrée. Sorts de forme/camouflage (champ `k`) : `useSpecialSkill` (`game/forms.js`, avec `setForm` / `setStealth` / `syncBar`). Rôles d'IA : `AI_ROLE` (`game/ai.js`) par nom de sort, convertis en numéros de case au chargement.
-  - Armures (`ARMOR`, `CLASS_ARMOR` dans `data/classes.js`) : plaque/cuir/tissu réduisent les dégâts physiques/magiques (`armorReduction`, appliqué dans `damage()` selon `src.curSchool`). PV par classe : `hp` dans `CLASS`. Cadence des auto-attaques : `SWING` (`game/rules.js`).
+  - Armures (`ARMOR`, `CLASS_ARMOR` dans `data/classes.js`) : plaque/cuir/tissu réduisent les dégâts physiques/magiques (`armorReduction`, appliqué dans `damage()` selon `src.curSchool`). PV par classe : `hp` dans `CLASS`. Cadence des auto-attaques : `SWING` (`game/rules.js`). Trinket PvP : `TRINKET` (`data/classes.js`).
   - Format 1v1 / 2v2 / 3v3 : `TEAM_SIZE` + `teamsFor()` dans `game/combat.js` (composition des équipes), choix « Mode » du lobby (`#sizeChoices`, `ui/settings.js`), `?size=` dans l'URL.
   - Match : `game/match.js` (3 manches `MATCH_ROUNDS`, stats dégâts/soins/kills par place `slotIndex`, écran de résultats, Play again / Back to lobby).
   - Cartes : `data/maps.js` (`MAPS` : dimensions, obstacles = cercles de LOS/collision, sanctuaires ; `applyMap(id)` remplit `arena` + `HEALTH_SPOTS`, reconstruit décor et occultants). Décor : une carte = `render/map_<id>.js` enregistrée par `ArenaEnv.registerMap` (`map_castle.js` = arène du château, son horizon forêt / montagnes / château lointain dans `map_castle_horizon.js` ; `map_bridge.js`), outils communs `ArenaEnv.helpers` (`environment.js`). Vignettes du lobby : `assets/ui/map_thumbs.js` (captures du jeu `?map=<id>`). URL de test : `?autoplay=<classe>&race=<race>&map=<id>`.
@@ -83,12 +83,13 @@ But : un code **maintenable**, où l'on sait **tout de suite où regarder et quo
 
 **Tests : unitaires d'abord**
 - Règle de jeu ou fonction pure = test unitaire Node qui vérifie le **résultat** (PV, durée, position, état) :
-  - combat (contrôles, DR, dégâts, soins, sorts, incantations, IA) : `tests/combat.test.js`, `combatWorld()` = vrai code sur une arène vide ; `unit(classe, x, z, équipe)`, `run(ctx, secondes)` fait avancer `update`, `sounds` = bruitages demandés, `ctx.Math.random` fixable ;
+  - combat (contrôles, DR, dégâts, soins, sorts, incantations, IA) : `tests/combat.test.js` ; `combatWorld()` (`tests/combat_world.js`) = vrai code sur une arène vide ; `unit(classe, x, z, équipe)`, `run(ctx, secondes)` fait avancer `update`, `sounds` = bruitages demandés, `ctx.Math.random` fixable ;
   - déplacement, caméra, cibles : `tests/gameplay.test.js` ;
   - outils : `sandbox(stubs)` de `tests/sources.js` (`load(fichier)`, `fn(fichier, nom)`), `code('src/<dossier>/')` pour lire un dossier.
 - Chaque règle nouvelle : une régression volontaire qui doit faire échouer son test, `node tools/mutate.js <test> <fichier> "<extrait>" "<remplacement>"` (fichier toujours restauré).
 - Navigateur (`tests/browser/`) : seulement démarrage, rendu, modèles, interface. Tests « texte du code » : seulement pour interdire une régression connue, ou quand le comportement dépend du hasard / du réseau.
 - Un bug corrigé = un test qui l'aurait attrapé.
+- **Équilibrage** : mesurer avant de changer une valeur, `node tools/duel.js <équipe A> <équipe B> [combats]` (IA contre IA, vrai code, ex. `shade oracle`, `sentinel,oracle arcanist,warlock`) ; pour essayer un réglage sans toucher au jeu, `duel(A, B, durée, ctx => { … })` (`tools/duel.js`).
 
 **Documentation, dans le même commit que le code**
 - **Fonctionnelle = `docs/SPEC.md`** : ce que le jeu fait, tel que validé par l'utilisateur ; une ligne par demande validée (🧪 si testée), mise à jour quand la règle change, jamais deux versions contradictoires.
