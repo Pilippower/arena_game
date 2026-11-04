@@ -258,6 +258,52 @@ function playerWorld() {
   );
   assert.ok(litFor / starts.length < 0.45, 'décharge brève (~0,35 s)');
 }
+// ---------- Frappes propres à chaque race (src/render/hero_anim.js) ----------
+{
+  const THREE = require('three');
+  const S = sandbox({ THREE, clamp: (v, a, b) => Math.max(a, Math.min(b, v)) });
+  S.load('src/render/hero_anim.js');
+  const { RACE_STRIKE, strikePose, hfFromAnimPose, hfKeepOutput } = S.ctx;
+  for (const r of ['human', 'orc', 'dwarf', 'elf', 'undead']) assert.ok(RACE_STRIKE[r], 'style de frappe : ' + r);
+  // chaque frappe part de la pose du clip et y revient, sans à-coup d'une image à l'autre (60 images/s)
+  for (const [r, P] of Object.entries(RACE_STRIKE)) {
+    const steps = Math.round((0.62 / P.speed) * 60),
+      poses = Array.from({ length: steps + 1 }, (_, i) => strikePose(i / steps, P));
+    for (const k of ['twist', 'lean', 'tilt']) {
+      assert.ok(Math.abs(poses[0][k]) < 1e-9 && Math.abs(poses[steps][k]) < 1e-9, `${r} : ${k} part de 0 et y revient`);
+      // à-coup = changement brusque de vitesse (dérivée seconde), rapporté à l'amplitude du mouvement : une marche
+      // d'escalier donne 100 %, les courbes actuelles 13 % au plus ; seuil 25 %
+      const vals = poses.map(p => p[k]),
+        amp = Math.max(...vals) - Math.min(...vals);
+      if (!amp) continue;
+      const jerk = Math.max(...vals.slice(2).map((v, i) => Math.abs(v - 2 * vals[i + 1] + vals[i])));
+      assert.ok(jerk / amp < 0.25, `${r} : ${k} sans à-coup (${Math.round((100 * jerk) / amp)} % de l'amplitude)`);
+    }
+  }
+  // des styles vraiment différents : elfe souple et ample, nain ramassé qui se jette en avant, mort-vivant raide
+  const peak = (P, k) => Math.max(...Array.from({ length: 101 }, (_, i) => Math.abs(strikePose(i / 100, P)[k])));
+  const E = RACE_STRIKE.elf,
+    D = RACE_STRIKE.dwarf;
+  assert.ok(peak(E, 'twist') > 2 * peak(D, 'twist'), 'elfe : buste plus souple que le nain');
+  assert.ok(peak(D, 'lean') > 2 * peak(E, 'lean'), 'nain : se jette davantage en avant');
+  assert.ok(E.speed > RACE_STRIKE.human.speed && D.speed < RACE_STRIKE.human.speed, 'elfe plus vif, nain plus lent');
+  assert.ok(peak(RACE_STRIKE.undead, 'tilt') > 0, 'mort-vivant : tête qui bascule');
+  // la surcouche repart de la pose du clip à chaque image (pas d'accumulation si le clip n'a pas réécrit l'os)
+  const bone = new THREE.Bone(),
+    store = {};
+  bone.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.2); // pose du clip
+  hfFromAnimPose(store, [bone]);
+  bone.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), 0.3)); // surcouche
+  hfKeepOutput(store, [bone]);
+  hfFromAnimPose(store, [bone]); // image suivante, le clip n'a pas réécrit l'os
+  assert.ok(
+    bone.quaternion.angleTo(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.2)) < 1e-6,
+    'pose du clip restaurée'
+  );
+  bone.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.5); // le clip avance
+  hfFromAnimPose(store, [bone]);
+  assert.ok(store.anim[0].angleTo(bone.quaternion) < 1e-6, 'nouvelle pose du clip mémorisée');
+}
 console.log(
-  'OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic, contrôles, IK, glaives)'
+  'OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic, contrôles, IK, glaives, frappes par race)'
 );

@@ -326,8 +326,9 @@ function hfRender() {
       rec.group.position.y += Math.max(0, b) * 0.07;
     }
     if (rec.mixer) rec.mixer.update(dt);
-    if (u.cls === 'reaver' && rec.kit && u.alive && !u.form) hfTwoHandIK(rec);
-    if (u.cls === 'shade' && rec.kit && u.alive) hfBladeSlash(rec);
+    if (rec.kit) hfRaceStrike(rec, u);
+    if (u.cls === 'reaver' && rec.kit && u.alive && !u.form) hfTwoHandIK(rec, u);
+    if (u.cls === 'shade' && rec.kit && u.alive) hfBladeSlash(rec, u);
     if (
       rec.action &&
       (rec.animKey === 'run' || rec.animKey === 'back') &&

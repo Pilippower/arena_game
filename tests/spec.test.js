@@ -486,7 +486,7 @@ assert.match(
 );
 assert.ok(
   h3.includes("names = [rec.leftHit ? 'Punch_Jab' : 'Punch_Cross', 'Sword_Attack']") &&
-    h3.includes("if (u.cls === 'reaver' && rec.kit && u.alive && !u.form) hfTwoHandIK(rec);"),
+    h3.includes("if (u.cls === 'reaver' && rec.kit && u.alive && !u.form) hfTwoHandIK(rec, u);"),
   'voleur deux lames, chevalier à deux mains'
 );
 assert.ok(
@@ -535,15 +535,8 @@ console.log('OK - spécifications validées (docs/SPEC.md)');
   assert.ok(read('src/game/match.js').includes("setProperty('--rows'"), 'résultats : nombre de lignes');
 }
 // Demonic Gate : vers l'avant du personnage (pas vers la cible), comme Blink : tests/combat.test.js
-// Chevalier de la mort : l'arme ne tremble pas (IK depuis la pose animée, mains lissées dans le temps)
-{
-  const h3 = code('src/render/');
-  assert.ok(
-    h3.includes('b.quaternion.equals(k.out[i])) b.quaternion.copy(k.anim[i])'),
-    'IK : repart de la pose animée'
-  );
-  // lame orientée exactement, même avec les os étirés du nain et de l'elfe : tests/gameplay.test.js (hfTurnLocal)
-}
+// Chevalier de la mort : l'arme ne tremble pas (IK depuis la pose animée hfFromAnimPose, lame orientée exactement même
+// avec les os étirés du nain et de l'elfe hfTurnLocal) : tests/gameplay.test.js
 // Fin de match : flammes animées sur les flammes peintes des torches
 assert.ok(
   ['[30, 168]', '[696, 168]', '[37, 176]', '[859, 176]', 'flame: 1.6'].every(k =>
@@ -610,7 +603,7 @@ assert.ok(read('index.html').includes('.npAuras .buff{width:34px;height:34px}'),
 // Chevalier de la mort : garde à deux mains devant lui hors frappe (mains jamais derrière le dos)
 assert.ok(
   code('src/render/').includes('k.guardKey = K(-0.1, 1.0, 0.3, 0.25, 0.8, 0.55)') &&
-    code('src/render/').includes('const STRIKE_T = 0.6;'),
+    code('src/render/').includes('const STRIKE_T = 0.6 / raceStrike(u).speed;'),
   'DK : garde à deux mains devant lui et frappe calculée (pas de mélange avec le clip)'
 );
 // Raccourcis : jamais deux sorts sur la même touche, même avec d'anciens réglages à 6 cases (bug : druide, 2 sorts sur 5)

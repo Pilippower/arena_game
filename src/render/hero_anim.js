@@ -84,7 +84,7 @@ function hfSetAnim(rec, u) {
   const hit = key === 'attack' && ATTACK_HIT[clip.name];
   if (hit) {
     next.time = hit.from;
-    next.timeScale = hit.speed;
+    next.timeScale = hit.speed * raceStrike(u).speed;
   }
   if (rec.action && rec.action !== next) rec.action.fadeOut(0.1);
   rec.action = next;
@@ -102,6 +102,93 @@ const ATTACK_HIT = {
   Punch_Jab: { from: 0.11, speed: 1.6 },
   Punch_Cross: { from: 0.18, speed: 1.6 }
 };
+// Partir de la pose animée à chaque image : le mixeur three.js ne réécrit un os que si sa valeur animée a changé ; sur
+// une pose immobile, l'os gardait la correction de l'image précédente et la correction repartait de son propre
+// résultat (balancier, l'arme tremblait). On mémorise donc la pose animée quand le mixeur l'a écrite et on la restaure
+// sinon ; hfKeepOutput note la pose corrigée en fin d'image. store = { anim, out } propre à chaque correction.
+function hfFromAnimPose(store, bones) {
+  if (!store.anim) {
+    store.anim = bones.map(b => b.quaternion.clone());
+    store.out = bones.map(() => null);
+  }
+  bones.forEach((b, i) => {
+    if (store.out[i] && b.quaternion.equals(store.out[i])) b.quaternion.copy(store.anim[i]);
+    else store.anim[i].copy(b.quaternion);
+  });
+}
+function hfKeepOutput(store, bones) {
+  bones.forEach((b, i) => (store.out[i] = (store.out[i] || new THREE.Quaternion()).copy(b.quaternion)));
+}
+// Frappe propre à chaque race (guerrier, chevalier de la mort, voleur) : surcouche sur le clip de frappe.
+//  speed : vitesse du coup ; twist : rotation du buste (élan puis frappe, rad) ; lean : penché vers l'avant à l'impact ;
+//  flourish : geste de finition (rotation en plus après l'impact) ; snap : tête qui bascule sur le côté à l'impact ;
+//  arc : amplitude de l'arc de l'arme (lame à deux mains du DK, balayage des glaives).
+// Elfe = souple, rapide et démonstratif ; nain = ramassé, lent, le poids jeté en avant ; orc = grand élan brutal ;
+// mort-vivant = raide, tête qui bascule ; humain = équilibré.
+const RACE_STRIKE = {
+  human: { speed: 1, twist: 0.3, lean: 0.14, flourish: 0, snap: 0, arc: 1 },
+  elf: { speed: 1.18, twist: 0.55, lean: 0.08, flourish: 0.4, snap: 0, arc: 1.2 },
+  dwarf: { speed: 0.88, twist: 0.16, lean: 0.3, flourish: 0, snap: 0, arc: 0.82 },
+  orc: { speed: 0.95, twist: 0.5, lean: 0.24, flourish: 0.12, snap: 0, arc: 1.12 },
+  undead: { speed: 1.05, twist: 0.26, lean: 0.16, flourish: 0, snap: 0.3, arc: 1 }
+};
+const STRIKE_CLASSES = new Set(['sentinel', 'reaver', 'shade']);
+const STRIKE_DUR = 0.62; // durée de la surcouche à vitesse 1 (s)
+const raceStrike = u => RACE_STRIKE[u?.race] || RACE_STRIKE.human;
+const smoothstep = (a, b, x) => {
+  const k = clamp((x - a) / (b - a), 0, 1);
+  return k * k * (3 - 2 * k);
+};
+// Courbe d'une frappe (q = 0..1) : élan (rotation en arrière), frappe (vers l'avant jusqu'à l'impact), finition, retour.
+// Fonction pure (testée) : angles en radians.
+function strikePose(q, P) {
+  const wind = smoothstep(0, 0.22, q) * (1 - smoothstep(0.22, 0.4, q)),
+    hit = smoothstep(0.22, 0.4, q) * (1 - smoothstep(0.55, 1, q)),
+    flour = q > 0.45 && q < 0.9 ? Math.sin((Math.PI * (q - 0.45)) / 0.45) ** 2 : 0; // départ et fin en douceur
+  return {
+    twist: (hit - 0.8 * wind) * P.twist + flour * P.flourish,
+    lean: (hit - 0.3 * wind) * P.lean,
+    tilt: hit * P.snap
+  };
+}
+// Tourne un os d'un angle autour d'un axe monde (axe ramené dans le repère du parent, échelles comprises).
+function hfRotateLocal(bone, axisWorld, angle) {
+  const axis = axisWorld.clone().transformDirection(new THREE.Matrix4().copy(bone.parent.matrixWorld).invert());
+  bone.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(axis, angle));
+  bone.updateMatrixWorld(true);
+}
+function hfRaceStrike(rec, u) {
+  if (!STRIKE_CLASSES.has(u.cls) || u.form || !u.alive) return;
+  const m = rec.model;
+  if (!rec.strike) {
+    const f = n => m.getObjectByName(n);
+    const spine = ['spine_01', 'spine_02', 'spine_03'].map(f).filter(Boolean);
+    rec.strike = spine.length ? { spine, head: f('Head'), bones: [...spine, f('Head')].filter(Boolean) } : false;
+  }
+  const S = rec.strike;
+  if (!S) return;
+  hfFromAnimPose(S, S.bones);
+  const t = performance.now() / 1000;
+  if (rec.animKey === 'attack' && S.lastKey !== 'attack') S.t0 = t;
+  S.lastKey = rec.animKey;
+  const P = raceStrike(u),
+    q = S.t0 != null ? ((t - S.t0) * P.speed) / STRIKE_DUR : 2;
+  if (q < 1) {
+    m.updateMatrixWorld(true);
+    const pose = strikePose(q, P),
+      mq = m.getWorldQuaternion(new THREE.Quaternion()),
+      side = u.cls === 'shade' && rec.leftHit ? -1 : 1, // voleur : coup de la main gauche = rotation inverse
+      up = new THREE.Vector3(0, 1, 0).applyQuaternion(mq),
+      right = new THREE.Vector3(1, 0, 0).applyQuaternion(mq),
+      fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(mq);
+    for (const b of S.spine) {
+      hfRotateLocal(b, up, (side * pose.twist) / S.spine.length);
+      hfRotateLocal(b, right, pose.lean / S.spine.length);
+    }
+    if (S.head && pose.tilt) hfRotateLocal(S.head, fwd, side * pose.tilt);
+  }
+  hfKeepOutput(S, S.bones);
+}
 // Arme à deux mains (chevalier de la mort) : la main gauche rejoint la poignée sous la main droite à chaque image
 // (cinématique inverse à deux os : bras, avant-bras ; le coude garde son côté), aussi pendant la frappe.
 let IK_V = null; // créés à la première utilisation (THREE peut manquer : modèle de secours)
@@ -146,7 +233,7 @@ function hfArmIK(up, lo, hand, target, pole) {
 // Voleur : coup de glaive. Le coup de poing du clip (Punch_Jab = main gauche, Punch_Cross = main droite) donne l'élan ;
 // par-dessus, le bras balaie de l'extérieur vers l'intérieur en s'élevant, et le poignet roule : la lame en croissant
 // tranche en arc au lieu de frapper droit.
-function hfBladeSlash(rec) {
+function hfBladeSlash(rec, u) {
   const a = rec.action,
     n = a?.getClip().name;
   if (rec.animKey !== 'attack' || !/^Punch_/.test(n)) return;
@@ -156,7 +243,7 @@ function hfBladeSlash(rec) {
     hand = m.getObjectByName(left ? 'hand_l' : 'hand_r');
   if (!up || !hand) return;
   const q = clamp(a.time / a.getClip().duration, 0, 1),
-    env = Math.sin(Math.PI * clamp(q / 0.62, 0, 1)),
+    env = Math.sin(Math.PI * clamp(q / 0.62, 0, 1)) * raceStrike(u).arc,
     k = clamp((q - 0.04) / 0.36, 0, 1),
     e = k * k * (3 - 2 * k),
     side = left ? 1 : -1,
@@ -178,7 +265,7 @@ function hfBladeSlash(rec) {
     .normalize();
   turn(hand, new THREE.Quaternion().setFromAxisAngle(fore, -side * 1.1 * env));
 }
-function hfTwoHandIK(rec) {
+function hfTwoHandIK(rec, u) {
   const m = rec.model;
   if (!IK_V) {
     IK_V = [0, 1, 2, 3, 4, 5].map(() => new THREE.Vector3());
@@ -198,18 +285,8 @@ function hfTwoHandIK(rec) {
   }
   const k = rec.ik;
   if (!k) return;
-  // Le mixeur three.js ne réécrit un os que si sa valeur animée a changé : sur une pose immobile, le bras gardait la
-  // correction de l'image précédente et l'IK repartait de son propre résultat (balancier, l'arme tremblait). On repart
-  // donc toujours de la pose animée : mémorisée quand le mixeur l'a écrite, restaurée sinon.
   const bones = [...k.L, ...k.R, ...k.C];
-  if (!k.anim) {
-    k.anim = bones.map(b => b.quaternion.clone());
-    k.out = bones.map(() => null);
-  }
-  bones.forEach((b, i) => {
-    if (k.out[i] && b.quaternion.equals(k.out[i])) b.quaternion.copy(k.anim[i]);
-    else k.anim[i].copy(b.quaternion);
-  });
+  hfFromAnimPose(k, bones);
   // Main droite pilotée entièrement ici, dans le repère du personnage (+z = avant, +x = sa gauche) : garde à deux mains
   // (mains devant la hanche droite, lame dressée) et frappe à deux mains calculée (armé au-dessus de l'épaule droite,
   // taille vers l'avant, accompagnement vers le bas, retour en garde). Les clips n'ont pas de prise à deux mains : leurs
@@ -231,9 +308,12 @@ function hfTwoHandIK(rec) {
       [0.58, K(0.2, 0.86, 0.38, -0.62, -0.5, 0.6)], // accompagnement : vers le bas et la gauche
       [1, k.guardKey]
     ];
+    // amplitude de l'arc selon la race (elfe : grand arc ; nain : coup ramassé)
+    const arc = raceStrike(u).arc;
+    for (const [, P] of k.keys) if (P !== k.guardKey) P.p.sub(k.guardKey.p).multiplyScalar(arc).add(k.guardKey.p);
     k.cur = { p: k.guardKey.p.clone(), d: k.guardKey.d.clone() };
   }
-  const STRIKE_T = 0.6;
+  const STRIKE_T = 0.6 / raceStrike(u).speed;
   if (rec.animKey === 'attack' && k.lastKey !== 'attack') {
     k.atk0 = tc;
     k.from = { p: k.cur.p.clone(), d: k.cur.d.clone() }; // nouvelle frappe : on part de la pose actuelle (pas de saut)
@@ -299,7 +379,7 @@ function hfTwoHandIK(rec) {
   hfTurnLocal(hand, axis(new THREE.Vector3(0, 0, 1)), zL);
   const xNow = axis(new THREE.Vector3(1, 0, 0));
   hfTurnLocal(hand, xNow.addScaledVector(zL, -xNow.dot(zL)).normalize(), xL);
-  bones.forEach((b, i) => (k.out[i] = (k.out[i] || new THREE.Quaternion()).copy(b.quaternion)));
+  hfKeepOutput(k, bones);
 }
 
 function inMeleeGuard(u) {
