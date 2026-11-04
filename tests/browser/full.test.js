@@ -391,6 +391,23 @@ async function run() {
         true,
         'mobile.html doit forcer le mode mobile'
       );
+      // revue mobile du 04/11/2026 : bouton PLAY peint sans texte par-dessus ; ligne Mode / Difficulty dans le cadre,
+      // aussi sur un très petit téléphone (568 × 320)
+      const lobbyFits = () =>
+        page.evaluate(() => {
+          const m = document.querySelector('#overlay .modal').getBoundingClientRect(),
+            k = [...document.querySelector('#overlay .lobbyOpts').children].map(c => c.getBoundingClientRect());
+          return {
+            playText: getComputedStyle(document.getElementById('playBtn')).fontSize,
+            inside: k.every(r => r.left >= m.left && r.right <= m.right)
+          };
+        });
+      assert.deepEqual(await lobbyFits(), { playText: '0px', inside: true }, 'lobby mobile 844 × 390');
+      await page.setViewportSize({ width: 568, height: 320 });
+      await page.waitForTimeout(300);
+      assert.equal((await lobbyFits()).inside, true, 'lobby mobile 568 × 320 : options dans le cadre');
+      await page.setViewportSize({ width: 844, height: 390 });
+      await page.waitForTimeout(300);
       await page.click('#raceChoices button[data-r="human"]');
       await page.click('#classChoices button[data-c="sentinel"]');
       await page.click('#playBtn');

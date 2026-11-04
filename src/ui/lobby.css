@@ -485,6 +485,23 @@ body.mobile-mode .torchFire {
   margin: 0 10px;
   background: linear-gradient(180deg, transparent, #e3bf68, transparent);
 }
+/* mobile : ligne compacte, sinon elle débordait des deux côtés sur un petit téléphone (667 px : étiquette Mode et
+   bouton Online coupés, revue mobile du 04/11/2026) */
+body.mobile-mode #overlay .lobbyOpts {
+  flex-wrap: wrap; /* très petit écran (568 px) : Online passe à la ligne plutôt que de sortir du cadre */
+  gap: 4px;
+}
+body.mobile-mode #overlay .lobbyOpts .diffs {
+  gap: 4px;
+}
+body.mobile-mode #overlay .lobbyOpts .diffs button {
+  min-width: 42px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+body.mobile-mode #overlay .optSep {
+  margin: 0 3px;
+}
 /* étiquettes de section : images de la panoplie (texte peint, gardé pour l'accessibilité) */
 #overlay .selectorTitle[class*='tag-'] {
   flex: none;

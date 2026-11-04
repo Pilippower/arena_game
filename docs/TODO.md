@@ -22,10 +22,11 @@ fournies par l'utilisateur, à suivre au plus près) : `assets_src/ui/ref_should
    d. variations : hauteur aléatoire légère et 2 ou 3 variantes par sort fréquent (pas deux fois le même son) ;
    e. mixage : ses propres sorts devant, ceux des autres plus doux et filtrés avec la distance ;
    f. canalisations en vagues au rythme des tics plutôt qu'un bourdon continu (appliqué à Drain Life).
-11. Mobile, surtout le lobby, « complètement cassé » (ajoutée le 04/11/2026). Cause principale trouvée et corrigée le
-    jour même (régression du commit 1880ec3 : la barre du bas recouvrait la moitié du lobby) ; reste à faire une revue
-    complète du mobile (lobby en entier jusqu'au bouton PLAY, Settings, jeu, fin de match) sur plusieurs tailles. Vu le 04/11 : texte « Play » en double sur le bouton PLAY du lobby
-    mobile ; barre de sorts du lobby invisible en mobile.
+11. Mobile : **revue faite le 04/11/2026** (lobby jusqu'à PLAY, Settings, jeu, fin de match ; 568 × 320, 667 × 375,
+    844 × 390, 1024 × 768, portrait). Corrigé : « Play » en double sur PLAY, ligne Mode / Difficulty qui débordait.
+    À décider par l'utilisateur : (a) tablette : le lobby n'occupe que le haut de l'écran (l'agrandir ?) ; (b) la barre
+    de sorts du lobby n'est pas visible en mobile (la montrer ?) ; (c) fin de match en 3v3 sur téléphone : le panneau
+    défile un peu (règle validée « jamais sous 52 % de la largeur »), les boutons sont sous le bord à 844 × 390.
 10. Épaules (épaulières) du mage, du démoniste, du voleur et du prêtre : se rapprocher au plus près des planches de
     référence (formes, couches, matières, couleurs, gemmes) ; seules les épaulières changent (pas les visages ni les
     coiffures). Mage : grandes épaulières bleu roi en plusieurs pointes dorées, cristaux bleus lumineux ; démoniste :
