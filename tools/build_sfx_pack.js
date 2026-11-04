@@ -45,16 +45,20 @@ const PACK = {
   thud: [['thud2.wav', 0.5]],
   bong: [['bong1.wav', 0.9]],
   clink: [['clink1_0.wav', 0.3]],
-  // druide en forme d'ours : grognements (U.S. Fish & Wildlife Service, CC0) et rugissement de grizzly (NPS, domaine public)
+  // druide en forme d'ours : grognements (U.S. Fish & Wildlife Service, CC0) et grognements graves de grizzly (NPS,
+  // domaine public). Le cri à 33 s des « Vocalizations » (60 % d'énergie au-dessus de 3 kHz) sonnait comme un cochon :
+  // remplacé par deux grognements graves (centre spectral ~200 et ~300 Hz).
   roar_bear: [
     ['beasts/bear_01.ogg', 0.8],
     ['beasts/bear_02.ogg', 0.8],
     ['beasts/yell-GrizzlyEating010315.mp3', 0.9, null, 20.6],
-    ['beasts/yell-YELLGrizzlyBearVocalizations20160520Android1.mp3', 0.9, null, 33.0]
+    ['beasts/yell-YELLGrizzlyBearVocalizations20160520Android1.mp3', 0.9, null, 42.49],
+    ['beasts/yell-YELLGrizzlyBearVocalizations20160520Android1.mp3', 0.9, null, 66.37]
   ],
-  // druide en forme de chat : grognements et feulements d'un vrai tigre (« angry tiger », schots, CC0), hauteur
-  // naturelle (les feulements de monstre accélérés sonnaient comme un cochon)
-  snarl_cat: [0.32, 3.1, 5.68, 6.5, 9.18, 11.13].map(at => ['beasts/angry-tiger.wav', 0.75, null, at])
+  // druide en forme de chat : grognements d'un vrai tigre (« angry tiger », schots, CC0), hauteur naturelle. Seuls les
+  // cris graves sont gardés, chacun au début exact d'un cri (pas de doublon) : ceux de 3,0 s, 5,4 s, 21,8 s et 40,5 s ont des
+  // pics aigus (jusqu'à 35 % d'énergie au-dessus de 3 kHz) qui faisaient mal aux oreilles.
+  snarl_cat: [0.21, 11.09, 15.47, 26.08].map(at => ['beasts/angry-tiger.wav', 0.75, null, at])
 };
 
 const wav = (pcm, sr) => {
@@ -113,11 +117,12 @@ const wav = (pcm, sr) => {
               on = true;
             } else if (on && v < pk * 0.03) on = false;
           });
-          let s0 =
-            at != null
-              ? (starts.find(i => i * win >= at * SR - SR * 0.05) ?? Math.round((at * SR) / win))
-              : (starts[seg ?? 0] ?? 0);
-          while (s0 > 0 && env[s0 - 1] > pk * 0.02) s0--; // remonte au tout début du son
+          // instant donné (at) : le début de cri le plus proche (à 0,15 s près), sinon l'instant lui-même ; on remonte
+          // au tout début du son, de 0,3 s au plus (un grognement continu ramenait plusieurs extraits au même début)
+          const near = at != null ? starts.find(i => Math.abs(i * win - at * SR) < SR * 0.15) : null;
+          let s0 = at != null ? (near ?? Math.round((at * SR) / win)) : (starts[seg ?? 0] ?? 0);
+          const floor = Math.max(0, s0 - 30);
+          while (s0 > floor && env[s0 - 1] > pk * 0.02) s0--;
           let a = Math.max(0, s0 * win - Math.round(SR * 0.005)),
             b = Math.min(d.length, a + Math.round(maxDur * SR));
           // ne pas déborder sur le cri suivant

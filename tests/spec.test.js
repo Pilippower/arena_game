@@ -657,7 +657,10 @@ assert.ok(
 );
 // Régressions signalées : icône d'origine de Death Coil, cri du mort-vivant non étouffé
 assert.ok(!/'Death Coil': \{[^}]*art:/.test(read('src/data/classes.js')), 'Death Coil : pas l’icône d’un autre sort');
-assert.ok(ctx.skillIconSVG('reaver', 4).includes('spells/death_coil.webp'), 'Death Coil : illustration de l’utilisateur');
+assert.ok(
+  ctx.skillIconSVG('reaver', 4).includes('spells/death_coil.webp'),
+  'Death Coil : illustration de l’utilisateur'
+);
 assert.ok(!read('src/audio/sfx.js').includes("lowpass: u.race === 'undead'"), 'cri du mort-vivant audible');
 // Soins de la carte : pris par tout personnage (tests/gameplay.test.js), l'IA blessée va les chercher
 // IA blessée qui va chercher le soin de la carte : tests/combat.test.js
@@ -730,6 +733,30 @@ assert.ok(
   read('assets/audio/LICENSES.md').includes('roar_bear') && read('assets/audio/LICENSES.md').includes('snarl_cat'),
   'licences des cris de bêtes'
 );
+// Cris des formes : graves, sans cri strident (félin) ni cri perçant « de cochon » (ours). Mesure : passages par zéro
+// pondérés par l'énergie (≈ fréquence dominante, en Hz) ; anciens sons fautifs : 109 (félin) et 2312 (ours).
+{
+  const pk = read('assets/audio/sfx_pack.js'),
+    PACK = JSON.parse(pk.slice(pk.indexOf('{'), pk.lastIndexOf('}') + 1));
+  const brightness = uri => {
+    const b = Buffer.from(uri.split(',')[1], 'base64'),
+      sr = b.readUInt32LE(24);
+    let z = 0,
+      e = 0;
+    for (let i = 46; i + 1 < b.length; i += 2) {
+      const v = b.readInt16LE(i) / 32768,
+        w = v * v;
+      e += w;
+      if (v >= 0 !== b.readInt16LE(i - 2) >= 0) z += w;
+    }
+    return ((z / e) * sr) / 2;
+  };
+  for (const [k, max] of [
+    ['snarl_cat', 50],
+    ['roar_bear', 400]
+  ])
+    PACK[k].forEach((u, i) => assert.ok(brightness(u) < max, `${k} n° ${i} trop aigu`));
+}
 // Tourner au clavier : même rotation que le glisser au clic droit (convention validée)
 assert.ok(
   read('src/input/controls.js').includes('GameLogic.applyLook(camera.yaw, camera.pitch, dir * TURN_PX_PER_S * dt, 0)'),
