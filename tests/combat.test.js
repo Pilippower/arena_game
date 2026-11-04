@@ -125,6 +125,19 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   assert.ok(Math.abs(ctx.moveSpeed(t) - ctx.CLASS.arcanist.speed * 0.5) < 1e-9, 'Hamstring : vitesse divisée par 2');
 }
 {
+  // Backstab (voleur) : ralentit de 60 % pendant 6 s, ralentissement de mêlée (non magique)
+  const { ctx, unit } = combatWorld();
+  const rogue = unit('shade', 0, 0, 0),
+    t = unit('arcanist', 0, 1.5, 1);
+  rogue.target = t;
+  assert.ok(ctx.useSkill(rogue, spell(ctx, 'shade', 'Backstab')), 'Backstab lancé');
+  assert.ok(Math.abs(ctx.moveSpeed(t) - ctx.CLASS.arcanist.speed * 0.4) < 1e-9, 'Backstab : vitesse × 0,4');
+  assert.equal(t.slow, 6, 'Backstab : 6 s');
+  assert.equal(t.slowMagic, false, 'Backstab : ralentissement de mêlée');
+  run(ctx, 6.1);
+  assert.ok(Math.abs(ctx.moveSpeed(t) - ctx.CLASS.arcanist.speed) < 1e-9, 'Backstab : vitesse rendue après 6 s');
+}
+{
   // Charge : vraie ruée (pas de téléportation), étourdit à l'arrivée
   const { ctx, unit } = combatWorld();
   const war = unit('sentinel', 0, 0, 0),

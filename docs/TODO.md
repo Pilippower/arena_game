@@ -11,7 +11,6 @@ validé dans `docs/SPEC.md`.
 5. Échap ouvre / ferme les Settings.
 7. Débuffs flottants (à droite de la barre de vie) : icônes des contrôles (CC) 30 % plus grandes que les autres
    débuffs (demandé deux fois : la tâche précédente n'était pas allée au bout).
-8. Voleur : Backstab ralentit la cible de 60 % pendant 6 s.
 9. Voleur : Shadowstep téléporte dans le dos de la cible, portée 20 m, utilisable aussi camouflé.
 10. Les racines (roots) ne cassent plus quand la cible subit des dégâts.
 11. Démoniste : Corruption vole la vie (chaque dégât infligé est rendu au démoniste).

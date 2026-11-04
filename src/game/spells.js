@@ -10,11 +10,13 @@
 // Ajouter un sort : valeurs + texte dans SPELLS, place dans CLASS[cls].skills et SKILL_META, puis une entrée ici.
 const allyOf = u => (u.ai ? lowestAlly(u) : friendlyTarget(u));
 const chest = (o, h = 1.1) => [o.x, (o.y || 0) + h, o.z];
-// coup de mêlée avec chance de critique ; antiheal = réduction des soins reçus (max 50 %)
+// coup de mêlée avec chance de critique ; antiheal = réduction des soins reçus (max 50 %) ; slow = ralentissement de
+// mêlée (non magique) pendant S.dur
 function strike(c) {
   const { u, t, S } = c;
   if (!c.melee) return false;
   damage(u, t, S.dmg, Math.random() < S.crit);
+  if (S.slow) applySlow(t, S.slow, S.dur);
   if (S.antiheal) {
     t.antiheal = Math.min(0.5, t.antiheal + S.antiheal);
     markDebuff(t, 'antiheal');

@@ -453,7 +453,14 @@ const SPELLS = {
     text: S =>
       `From stealth: stuns the target for ${sec(S.stun)}. Separate diminishing returns from Kidney Shot. Breaks stealth.`
   },
-  Backstab: { dmg: 215, crit: 0.22, text: (S, D) => `${D(S.dmg)} damage (${pct(S.crit)} crit chance).` },
+  Backstab: {
+    dmg: 215,
+    crit: 0.22,
+    slow: 0.6,
+    dur: 6,
+    text: (S, D) =>
+      `${D(S.dmg)} damage (${pct(S.crit)} crit chance) and slows the target by ${pct(S.slow)} for ${sec(S.dur)}.`
+  },
   Cloak: {
     dur: 5,
     text: S =>
