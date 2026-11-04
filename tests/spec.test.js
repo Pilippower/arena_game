@@ -672,6 +672,14 @@ assert.ok(read('index.html').includes('.npAuras .buff{width:34px;height:34px}'),
       assert.equal(K.resolveKit(r + '_' + c).weaponScale, 1, r + ' ' + c);
   }
 }
+// Épaulières sculptées d'après les planches (characters/shoulders.js), toutes races ; les autres classes gardent les leurs
+{
+  const K = require('../src/characters/kits.js'),
+    want = { arcanist: 'mage', warlock: 'warlock', shade: 'rogue', oracle: 'priest' };
+  for (const r of ['human', 'orc', 'dwarf', 'elf', 'undead'])
+    for (const c of ['sentinel', 'arcanist', 'oracle', 'reaver', 'warden', 'shade', 'warlock'])
+      assert.equal(K.resolveKit(r + '_' + c).armor?.pauldron?.style, want[c], `${r} ${c} : épaulières`);
+}
 // Mêlée : cri d'effort et sons de frappe enregistrés par arme, licences documentées
 {
   const fs = require('node:fs'),

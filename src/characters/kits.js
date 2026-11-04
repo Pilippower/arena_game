@@ -96,7 +96,7 @@
         },
         trim: [0.86, 0.66, 0.26],
         shells: ['belt', 'vambrace'],
-        pauldron: { layers: 2, size: 0.105, cover: 1.3 }
+        pauldron: { style: 'mage' } // characters/shoulders.js
       }
     },
     oracle: {
@@ -129,7 +129,7 @@
           belt: { kind: 'metal', style: { base: [0.88, 0.68, 0.28], lames: 1, rivets: true, trim: [0.95, 0.85, 0.5] } }
         },
         shells: ['belt', 'vambrace'],
-        pauldron: { layers: 2, size: 0.11, cover: 1.35 }
+        pauldron: { style: 'priest' }
       }
     },
     reaver: {
@@ -210,7 +210,7 @@
           belt: { kind: 'leather', style: { base: [0.48, 0.07, 0.06], stitch: [0.15, 0.02, 0.02], grain: 0.1 } }
         },
         shells: ['chest', 'belt', 'vambrace', 'greave'],
-        pauldron: { layers: 2, size: 0.1 },
+        pauldron: { style: 'rogue' },
         mask: [0.025, 0.02, 0.025]
       }
     },
@@ -239,7 +239,7 @@
         },
         trim: [0.85, 0.65, 0.25],
         shells: ['belt', 'vambrace'],
-        pauldron: { layers: 2, size: 0.115, cover: 1.3, spikes: 2, spikeColor: 0xe6dcc0 }
+        pauldron: { style: 'warlock' }
       }
     }
   };

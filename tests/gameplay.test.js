@@ -497,6 +497,53 @@ function playerWorld() {
   assert.equal(r.animKey, 'stun');
   assert.equal(cache.Idle_Loop.resets, 1, 'repos → étourdi : le clip de repos n’est pas relancé');
 }
+// ---------- Épaulières sculptées : mage, démoniste, voleur, prêtre (src/characters/shoulders.js) ----------
+// Demande du 04/11/2026 : au plus près des planches de référence ; seules les épaulières changent.
+{
+  const THREE = require('three');
+  const S = sandbox({ THREE });
+  S.ctx.globalThis = S.ctx;
+  S.ctx.CharacterParts = { envMap: () => null }; // seul outil de rig.js utilisé (reflets du métal)
+  S.load('src/characters/shoulders.js');
+  const P = S.ctx.CharacterParts;
+  const skeleton = () => {
+    const bones = {},
+      bone = (name, x, y, parent) => {
+        const b = (bones[name] = new THREE.Bone());
+        b.position.set(x, y, 0);
+        (parent || root).add(b);
+        return b;
+      },
+      root = new THREE.Group();
+    const spine = bone('spine_03', 0, 1.4);
+    bone('neck_01', 0, 0.15, spine);
+    for (const [side, x] of [['l', 0.08], ['r', -0.08]]) bone('upperarm_' + side, x * 1.6, 0.05, bone('clavicle_' + side, x, 0.08, spine));
+    root.updateMatrixWorld(true);
+    return bones;
+  };
+  for (const [style, st] of Object.entries(P.SHOULDER_STYLES)) {
+    const bones = skeleton();
+    assert.ok(P.buildStyledPauldrons(THREE, bones, style, 1.8), style + ' : construit');
+    for (const side of ['l', 'r']) {
+      const g = bones['clavicle_' + side].children.find(o => o.name === 'Pauldron');
+      assert.ok(g, `${style} : épaulière ${side} attachée à la clavicule (suit l'épaule)`);
+      let blades = 0,
+        gems = 0,
+        base = false;
+      g.traverse(o => {
+        if (o.isMesh && o.geometry.type === 'ExtrudeGeometry') blades++;
+        if (o.isMesh && o.material.emissiveIntensity > 1) gems++;
+        if (o.isMesh && o.material.color.equals(new THREE.Color(...st.base))) base = true;
+      });
+      const want = st.tiers.reduce((n, t) => n + t.n, 0) * 2; // lame + bordure
+      assert.equal(blades, want, `${style} : ${want / 2} lames bordées`);
+      assert.equal(gems, (st.gems || 0) + (st.runes || 0), `${style} : gemmes et runes lumineuses`);
+      assert.ok(base, `${style} : couleur de la planche`);
+    }
+    assert.equal(!!bones.spine_03.children.find(o => o.name === 'Collar'), !!st.collar, `${style} : col haut`);
+  }
+  assert.equal(P.buildStyledPauldrons(THREE, skeleton(), 'inconnu', 1.8), false, 'style inconnu : épaulières rondes');
+}
 // ---------- Nain : la barbe suit la tête (src/characters/head.js) ----------
 // Bug du 04/11/2026 : la barbe skinnée du pack (Hair_Beard) recevait un matériau sans `skinning` (three r128) : elle
 // restait figée en pose de repos quand la tête bougeait. Tout le reste de la barbe est attaché à l'os de la tête.

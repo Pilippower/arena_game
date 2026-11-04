@@ -3,10 +3,7 @@
 Tâches demandées ou proposées, pas encore faites. Quand une tâche est terminée : la retirer d'ici et décrire le résultat
 validé dans `docs/SPEC.md`.
 
-## Liste n°2 du 04/11/2026 (gérée par le coordinateur seul, sans agents parallèles)
-
-Du plus simple au plus compliqué, un commit par tâche. Images de référence des épaules (planches de classe génériques
-fournies par l'utilisateur, à suivre au plus près) : `assets_src/ui/ref_shoulders_{mage,warlock,rogue,priest}.png`.
+## Liste n°2 du 04/11/2026 : terminée, restent des propositions à valider par l'utilisateur
 
 9. Sons de sorts : **étude faite le 04/11/2026, Drain Life corrigé ; propositions à faire valider par l'utilisateur.**
    Sources publiques : Blizzard, « Under the Hood: Anatomy of Sound Design » (créatures de WoW : voix + ours + tigre
@@ -27,12 +24,6 @@ fournies par l'utilisateur, à suivre au plus près) : `assets_src/ui/ref_should
     À décider par l'utilisateur : (a) tablette : le lobby n'occupe que le haut de l'écran (l'agrandir ?) ; (b) la barre
     de sorts du lobby n'est pas visible en mobile (la montrer ?) ; (c) fin de match en 3v3 sur téléphone : le panneau
     défile un peu (règle validée « jamais sous 52 % de la largeur »), les boutons sont sous le bord à 844 × 390.
-10. Épaules (épaulières) du mage, du démoniste, du voleur et du prêtre : se rapprocher au plus près des planches de
-    référence (formes, couches, matières, couleurs, gemmes) ; seules les épaulières changent (pas les visages ni les
-    coiffures). Mage : grandes épaulières bleu roi en plusieurs pointes dorées, cristaux bleus lumineux ; démoniste :
-    épaulières violettes bordées de cuivre, pointes recourbées, motif vert lumineux ; voleur : cuir sombre en lames
-    superposées, liserés dorés, gemme rouge, capuche et écharpe bordeaux ; prêtre : grandes épaulières dorées en ailes
-    nacrées, gemmes bleues, col haut.
 
 ## Équilibrage 1v1 : que chaque classe ait sa chance (proposé le 04/11/2026, à reprendre)
 

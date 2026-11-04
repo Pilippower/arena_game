@@ -484,10 +484,7 @@
         }
         if (i === 0 && p.spikes)
           for (let k = 0; k < p.spikes; k++) {
-            const sp = new THREE.Mesh(
-              new THREE.ConeGeometry(0.018 * s, (0.11 - k * 0.02) * s, 8),
-              p.spikeColor ? new THREE.MeshStandardMaterial({ color: p.spikeColor, roughness: 0.5 }) : trimMat || mat
-            );
+            const sp = new THREE.Mesh(new THREE.ConeGeometry(0.018 * s, (0.11 - k * 0.02) * s, 8), trimMat || mat);
             const a = (k - (p.spikes - 1) / 2) * 0.45;
             sp.position.set(
               Math.sin(a) * r * 0.35,
@@ -734,7 +731,8 @@
             a.shellMat && a.shellMat[n] ? armorMaterial(THREE, a.shellMat[n]) : mat,
             'Armor_' + k
           );
-    if (a.pauldron)
+    // épaulières sculptées d'une classe (characters/shoulders.js), sinon lames rondes
+    if (a.pauldron && !(a.pauldron.style && P.buildStyledPauldrons(THREE, bones, a.pauldron.style, height)))
       buildPauldrons(
         THREE,
         bones,
