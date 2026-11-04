@@ -759,10 +759,92 @@ body.lobby:not(.mobile-mode) .pickRight {
   font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(13px, 1vw, 17px);
 }
+/* tailles en em : base 16 px (mobile) ; sur PC, le contenu suit la taille du cadre doré (comme l'onglet Solo,
+   demande du 04/11/2026) : police de #partyBox d'après la place disponible (unités du conteneur .partyView) */
 #overlay .partyView {
   display: none;
-  max-width: 940px;
+  max-width: 58.75em;
   margin: 0 auto;
+  font-size: 16px;
+}
+body.lobby:not(.mobile-mode) #overlay .modal.partyMode .partyView {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  container-type: size;
+}
+body.lobby:not(.mobile-mode) #overlay #partyBox {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: 0.6em;
+  font-size: min(2.7cqh, 1.75cqw);
+}
+/* PC : bandeau des réglages sur toute la largeur (arènes illustrées plus grandes), équipes qui prennent la hauteur
+   restante (places étirées) */
+body.lobby:not(.mobile-mode) #overlay #partyBox .pSettings {
+  width: 100%;
+  margin: 0;
+  flex-wrap: nowrap;
+  justify-content: space-evenly;
+  align-items: center;
+}
+body.lobby:not(.mobile-mode) #overlay #partyBox .pSet {
+  min-width: 0;
+  padding: 0 1em;
+}
+body.lobby:not(.mobile-mode) #overlay #partyBox .pArena .pOpts {
+  flex-wrap: nowrap;
+}
+body.lobby:not(.mobile-mode) #overlay #partyBox .pActions {
+  margin: 0;
+  font-size: 1.25em;
+}
+body.lobby:not(.mobile-mode) #overlay #partyBox .pArt {
+  font-size: inherit; /* hauteur des boutons peints en em du bandeau, pas de la police des boutons */
+}
+body.lobby:not(.mobile-mode) #overlay #partyBox .pPick select {
+  font-size: 0.85em;
+}
+body.lobby:not(.mobile-mode) #overlay #partyBox .pSet.pArena {
+  flex: 1;
+}
+body.lobby:not(.mobile-mode) #overlay #partyBox .pArena .pOpt {
+  flex: 0 1 9em; /* les arènes rétrécissent plutôt que de faire déborder le bandeau */
+  width: 9em;
+  min-width: 5em;
+  height: 4.2em;
+}
+body.lobby:not(.mobile-mode) #overlay #partyBox .pArena .pOpt span {
+  font-size: 0.95em;
+}
+body.lobby:not(.mobile-mode) #overlay #partyBox .pOpt {
+  padding: 0.5em 1em;
+  font-size: 1.1em;
+}
+body.lobby:not(.mobile-mode) #overlay #partyBox .pTeams {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+}
+body.lobby:not(.mobile-mode) #overlay #partyBox .pTeam {
+  display: flex;
+  flex-direction: column;
+}
+/* marges auto d'une colonne flex : sans largeur explicite, le bandeau (hauteur = % de sa largeur) disparaissait */
+body.lobby:not(.mobile-mode) #overlay #partyBox .pRibbon {
+  flex: none;
+  width: 100%;
+}
+body.lobby:not(.mobile-mode) #overlay #partyBox .pSlot {
+  flex: 1;
+  height: auto;
+  min-height: 3.5em;
+  max-height: 5em;
 }
 #overlay .modal.partyMode .partyView {
   display: block;
@@ -774,30 +856,30 @@ body.lobby:not(.mobile-mode) .pickRight {
 #overlay .partyView .pRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 0.625em;
   align-items: center;
   justify-content: center;
-  margin: 10px 0;
+  margin: 0.625em 0;
 }
 #overlay .partyView input {
-  width: 200px;
-  padding: 7px;
-  font-size: 15px;
+  width: 12.5em;
+  padding: 0.4375em;
+  font-size: 0.9375em;
   text-align: center;
   color: #fff;
   background: #0a0f26;
-  border: 2px solid #b8893c;
-  border-radius: 8px;
+  border: 0.125em solid #b8893c;
+  border-radius: 0.5em;
 }
 #overlay .partyView #partyCode {
-  width: 130px;
+  width: 8.125em;
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 #overlay .partyHint {
-  margin: 6px 0;
+  margin: 0.375em 0;
   text-align: center;
-  font-size: 13px;
+  font-size: 0.8125em;
   color: #dfe5ff;
 }
 /* onglet Multiplayer d'après la maquette de l'utilisateur (assets_src/ui/party_interface.png ; pièces peintes dans
@@ -809,17 +891,17 @@ body.lobby:not(.mobile-mode) .pickRight {
 }
 #overlay .partyCode {
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 17px;
+  font-size: 1.0625em;
   color: #f3ead2;
 }
 #overlay .partyCode b {
   font-family: 'Cinzel', Georgia, serif;
-  font-size: 28px;
+  font-size: 1.75em;
   letter-spacing: 0.12em;
   color: #ffd56a;
   text-shadow:
-    0 0 10px #ff9d2a66,
-    0 2px 2px #000;
+    0 0 0.625em #ff9d2a66,
+    0 0.125em 0.125em #000;
 }
 #overlay .partyView button svg {
   height: 1em;
@@ -831,16 +913,16 @@ body.lobby:not(.mobile-mode) .pickRight {
 #overlay .pTools button,
 #overlay .pSmall {
   min-width: 0;
-  padding: 3px 10px;
+  padding: 0.1875em 0.625em;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 13px;
+  font-size: 0.8125em;
   color: #f3ead2;
   background: linear-gradient(180deg, #1d2c5e, #0e1638);
-  border: 1.5px solid #c99a4a;
-  border-radius: 8px;
+  border: 0.0938em solid #c99a4a;
+  border-radius: 0.5em;
   box-shadow:
-    inset 0 1px #ffffff22,
-    0 2px 5px #0009;
+    inset 0 0.0625em #ffffff22,
+    0 0.125em 0.3125em #0009;
 }
 /* réglages du match (mode, arène, difficulté) : bandeau à trois sections séparées d'un filet doré ; chez les amis,
    lecture seule */
@@ -850,27 +932,27 @@ body.lobby:not(.mobile-mode) .pickRight {
   justify-content: center;
   width: fit-content;
   max-width: 100%;
-  margin: 4px auto 10px;
-  padding: 6px 4px 8px;
-  border: 1.5px solid #b8893c;
-  border-radius: 8px;
+  margin: 0.25em auto 0.625em;
+  padding: 0.375em 0.25em 0.5em;
+  border: 0.0938em solid #b8893c;
+  border-radius: 0.5em;
   background: linear-gradient(180deg, #0f1733cc, #080c1ecc);
   box-shadow:
-    inset 0 1px #ffffff14,
-    0 4px 12px #0008;
+    inset 0 0.0625em #ffffff14,
+    0 0.25em 0.75em #0008;
 }
 #overlay .pSet {
-  padding: 0 18px;
+  padding: 0 1.125em;
 }
 #overlay .pSet + .pSet {
-  border-left: 1px solid;
+  border-left: 0.0625em solid;
   border-image: linear-gradient(180deg, transparent, #b8893caa, transparent) 1;
 }
 #overlay .pSet h4 {
-  margin: 0 0 5px;
+  margin: 0 0 0.3125em;
   text-align: center;
   font-family: 'Cinzel', Georgia, serif;
-  font-size: 12px;
+  font-size: 0.75em;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #e9c46a;
@@ -880,15 +962,15 @@ body.lobby:not(.mobile-mode) .pickRight {
 #overlay .pOpt {
   flex: none;
   min-width: 0;
-  padding: 5px 13px;
+  padding: 0.3125em 0.8125em;
 }
 #overlay .pOpt.selected:disabled {
   opacity: 1;
 }
 #overlay .pArena .pOpt {
   position: relative;
-  width: 112px;
-  height: 50px;
+  width: 7em;
+  height: 3.125em;
   padding: 0;
   overflow: hidden;
 }
@@ -904,21 +986,21 @@ body.lobby:not(.mobile-mode) .pickRight {
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 2px 0;
-  font-size: 12px;
+  padding: 0.125em 0;
+  font-size: 0.75em;
   background: linear-gradient(180deg, transparent, #000c);
 }
 /* deux équipes face à face, « VS » sur un trait doré vertical */
 #overlay .pTeams {
   display: grid;
-  grid-template-columns: 1fr 62px 1fr;
-  gap: 8px;
-  margin: 4px 0;
+  grid-template-columns: 1fr 3.875em 1fr;
+  gap: 0.5em;
+  margin: 0.25em 0;
 }
 #overlay .pRibbon {
   position: relative;
   height: 0;
-  margin: 0 auto 4px;
+  margin: 0 auto 0.25em;
   padding-bottom: calc(100% * 48 / 410);
   background: url(../../assets/ui/party/ribbon_ally.webp) center / contain no-repeat;
 }
@@ -927,8 +1009,8 @@ body.lobby:not(.mobile-mode) .pickRight {
 }
 #overlay .pRibbon span {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  width: 0.0625em;
+  height: 0.0625em;
   overflow: hidden;
   clip-path: inset(50%);
 }
@@ -943,7 +1025,7 @@ body.lobby:not(.mobile-mode) .pickRight {
   top: 6%;
   bottom: 0;
   left: 50%;
-  width: 1px;
+  width: 0.0625em;
   background: linear-gradient(180deg, transparent, #e9b34a99 30%, #e9b34a99 70%, transparent);
 }
 #overlay .pVs img {
@@ -953,17 +1035,17 @@ body.lobby:not(.mobile-mode) .pickRight {
 #overlay .pSlot {
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 56px;
-  margin: 5px 0;
-  padding: 0 10px 0 4px;
-  border: 2px solid #3d68a8;
-  border-radius: 8px;
+  gap: 0.5em;
+  height: 3.5em;
+  margin: 0.3125em 0;
+  padding: 0 0.625em 0 0.25em;
+  border: 0.125em solid #3d68a8;
+  border-radius: 0.5em;
   background: linear-gradient(180deg, #17306a, #0c1a40);
   box-shadow:
-    inset 0 1px #ffffff1c,
-    inset 0 -8px 14px #0006,
-    0 3px 8px #0009;
+    inset 0 0.0625em #ffffff1c,
+    inset 0 -8px 0.875em #0006,
+    0 0.1875em 0.5em #0009;
 }
 #overlay .pTeam.foe .pSlot {
   border-color: #8f3a33;
@@ -972,34 +1054,34 @@ body.lobby:not(.mobile-mode) .pickRight {
 #overlay .pSlot.me {
   border-color: #f2c75c;
   box-shadow:
-    0 0 0 1px #ff9d2a,
-    0 0 14px #ffb43a99,
-    inset 0 1px #ffffff1c;
+    0 0 0 0.0625em #ff9d2a,
+    0 0 0.875em #ffb43a99,
+    inset 0 0.0625em #ffffff1c;
 }
 #overlay .pSlot.over {
   opacity: 0.5;
 }
 #overlay .pCrown {
   flex: none;
-  width: 22px;
+  width: 1.375em;
   text-align: center;
-  font-size: 18px;
+  font-size: 1.125em;
   color: #ffcf4a;
   text-shadow:
-    0 0 6px #ff9d2a,
-    0 1px 2px #000;
+    0 0 0.375em #ff9d2a,
+    0 0.0625em 0.125em #000;
 }
 #overlay .pFace {
   position: relative;
   flex: none;
-  width: 44px;
-  height: 44px;
-  border: 2px solid #c99a4a;
+  width: 2.75em;
+  height: 2.75em;
+  border: 0.125em solid #c99a4a;
   border-radius: 50%;
   background: radial-gradient(circle at 50% 38%, #3a3f5e, #10131f);
   box-shadow:
-    0 0 0 1px #000a,
-    0 2px 4px #000a;
+    0 0 0 0.0625em #000a,
+    0 0.125em 0.25em #000a;
 }
 /* place libre sans IA connue : point d'interrogation comme la maquette */
 #overlay .pFace:empty::after {
@@ -1009,7 +1091,7 @@ body.lobby:not(.mobile-mode) .pickRight {
   display: grid;
   place-items: center;
   font:
-    700 24px Georgia,
+    700 1.5em Georgia,
     serif;
   color: #f3ead2;
 }
@@ -1023,10 +1105,10 @@ body.lobby:not(.mobile-mode) .pickRight {
   position: absolute;
   right: -6px;
   bottom: -4px;
-  width: 22px;
-  height: 22px;
-  border: 2px solid #e9c46a;
-  box-shadow: 0 1px 4px #000;
+  width: 1.375em;
+  height: 1.375em;
+  border: 0.125em solid #e9c46a;
+  box-shadow: 0 0.0625em 0.25em #000;
 }
 #overlay .pInfo {
   flex: 1;
@@ -1040,32 +1122,32 @@ body.lobby:not(.mobile-mode) .pickRight {
   white-space: nowrap;
   text-overflow: ellipsis;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 16px;
+  font-size: 1em;
   color: #f3ead2;
 }
 #overlay .pInfo small {
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 12px;
+  font-size: 0.75em;
   color: #cfd6ee;
 }
 #overlay .pTools {
   display: flex;
-  gap: 5px;
+  gap: 0.3125em;
 }
 /* IA : race et classe choisies par l'hôte, deux listes sur la place */
 #overlay .pPick {
   display: flex;
-  gap: 5px;
-  margin-top: 2px;
+  gap: 0.3125em;
+  margin-top: 0.125em;
 }
 #overlay .pPick select {
   min-width: 0;
-  padding: 1px 4px;
-  font-size: 12px;
+  padding: 0.0625em 0.25em;
+  font-size: 0.75em;
   color: #f3ead2;
   background: #0a0f26cc;
-  border: 1px solid #b8893c;
-  border-radius: 6px;
+  border: 0.0625em solid #b8893c;
+  border-radius: 0.375em;
   cursor: pointer;
 }
 #overlay .pPick select:hover {
@@ -1073,13 +1155,13 @@ body.lobby:not(.mobile-mode) .pickRight {
 }
 /* Auto-Balance et Start Match : boutons peints de la maquette */
 #overlay .pActions {
-  gap: 14px;
-  margin: 12px 0 4px;
+  gap: 0.875em;
+  margin: 0.75em 0 0.25em;
 }
 /* !important : la règle « button » de theme.css (gemme bleue) l'est aussi */
 #overlay .pArt {
   min-width: 0;
-  height: 50px;
+  height: 3.125em;
   padding: 0;
   border: 0 !important;
   border-radius: 0 !important;
@@ -1088,12 +1170,12 @@ body.lobby:not(.mobile-mode) .pickRight {
   aspect-ratio: 204 / 54;
 }
 #overlay .pArt.start {
-  height: 56px;
+  height: 3.5em;
   aspect-ratio: 288 / 60;
   background-image: url(../../assets/ui/party/start.webp) !important;
 }
 #overlay .pArt:hover {
-  filter: brightness(1.15) drop-shadow(0 0 6px #ffb43a88);
+  filter: brightness(1.15) drop-shadow(0 0 0.375em #ffb43a88);
 }
 body.mobile-mode #overlay .pSlot {
   height: 46px;

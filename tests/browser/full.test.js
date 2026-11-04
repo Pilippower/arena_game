@@ -95,6 +95,16 @@ async function run() {
         const out = [...document.querySelectorAll('#partyBox .pOpt')]
           .filter(b => b.scrollWidth > b.clientWidth + 1)
           .map(b => b.textContent);
+        // le contenu remplit le cadre doré comme l'onglet Solo (demande du 04/11/2026) sans en déborder
+        const R = s => document.querySelector(s).getBoundingClientRect(),
+          box = R('#partyBox'),
+          view = R('#overlay .partyView');
+        if (box.width < view.width * 0.95 || box.height < view.height * 0.8) out.push('contenu trop petit');
+        for (const s of ['.pSettings', '.pTeams', '.pActions'])
+          for (const e of document.querySelectorAll(`#partyBox ${s}, #partyBox ${s} *`)) {
+            const r = e.getBoundingClientRect();
+            if (r.width && (r.right > view.right + 1 || r.left < view.left - 1)) out.push('déborde : ' + s);
+          }
         NET.role = null;
         lobbyTab('solo');
         return out;
