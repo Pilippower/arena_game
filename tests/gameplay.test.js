@@ -304,6 +304,49 @@ function playerWorld() {
   hfFromAnimPose(store, [bone]);
   assert.ok(store.anim[0].angleTo(bone.quaternion) < 1e-6, 'nouvelle pose du clip mémorisée');
 }
+// ---------- Nain : la barbe suit la tête (src/characters/head.js) ----------
+// Bug du 04/11/2026 : la barbe skinnée du pack (Hair_Beard) recevait un matériau sans `skinning` (three r128) : elle
+// restait figée en pose de repos quand la tête bougeait. Tout le reste de la barbe est attaché à l'os de la tête.
+{
+  const THREE = require('three');
+  const ctx2d = { fillRect() {}, beginPath() {}, moveTo() {}, bezierCurveTo() {}, stroke() {} };
+  const S = sandbox({ THREE, document: { createElement: () => ({ getContext: () => ctx2d }) } });
+  S.ctx.globalThis = S.ctx;
+  S.load('src/characters/rig.js');
+  S.load('src/characters/head.js');
+  const root = new THREE.Group(),
+    neck = new THREE.Bone(),
+    head = new THREE.Bone();
+  head.name = 'Head';
+  head.position.y = 0.1;
+  neck.position.y = 1.4;
+  neck.add(head);
+  root.add(neck);
+  const packBeard = new THREE.SkinnedMesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshStandardMaterial());
+  packBeard.name = 'Hair_Beard';
+  root.add(packBeard);
+  root.updateMatrixWorld(true);
+  const L = { eye: new THREE.Vector3(0, 1.62, 0.08), chin: 1.5, cx: 0, mouthY: 1.54, mouthZ: 0.1 };
+  S.ctx.CharacterParts.dwarfBeard(THREE, root, { Head: head }, L, new THREE.Color(0.5, 0.3, 0.2));
+  assert.equal(packBeard.material.skinning, true, 'barbe du pack : matériau skinné (suit la tête)');
+  const beard = root.getObjectByName('DwarfBeard');
+  assert.ok(beard.parent === head, 'barbe tressée attachée à l’os de la tête');
+  // la tête bascule (étourdi, frappe) : la pointe de la barbe tourne avec elle, à la même distance du menton
+  const mass = beard.getObjectByName('Beard_Mass'),
+    last = mass.geometry.attributes.position.count - 1, // pointe de la barbe
+    tip = () => {
+      root.updateMatrixWorld(true);
+      return new THREE.Vector3()
+        .fromBufferAttribute(mass.geometry.attributes.position, last)
+        .applyMatrix4(mass.matrixWorld);
+    };
+  const t0 = tip(),
+    local0 = head.worldToLocal(t0.clone());
+  head.rotation.x = -0.5; // tête en arrière
+  const t1 = tip();
+  assert.ok(t1.distanceTo(t0) > 0.1, 'la barbe bouge avec la tête');
+  assert.ok(head.worldToLocal(t1.clone()).distanceTo(local0) < 1e-3, 'même place dans le repère de la tête');
+}
 // ---------- Voleur : les glaives tranchent en arc, pas en coup de poing (src/render/hero_anim.js) ----------
 // Régression du 04/11/2026 : la main gauche de Punch_Jab n'a qu'une pose fixe, le mixeur ne la réécrit jamais ; la
 // surcouche repartait de son propre résultat et le glaive tournoyait au hasard (selon la cadence d'images) au lieu de

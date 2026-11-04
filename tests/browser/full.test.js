@@ -288,8 +288,13 @@ async function run() {
         for (const id of Object.keys(CharacterKit.KITS)) {
           const k = await CharacterKit.build(THREE, id, { withAnims: false });
           const names = new Set();
-          k.root.traverse(o => names.add(o.name));
+          const frozen = []; // maillage skinné dont le matériau ne l'est pas : figé en pose de repos (three r128)
+          k.root.traverse(o => {
+            names.add(o.name);
+            if (o.isSkinnedMesh && [].concat(o.material).some(m => !m.skinning)) frozen.push(o.name);
+          });
           out[id] = {
+            frozen,
             h: k.height,
             robe: names.has('Robe'),
             staff: names.has('Staff'),
@@ -309,6 +314,7 @@ async function run() {
         assert.equal(b.tusk, race === 'orc', `${id}: défenses`);
         assert.equal(b.ear, race === 'orc' || race === 'elf', `${id}: oreilles`);
         assert.equal(b.beard, race === 'dwarf', `${id}: barbe`);
+        assert.deepEqual(b.frozen, [], `${id}: pièces skinnées qui suivent l'animation`);
       }
       assert.deepEqual(errors, [], 'erreurs JS arène Humain Mage');
       await ctx.close();

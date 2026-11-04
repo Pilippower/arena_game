@@ -291,9 +291,11 @@
       gold = new THREE.MeshStandardMaterial({ color: 0xd9aa4c, metalness: 0.9, roughness: 0.28 }),
       g = new THREE.Group();
     g.name = 'DwarfBeard';
-    // barbe du pack : gardée courte pour couvrir joues et favoris
+    // barbe du pack : gardée courte pour couvrir joues et favoris. Elle est skinnée : son matériau doit l'être aussi
+    // (three r128), sinon elle reste figée en pose de repos pendant que la tête bouge (« barbe dans le vide »).
+    const skinnedHair = Object.assign(hair.clone(), { skinning: true });
     root.traverse(o => {
-      if (o.isMesh && /Beard/i.test(o.name)) o.material = hair;
+      if (o.isMesh && /Beard/i.test(o.name)) o.material = o.isSkinnedMesh ? skinnedHair : hair;
     });
     // masse : anneaux elliptiques de haut en bas ; t = 0 sous le nez, 1 = pointe
     const ROWS = 22,
