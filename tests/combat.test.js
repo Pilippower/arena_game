@@ -351,6 +351,25 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   assert.ok(ctx.useSkill(mage, FN) && mage.cd[FN] > 0, 'Frost Nova sans cible proche');
 }
 {
+  // racines (Frost Nova, Entangling Roots) : aucun dégât ne les casse
+  const { ctx, unit } = combatWorld();
+  const mage = unit('arcanist', 0, 0, 0),
+    druid = unit('warden', 0, -12, 0),
+    foe = unit('sentinel', 0, 2, 1),
+    foe2 = unit('shade', 4, 0, 1);
+  assert.ok(ctx.useSkill(mage, spell(ctx, 'arcanist', 'Frost Nova')) && foe.root > 0, 'Frost Nova : racines');
+  druid.target = foe2;
+  assert.ok(ctx.useSkill(druid, spell(ctx, 'warden', 'Entangling Roots')), 'Entangling Roots lancé');
+  run(ctx, ctx.CLASS.warden.skills[spell(ctx, 'warden', 'Entangling Roots')].cast || 0.05);
+  assert.ok(foe2.root > 0, 'Entangling Roots : racines');
+  for (const t of [foe, foe2]) {
+    const left = t.root;
+    for (let k = 0; k < 4; k++) ctx.damage(mage, t, 200, false, 'arcane');
+    ctx.damage(mage, t, 300, false, 'physical');
+    assert.equal(t.root, left, `${t.cls} : racines gardées malgré les dégâts`);
+  }
+}
+{
   // Demonic Gate : vers l'avant (pas vers la cible), racines gardées
   const { ctx, unit } = combatWorld();
   const lock = unit('warlock', 0, 0, 0, { yaw: -Math.PI / 2, root: 3 }),

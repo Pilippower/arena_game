@@ -46,8 +46,6 @@ function makeUnit(cls, x, z, team, name, ai = false, race = null, slot = 0) {
     fearSourceX: x,
     fearSourceZ: z,
     fearPhase: Math.random() * 6.28,
-    rootBreakDamage: 0,
-    rootMin: 0,
     prevX: x,
     prevZ: z,
     prevYaw: team ? Math.PI : 0,
@@ -284,14 +282,6 @@ function damage(src, t, v, crit = false, school = src.curSchool || 'physical') {
     t.fearOwner = null;
     addFloat(t, 'Fear broken', '#d8a7ff');
   }
-  if (t.root > 0 && t.rootBreakDamage > 0) {
-    t.rootBreakDamage -= v;
-    if (t.rootMin <= 0 && t.rootBreakDamage <= 0) {
-      t.root = 0;
-      t.rootBreakDamage = 0;
-      addFloat(t, 'Nova broken', '#9de8ff');
-    }
-  }
   addFloat(t, crit ? `-${v}!` : `-${v}`, SCHOOL_COLOR[school] || SCHOOL_COLOR.physical, crit);
   fx('burst', t.x, 1.15, t.z, [1, 0.18, 0.08], 0.42, 0.35);
   if (t.hp <= 0) {
@@ -339,7 +329,6 @@ function dispel(u) {
   }
   if (u.root > 0 && u.rootSchool !== 'physical') {
     u.root = 0;
-    u.rootBreakDamage = 0;
     u.rootKind = null;
   }
   if (u.slow > 0 && u.slowMagic) u.slow = 0;
@@ -795,8 +784,6 @@ function useTrinket(u) {
     u.stun = u.root = u.silence = u.fear = u.poly = 0;
     u.polyOwner = null;
     u.fearOwner = null;
-    u.rootBreakDamage = 0;
-    u.rootMin = 0;
     u.trinket = TRINKET.cd;
     u.shield += TRINKET.shield;
     u.shieldName = 'Trinket';

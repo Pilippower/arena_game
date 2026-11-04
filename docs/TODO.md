@@ -11,7 +11,6 @@ validé dans `docs/SPEC.md`.
 5. Échap ouvre / ferme les Settings.
 7. Débuffs flottants (à droite de la barre de vie) : icônes des contrôles (CC) 30 % plus grandes que les autres
    débuffs (demandé deux fois : la tâche précédente n'était pas allée au bout).
-10. Les racines (roots) ne cassent plus quand la cible subit des dégâts.
 11. Démoniste : Corruption vole la vie (chaque dégât infligé est rendu au démoniste).
 12. Bug : un lanceur qui saute peut commencer une incantation (ne doit pas pouvoir).
 13. Bug : Blink pendant un saut (le mage reste sur place au lieu d'arriver au sol à destination).

@@ -293,10 +293,7 @@ const SPELL_CAST = {
     run(c) {
       const u = c.u;
       u.spellImmune = c.S.dur;
-      if (u.root > 0 && u.rootSchool !== 'physical') {
-        u.root = 0;
-        u.rootBreakDamage = 0;
-      }
+      if (u.root > 0 && u.rootSchool !== 'physical') u.root = 0;
       if (u.slow > 0 && u.slowMagic) u.slow = 0;
       u.cast = null;
       fx('cloak', ...chest(u, 1), [0.6, 0.4, 0.9], 0.9, 0.7);

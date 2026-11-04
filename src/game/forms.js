@@ -42,7 +42,6 @@ function setForm(u, form) {
   // changer de forme libère des entraves (racines, ralentissements) et de la Métamorphose
   u.root = 0;
   u.rootKind = null;
-  u.rootBreakDamage = 0;
   u.slow = 0;
   if (u.poly > 0 && u.polyKind !== 'sap') endPoly(u, false);
   syncBar(u);

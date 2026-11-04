@@ -31,7 +31,8 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Charge (guerrier) : étourdit 2 s. Wild Charge (druide) : immobilise 2 s.
 - Death Grip : la cible est tirée devant le lanceur. Death Advance : bond dans la direction regardée.
 - Cloak (voleur) : immunité aux **sorts** 5 s (pas aux coups d'arme), retire racines et ralentissements magiques.
-- Mage : Frost Nova gèle **6 s** et ne casse plus sous les coups ; les sorts du mage sont **toujours critiques** sur une cible gelée par sa nova. 🧪
+- **Racines** (Frost Nova, Entangling Roots, Wild Charge…) : **ne cassent jamais sous les dégâts** (04/11/2026), elles durent jusqu’au bout (sauf Blink, Cloak, Dispel, trinket, changement de forme). 🧪
+- Mage : Frost Nova gèle **6 s** ; les sorts du mage sont **toujours critiques** sur une cible gelée par sa nova. 🧪
 - Appuyer sur un autre sort pendant une incantation ne l'interrompt jamais : « Not ready yet » s'affiche ; sauter ou bouger interrompt l'incantation. 🧪
 - Valeurs (2026-11-02) : ours 45 dégâts / 2 s ; Death Grip 25 s de recharge ; Kidney Shot étourdit 6 s, 30 s de recharge ; Hamstring sans recharge propre (GCD seulement), 10 dégâts. 🧪
 - Trinket : infobulle (libère de tout contrôle, bouclier 80, 90 s) ; animation à l'usage (colonne de lumière dorée, éclats, onde au sol, bulle). 🧪

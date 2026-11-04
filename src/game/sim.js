@@ -45,12 +45,7 @@ function update(dt) {
     u.silence = Math.max(0, u.silence - dt);
     u.fear = Math.max(0, (u.fear || 0) - dt);
     if (u.fear <= 0) u.fearOwner = null;
-    u.rootMin = Math.max(0, (u.rootMin || 0) - dt);
-    if (u.root <= 0) {
-      u.rootBreakDamage = 0;
-      u.rootMin = 0;
-      u.rootKind = null;
-    }
+    if (u.root <= 0) u.rootKind = null;
     u.burst = Math.max(0, u.burst - dt);
     u.speedBuff = Math.max(0, u.speedBuff - dt);
     u.slow = Math.max(0, (u.slow || 0) - dt);
