@@ -86,6 +86,12 @@ assert.ok(
   'voleur : même DPS que le guerrier'
 );
 assert.ok(SW.shade[0] <= SW.sentinel[0] / 2 + 0.01, 'voleur : frappe 2× plus vite');
+// Voleur : techniques renforcées (il tue un soigneur : tools/duel.js shade oracle)
+assert.deepEqual(
+  ['Backstab', 'Ambush', 'Kidney Shot', 'Shadowstep'].map(n => skill('shade', n).dmg),
+  [215, 465, 80, 80],
+  'voleur : dégâts des techniques'
+);
 // Contrôles : glisser au clic gauche = caméra seule (la trajectoire ne suit pas la caméra)
 const ctl = read('src/input/controls.js');
 assert.match(

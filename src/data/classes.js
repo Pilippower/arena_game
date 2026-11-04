@@ -204,7 +204,7 @@ CLASS.warden.bars = {
 };
 CLASS.shade.bars = {
   stealth: [
-    { k: 'ambush', n: 'Ambush', cd: 0, c: 30, t: 'melee', dmg: 330 },
+    { k: 'ambush', n: 'Ambush', cd: 0, c: 30, t: 'melee', dmg: 465 },
     { k: 'sap', n: 'Sap', cd: 0, c: 25, t: 'ranged', range: 5, dur: 8 },
     { k: 'cheapshot', n: 'Cheap Shot', cd: 0, c: 30, t: 'melee' },
     { k: 'stealth', n: 'Stealth', cd: 0, c: 0, t: 'self' }
@@ -453,16 +453,16 @@ const SPELLS = {
     text: S =>
       `From stealth: stuns the target for ${sec(S.stun)}. Separate diminishing returns from Kidney Shot. Breaks stealth.`
   },
-  Backstab: { dmg: 150, crit: 0.22, text: (S, D) => `${D(S.dmg)} damage (${pct(S.crit)} crit chance).` },
+  Backstab: { dmg: 215, crit: 0.22, text: (S, D) => `${D(S.dmg)} damage (${pct(S.crit)} crit chance).` },
   Cloak: {
     dur: 5,
     text: S =>
       `Cloak of shadows: immune to spells (not to weapon attacks) for ${sec(S.dur)}. Removes magical roots and slows.`
   },
-  'Kidney Shot': { dmg: 55, stun: 6, text: (S, D) => `${D(S.dmg)} damage and stuns for ${sec(S.stun)}.` },
+  'Kidney Shot': { dmg: 80, stun: 6, text: (S, D) => `${D(S.dmg)} damage and stuns for ${sec(S.stun)}.` },
   Vendetta: { burst: 6.5, text: S => `+35% damage for ${sec(S.burst)}.` },
   Shadowstep: {
-    dmg: 55,
+    dmg: 80,
     text: (S, D) => `Dash up to 8 m to the target; ${D(S.dmg)} damage if you reach melee range.`
   },
   Stealth: {
