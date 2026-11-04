@@ -14,8 +14,6 @@ validé dans `docs/SPEC.md`.
 Du plus simple au plus compliqué, un commit par tâche. Images de référence des épaules (planches de classe génériques
 fournies par l'utilisateur, à suivre au plus près) : `assets_src/ui/ref_shoulders_{mage,warlock,rogue,priest}.png`.
 
-1. Armes portées par les elfes : 40 % plus petites. DK elfe : lame aujourd'hui à 80 % (−20 %), à porter à 60 % comme
-   les autres (l'utilisateur pensait −30 % déjà fait).
 2. En jeu, en haut à gauche : remettre uniquement l'icône et le titre du jeu, comme dans le lobby (sans le sous-titre).
 3. Shadowstep : tourner la caméra et le personnage vers la cible derrière laquelle on arrive.
 4. Raccourcis par classe, réglables dans le lobby (ex. mage : 2 → F ; démoniste : 2 → X), qui fonctionnent en jeu et

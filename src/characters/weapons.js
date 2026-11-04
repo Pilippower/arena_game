@@ -63,8 +63,9 @@
   }
 
   // Bâton porté dans le dos, en diagonale (cristal au-dessus de l'épaule droite), attaché au haut de la colonne.
-  function buildStaff(THREE, body, bones, cfg, height, fitMeshes) {
-    const s = height / 1.8,
+  // sizeScale : taille des armes de la race (kits.js weaponScale) ; dimensions et prise en main suivent s.
+  function buildStaff(THREE, body, bones, cfg, height, fitMeshes, sizeScale = 1) {
+    const s = (height / 1.8) * sizeScale,
       g = new THREE.Group();
     g.name = 'Staff';
     const wood = new THREE.MeshStandardMaterial({ color: cfg.wood ?? 0x3b2416, roughness: 0.7, metalness: 0.05 });
@@ -119,9 +120,8 @@
   }
 
   // Armes de mêlée, rangées comme le bâton : dans le dos ou aux hanches.
-  // bladeLength : longueur de lame relative (donnée de race, kits.js weaponLength) ; la poignée ne change pas.
-  function buildWeapon(THREE, body, bones, kind, height, fitMeshes, bladeLength = 1) {
-    const s = height / 1.8,
+  function buildWeapon(THREE, body, bones, kind, height, fitMeshes, sizeScale = 1) {
+    const s = (height / 1.8) * sizeScale,
       M = backMount(THREE, body, bones, fitMeshes);
     const steel = new THREE.MeshStandardMaterial({
       color: 0xaeb6c2,
@@ -467,19 +467,18 @@
         inHand(sw, 'r', -0.11 * s, 0.3);
       }
     } else if (kind === 'runeblade') {
-      const L = bladeLength,
-        sw = sword(L, 0.075, dark, dark);
+      const sw = sword(1.0, 0.075, dark, dark);
       sw.name = 'Runeblade';
       const rc = new THREE.Color(0.45, 0.85, 1),
         rune = new THREE.MeshStandardMaterial({ color: rc, emissive: rc, emissiveIntensity: 3.6 });
       for (let i = 0; i < 5; i++) {
         const r = B(0.022, 0.06, 0.016, rune);
-        r.position.y = (0.15 + i * 0.17) * L * s;
+        r.position.y = (0.15 + i * 0.17) * s;
         sw.add(r);
       }
       const glow = glowSprite(THREE, rc, 0.35 * s);
-      glow.position.y = 0.5 * L * s;
-      glow.scale.set(0.25 * s, 1.1 * L * s, 1);
+      glow.position.y = 0.5 * s;
+      glow.scale.set(0.25 * s, 1.1 * s, 1);
       glow.material.opacity = 0.35;
       sw.add(glow);
       weaponEnchant(
@@ -488,7 +487,7 @@
         new THREE.Color(0.35, 0.8, 1),
         [
           [0, 0.05 * s, 0],
-          [0, 1.08 * L * s, 0]
+          [0, 1.08 * s, 0]
         ],
         0.1 * s
       );

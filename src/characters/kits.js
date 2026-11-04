@@ -289,8 +289,8 @@
       hair: 'Hair_Long',
       ears: { len: 0.13, up: 0.6 },
       eyeGlow: [0.35, 0.85, 1.0],
-      // longueur de lame par classe : la lame runique du chevalier de la mort paraissait démesurée sur l'elfe (grand)
-      weaponLength: { reaver: 0.8 },
+      // taille des armes et bâtons (1 = normale) : l'elfe, plus grand, portait des armes démesurées
+      weaponScale: 0.6,
       // Silhouette élancée (pas un humain aux longues oreilles) : bassin et torse étroits, long cou, membres fins et
       // allongés. [x, y, z] (y = longueur) ; chaque enfant hérite de l'échelle : tête, mains et pieds compensés.
       bones: {
@@ -371,7 +371,7 @@
       rim: RIM[cls],
       weapon:
         C.weapon === 'swordShield' ? { dwarf: 'hammerShield', orc: 'axeShield' }[race] || 'swordShield' : C.weapon,
-      weaponLength: R.weaponLength?.[cls] ?? 1,
+      weaponScale: R.weaponScale ?? 1,
       cape: tint(C.cape, race),
       tabard: tint(C.tabard, race),
       armor

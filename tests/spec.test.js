@@ -656,11 +656,15 @@ assert.ok(
 }
 // Auras au-dessus des personnages : icônes agrandies (cadres d'unité inchangés)
 assert.ok(read('index.html').includes('.npAuras .buff{width:34px;height:34px}'), 'auras flottantes : 34 px');
-// Chevalier de la mort elfe : lame runique 20 % plus courte (les autres races gardent la longueur normale)
+// Elfes : armes et bâtons 40 % plus petits (les autres races gardent la taille normale)
 {
   const K = require('../src/characters/kits.js');
-  assert.equal(K.resolveKit('elf_reaver').weaponLength, 0.8, 'DK elfe : lame à 80 %');
-  for (const r of ['human', 'orc', 'dwarf', 'undead']) assert.equal(K.resolveKit(r + '_reaver').weaponLength, 1, r);
+  // toutes les armes et bâtons des elfes à 60 % (DK compris), taille normale pour les autres races
+  for (const c of ['sentinel', 'arcanist', 'oracle', 'reaver', 'warden', 'shade', 'warlock']) {
+    assert.equal(K.resolveKit('elf_' + c).weaponScale, 0.6, 'elfe ' + c + ' : armes à 60 %');
+    for (const r of ['human', 'orc', 'dwarf', 'undead'])
+      assert.equal(K.resolveKit(r + '_' + c).weaponScale, 1, r + ' ' + c);
+  }
 }
 // Mêlée : cri d'effort et sons de frappe enregistrés par arme, licences documentées
 {
