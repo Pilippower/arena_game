@@ -20,9 +20,11 @@ const RESULT_FRAMES = {
     w: 726,
     fo: 0,
     flame: 1,
+    // centre des coupes mesuré sur l'image (bord de la coupe de 2 à 50 et de 676 à 722, base de la flamme à 166) :
+    // les anciennes valeurs (30 / 696, 168), posées par symétrie, décalaient les flammes vers l'intérieur
     torches: [
-      [30, 168],
-      [696, 168]
+      [26, 166],
+      [699, 166]
     ],
     spark: [255, 90, 40]
   }

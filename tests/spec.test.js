@@ -539,7 +539,7 @@ console.log('OK - spécifications validées (docs/SPEC.md)');
 // avec les os étirés du nain et de l'elfe hfTurnLocal) : tests/gameplay.test.js
 // Fin de match : flammes animées sur les flammes peintes des torches
 assert.ok(
-  ['[30, 168]', '[696, 168]', '[37, 176]', '[859, 176]', 'flame: 1.6'].every(k =>
+  ['[26, 166]', '[699, 166]', '[37, 176]', '[859, 176]', 'flame: 1.6'].every(k =>
     read('src/ui/results.js').includes(k)
   ),
   'torches : flammes animées centrées sur les coupes peintes, plus grandes pour la victoire'

@@ -24,7 +24,6 @@ validé dans `docs/SPEC.md`.
 16. Lobby : pour le druide, choisir la forme ours / félin pour voir et lire leur barre de sorts.
 17. Raccourcis : pouvoir utiliser Shift + Espace et Ctrl + touche.
 18. Raccourcis propres à chaque classe (autant de configurations que de classes).
-19. Écran Defeat : flammes mal placées (Victory est juste) ; vérifier en plein écran F11 : proportions gardées.
 20. Bouclier d'absorption visible sur la barre de vie (flottante et cadres de groupe) : portion superposée, couleur
     distincte, style MMO sans copier.
 21. Régression des glaives du voleur : il frappait en tranchant avec ses glaives, il frappe de nouveau comme des coups de
