@@ -36,24 +36,40 @@ function setGameCursor(kind) {
 }
 setGameCursor('ally');
 setGameCursor('gauntlet');
-// Ciblage façon MMO, par priorité : la barre de nom flottante (nom + barre de vie), puis la silhouette du personnage
-// (des pieds à la tête), enfin la proximité du torse (clic approximatif). Entre deux candidats, le plus proche de la
-// caméra (z le plus petit). Fonction pure : items = [{ u, plate: { l, t, r, b } | null, feet, head, chest }] en pixels.
+// Ciblage façon MMO, par priorité : la barre de nom flottante (nom + barre de vie), puis la boîte invisible qui va
+// du haut de cette barre jusqu'au sol (largeur de la barre, ou de la silhouette si plus large : un clic entre la barre
+// et le personnage le cible), puis la silhouette (des pieds à la tête, personnage sans barre affichée), enfin la
+// proximité du torse (clic approximatif). Entre deux candidats, le plus proche de la caméra (z le plus petit).
+// Fonction pure : items = [{ u, plate: { l, t, r, b } | null, feet, head, chest }] en pixels.
 const BODY_HALF_WIDTH = 0.22; // demi-largeur de la silhouette, en fraction de sa hauteur à l'écran
 const BODY_MIN_HALF_WIDTH = 12; // px : un personnage lointain reste cliquable
+function bodyHalfWidth(i) {
+  return Math.max(BODY_MIN_HALF_WIDTH, BODY_HALF_WIDTH * Math.hypot(i.head.x - i.feet.x, i.head.y - i.feet.y));
+}
+// boîte barre de nom → sol (null sans barre affichée)
+function plateBox(i) {
+  if (!i.plate) return null;
+  const half = bodyHalfWidth(i);
+  return {
+    l: Math.min(i.plate.l, i.feet.x - half, i.head.x - half),
+    r: Math.max(i.plate.r, i.feet.x + half, i.head.x + half),
+    t: Math.min(i.plate.t, i.head.y),
+    b: Math.max(i.plate.b, i.feet.y)
+  };
+}
 function pickUnitAt(sx, sy, items, nearPx) {
-  const front = list => list.reduce((a, b) => (b.chest.z < a.chest.z ? b : a)).u;
-  const inPlate = items.filter(
-    i => i.plate && sx >= i.plate.l && sx <= i.plate.r && sy >= i.plate.t && sy <= i.plate.b
-  );
+  const front = list => list.reduce((a, b) => (b.chest.z < a.chest.z ? b : a)).u,
+    inside = (sx, sy, r) => r && sx >= r.l && sx <= r.r && sy >= r.t && sy <= r.b;
+  const inPlate = items.filter(i => inside(sx, sy, i.plate));
   if (inPlate.length) return front(inPlate);
+  const inBox = items.filter(i => inside(sx, sy, plateBox(i)));
+  if (inBox.length) return front(inBox);
   const onBody = items.filter(i => {
     const dx = i.head.x - i.feet.x,
       dy = i.head.y - i.feet.y,
       len2 = dx * dx + dy * dy || 1,
-      k = Math.max(0, Math.min(1, ((sx - i.feet.x) * dx + (sy - i.feet.y) * dy) / len2)),
-      half = Math.max(BODY_MIN_HALF_WIDTH, BODY_HALF_WIDTH * Math.sqrt(len2));
-    return Math.hypot(sx - (i.feet.x + k * dx), sy - (i.feet.y + k * dy)) <= half;
+      k = Math.max(0, Math.min(1, ((sx - i.feet.x) * dx + (sy - i.feet.y) * dy) / len2));
+    return Math.hypot(sx - (i.feet.x + k * dx), sy - (i.feet.y + k * dy)) <= bodyHalfWidth(i);
   });
   if (onBody.length) return front(onBody);
   let best = null,

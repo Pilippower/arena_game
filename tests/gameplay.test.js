@@ -130,7 +130,7 @@ function playerWorld() {
   const src = read('src/ui/cursor.js'),
     num = n => +src.match(new RegExp(`const ${n} = ([\\d.]+)`))[1];
   const S = sandbox({ BODY_HALF_WIDTH: num('BODY_HALF_WIDTH'), BODY_MIN_HALF_WIDTH: num('BODY_MIN_HALF_WIDTH') });
-  S.fn('src/ui/cursor.js', 'pickUnitAt');
+  for (const f of ['bodyHalfWidth', 'plateBox', 'pickUnitAt']) S.fn('src/ui/cursor.js', f);
   // personnage debout : pieds en (400, 500), tête en (400, 300), torse en (400, 365) ; barre de nom au-dessus
   const at = (u, x, z = 10, plate = null) => ({
     u,
@@ -152,6 +152,24 @@ function playerWorld() {
   assert.equal(pick(400, 265, [at(B, 400, 5), at(A, 400, 10, plate)]), A, 'barre de nom prioritaire');
   // deux silhouettes superposées : la plus proche de la caméra
   assert.equal(pick(400, 400, [at(A, 400, 10), at(B, 405, 4)]), B, 'silhouettes superposées : la plus proche');
+  // boîte invisible de la barre de nom (incluse) jusqu'au sol, aussi large que la barre ou la silhouette
+  assert.equal(pick(400, 290, [at(A, 400, 10, plate)]), A, 'entre la barre et la tête : cible');
+  assert.equal(pick(447, 470, [at(A, 400, 10, plate)]), A, 'sous le bord de la barre, à côté des jambes : cible');
+  assert.equal(pick(447, 470, [at(A, 400)]), null, 'sans barre affichée : pas de boîte');
+  assert.equal(pick(455, 420, [at(A, 400, 10, plate)]), null, 'à côté de la boîte : rien');
+  assert.equal(pick(447, 503, [at(A, 400, 10, plate)]), null, 'sous le sol de la boîte : rien');
+  const wide = { l: 300, t: 250, r: 500, b: 280 };
+  assert.equal(pick(495, 480, [at(A, 400, 10, wide)]), A, 'barre plus large que la silhouette : largeur de la barre');
+  const narrow = { l: 395, t: 250, r: 405, b: 280 };
+  for (const x of [358, 442])
+    assert.equal(pick(x, 262, [at(A, 400, 10, narrow)]), A, 'barre plus étroite : largeur de la silhouette');
+  // deux boîtes superposées : la plus proche de la caméra
+  const plateB = { l: 380, t: 240, r: 480, b: 270 };
+  assert.equal(
+    pick(420, 285, [at(A, 400, 10, plate), at(B, 430, 4, plateB)]),
+    B,
+    'boîtes superposées : la plus proche'
+  );
   // clic approximatif près du torse : ancienne règle (62 px) gardée
   assert.equal(pick(400 + 55, 340, [{ ...at(A, 400), head: { x: 400, y: 360, z: 10 } }]), A, 'près du torse : cible');
 }
