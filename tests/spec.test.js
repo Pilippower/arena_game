@@ -546,7 +546,10 @@ assert.ok(
 );
 // Lobby PC : les murs touchent le cadre doré quelle que soit la forme de la fenêtre
 assert.ok(
-  read('src/ui/lobby.css').includes('calc((100% - var(--mw)) / 2 + 16px)) auto') &&
+  read('src/ui/lobby.css').includes(
+    '--wallw: max(calc((100vh - 142px) * 330 / 690), calc((100% - var(--mw)) / 2 + 16px));'
+  ) &&
+    read('src/ui/lobby.css').includes('var(--wallw) auto,') &&
     read('src/ui/lobby.css').includes('width: var(--mw);'),
   'lobby : murs jusqu’au cadre'
 );

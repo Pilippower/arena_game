@@ -304,6 +304,27 @@ function playerWorld() {
   hfFromAnimPose(store, [bone]);
   assert.ok(store.anim[0].angleTo(bone.quaternion) < 1e-6, 'nouvelle pose du clip mémorisée');
 }
+// ---------- Lobby : feu des torches posé dans les vasques à toute taille de fenêtre (src/ui/lobby.js) ----------
+{
+  const { read } = require('./sources.js');
+  const wall = read('src/ui/lobby.js').match(/const LOBBY_WALL = (\{[^;]*\});/)[1];
+  const S = sandbox();
+  require('node:vm').runInContext(`var LOBBY_WALL = ${wall};`, S.ctx);
+  S.fn('src/ui/lobby.js', 'lobbyTorchSpot');
+  const L = { side: 'l', x: 137, y: 380 },
+    Rt = { side: 'r', x: 192, y: 380 };
+  // plein écran 1920×1080 (lobby 938 px de haut) : murs calés sur la hauteur, comme avant
+  const H = 938,
+    full = S.ctx.lobbyTorchSpot(L, 1920, H, (H * 330) / 690);
+  assert.ok(Math.abs(full.y - (380 * H) / 690) < 1e-6 && Math.abs(full.x - (137 * H) / 690) < 1e-6, 'F11 : inchangé');
+  // fenêtre large 2560×1271 (lobby 1129 px) : murs élargis à 726 px, rognés en haut et en bas
+  const s = 726 / 330,
+    wide = S.ctx.lobbyTorchSpot(L, 2560, 1129, 726);
+  assert.ok(Math.abs(wide.y - ((1129 - 690 * s) / 2 + 380 * s)) < 1e-6, 'fenêtre large : vasque suivie en hauteur');
+  assert.ok(Math.abs(wide.x - 137 * s) < 1e-6, 'fenêtre large : vasque gauche suivie');
+  const right = S.ctx.lobbyTorchSpot(Rt, 2560, 1129, 726);
+  assert.ok(Math.abs(right.x - (2560 - (328 - 192) * (726 / 328))) < 1e-6, 'mur droit : sa propre largeur (328 px)');
+}
 console.log(
-  'OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic, contrôles, IK, glaives, frappes par race)'
+  'OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic, contrôles, IK, glaives, frappes par race, torches du lobby)'
 );

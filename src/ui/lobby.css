@@ -85,10 +85,22 @@ body.lobby #overlay {
    hauteur du lobby = 100vh - 142px (barres du haut et du bas) ; murs 330 × 690. */
 body.lobby:not(.mobile-mode) #overlay {
   --mw: min(1140px, calc(100vw - 2 * clamp(110px, 14vw, 330px)));
+  /* largeur affichée des murs, source unique : le fond et la sonde .wallProbe (lue par lobby.js pour placer le feu
+     des torches) l'utilisent ; 100 % = largeur du lobby dans les deux cas */
+  --wallw: max(calc((100vh - 142px) * 330 / 690), calc((100% - var(--mw)) / 2 + 16px));
   background-size:
-    max(calc((100vh - 142px) * 330 / 690), calc((100% - var(--mw)) / 2 + 16px)) auto,
-    max(calc((100vh - 142px) * 330 / 690), calc((100% - var(--mw)) / 2 + 16px)) auto,
+    var(--wallw) auto,
+    var(--wallw) auto,
     auto !important;
+}
+body.lobby:not(.mobile-mode) #overlay > .wallProbe {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 0;
+  width: var(--wallw);
+  visibility: hidden;
+  pointer-events: none;
 }
 /* ---------- cadre doré du panneau ---------- */
 #overlay .modal {

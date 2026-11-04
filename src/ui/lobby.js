@@ -5,9 +5,11 @@ function lobbyCardArt(kind, key) {
   // carte de la panoplie de l'utilisateur (illustration + nom peint) : remplit tout le bouton
   return `<img class="cardArt" src="assets/ui/lobby2/${kind}_${key}.webp" alt="">`;
 }
-// Vasques des torches dans wall_l / wall_r (images de 690 px de haut, calées en hauteur sur #overlay) :
-// x = centre de la vasque dans l'image, y = bord de la vasque. Les flammes figées y ont été effacées.
-const LOBBY_WALL = { h: 690, rw: 328 };
+// Vasques des torches dans wall_l / wall_r (images de 690 px de haut, largeurs w) : x = centre de la vasque dans
+// l'image, y = bord de la vasque. Les flammes figées y ont été effacées. Largeur affichée des murs = --wallw
+// (lobby.css), mesurée sur la sonde .wallProbe : en fenêtre plus large que 16:9 les murs s'élargissent et sont rognés
+// en haut et en bas (le feu, calé sur la seule hauteur, flottait au-dessus des vasques hors plein écran).
+const LOBBY_WALL = { h: 690, w: { l: 330, r: 328 } };
 const TORCHES = [
   { side: 'l', x: 137, y: 380 },
   { side: 'r', x: 192, y: 380 }
@@ -29,6 +31,14 @@ const FLAME_SPRITES = [
   g.fillRect(0, 0, 64, 64);
   return c;
 });
+// Position à l'écran du bord d'une vasque (fonction pure, testée) : W, H = taille du lobby, wallW = largeur affichée
+// des murs (0 = inconnue : calés sur la hauteur). Mur = image mise à l'échelle sur sa largeur, centrée en hauteur.
+function lobbyTorchSpot(t, W, H, wallW) {
+  const natW = LOBBY_WALL.w[t.side],
+    s = wallW > 0 ? wallW / natW : H / LOBBY_WALL.h,
+    top = (H - LOBBY_WALL.h * s) / 2;
+  return { s, x: t.side === 'l' ? t.x * s : W - (natW - t.x) * s, y: top + t.y * s };
+}
 function lobbyTorches(ov) {
   const fires = TORCHES.map(t => {
     const c = document.createElement('canvas');
@@ -37,17 +47,19 @@ function lobbyTorches(ov) {
     ov.prepend(c);
     return { t, c, g: c.getContext('2d'), parts: [], s: 1 };
   });
+  const probe = document.createElement('div');
+  probe.className = 'wallProbe';
+  ov.prepend(probe);
   const place = () => {
     const H = ov.clientHeight,
-      W = ov.clientWidth,
-      s = H / LOBBY_WALL.h;
+      W = ov.clientWidth;
     for (const f of fires) {
-      const w = 130 * s,
-        h = 190 * s,
-        bx = f.t.side === 'l' ? f.t.x * s : W - (LOBBY_WALL.rw - f.t.x) * s;
+      const { s, x, y } = lobbyTorchSpot(f.t, W, H, probe.offsetWidth),
+        w = 130 * s,
+        h = 190 * s;
       Object.assign(f.c.style, {
-        left: bx - w / 2 + 'px',
-        top: f.t.y * s - h + 8 * s + 'px',
+        left: x - w / 2 + 'px',
+        top: y - h + 8 * s + 'px',
         width: w + 'px',
         height: h + 'px'
       });
