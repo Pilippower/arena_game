@@ -407,7 +407,11 @@ assert.match(
   vm.runInContext('var LOBBY_UNIT = null; var ' + src.match(/const (LOBBY_FORMS = [\s\S]*?;)\r?\n/)[1], S.ctx);
   for (const f of ['lobbySkillBar', 'lobbyBarAfter', 'lobbySpellClick']) S.fn('src/ui/settings.js', f);
   const X = S.ctx,
-    click = name => X.lobbySpellClick(X.LOBBY_UNIT, ctx.skillsOf(X.LOBBY_UNIT).findIndex(s => s.n === name));
+    click = name =>
+      X.lobbySpellClick(
+        X.LOBBY_UNIT,
+        ctx.skillsOf(X.LOBBY_UNIT).findIndex(s => s.n === name)
+      );
   X.lobbySkillBar('warden');
   click('Bear Form');
   assert.equal(shown.at(-1), 'Maul', 'Bear Form : barre de l’ours');
@@ -841,7 +845,10 @@ assert.ok(
 );
 // lobby mobile : rien ne déplace la barre du bas (régression du 04/11/2026 : « position: relative » des anciens
 // onglets de forme la faisait recouvrir la moitié du lobby)
-assert.ok(!/#bottom\s*\{\s*position:\s*relative/.test(read('src/ui/lobby.css')), 'lobby mobile : barre du bas à sa place');
+assert.ok(
+  !/#bottom\s*\{\s*position:\s*relative/.test(read('src/ui/lobby.css')),
+  'lobby mobile : barre du bas à sa place'
+);
 // Tourner au clavier : même rotation que le glisser au clic droit (convention validée)
 assert.ok(
   read('src/input/controls.js').includes('GameLogic.applyLook(camera.yaw, camera.pitch, dir * TURN_PX_PER_S * dt, 0)'),

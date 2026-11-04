@@ -517,7 +517,11 @@ function playerWorld() {
       root = new THREE.Group();
     const spine = bone('spine_03', 0, 1.4);
     bone('neck_01', 0, 0.15, spine);
-    for (const [side, x] of [['l', 0.08], ['r', -0.08]]) bone('upperarm_' + side, x * 1.6, 0.05, bone('clavicle_' + side, x, 0.08, spine));
+    for (const [side, x] of [
+      ['l', 0.08],
+      ['r', -0.08]
+    ])
+      bone('upperarm_' + side, x * 1.6, 0.05, bone('clavicle_' + side, x, 0.08, spine));
     root.updateMatrixWorld(true);
     return bones;
   };
