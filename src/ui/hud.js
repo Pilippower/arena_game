@@ -210,13 +210,17 @@ function renderSkillBar(p) {
         })
         .join('') +
       `<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(kb.trinket, true)}</span><span class="cdw"></span></button>`;
+    // unité lue au clic, pas à la construction : la même barre (même classe) sert au lobby puis en jeu sans être
+    // reconstruite ; gardée, elle restait « barre du lobby » en jeu (sorts jamais lancés au toucher, 04/11/2026)
+    const atLobby = () => shownUnit() === LOBBY_UNIT;
     box.querySelectorAll('.skill[data-i]').forEach(b => {
       b.onclick = () => {
-        if (p === LOBBY_UNIT) lobbySpellClick(p, +b.dataset.i); // lobby : rien n'est lancé, un sort de forme change la barre
+        if (atLobby())
+          lobbySpellClick(LOBBY_UNIT, +b.dataset.i); // lobby : rien n'est lancé, un sort de forme change la barre
         else if (!MOBILE.enabled) tryPlayerSkill(+b.dataset.i);
       };
       b.onpointerdown = e => {
-        if (MOBILE.enabled && p !== LOBBY_UNIT) {
+        if (MOBILE.enabled && !atLobby()) {
           e.preventDefault();
           tryPlayerSkill(+b.dataset.i);
         }

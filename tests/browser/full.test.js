@@ -437,6 +437,33 @@ async function run() {
       assert.ok(m.timer, 'timer visible');
       assert.ok(m.score, 'score visible');
       assert.ok(m.vh - m.canvasBottom < 4, `bande vide sous l'arène (${m.vh - m.canvasBottom}px)`);
+      // bug du 04/11/2026 : le cadre de la barre de sorts recouvrait TARGET / JUMP, et la barre construite au lobby
+      // (même classe) restait « barre du lobby » en jeu : aucun sort lancé au toucher
+      await page.waitForFunction(
+        () => getComputedStyle(document.getElementById('loadingScreen')).display === 'none',
+        null,
+        {
+          timeout: 30000
+        }
+      );
+      const center = sel =>
+        page.evaluate(sel => {
+          const r = document.querySelector(sel).getBoundingClientRect(),
+            x = r.x + r.width / 2,
+            y = r.y + r.height / 2;
+          return { x, y, hit: !!document.elementFromPoint(x, y)?.closest(sel) };
+        }, sel);
+      for (const sel of ['#mobileTargetBtn', '#mobileJumpBtn', '.skill[data-slot="0"]'])
+        assert.ok((await center(sel)).hit, `${sel} : touchable (rien par-dessus)`);
+      await page.evaluate(() => {
+        const f = tryPlayerSkill;
+        window.TAPPED = [];
+        tryPlayerSkill = i => (TAPPED.push(i), f(i));
+      });
+      const s0 = await center('.skill[data-slot="0"]');
+      await page.touchscreen.tap(s0.x, s0.y);
+      await page.waitForTimeout(100);
+      assert.equal(await page.evaluate(() => TAPPED.length), 1, 'toucher un sort le lance');
       const bg = await page.evaluate(() => {
         const cs = getComputedStyle(document.getElementById('bottom'));
         return cs.backgroundImage + ' ' + cs.backgroundColor;
