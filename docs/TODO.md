@@ -16,7 +16,8 @@ validé dans `docs/SPEC.md`.
 
 ## Liste n°2 du 04/11/2026 (après la liste ci-dessus ; gérée par le coordinateur seul, sans agents parallèles)
 
-Du plus simple au plus compliqué, un commit par tâche. Images de référence des épaules : `assets_src/ui/ref_shoulders_*.png`.
+Du plus simple au plus compliqué, un commit par tâche. Images de référence des épaules (planches de classe génériques
+fournies par l'utilisateur, à suivre au plus près) : `assets_src/ui/ref_shoulders_{mage,warlock,rogue,priest}.png`.
 
 1. Armes portées par les elfes : 40 % plus petites. DK elfe : lame aujourd'hui à 80 % (−20 %), à porter à 60 % comme
    les autres (l'utilisateur pensait −30 % déjà fait).
@@ -32,8 +33,12 @@ Du plus simple au plus compliqué, un commit par tâche. Images de référence d
 8. Ours : ses sons ressemblent encore à un cochon ; nouvelle étude des sons (enregistrements d'ours libres de droits).
 9. Sons de sorts encore plats et fades : état des lieux du design sonore des sorts de World of Warcraft (sources
    publiques, sans copier ni extraire leurs sons), puis propositions ; Drain Life du démoniste très gênant.
-10. Épaules (épaulières) du mage, du démoniste, du voleur et du prêtre : se rapprocher des images de référence (styles,
-    couches, matières, couleurs) en restant des designs originaux (règle du projet : pas de personnage Warcraft).
+10. Épaules (épaulières) du mage, du démoniste, du voleur et du prêtre : se rapprocher au plus près des planches de
+    référence (formes, couches, matières, couleurs, gemmes) ; seules les épaulières changent (pas les visages ni les
+    coiffures). Mage : grandes épaulières bleu roi en plusieurs pointes dorées, cristaux bleus lumineux ; démoniste :
+    épaulières violettes bordées de cuivre, pointes recourbées, motif vert lumineux ; voleur : cuir sombre en lames
+    superposées, liserés dorés, gemme rouge, capuche et écharpe bordeaux ; prêtre : grandes épaulières dorées en ailes
+    nacrées, gemmes bleues, col haut.
 
 ## Équilibrage 1v1 : que chaque classe ait sa chance (proposé le 04/11/2026, à reprendre)
 
