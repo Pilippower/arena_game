@@ -498,10 +498,10 @@ assert.ok(
     /NET\?\.role === 'guest'\) return \(?netSend\(\{ t: 'skill', i \}\)/,
     'invité : sorts envoyés à l’hôte'
   );
-  // jeu en ligne : onglet Party du lobby (plus de fenêtre Online) ; comportement : tests/online.test.js
+  // jeu en ligne : onglet Multiplayer du lobby (plus de fenêtre Online) ; comportement : tests/online.test.js
   assert.ok(
-    read('index.html').includes('id="tabParty"') && !read('index.html').includes('netPanel'),
-    'lobby : onglet Party'
+    read('index.html').includes('id="tabMulti"') && !read('index.html').includes('netPanel'),
+    'lobby : onglet Multiplayer'
   );
 }
 {

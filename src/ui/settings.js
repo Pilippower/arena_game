@@ -314,7 +314,7 @@ function renderMapChoices() {
       (b.onclick = () => {
         applyMap(b.dataset.map);
         renderMapChoices();
-        LOBBY_CHIPS?.();
+        lobbyOptsChanged();
       })
   );
 }
@@ -322,6 +322,11 @@ function renderMapChoices() {
 // personnage avant de jouer. Unité fictive : pas de recharge, ressource pleine.
 let LOBBY_UNIT = null,
   LOBBY_CHIPS = null;
+// mode, arène ou difficulté changés : récapitulatif, et groupe en ligne (places, réglages vus par les amis)
+function lobbyOptsChanged() {
+  LOBBY_CHIPS?.();
+  if (typeof netPartySync === 'function') netPartySync();
+}
 // Récapitulatif sous l'aperçu : race, classe, mode, difficulté, arène
 const CHIP_ICON = {
   mode: '<svg viewBox="0 0 20 20"><path d="M3 3l8 8M3 3h4M3 3v4M17 3l-8 8M17 3h-4M17 3v4M6 14l-3 3M14 14l3 3" stroke="#e9c46a" stroke-width="2" fill="none"/></svg>',
@@ -442,7 +447,7 @@ function chooseClass() {
           localStorage.setItem('arenaDifficulty', DIFFICULTY);
         } catch (_) {}
         diffRefresh();
-        LOBBY_CHIPS();
+        lobbyOptsChanged();
       })
   );
   diffRefresh();
@@ -457,8 +462,7 @@ function chooseClass() {
           localStorage.setItem('arenaTeamSize', TEAM_SIZE);
         } catch (_) {}
         sizeRefresh();
-        LOBBY_CHIPS();
-        if (typeof netPartySync === 'function') netPartySync(); // groupe en ligne : nouveau nombre de places
+        lobbyOptsChanged();
       })
   );
   sizeRefresh();

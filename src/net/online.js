@@ -9,7 +9,7 @@
 // et son trinket partent chez l'hôte, qui lui renvoie les mêmes messages d'erreur que hors ligne (unitError). Pendant un déplacement imposé par l'hôte (ruée, blink, peur, étourdissement,
 // mouton) ou en cas d'écart > 3 m, l'invité reprend la position de l'hôte.
 // Points d'accroche : update() (sim.js), resetRound / tryPlayerSkill / useTrinket (combat.js), setTarget (rules.js),
-// showResults / leaveMatch (match.js), bouton Play et choix de classe du lobby (settings.js), onglet Party (ui/party.js).
+// showResults / leaveMatch (match.js), bouton Play et choix de classe du lobby (settings.js), onglet Multiplayer (ui/party.js).
 var NET = {
   // var : visible comme window.NET par les points d'accroche
   role: null, // 'host' | 'guest' | null
@@ -105,7 +105,15 @@ function netPartyMembers() {
 function netPartySync() {
   if (NET.role === 'host')
     for (const g of NET.guests.values())
-      netSendTo(g, { t: 'party', code: NET.code, size: TEAM_SIZE, me: g.id, members: netPartyMembers() });
+      netSendTo(g, {
+        t: 'party',
+        code: NET.code,
+        size: TEAM_SIZE,
+        map: MAP_ID,
+        diff: DIFFICULTY,
+        me: g.id,
+        members: netPartyMembers()
+      });
   partyRender();
 }
 // hôte : change un ami de côté ; refusé si l'équipe visée est pleine dans le mode du lobby
@@ -216,7 +224,7 @@ async function netJoin(code) {
     const c = (NET.conn = NET.peer.connect(NET_PREFIX + code, { reliable: true }));
     c.on('open', () => {
       netStore('arenaNetJoin', code);
-      netStatus('Connected! Pick your race and class in the Arena tab — the host starts the match.');
+      netStatus('Connected! Pick your race and class in the Solo tab — the host starts the match.');
       netLobbyChoice();
     });
     c.on('data', netOnData);

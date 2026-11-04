@@ -1,5 +1,5 @@
 'use strict';
-// Tests unitaires du groupe en ligne (src/net/online.js + onglet Party src/ui/party.js) : le vrai code dans un contexte
+// Tests unitaires du groupe en ligne (src/net/online.js + onglet Multiplayer src/ui/party.js) : le vrai code dans un contexte
 // vm, connexions PeerJS remplacées par des fausses (messages enregistrés). Le réseau réel (deux navigateurs, Internet)
 // reste hors de npm test.
 const assert = require('node:assert/strict');
@@ -37,6 +37,10 @@ function netWorld({ stored = {}, role = 'host' } = {}) {
     setTimeout: f => f(),
     navigator: {},
     TEAM_SIZE: 3,
+    MAP_ID: 'bridge',
+    DIFFICULTY: 'hard',
+    MAPS: { castle: { name: 'The Castle' }, bridge: { name: 'The Bridge' } },
+    MAP_ART: {},
     CLASS: { arcanist: { name: 'Mage' }, warlock: { name: 'Warlock' } },
     RACE: { human: { name: 'Human' }, orc: { name: 'Orc' } },
     AI_PROFILES: { medium: { m: 1 } },
@@ -72,6 +76,7 @@ const lastParty = c => c.sent.filter(m => m.t === 'party').at(-1);
   const p = lastParty(b.c);
   assert.equal(p.code, 'ABCDE', 'code du groupe envoyé');
   assert.equal(p.size, 3, 'mode du lobby de l’hôte');
+  assert.equal(p.map + ' ' + p.diff, 'bridge hard', 'arène et difficulté de l’hôte envoyées aux amis');
   assert.equal(p.me, b.g.id, 'chacun sait qui il est');
   assert.equal(p.members.map(m => m.name).join(), 'Host,Lyra,Torren', 'hôte puis amis');
   assert.equal(p.members[2].cls, 'arcanist', 'classe choisie visible');
@@ -167,28 +172,45 @@ const lastParty = c => c.sent.filter(m => m.t === 'party').at(-1);
   });
 }
 
-// ---------- onglet Party : affichage ----------
+// ---------- onglet Multiplayer : affichage ----------
 function partyTests() {
   const w = netWorld();
   const box = w.els('partyBox');
   w.ctx.partyRender = undefined;
   // onglet chargé sur le même monde (boutons des onglets)
-  w.els('tabArena');
-  w.els('tabParty');
+  w.els('tabSolo');
+  w.els('tabMulti');
   w.load('src/ui/party.js');
   w.ctx.NET.code = 'ABCDE';
   join(w, '<img src=x onerror=alert(1)>');
   w.ctx.partyRender();
-  assert.ok(!box.innerHTML.includes('<img'), 'noms des amis jamais interprétés comme du HTML');
+  assert.ok(!box.innerHTML.includes('<img src=x'), 'noms des amis jamais interprétés comme du HTML');
   assert.ok(box.innerHTML.includes('&lt;img'), 'nom affiché tel quel');
   assert.ok(
     box.innerHTML.includes('Disband party') && box.innerHTML.includes('Start match'),
     'hôte : lancer, dissoudre'
   );
-  // 3v3 : mon équipe = moi + 2 places IA ; en face : l'ami + 2 places IA
-  assert.equal((box.innerHTML.match(/pmember ai/g) || []).length, 4, 'places libres jouées par l’IA');
-  assert.equal(w.els('tabParty').textContent, 'Party (2)', 'onglet : nombre de membres');
+  // 3v3 : une place par joueur du mode ; mon équipe = moi + 2 places IA, en face : l'ami + 2 places IA
+  const slots = () => (box.innerHTML.match(/class="pSlot/g) || []).length,
+    aiSlots = () => (box.innerHTML.match(/pSlot ai/g) || []).length;
+  assert.equal(slots() + ' ' + aiSlots(), '6 4', '3v3 : 6 places, libres jouées par l’IA');
+  assert.equal(w.els('tabMulti').textContent, 'Multiplayer (2)', 'onglet : nombre de membres');
+  assert.match(box.innerHTML, /pOpt selected" data-map="bridge"/, 'arène choisie affichée');
+  assert.match(box.innerHTML, /pOpt selected" data-diff="hard"/, 'difficulté affichée');
+  // 1v1 avec deux amis en face : 2 places, l'ami en trop est signalé
+  join(w, 'Torren');
+  w.ctx.TEAM_SIZE = 1;
+  w.ctx.partyRender();
+  assert.equal(slots() + ' ' + aiSlots(), '3 0', '1v1 : une place par équipe (+ l’ami en trop)');
+  assert.match(box.innerHTML, /pSlot over[^]*No slot in 1v1/, 'ami sans place signalé');
+  // ami : réglages en lecture seule, choisis par l'hôte
+  w.ctx.NET.role = 'guest';
+  w.ctx.NET.party = { code: 'ABCDE', size: 2, map: 'castle', diff: 'easy', me: 1, members: [] };
+  w.ctx.partyRender();
+  assert.ok(!box.innerHTML.includes('Start match') && box.innerHTML.includes('Leave party'), 'ami : Leave party');
+  assert.match(box.innerHTML, /pOpt selected" data-size="2" disabled/, 'ami : mode de l’hôte, non modifiable');
+  assert.equal(aiSlots(), 4, 'ami : places du mode de l’hôte');
   console.log(
-    'OK - groupe en ligne (tests unitaires : membres, équipes, places, exclure, groupe gardé entre les matchs, code gardé, onglet Party)'
+    'OK - groupe en ligne (tests unitaires : membres, équipes, places, exclure, groupe gardé entre les matchs, code gardé, onglet Multiplayer)'
   );
 }
