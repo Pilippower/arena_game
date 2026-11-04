@@ -89,7 +89,7 @@ But : un code **maintenable**, où l'on sait **tout de suite où regarder et quo
 - Chaque règle nouvelle : une régression volontaire qui doit faire échouer son test, `node tools/mutate.js <test> <fichier> "<extrait>" "<remplacement>"` (fichier toujours restauré).
 - Navigateur (`tests/browser/`) : seulement démarrage, rendu, modèles, interface. Tests « texte du code » : seulement pour interdire une régression connue, ou quand le comportement dépend du hasard / du réseau.
 - Un bug corrigé = un test qui l'aurait attrapé.
-- **Équilibrage** : mesurer avant de changer une valeur, `node tools/duel.js <équipe A> <équipe B> [combats]` (IA contre IA, vrai code, ex. `shade oracle`, `sentinel,oracle arcanist,warlock`) ; pour essayer un réglage sans toucher au jeu, `duel(A, B, durée, ctx => { … })` (`tools/duel.js`).
+- **Équilibrage** : mesurer avant de changer une valeur, `node tools/duel.js <équipe A> <équipe B> [combats]` (IA contre IA, vrai code, ex. `shade oracle`, `sentinel,oracle arcanist,warlock`) ; pour essayer un réglage sans toucher au jeu, `duel(A, B, durée, ctx => { … })` (`tools/duel.js`). Rapport complet (matrice 1v1 + 3v3 par classe, ~4 min) : `node tools/balance.js`.
 
 **Documentation, dans le même commit que le code**
 - **Fonctionnelle = `docs/SPEC.md`** : ce que le jeu fait, tel que validé par l'utilisateur ; une ligne par demande validée (🧪 si testée), mise à jour quand la règle change, jamais deux versions contradictoires.
