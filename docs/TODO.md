@@ -39,3 +39,7 @@ Demande de l'utilisateur : des 1v1 plus équilibrés, où chacun a sa chance de 
 (`duel(A, B, durée, ctx => { … })` dans `tools/duel.js`, puis `node tools/balance.js`), les faire **valider par
 l'utilisateur**, puis appliquer avec un test et une ligne dans `docs/SPEC.md`. Pistes à mesurer : DK (PV ou
 Obliterate), druide (survie), mage (1v1 contre la mêlée sans le renforcer en 3v3).
+
+**À remesurer** : depuis Backstab (ralentit de 60 % pendant 6 s) et le nouveau Shadowstep (dans le dos, 20 m,
+utilisable camouflé), le voleur gagne 9 duels sur 10 contre un prêtre (`node tools/duel.js shade oracle 10`, 16 sur 20
+avant) : probablement renforcé, à intégrer au plan. Corruption vole désormais la vie : démoniste à remesurer aussi.
