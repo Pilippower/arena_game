@@ -176,6 +176,72 @@
     };
   }
 
+  // Décharges électriques intermittentes le long d'une arme (path = points de la lame, dans le repère de w ; size = taille
+  // d'une perle, spread = écart maximal du zigzag autour de la lame) : toutes les
+  // ELECTRIC_GAP[0] à ELECTRIC_GAP[1] s (au hasard), une décharge de ELECTRIC_BURST s fait courir ELECTRIC_ARCS éclairs
+  // en zigzag (perles lumineuses additives) d'un bout à l'autre, qui se redessinent toutes les ~40 ms, puis tout s'éteint.
+  // Uniquement des sprites (aucune lumière ajoutée) ; un sprite invisible (opacité 0) reste rendu pour cadencer l'effet.
+  const ELECTRIC_GAP = [2.5, 6],
+    ELECTRIC_BURST = 0.35,
+    ELECTRIC_ARCS = 2,
+    ELECTRIC_BEADS = 28;
+  function electricArcs(THREE, w, path, color, size, spread) {
+    const P = path.map(p => new THREE.Vector3(...p)),
+      white = color.clone().lerp(new THREE.Color(1, 1, 1), 0.6),
+      arcs = [];
+    for (let a = 0; a < ELECTRIC_ARCS; a++) {
+      const beads = [];
+      for (let i = 0; i < ELECTRIC_BEADS; i++) {
+        const b = glowSprite(THREE, i % 3 ? color : white, size);
+        b.renderOrder = 3;
+        b.visible = false;
+        w.add(b);
+        beads.push(b);
+      }
+      arcs.push(beads);
+    }
+    const clock = glowSprite(THREE, color, size);
+    clock.material.opacity = 0;
+    w.add(clock);
+    const rnd = () => Math.random() * 2 - 1,
+      along = f => {
+        const k = f * (P.length - 1),
+          i = Math.min(P.length - 2, Math.floor(k));
+        return P[i].clone().lerp(P[i + 1], k - i);
+      };
+    let next = performance.now() / 1000 + ELECTRIC_GAP[0] * Math.random(),
+      end = 0,
+      redraw = 0;
+    clock.onBeforeRender = () => {
+      const t = performance.now() / 1000;
+      if (t >= next) {
+        end = t + ELECTRIC_BURST;
+        next = end + ELECTRIC_GAP[0] + Math.random() * (ELECTRIC_GAP[1] - ELECTRIC_GAP[0]);
+      }
+      const on = t < end;
+      if (!on) {
+        if (arcs[0][0].visible) for (const beads of arcs) for (const b of beads) b.visible = false;
+        return;
+      }
+      if (t < redraw) return;
+      redraw = t + 0.04;
+      for (const beads of arcs) {
+        // zigzag : écart aléatoire autour de la lame, nul aux deux bouts
+        let off = new THREE.Vector3();
+        beads.forEach((b, i) => {
+          const f = i / (beads.length - 1),
+            amp = spread * Math.sin(Math.PI * f);
+          off = off.multiplyScalar(0.4).add(new THREE.Vector3(rnd(), rnd() * 0.3, rnd()).multiplyScalar(amp));
+          b.position.copy(along(f)).add(off);
+          b.material.opacity = 0.85 + 0.15 * Math.random();
+          const z = size * (0.7 + 0.6 * Math.random());
+          b.scale.set(z, z, 1);
+          b.visible = true;
+        });
+      }
+    };
+  }
+
   // Yeux lumineux : l'iris (zone brune saturée de la texture) est recoloré et rendu émissif.
   function glowEyes(THREE, mesh, color, headBone, inv) {
     const m = (mesh.material = mesh.material.clone()),
@@ -445,5 +511,14 @@
       }
     }
   }
-  Object.assign(P, { glowSprite, flameWisp, weaponEnchant, glowEyes, buildOrbs, buildHandFx, buildSkulls });
+  Object.assign(P, {
+    glowSprite,
+    flameWisp,
+    weaponEnchant,
+    electricArcs,
+    glowEyes,
+    buildOrbs,
+    buildHandFx,
+    buildSkulls
+  });
 })(typeof globalThis !== 'undefined' ? globalThis : this);

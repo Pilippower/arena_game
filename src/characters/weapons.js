@@ -3,7 +3,64 @@
   // Personnages : armes et bâtons (modèles procéduraux, prise en main, port dans le dos).
   // Chargé avant builder.js ; partage ses fonctions par root.CharacterParts.
   const P = (root.CharacterParts = root.CharacterParts || {});
-  const { glowSprite, flameWisp, weaponEnchant, backMount, mount, handGrip, envMap } = P;
+  const { glowSprite, flameWisp, weaponEnchant, electricArcs, backMount, mount, handGrip, envMap } = P;
+
+  // Gravures des glaives du voleur (texture partagée) : liseré qui suit le tranchant, filigrane en volutes et petites
+  // runes, en creux plus sombres dans la lame lumineuse (carte de couleur et d'émission). Coordonnées = celles du
+  // profil de la lame (0 à 0,62 le long, -0,09 à 0,26 en hauteur), cf. blade().
+  let glaiveEngraving = null;
+  function glaiveEngravingTexture(THREE) {
+    if (glaiveEngraving) return glaiveEngraving;
+    const W = 512,
+      H = 320,
+      c = document.createElement('canvas');
+    c.width = W;
+    c.height = H;
+    const g = c.getContext('2d'),
+      X = a => (a / 0.62) * W, // le long de la lame
+      Y = b => H - ((b + 0.09) / 0.35) * H; // hauteur
+    g.fillStyle = '#fff';
+    g.fillRect(0, 0, W, H);
+    g.strokeStyle = '#060806';
+    g.lineCap = g.lineJoin = 'round';
+    // liseré parallèle au tranchant inférieur
+    g.lineWidth = 12;
+    g.beginPath();
+    g.moveTo(X(0.09), Y(-0.01));
+    g.quadraticCurveTo(X(0.32), Y(-0.065), X(0.48), Y(0.01));
+    g.quadraticCurveTo(X(0.56), Y(0.08), X(0.58), Y(0.2));
+    g.stroke();
+    // filigrane : volutes le long du centre de la lame
+    g.lineWidth = 9;
+    for (let i = 0; i < 4; i++) {
+      const a = 0.13 + i * 0.09,
+        b = 0.02 - 0.012 * Math.sin(i);
+      g.beginPath();
+      g.arc(X(a), Y(b), 18, Math.PI * 0.2, Math.PI * 1.7);
+      g.stroke();
+      g.beginPath();
+      g.moveTo(X(a) + 12, Y(b) - 6);
+      g.quadraticCurveTo(X(a + 0.045), Y(b + 0.03), X(a + 0.09) - 13, Y(b));
+      g.stroke();
+    }
+    // petites runes (traits droits) dans la partie large
+    g.lineWidth = 8;
+    const rune = (x, y) => {
+      g.beginPath();
+      g.moveTo(x, y - 16);
+      g.lineTo(x, y + 16);
+      g.moveTo(x - 10, y - 7);
+      g.lineTo(x + 10, y + 5);
+      g.stroke();
+    };
+    for (const a of [0.2, 0.29, 0.38]) rune(X(a), Y(0.055));
+    glaiveEngraving = new THREE.CanvasTexture(c);
+    glaiveEngraving.wrapS = glaiveEngraving.wrapT = THREE.ClampToEdgeWrapping;
+    // UV de la lame = coordonnées du profil : on les ramène à 0..1 sur l'image
+    glaiveEngraving.repeat.set(1 / 0.62, 1 / 0.35);
+    glaiveEngraving.offset.set(0, 0.09 / 0.35);
+    return glaiveEngraving;
+  }
 
   // Bâton porté dans le dos, en diagonale (cristal au-dessus de l'épaule droite), attaché au haut de la colonne.
   function buildStaff(THREE, body, bones, cfg, height, fitMeshes) {
@@ -440,13 +497,16 @@
       // Glaives doubles (design original) : poignée au poing, une lame en croissant de chaque côté de la main
       // (devant et derrière), dents sur le bord inférieur, garde ronde ornée d'un croissant de lune.
       // enchantement vert vif : lame entièrement lumineuse + halo additif autour de la lame
-      const fel = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(0x1f8a12).convertSRGBToLinear(),
-        emissive: new THREE.Color(0x2fc80f).convertSRGBToLinear(),
-        emissiveIntensity: 1.8,
-        roughness: 0.3,
-        metalness: 0
-      });
+      const engraving = glaiveEngravingTexture(THREE),
+        fel = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(0x1f8a12).convertSRGBToLinear(),
+          emissive: new THREE.Color(0x2fc80f).convertSRGBToLinear(),
+          emissiveIntensity: 1.8,
+          map: engraving,
+          emissiveMap: engraving,
+          roughness: 0.3,
+          metalness: 0
+        });
       const felHalo = new THREE.MeshBasicMaterial({
         color: new THREE.Color(0.18, 0.75, 0.06),
         transparent: true,
@@ -498,6 +558,19 @@
               [0, dir * 0.4 * s, -0.04 * s],
               [0, dir * 0.6 * s, -0.16 * s]
             ],
+            0.07 * s
+          );
+          // de temps en temps, une décharge électrique court le long de la lame
+          electricArcs(
+            THREE,
+            g,
+            [
+              [0, dir * 0.1 * s, -0.02 * s],
+              [0, dir * 0.4 * s, -0.04 * s],
+              [0, dir * 0.6 * s, -0.16 * s]
+            ],
+            new THREE.Color(0.35, 0.65, 1),
+            0.06 * s,
             0.07 * s
           );
         }

@@ -209,6 +209,55 @@ function playerWorld() {
   S.ctx.hfTurnLocal(hand, dir(), want);
   assert.ok(hand.quaternion.angleTo(q) < 1e-6, 'pose stable d’une image à l’autre');
 }
+// ---------- Glaives du voleur : décharges électriques « de temps en temps » (src/characters/glow.js) ----------
+{
+  const THREE = require('three');
+  const ctx2d = { createRadialGradient: () => ({ addColorStop() {} }), fillRect() {} };
+  const S = sandbox({
+    THREE,
+    performance: { now: () => S.ctx.clockMs },
+    document: { createElement: () => ({ getContext: () => ctx2d }) }
+  });
+  S.ctx.clockMs = 0;
+  S.ctx.globalThis = S.ctx;
+  S.load('src/characters/rig.js');
+  S.load('src/characters/glow.js');
+  const w = new THREE.Group();
+  S.ctx.CharacterParts.electricArcs(
+    THREE,
+    w,
+    [
+      [0, 0, 0],
+      [0, 0.5, 0],
+      [0, 0.6, -0.1]
+    ],
+    new THREE.Color(0.4, 0.7, 1),
+    0.06,
+    0.07
+  );
+  const clock = w.children.find(o => o.onBeforeRender && o.material.opacity === 0),
+    beads = w.children.filter(o => o.renderOrder === 3),
+    lit = () => beads.some(b => b.visible);
+  // 20 s simulées à 60 images/s : on note les instants de début de chaque décharge et leur durée
+  const starts = [];
+  let litFor = 0,
+    was = false;
+  for (let f = 0; f < 1200; f++) {
+    S.ctx.clockMs = (f * 1000) / 60;
+    clock.onBeforeRender();
+    const on = lit();
+    if (on && !was) starts.push(S.ctx.clockMs / 1000);
+    if (on) litFor += 1 / 60;
+    was = on;
+  }
+  assert.ok(starts.length >= 3 && starts.length <= 9, `décharges de temps en temps (${starts.length} en 20 s)`);
+  const gaps = starts.slice(1).map((t, i) => t - starts[i]);
+  assert.ok(
+    gaps.every(g => g >= 2.5 && g <= 6.5),
+    'pause de 2,5 à 6 s entre deux décharges'
+  );
+  assert.ok(litFor / starts.length < 0.45, 'décharge brève (~0,35 s)');
+}
 console.log(
-  'OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic, contrôles, IK)'
+  'OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic, contrôles, IK, glaives)'
 );
