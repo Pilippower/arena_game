@@ -197,6 +197,71 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   u.stealth = true;
   assert.ok(Math.abs(ctx.moveSpeed(u) - base * 0.7) < 1e-9, 'camouflé : -30 % de vitesse');
 }
+{
+  // Shadowstep : dans le dos de la cible, face à elle ; portée 20 m ; utilisable camouflé sans casser le camouflage
+  const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-6, `${msg} (${a} au lieu de ${b})`);
+  const SS = ctx => spell(ctx, 'shade', 'Shadowstep');
+  {
+    const { ctx, unit } = combatWorld();
+    const rogue = unit('shade', 0, 0, 0),
+      foe = unit('arcanist', 0, 10, 1);
+    rogue.target = foe;
+    foe.yaw = Math.PI; // la cible regarde le voleur : son dos est au-delà d'elle
+    assert.ok(ctx.useSkill(rogue, SS(ctx)), 'Shadowstep lancé');
+    near(rogue.z, 11.2, 'Shadowstep : 1,2 m dans le dos de la cible');
+    near(rogue.x, 0, 'Shadowstep : dans l’axe de la cible');
+    near(Math.cos(rogue.yaw), -1, 'Shadowstep : face à la cible');
+    assert.ok(foe.hp < foe.maxHp, 'Shadowstep : dégâts à l’arrivée');
+  }
+  {
+    const { ctx, unit } = combatWorld();
+    const rogue = unit('shade', 0, 0, 0),
+      foe = unit('arcanist', 0, 19.5, 1, { yaw: 0 });
+    rogue.target = foe;
+    assert.ok(ctx.useSkill(rogue, SS(ctx)), 'Shadowstep : 19,5 m accepté');
+    near(rogue.z, 18.3, 'Shadowstep : cible de dos');
+    const far = combatWorld(),
+      r2 = far.unit('shade', 0, 0, 0),
+      f2 = far.unit('arcanist', 0, 20.5, 1);
+    r2.target = f2;
+    assert.ok(!far.ctx.useSkill(r2, SS(far.ctx)), 'Shadowstep : refusé au-delà de 20 m');
+    assert.equal(r2.z, 0, 'Shadowstep refusé : pas de déplacement');
+    assert.equal(far.ctx.skillFailReason(r2, SS(far.ctx)), "I'm out of range", 'Shadowstep : message de portée');
+  }
+  {
+    // dos contre le mur de l'arène : arrive à côté de la cible, dans l'arène
+    const { ctx, unit } = combatWorld();
+    const zWall = ctx.arena.halfZ - 0.9,
+      rogue = unit('shade', 0, 10, 0),
+      foe = unit('arcanist', 0, zWall, 1);
+    rogue.target = foe;
+    foe.yaw = Math.PI;
+    assert.ok(ctx.useSkill(rogue, SS(ctx)), 'Shadowstep : cible dos au mur');
+    assert.ok(rogue.z <= ctx.arena.halfZ - 0.68 && Math.hypot(rogue.x, rogue.z - zWall) < 1.3, 'Shadowstep : à côté');
+  }
+  {
+    const { ctx, unit } = combatWorld();
+    const rogue = unit('shade', 0, 0, 0),
+      foe = unit('arcanist', 0, 10, 1, { yaw: 0 });
+    rogue.target = foe;
+    ctx.setStealth(rogue, true);
+    const j = ctx.skillsOf(rogue).findIndex(s => s.n === 'Shadowstep');
+    assert.ok(j >= 0, 'Shadowstep dans la barre de camouflage');
+    assert.ok(ctx.useSkill(rogue, j), 'Shadowstep camouflé');
+    near(rogue.z, 8.8, 'Shadowstep camouflé : dans le dos');
+    assert.ok(rogue.stealth, 'Shadowstep : camouflage gardé');
+    assert.equal(foe.hp, foe.maxHp, 'Shadowstep camouflé : pas de dégâts');
+    ctx.setStealth(rogue, false);
+    assert.ok(rogue.cd[SS(ctx)] > 12, 'Shadowstep : une seule recharge pour les deux barres');
+    // même touche en camouflage que hors camouflage (barre de sorts, ui/skillbar.js)
+    const { sandbox } = require('./sources.js');
+    const B = sandbox({ window: {}, PREFS: { ui: {} } });
+    B.load('src/data/classes.js');
+    B.fn('src/ui/skillbar.js', 'slotOrder');
+    const order = B.ctx.slotOrder({ cls: 'shade', stealth: true });
+    assert.equal(order[SS(ctx)], j, 'Shadowstep camouflé : même emplacement que dans la barre de base');
+  }
+}
 // ---------- Incantations (pas de simulation réel : update de sim.js) ----------
 {
   // ressource prise à la fin de l'incantation, dégâts à l'impact ; portée 30 m

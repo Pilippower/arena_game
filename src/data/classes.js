@@ -207,7 +207,9 @@ CLASS.shade.bars = {
     { k: 'ambush', n: 'Ambush', cd: 0, c: 30, t: 'melee', dmg: 465 },
     { k: 'sap', n: 'Sap', cd: 0, c: 25, t: 'ranged', range: 5, dur: 8 },
     { k: 'cheapshot', n: 'Cheap Shot', cd: 0, c: 30, t: 'melee' },
-    { k: 'stealth', n: 'Stealth', cd: 0, c: 0, t: 'self' }
+    { k: 'stealth', n: 'Stealth', cd: 0, c: 0, t: 'self' },
+    // même sort que dans la barre de base (même touche, une seule recharge : shareCooldown, forms.js)
+    { ...CLASS.shade.skills.find(s => s.n === 'Shadowstep') }
   ]
 };
 const FORM_INFO = { cat: { speed: 1.3, swing: [1.0, 42] }, bear: { speed: 1, hp: 1.4, armor: 0.7, swing: [2.0, 45] } };
@@ -470,7 +472,9 @@ const SPELLS = {
   Vendetta: { burst: 6.5, text: S => `+35% damage for ${sec(S.burst)}.` },
   Shadowstep: {
     dmg: 80,
-    text: (S, D) => `Dash up to 8 m to the target; ${D(S.dmg)} damage if you reach melee range.`
+    range: 20,
+    text: (S, D) =>
+      `Teleports behind the target (up to ${S.range} m), facing its back; ${D(S.dmg)} damage on arrival. Usable in stealth without breaking it (no damage then).`
   },
   Stealth: {
     text: () => `Stealth (out of combat): nearly invisible and untargetable, -30% speed. Unlocks Ambush and Sap.`

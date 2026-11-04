@@ -22,11 +22,12 @@ function slotOrder(p) {
   const baseOrder = slotOrder({ cls: p.cls, form: null, stealth: 0 }),
     out = baseOrder.map(() => null),
     used = new Set();
+  // sort de forme : même touche ; sort commun aux deux barres (Shadowstep en camouflage) : même touche aussi
   baseOrder.forEach((bi, slot) => {
-    const k = base[bi]?.k;
-    if (!k) return;
+    const k = base[bi]?.k,
+      n = base[bi]?.n;
     let j = k === bk ? bar.findIndex(s => s.k === 'human') : -1;
-    if (j < 0) j = bar.findIndex(s => s.k === k);
+    if (j < 0) j = bar.findIndex(s => (k ? s.k === k : s.n === n));
     if (j >= 0 && !used.has(j)) {
       out[slot] = j;
       used.add(j);

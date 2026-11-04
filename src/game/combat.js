@@ -504,13 +504,24 @@ function startGrip(u, t) {
 function face(u, t) {
   if (t) u.yaw = Math.atan2(t.x - u.x, t.z - u.z);
 }
-function dashToward(u, t, a) {
-  if (!t) return;
-  let dx = t.x - u.x,
-    dz = t.z - u.z,
-    d = Math.hypot(dx, dz) || 1;
-  // même déplacement que Blink : suit le sol (rampes du pont), s'arrête devant un obstacle ; racines gardées
-  blinkForward(u, Math.max(0, Math.min(a, d - 1.6)), true, Math.atan2(dx, dz));
+// Téléportation dans le dos de la cible (Shadowstep), face à elle, à `gap` m. Si un mur, un pilier, le flanc d'une
+// rampe ou un garde-corps occupe ce point, on essaie de biais puis sur les côtés (BEHIND_TRIES, angles depuis le dos) ;
+// false si aucun point n'est libre. Posé au sol (rampes et tablier du pont compris) ; racines gardées.
+const BEHIND_TRIES = [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8, Math.PI];
+function stepBehind(u, t, gap = 1.2) {
+  const ty = t.y || 0,
+    back = (t.yaw || 0) + Math.PI;
+  for (const a of BEHIND_TRIES) {
+    const p = { x: t.x + Math.sin(back + a) * gap, z: t.z + Math.cos(back + a) * gap, y: ty },
+      pz = p.z;
+    if (!pointWalkable(p.x, p.z, 0.68, ty) || blockedBySurface(p)) continue;
+    bridgeRail(p);
+    if (Math.abs(p.z - pz) > 1e-6) continue;
+    Object.assign(u, { x: p.x, z: p.z, y: groundAt(p), vy: 0, grounded: true, visualSnap: true });
+    face(u, t);
+    return true;
+  }
+  return false;
 }
 function pointWalkable(x, z, margin = 0.68, y = 0) {
   if (x < -arena.halfX + margin || x > arena.halfX - margin || z < -arena.halfZ + margin || z > arena.halfZ - margin)
@@ -772,6 +783,7 @@ function useSkill(u, i) {
   // (canalisation : prise au lancement)
   if (!(u.cast && u.cast.i === i && u.cast.end > now() && !u.cast.channel)) pay(u, i);
   u.cd[i] = S.cd;
+  shareCooldown(u, S.n, S.cd);
   u.gcd = u.gcdMax = C.mobility ? 0.35 : 1.05; // mobilité : GCD court
   updateUI();
   return true;

@@ -321,13 +321,14 @@ const SPELL_CAST = {
     },
     fx: c => fx('darkAura', c.u.x, 0.1, c.u.z, c.col, 0.9, 1.0)
   },
+  // dans le dos de la cible ; aussi depuis le camouflage (barre de camouflage), qu'il ne casse pas : pas de dégâts
+  // camouflé, pour enchaîner Cheap Shot / Ambush
   Shadowstep: {
     mobility: true,
     run(c) {
       const { u, t, S } = c;
-      if (!t || !c.range) return false;
-      dashToward(u, t, 8);
-      if (d2(u, t) < 2.7) damage(u, t, S.dmg);
+      if (!t || !c.range || c.d > S.range || !stepBehind(u, t)) return false;
+      if (!u.stealth) damage(u, t, S.dmg);
       action(u, 'dash');
       landed(c);
     },
