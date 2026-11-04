@@ -11,7 +11,7 @@ const CLASS = {
     res: 'Rage',
     regen: 9,
     skills: [
-      { n: 'Mortal Strike', cd: 6, c: 0 },
+      { n: 'Mortal Strike', cd: 5, c: 0 },
       { n: 'Hamstring', cd: 0, c: 15 }, // pas de recharge propre : seulement le GCD
       { n: 'Pummel', cd: 12, c: 10 },
       { n: 'Shield Wall', cd: 22, c: 25 },
@@ -305,7 +305,7 @@ const sec = x => `${x} s`;
 const DRAIN_HEAL = 2;
 const SPELLS = {
   'Mortal Strike': {
-    dmg: 175,
+    dmg: 210,
     crit: 0.18,
     antiheal: 0.25,
     text: (S, D) =>
@@ -473,7 +473,7 @@ const SPELLS = {
     text: S =>
       `From stealth, within ${S.range} m: incapacitates the target for ${sec(S.dur)} (shares diminishing returns with Polymorph). Any damage breaks it.`
   },
-  'Shadow Bolt': { cast: 1.45, dmg: 195, text: (S, D) => `${sec(S.cast)} cast: ${D(S.dmg)} shadow damage.` },
+  'Shadow Bolt': { cast: 1.45, dmg: 215, text: (S, D) => `${sec(S.cast)} cast: ${D(S.dmg)} shadow damage.` },
   Fear: {
     cast: 1.35,
     dur: 3.6,

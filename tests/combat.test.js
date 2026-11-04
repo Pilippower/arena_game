@@ -328,6 +328,38 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   assert.ok(me.aiShrine && Math.hypot(me.x - 10, me.z - 10) < d0 - 1, 'IA blessée : va chercher le soin de la carte');
 }
 
+{
+  // équilibrage validé : guerrier Mortal Strike 210 / 5 s, démoniste Shadow Bolt 215
+  const { ctx } = combatWorld();
+  const S = (cls, n) => ctx.CLASS[cls].skills.find(s => s.n === n);
+  assert.ok(
+    S('sentinel', 'Mortal Strike').dmg === 210 && S('sentinel', 'Mortal Strike').cd === 5,
+    'Mortal Strike 210 / 5 s'
+  );
+  assert.equal(S('warlock', 'Shadow Bolt').dmg, 215, 'Shadow Bolt 215');
+}
+{
+  // IA du démoniste : Drain Life seulement sous 45 % de PV (au-dessus, elle lance ses autres sorts)
+  const drains = hp => {
+    const { ctx, unit } = combatWorld();
+    const lock = unit('warlock', 0, 0, 1, { ai: true }),
+      foe = unit('sentinel', 0, 12, 0);
+    lock.hp = Math.round(lock.maxHp * hp);
+    ctx.state.player = foe;
+    ctx.applyDifficulty();
+    let n = 0;
+    const use = ctx.useSkill;
+    ctx.useSkill = (u, i) => {
+      const ok = use(u, i);
+      if (ok && u === lock && ctx.skillsOf(u)[i].n === 'Drain Life') n++;
+      return ok;
+    };
+    run(ctx, 6);
+    return n;
+  };
+  assert.equal(drains(0.6), 0, 'IA démoniste à 60 % de PV : pas de Drain Life');
+  assert.ok(drains(0.3) > 0, 'IA démoniste à 30 % de PV : Drain Life');
+}
 // ---------- Mort et fin de manche ----------
 {
   const { ctx, unit } = combatWorld();

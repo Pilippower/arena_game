@@ -136,6 +136,8 @@ function applyDifficulty() {
     u.aiNext = Math.random() * P.think;
   }
 }
+// Démoniste : Drain Life seulement sous ce seuil de PV (à 70 %, il le canalisait presque sans arrêt au lieu de Shadow Bolt)
+const AI_DRAIN_BELOW = 0.45;
 const aiCanUse = (u, i) =>
   i != null && i >= 0 && skillsOf(u)[i] && u.cd[i] <= 0 && u.gcd <= 0 && canPay(u, i) && !u.cast;
 function aiCastOn(u, i, t) {
@@ -531,7 +533,7 @@ function ai(u, dt) {
     if (R.dot != null && inReach && !auraOf(t, skillsOf(u)[R.dot].n, u) && aiCanUse(u, R.dot) && useSkill(u, R.dot))
       return;
     if (R.coil != null && inReach && aiCanUse(u, R.coil) && useSkill(u, R.coil)) return;
-    if (R.drain != null && inReach && hpPct(u) < 0.7 && aiCanUse(u, R.drain) && useSkill(u, R.drain)) return;
+    if (R.drain != null && inReach && hpPct(u) < AI_DRAIN_BELOW && aiCanUse(u, R.drain) && useSkill(u, R.drain)) return;
     if (R.dmg != null && !healer && aiCanUse(u, R.dmg) && !(t.poly > 0) && useSkill(u, R.dmg)) return;
     // prêtre : Holy Terror quand des mêlées le serrent, Smite quand personne n'a besoin de soins
     if (R.fear != null && meleeOnMe.length && aiCanUse(u, R.fear) && useSkill(u, R.fear)) return;
