@@ -329,12 +329,23 @@ run('src/ui/hud.js');
   assert.ok(
     read('src/ui/lobby.css')
       .replace(/\s+/g, ' ')
-      .includes('body.lobby #status, body.lobby #restartBtn { display: none;'),
+      .includes('body.lobby #status, body.lobby #top #restartBtn { display: none;'),
     'lobby épuré'
   );
   // barre du haut en jeu : ni titre « Arena Ascendant » ni sous-titre « 1v1 to 3v3 · WebGL… » (le lobby garde le titre)
   assert.ok(!read('index.html').includes('1v1 to 3v3 · WebGL'), 'pas de sous-titre du jeu');
   assert.ok(read('index.html').includes('body:not(.lobby) #top h1{display:none}'), 'titre masqué en jeu');
+  // mobile : icônes de la panoplie PC (pas de glyphes ⚙ ♫ ↻), centrées dans le bouton
+  assert.ok(
+    !/#(settingsBtn|musicBtn|restartBtn):after/.test(read('index.html')),
+    'mobile : pas de glyphes à la place des icônes'
+  );
+  assert.ok(
+    read('index.html').includes(
+      'body.mobile-mode #top button{font-size:0;padding:0;min-width:34px;height:32px;display:inline-grid;place-items:center}'
+    ) && read('index.html').includes('body.mobile-mode #top button .ico{width:20px;height:20px;margin:0;'),
+    'mobile : icônes PC centrées'
+  );
 }
 assert.match(
   code('src/render/'),

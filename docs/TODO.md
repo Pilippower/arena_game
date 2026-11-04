@@ -12,7 +12,6 @@ validé dans `docs/SPEC.md`.
 11. Démoniste : Corruption vole la vie (chaque dégât infligé est rendu au démoniste).
 12. Bug : un lanceur qui saute peut commencer une incantation (ne doit pas pouvoir).
 13. Bug : Blink pendant un saut (le mage reste sur place au lieu d'arriver au sol à destination).
-14. Mobile : icônes en haut à droite (son, settings…) pas centrées dans leur carré ; reprendre les icônes du PC.
 15. Ciblage : boîte invisible de la barre flottante (incluse) jusqu'au sol, un clic entre la barre et le personnage
     le sélectionne.
 16. Lobby : pour le druide, choisir la forme ours / félin pour voir et lire leur barre de sorts.
