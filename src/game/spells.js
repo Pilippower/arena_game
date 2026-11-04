@@ -234,9 +234,7 @@ const SPELL_CAST = {
       const { u, t, S } = c;
       if (!c.range) return false;
       fx('shadowProjectile', ...chest(u, 1.5), [0.55, 1, 0.45], 0.45, 0.3, chest(t, 1.2));
-      const h0 = t.hp;
-      damage(u, t, t.maxHp * S.pct);
-      if (h0 > t.hp) heal(u, u, h0 - t.hp);
+      drain(u, t, t.maxHp * S.pct);
       action(u, 'cast');
     }
   },
@@ -342,11 +340,11 @@ const SPELL_CAST = {
     fx: c => fx('fear', ...chest(c.t || c.u), c.col, 0.85, 0.85)
   },
   'Spell Lock': { run: kick, fx: c => fx('silence', ...chest(c.t || c.u, 1.25), c.col, 0.55, 0.72) },
-  // dégâts dans la durée
+  // dégâts dans la durée qui volent la vie : chaque tic soigne le démoniste des dégâts infligés
   Corruption: {
     run(c) {
       if (!c.range) return false;
-      addAura(c.t, c.u, c.S.n, 'dot', c.S.dot, c.S.dur, 'shadow');
+      addAura(c.t, c.u, c.S.n, 'dot', c.S.dot, c.S.dur, 'shadow', true);
       action(c.u, 'cast');
     },
     fx: c => fx('silence', ...chest(c.t || c.u, 1.25), [0.6, 0.35, 0.9], 0.6, 0.7)

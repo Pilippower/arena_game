@@ -293,6 +293,13 @@ function damage(src, t, v, crit = false, school = src.curSchool || 'physical') {
     addFloat(t, 'K.O.', '#ffe6a6');
   }
 }
+// Vol de vie (Death Coil, Drain Life, Corruption) : dégâts, puis le lanceur est soigné de ratio × les dégâts réellement
+// infligés (après armure et bouclier, plafonnés aux PV restants) ; le soin suit les règles habituelles (dampening).
+function drain(src, t, v, school = src.curSchool || 'physical', ratio = 1) {
+  const h0 = t?.hp || 0;
+  damage(src, t, v, false, school);
+  if (h0 > t.hp) heal(src, src, (h0 - t.hp) * ratio);
+}
 // Dampening : les soins baissent au fil de la manche (0 % jusqu'à 35 s, puis montée sur 90 s jusqu'à 45 %).
 const DAMPENING = { start: 35, ramp: 90, max: 0.45 };
 const dampeningAt = elapsed => clamp(((elapsed - DAMPENING.start) / DAMPENING.ramp) * DAMPENING.max, 0, DAMPENING.max);
@@ -309,6 +316,7 @@ function heal(src, t, v) {
 }
 // Effets dans la durée (auras) : 'dot' = dégâts / s, 'hot' = soins / s (tic chaque seconde, comptés dans le récap),
 // 'weaken' = les coups physiques de la cible perdent `per` dégâts par seconde de cadence. Réappliquer rafraîchit.
+// drain (dot) : chaque tic soigne le lanceur des dégâts infligés (Corruption).
 // Dispel du prêtre : effets magiques retirés (mouton, peurs, racines et ralentissements magiques, dégâts dans la
 // durée magiques) ; restent les ralentissements de mêlée (Hamstring, Rake), Sap et les étourdissements.
 function dispellable(u) {
@@ -336,10 +344,10 @@ function dispel(u) {
   addFloat(u, 'Dispelled', '#fff3b0');
   return true;
 }
-function addAura(t, src, n, kind, total, dur, school = 'magic') {
+function addAura(t, src, n, kind, total, dur, school = 'magic', drain = false) {
   if (!t?.alive) return;
   t.auras = (t.auras || []).filter(a => !(a.n === n && a.src === src));
-  t.auras.push({ n, src, kind, per: kind === 'weaken' ? total : total / dur, rem: dur, dur, acc: 0, school });
+  t.auras.push({ n, src, kind, per: kind === 'weaken' ? total : total / dur, rem: dur, dur, acc: 0, school, drain });
 }
 function updateAuras(u, dt) {
   if (!u.auras?.length) return;
@@ -349,7 +357,8 @@ function updateAuras(u, dt) {
     while (a.kind !== 'weaken' && a.acc >= 0.999 && u.alive) {
       a.acc -= 1;
       SPELL_NOW = a.n;
-      if (a.kind === 'dot') damage(a.src, u, a.per, false, a.school);
+      if (a.kind === 'dot' && a.drain) drain(a.src, u, a.per, a.school);
+      else if (a.kind === 'dot') damage(a.src, u, a.per, false, a.school);
       else heal(a.src, u, a.per);
     }
   }

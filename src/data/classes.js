@@ -495,7 +495,7 @@ const SPELLS = {
     dot: Math.round(CLASS.warlock.hp * 0.2),
     dur: 15,
     art: 'dark_soul',
-    text: (S, D) => `Instant: ${D(S.dot)} shadow damage over ${sec(S.dur)}.`
+    text: (S, D) => `Instant: ${D(S.dot)} shadow damage over ${sec(S.dur)}; each tick heals you for the damage dealt.`
   },
   'Drain Life': {
     dur: 6,

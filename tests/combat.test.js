@@ -351,6 +351,23 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   assert.ok(ctx.useSkill(mage, FN) && mage.cd[FN] > 0, 'Frost Nova sans cible proche');
 }
 {
+  // Corruption (démoniste) : chaque tic rend au démoniste les dégâts réellement infligés (après armure et bouclier)
+  const { ctx, unit } = combatWorld();
+  const lock = unit('warlock', 0, 0, 0, { hp: 800 }),
+    foe = unit('sentinel', 0, 10, 1);
+  lock.target = foe;
+  assert.ok(ctx.useSkill(lock, spell(ctx, 'warlock', 'Corruption')), 'Corruption lancée');
+  run(ctx, 3.05);
+  const dealt = foe.maxHp - foe.hp;
+  assert.ok(dealt > 0, 'Corruption : dégâts dans la durée');
+  assert.equal(lock.hp - 800, dealt, 'Corruption : PV rendus = dégâts infligés');
+  assert.ok(ctx.auraOf(foe, 'Corruption')?.kind === 'dot', 'Corruption : débuff (dispel, icône)');
+  foe.shield = 10000;
+  const hp = lock.hp;
+  run(ctx, 2);
+  assert.equal(lock.hp, hp, 'Corruption : dégâts absorbés par un bouclier = rien rendu');
+}
+{
   // racines (Frost Nova, Entangling Roots) : aucun dégât ne les casse
   const { ctx, unit } = combatWorld();
   const mage = unit('arcanist', 0, 0, 0),
