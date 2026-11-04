@@ -13,29 +13,7 @@ const OUT = path.join(__dirname, '../assets/ui/lobby2');
 fs.mkdirSync(OUT, { recursive: true });
 const crop = (file, x, y, w, h) => sharp(path.join(SRC, file)).extract({ left: x, top: y, width: w, height: h });
 const save = (img, name, q = 86) => img.webp({ quality: q }).toFile(path.join(OUT, name + '.webp'));
-// Fond sombre de la planche → transparent : remplissage depuis les bords sur les pixels sombres (l'or reste).
-async function clearBg(img) {
-  const { data, info } = await img.ensureAlpha().raw().toBuffer({ resolveWithObject: true }),
-    w = info.width,
-    h = info.height,
-    dark = p => Math.max(data[p * 4], data[p * 4 + 1], data[p * 4 + 2]) < 58,
-    seen = new Uint8Array(w * h),
-    st = [];
-  for (let x = 0; x < w; x++) st.push(x, (h - 1) * w + x);
-  for (let y = 0; y < h; y++) st.push(y * w, y * w + w - 1);
-  while (st.length) {
-    const p = st.pop();
-    if (seen[p] || !dark(p)) continue;
-    seen[p] = 1;
-    data[p * 4 + 3] = 0;
-    const x = p % w;
-    if (x > 0) st.push(p - 1);
-    if (x < w - 1) st.push(p + 1);
-    if (p >= w) st.push(p - w);
-    if (p < w * (h - 1)) st.push(p + w);
-  }
-  return sharp(data, { raw: { width: w, height: h, channels: 4 } });
-}
+const { clearBg } = require('./image_tools.js');
 
 const TAGS = {
   mode: [635, 173, 132, 34],
