@@ -420,8 +420,18 @@ const { combatWorld, spell, run } = require('./combat_world.js');
     // pas d'aigu strident : fréquences dominantes sous 3,3 kHz (sauf partiels brefs du métal), volumes modérés
     for (const c of calls) {
       if (c.kind !== 'metal') assert.ok(Math.max(...c.freqs) <= 3300, `${n} : pas d'aigu strident (${c.freqs})`);
-      assert.ok(c.v <= 0.17, `${n} : volume modéré`);
+      assert.ok(c.v <= 0.3, `${n} : volume modéré (${c.v})`);
     }
+    // volume relevé (04/11/2026) : chaque composant joué ≥ 1,6 × sa valeur dans la recette
+    const raw = [],
+      rec = (...a) => raw.push(a);
+    S.ctx.SPELL_SOUND[n]({
+      tone: (f, d, t, v) => rec(v),
+      sweep: (d, v) => rec(v),
+      noise: (d, v) => rec(v),
+      metal: v => rec(v)
+    });
+    raw.forEach(([v], k) => assert.ok(calls[k].v >= 1.6 * v, `${n} : volume relevé`));
   }
   assert.equal(signatures.size, spells.size, 'chaque sort a un son différent');
   assert.ok(S.ctx.SPELL_SOUND.Trinket, 'trinket : son dédié');

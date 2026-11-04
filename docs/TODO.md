@@ -9,7 +9,6 @@ validé dans `docs/SPEC.md`.
 3. Renommer en jeu « Change class » en « Return to Lobby ».
 4. Retirer le bouton « Change class » du lobby.
 5. Échap ouvre / ferme les Settings.
-6. Augmenter le volume des sons des sorts.
 7. Débuffs flottants (à droite de la barre de vie) : icônes des contrôles (CC) 30 % plus grandes que les autres
    débuffs (demandé deux fois : la tâche précédente n'était pas allée au bout).
 8. Voleur : Backstab ralentit la cible de 60 % pendant 6 s.

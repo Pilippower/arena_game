@@ -273,12 +273,15 @@ const SPELL_IMPACT = {
     s.sweep(0.7, 0.07, 1500, 250, 0, 'bandpass', 3);
   }
 };
+// Volume des sons de sorts (04/11/2026 : +70 % demandé, trop discrets face aux coups de mêlée enregistrés) ; le
+// limiteur de sortie (music.js) évite la saturation quand plusieurs sorts se superposent.
+const SPELL_GAIN = 1.7;
 // Joue la recette d'un sort à la position de l'unité ; false si le sort n'a pas de son dédié.
 function playSpellSound(table, u, name) {
   const recipe = table[name];
   if (!recipe) return false;
   const a = sfxSpatial(u),
-    L = a.level,
+    L = a.level * SPELL_GAIN,
     P = a.pan;
   recipe({
     tone: (f, d, type, v, slide = null, delay = 0, filter = 0, rev = 0.12) =>
