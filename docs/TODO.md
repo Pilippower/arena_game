@@ -14,6 +14,27 @@ validé dans `docs/SPEC.md`.
 26. Cartes : une salle de chaque côté, reliée à l'arène, où chaque équipe apparaît ; compte à rebours de 20 s affiché ;
     à 0, les portes s'ouvrent avec un son qui marque le début de l'arène.
 
+## Liste n°2 du 04/11/2026 (après la liste ci-dessus ; gérée par le coordinateur seul, sans agents parallèles)
+
+Du plus simple au plus compliqué, un commit par tâche. Images de référence des épaules : `assets_src/ui/ref_shoulders_*.png`.
+
+1. Armes portées par les elfes : 40 % plus petites. DK elfe : lame aujourd'hui à 80 % (−20 %), à porter à 60 % comme
+   les autres (l'utilisateur pensait −30 % déjà fait).
+2. En jeu, en haut à gauche : remettre uniquement l'icône et le titre du jeu, comme dans le lobby (sans le sous-titre).
+3. Shadowstep : tourner la caméra et le personnage vers la cible derrière laquelle on arrive.
+4. Raccourcis par classe, réglables dans le lobby (ex. mage : 2 → F ; démoniste : 2 → X), qui fonctionnent en jeu et
+   restent après fermeture du navigateur (vérifier ce que le lot du 04/11 a déjà fait et compléter).
+5. Ordre des sorts changé avec Shift + glisser : faisable aussi dans le lobby, gardé par classe.
+6. Lobby, druide : remplacer les 3 boutons de forme à droite par un clic sur le sort de forme dans la barre (Cat Form /
+   Bear Form), qui change la barre affichée.
+7. Nain : une petite barbe reste figée dans l'air quand il marche (une partie de la barbe ne suit pas la tête) : le
+   vérifier soi-même en marchant, corriger.
+8. Ours : ses sons ressemblent encore à un cochon ; nouvelle étude des sons (enregistrements d'ours libres de droits).
+9. Sons de sorts encore plats et fades : état des lieux du design sonore des sorts de World of Warcraft (sources
+   publiques, sans copier ni extraire leurs sons), puis propositions ; Drain Life du démoniste très gênant.
+10. Épaules (épaulières) du mage, du démoniste, du voleur et du prêtre : se rapprocher des images de référence (styles,
+    couches, matières, couleurs) en restant des designs originaux (règle du projet : pas de personnage Warcraft).
+
 ## Équilibrage 1v1 : que chaque classe ait sa chance (proposé le 04/11/2026, à reprendre)
 
 Demande de l'utilisateur : des 1v1 plus équilibrés, où chacun a sa chance de gagner. Les points 1 et 2 du premier plan
