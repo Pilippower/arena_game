@@ -37,8 +37,12 @@ function renderBindGrid() {
 function assignCapturedBind(code) {
   if (!captureBind) return false;
   if (!code) return true;
-  if (RESERVED_BIND_CODES.has(code.split('+').pop())) {
-    $('bindStatus').textContent = `${keyLabel(code)} is reserved for movement/gameplay.`;
+  const refusal =
+    captureBind.type === 'move' && RESERVED_BIND_CODES.has(code)
+      ? 'is reserved for movement/gameplay'
+      : bindRefusal(code);
+  if (refusal) {
+    $('bindStatus').textContent = `${keyLabel(code)} ${refusal}.`;
     return true;
   }
   // toutes les touches (sorts, trinket, déplacements) : une touche déjà prise est retirée de son ancienne action, qui

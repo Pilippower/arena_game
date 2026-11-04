@@ -12,7 +12,6 @@ validé dans `docs/SPEC.md`.
 11. Démoniste : Corruption vole la vie (chaque dégât infligé est rendu au démoniste).
 12. Bug : un lanceur qui saute peut commencer une incantation (ne doit pas pouvoir).
 13. Bug : Blink pendant un saut (le mage reste sur place au lieu d'arriver au sol à destination).
-17. Raccourcis : pouvoir utiliser Shift + Espace et Ctrl + touche.
 18. Raccourcis propres à chaque classe (autant de configurations que de classes).
 19. Écran Defeat : flammes mal placées (Victory est juste) ; vérifier en plein écran F11 : proportions gardées.
 20. Bouclier d'absorption visible sur la barre de vie (flottante et cadres de groupe) : portion superposée, couleur

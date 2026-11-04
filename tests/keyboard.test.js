@@ -94,4 +94,52 @@ function keyboardWorld(stored = null) {
   assert.equal(ctx.PREFS.keybinds.skills[0], 'Digit1', 'raccourci inchangé');
 }
 
-console.log('OK - clavier (tests unitaires : Échap / Settings)');
+// ---------- Raccourcis Shift + Espace et Ctrl + touche ----------
+{
+  const { ctx, press, inGame, cast } = keyboardWorld();
+  // saisie dans Settings : on tient le modificateur puis on appuie sur la touche
+  const bind = (i, code, mods) => {
+    ctx.captureBind = { type: 'skill', i };
+    press(mods.shiftKey ? 'ShiftLeft' : mods.ctrlKey ? 'ControlLeft' : 'AltLeft', mods);
+    press(code, mods);
+    return ctx.PREFS.keybinds.skills[i];
+  };
+  assert.equal(bind(0, 'Space', { shiftKey: true }), 'Shift+Space', 'Shift + Espace accepté');
+  assert.equal(ctx.keyLabel('Shift+Space'), 'Shift + Space', 'libellé en anglais');
+  assert.equal(ctx.keyLabel('Shift+Space', true), '⇧Spc', 'libellé court sur la case de sort');
+  assert.equal(
+    bind(1, 'KeyS', { ctrlKey: true }),
+    'Ctrl+KeyS',
+    'Ctrl + touche accepté (même une touche de déplacement)'
+  );
+  assert.equal(bind(2, 'Digit9', { ctrlKey: true, shiftKey: true }), 'Ctrl+Shift+Digit9', 'Ctrl + Shift + touche');
+  assert.equal(bind(3, 'ArrowUp', { ctrlKey: true }), 'Ctrl+ArrowUp', 'flèche avec Ctrl : libre');
+  // refusés : Espace seul (saut), Échap (Settings), raccourcis gardés par le navigateur
+  ctx.captureBind = { type: 'skill', i: 4 };
+  press('Space');
+  assert.equal(ctx.PREFS.keybinds.skills[4], 'KeyQ', 'Espace seul reste le saut');
+  for (const [code, mods] of [
+    ['Escape', { shiftKey: true }],
+    ['KeyW', { ctrlKey: true }],
+    ['KeyT', { ctrlKey: true, shiftKey: true }]
+  ]) {
+    ctx.captureBind = { type: 'skill', i: 4 };
+    press(code, mods);
+    assert.equal(ctx.PREFS.keybinds.skills[4], 'KeyQ', `${code} refusé`);
+  }
+  ctx.captureBind = null;
+  // en jeu : la combinaison lance son sort (sans sauter, sans bouger, sans raccourci du navigateur)
+  inGame();
+  const p = ctx.state.player;
+  assert.equal(press('Space', { shiftKey: true }).defaultPrevented, true, 'Shift + Espace pris par le jeu');
+  assert.deepEqual(cast, [0], 'Shift + Espace : sort 1');
+  assert.equal(p.vy, 0, 'Shift + Espace : pas de saut');
+  const ctrlS = press('KeyS', { ctrlKey: true });
+  assert.equal(ctrlS.defaultPrevented, true, 'Ctrl + S : pas d’enregistrement de la page');
+  assert.deepEqual(cast, [0, 1], 'Ctrl + S : sort 2');
+  assert.ok(!ctx.state.keys.s, 'Ctrl + S : pas de recul');
+  press('Space');
+  assert.equal(p.vy, 7.5, 'Espace seul : saut');
+}
+
+console.log('OK - clavier (tests unitaires : Échap / Settings, Shift + Espace, Ctrl + touche)');

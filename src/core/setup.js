@@ -117,10 +117,11 @@ function keyLabel(code, short = false) {
     if (short) return parts.map(m => ({ Shift: '⇧', Ctrl: '^', Alt: 'Alt' })[m] || m).join('') + key;
     return [...parts, key].join(' + ');
   }
+  if (short && code === 'Space') return 'Spc'; // case de sort étroite (« ⇧Spc »)
   const lay = KEY_LAYOUT?.get?.(code);
   if (lay && /^Key[A-Z]$/.test(code)) return lay.toUpperCase(); // chiffres : toujours 1, 2, 3…
   const m = {
-    Space: 'Espace',
+    Space: 'Space',
     Tab: 'TAB',
     Escape: 'Esc',
     ShiftLeft: 'Shift G',
@@ -145,8 +146,24 @@ function keyLabel(code, short = false) {
   if (/^F\d+$/.test(code)) return code;
   return code.replace(/^Numpad/, 'Num ');
 }
-// touches non attribuables (les déplacements sont vérifiés à part : ils sont eux aussi réglables)
+// touches non attribuables seules (Espace = saut, TAB = cible, flèches = déplacement ; les déplacements réglables sont
+// vérifiés à part) ; avec Shift / Ctrl / Alt elles deviennent libres (Shift + Espace…), sauf Échap (Settings)
 const RESERVED_BIND_CODES = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Tab', 'Escape']);
+// combinaisons gardées par le navigateur ou le système (fermer / ouvrir un onglet ou une fenêtre, changer d'onglet) :
+// la page ne les reçoit jamais, le sort ne partirait pas
+const BROWSER_BIND_CODES = new Set(
+  ['Ctrl+KeyW', 'Ctrl+KeyT', 'Ctrl+KeyN', 'Ctrl+Tab', 'Ctrl+F4', 'Alt+Tab', 'Alt+F4'].flatMap(c => [
+    c,
+    c.replace(/^(Ctrl|Alt)\+/, '$1+Shift+')
+  ])
+);
+// raison du refus d'un raccourci de sort ou de trinket ('' = accepté)
+function bindRefusal(code) {
+  const key = code.split('+').pop();
+  if (key === 'Escape' || (code === key && RESERVED_BIND_CODES.has(key))) return 'is reserved for movement/gameplay';
+  if (BROWSER_BIND_CODES.has(code)) return 'is used by the browser';
+  return '';
+}
 const gl =
   canvas.getContext('webgl', { antialias: true, alpha: true, premultipliedAlpha: true }) ||
   canvas.getContext('experimental-webgl');
