@@ -70,7 +70,7 @@ function assignCapturedBind(code) {
   refreshKeyLabels();
   return true;
 }
-// touches affichées sur la barre de sorts (en jeu, ou celle de la classe choisie au lobby)
+// barre de sorts redessinée (touches, ordre) : en jeu, ou celle de la classe choisie au lobby
 function refreshKeyLabels() {
   const u = shownUnit();
   if (u && u === LOBBY_UNIT) renderSkillBar(u);

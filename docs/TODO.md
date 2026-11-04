@@ -8,7 +8,6 @@ validé dans `docs/SPEC.md`.
 Du plus simple au plus compliqué, un commit par tâche. Images de référence des épaules (planches de classe génériques
 fournies par l'utilisateur, à suivre au plus près) : `assets_src/ui/ref_shoulders_{mage,warlock,rogue,priest}.png`.
 
-5. Ordre des sorts changé avec Shift + glisser : faisable aussi dans le lobby, gardé par classe.
 6. Lobby, druide : remplacer les 3 boutons de forme à droite par un clic sur le sort de forme dans la barre (Cat Form /
    Bear Form), qui change la barre affichée.
 7. Nain : une petite barbe reste figée dans l'air quand il marche (une partie de la barbe ne suit pas la tête) : le

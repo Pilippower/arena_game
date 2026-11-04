@@ -41,8 +41,9 @@ function slotOrder(p) {
   });
   return out;
 }
+// barre affichée : en jeu, ou celle de la classe choisie au lobby (ordre gardé par classe et par barre)
 function swapSlots(a, b) {
-  const p = state?.player;
+  const p = shownUnit();
   if (!p || a === b) return;
   const o = slotOrder(p).slice();
   [o[a], o[b]] = [o[b], o[a]];
@@ -50,7 +51,7 @@ function swapSlots(a, b) {
   PREFS.ui.order = PREFS.ui.order || {};
   PREFS.ui.order[p.cls + ':' + barKey(p)] = o;
   savePrefs();
-  updateUI();
+  refreshKeyLabels();
 }
 const SKILL_DRAG = { from: null };
 document.addEventListener(

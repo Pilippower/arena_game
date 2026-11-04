@@ -253,4 +253,23 @@ for (const stored of [
   }
 }
 
+// ---------- Ordre des sorts (Shift + glisser) : aussi au lobby, gardé par classe ----------
+{
+  const w = keyboardWorld(),
+    { ctx } = w,
+    drawn = [];
+  ctx.skillsOf = p => ctx.CLASS[p.cls].skills;
+  ctx.barKey = () => '';
+  ctx.renderSkillBar = u => drawn.push(u);
+  w.fn('src/ui/skillbar.js', 'slotOrder');
+  w.fn('src/ui/skillbar.js', 'swapSlots');
+  w.inLobby('arcanist');
+  ctx.swapSlots(0, 4); // Frost Bolt <-> Blink sur la barre du lobby
+  assert.deepEqual(ctx.slotOrder({ cls: 'arcanist' }), [4, 1, 2, 3, 0, 5], 'lobby : ordre du mage changé');
+  assert.equal(drawn.at(-1), ctx.LOBBY_UNIT, 'lobby : barre redessinée');
+  assert.equal(ctx.PREFS.ui?.order?.['warden:'], undefined, 'les autres classes ne changent pas');
+  const again = keyboardWorld(JSON.parse(w.storage.arenaAscendantPrefs_v1));
+  assert.equal(again.ctx.PREFS.ui.order['arcanist:'].join(), '4,1,2,3,0,5', 'ordre relu au prochain lancement');
+}
+
 console.log('OK - clavier (tests unitaires : Échap / Settings, Shift + Espace, Ctrl + touche, raccourcis par classe)');
