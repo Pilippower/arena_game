@@ -730,14 +730,15 @@ body.lobby:not(.mobile-mode) .pickRight {
   bottom: -6px;
 }
 /* onglets des barres de forme (druide Normal / Cat / Bear, voleur Normal / Stealth) à droite de la barre de sorts,
-   lobby seulement (lobbyBarTabs dans settings.js) */
+   lobby PC seulement (lobbyBarTabs dans settings.js). Jamais en mobile : « position: relative » sur #bottom y
+   annulait le placement de la barre du bas, qui recouvrait la moitié du lobby (régression du 04/11/2026). */
 #lobbyBars {
   display: none;
 }
-body.lobby #bottom {
+body.lobby:not(.mobile-mode) #bottom {
   position: relative;
 }
-body.lobby #lobbyBars {
+body.lobby:not(.mobile-mode) #lobbyBars {
   position: absolute;
   right: 2%;
   top: 50%;

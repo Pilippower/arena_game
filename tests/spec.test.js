@@ -792,7 +792,19 @@ assert.ok(
 }
 assert.ok(!read('index.html').includes('pointerHint'), 'pas d’aide « Click: target » en haut au centre');
 // bouclier visible dans les cadres de groupe : les règles des barres peintes ne visent que le remplissage de la vie
-assert.ok(read('src/ui/hud.css').includes('body .unitRow .hpb > div:not(.shieldSpan),'), 'bouclier visible dans les groupes');
+assert.ok(
+  read('src/ui/hud.css').includes('body .unitRow .hpb > div:not(.shieldSpan),'),
+  'bouclier visible dans les groupes'
+);
+// lobby mobile : les onglets de forme ne déplacent pas la barre du bas (régression du 04/11/2026)
+{
+  const css = read('src/ui/lobby.css').replace(/\s+/g, ' ');
+  assert.ok(
+    css.includes('body.lobby:not(.mobile-mode) #bottom { position: relative; }') &&
+      !css.includes('} body.lobby #bottom { position: relative; }'),
+    'lobby mobile : barre du bas à sa place'
+  );
+}
 // Tourner au clavier : même rotation que le glisser au clic droit (convention validée)
 assert.ok(
   read('src/input/controls.js').includes('GameLogic.applyLook(camera.yaw, camera.pitch, dir * TURN_PX_PER_S * dt, 0)'),

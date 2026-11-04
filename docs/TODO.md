@@ -28,6 +28,9 @@ fournies par l'utilisateur, à suivre au plus près) : `assets_src/ui/ref_should
 8. Ours : ses sons ressemblent encore à un cochon ; nouvelle étude des sons (enregistrements d'ours libres de droits).
 9. Sons de sorts encore plats et fades : état des lieux du design sonore des sorts de World of Warcraft (sources
    publiques, sans copier ni extraire leurs sons), puis propositions ; Drain Life du démoniste très gênant.
+11. Mobile, surtout le lobby, « complètement cassé » (ajoutée le 04/11/2026). Cause principale trouvée et corrigée le
+    jour même (régression du commit 1880ec3 : la barre du bas recouvrait la moitié du lobby) ; reste à faire une revue
+    complète du mobile (lobby en entier jusqu'au bouton PLAY, Settings, jeu, fin de match) sur plusieurs tailles.
 10. Épaules (épaulières) du mage, du démoniste, du voleur et du prêtre : se rapprocher au plus près des planches de
     référence (formes, couches, matières, couleurs, gemmes) ; seules les épaulières changent (pas les visages ni les
     coiffures). Mage : grandes épaulières bleu roi en plusieurs pointes dorées, cristaux bleus lumineux ; démoniste :
