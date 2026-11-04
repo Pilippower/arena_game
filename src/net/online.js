@@ -18,6 +18,7 @@ var NET = {
   code: '',
   guests: new Map(), // hôte : id → { id, conn, name, cls, race, team: 'ally' | 'enemy', input, ready }
   party: null, // invité : le groupe vu de chez lui (message « party » de l'hôte)
+  aiPicks: null, // hôte : race et classe choisies pour les IA, { ally: [{ cls, race }…], enemy: […] } (netSetAI)
   gid: 0,
   events: [],
   sendT: 0,
@@ -101,6 +102,28 @@ function netPartyMembers() {
     ...[...NET.guests.values()].map(g => ({ id: g.id, name: g.name, race: g.race, cls: g.cls, team: g.team }))
   ];
 }
+// hôte : IA des places libres telles qu'elles joueront (choix de l'hôte, sinon composition par défaut)
+function netAiSlots() {
+  const S = netSlots(),
+    ai = netAiFill(NET_CHOICE.cls || 'sentinel', S.size, S.ally, S.enemy, netAiPicks()),
+    obj = list => list.map(([cls, name, race]) => ({ cls, name, race }));
+  return { ally: obj(ai.ally), enemy: obj(ai.enemy) };
+}
+// choix de l'hôte gardés dans le navigateur (même groupe d'IA d'une fois sur l'autre)
+function netAiPicks() {
+  if (!NET.aiPicks)
+    try {
+      NET.aiPicks = JSON.parse(netStored('arenaNetAI') || 'null');
+    } catch (_) {}
+  return (NET.aiPicks ||= { ally: [], enemy: [] });
+}
+// hôte : race et classe de la k-ième IA d'une équipe
+function netSetAI(team, k, cls, race) {
+  if (!(team in netAiPicks())) return; // race / classe inconnues : ignorées au remplissage (netAiFill)
+  NET.aiPicks[team][k] = { cls, race };
+  netStore('arenaNetAI', JSON.stringify(NET.aiPicks));
+  netPartySync();
+}
 // hôte : le groupe envoyé à chaque ami (mêmes équipes chez tous), puis affiché
 function netPartySync() {
   if (NET.role === 'host')
@@ -112,7 +135,8 @@ function netPartySync() {
         map: MAP_ID,
         diff: DIFFICULTY,
         me: g.id,
-        members: netPartyMembers()
+        members: netPartyMembers(),
+        ai: netAiSlots()
       });
   partyRender();
 }
@@ -314,7 +338,7 @@ function netOnlineTeams() {
     return null;
   }
   const pick = t => gs.filter(g => g.team === t).map(g => ({ cls: g.cls, race: g.race, name: g.name, gid: g.id }));
-  return { allies: pick('ally'), foes: pick('enemy'), host: NET_NAME || 'Host' };
+  return { allies: pick('ally'), foes: pick('enemy'), host: NET_NAME || 'Host', ai: netAiPicks() };
 }
 // chaque ami reçoit la composition vue de chez lui (son personnage = « You »)
 function netSendRoster() {

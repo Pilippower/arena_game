@@ -918,7 +918,6 @@ body.lobby:not(.mobile-mode) .pickRight {
 #overlay .pSlot.ai {
   border-style: dashed;
   border-left-style: solid;
-  opacity: 0.6;
   background: #0b1022aa;
 }
 #overlay .pSlot.over {
@@ -1000,4 +999,23 @@ body.mobile-mode #overlay .pVs {
 body.mobile-mode #overlay .pSettings {
   padding: 6px 10px;
   margin: 4px auto 6px;
+}
+/* IA : race et classe choisies par l'hôte, deux listes sur la place */
+#overlay .pPick {
+  display: flex;
+  gap: 5px;
+  margin-top: 2px;
+}
+#overlay .pPick select {
+  min-width: 0;
+  padding: 2px 4px;
+  font-size: 12px;
+  color: #f3ead2;
+  background: #0a0f26;
+  border: 1px solid #b8893c;
+  border-radius: 6px;
+  cursor: pointer;
+}
+#overlay .pPick select:hover {
+  border-color: #ffd36a;
 }

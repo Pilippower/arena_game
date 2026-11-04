@@ -74,14 +74,24 @@ let TEAM_SIZE = (() => {
 // Équipes selon le format : en 2v2 un soigneur et un combattant de chaque côté ; en 1v1 un adversaire
 // qui peut mourir (pas de soigneur seul en face).
 // En ligne : amis placés par l'hôte, places libres complétées comme hors ligne (soigneur/combattant, Kargan…).
-function netTeamsFor(on, pcls, size) {
+// En ligne : IA des places libres de chaque équipe ('ally' = celle de l'hôte, 'enemy' = en face) d'après le nombre
+// d'amis de chaque côté. Par défaut la composition hors ligne ; l'hôte choisit race et classe place par place (picks,
+// onglet Multiplayer) : l'onglet affiche exactement ce qui sera joué.
+function netAiFill(pcls, size, nAllies, nFoes, picks = {}) {
   const base = teamsFor(pcls, 3),
-    fillA = base.allies.map((c, i) => [c, ['Lyra', 'Torren'][i], i ? 'dwarf' : raceForClass(c, 0, 1)]),
-    allies = on.allies.map(g => [g.cls, g.name, g.race, g.gid]),
-    foes = on.foes.map(g => [g.cls, g.name, g.race, g.gid]);
-  for (const f of fillA) if (allies.length < size - 1) allies.push(f);
-  for (const f of base.foes) if (foes.length < size) foes.push(f);
-  return { allies: allies.slice(0, size - 1), foes: foes.slice(0, size) };
+    defA = base.allies.map((c, i) => [c, ['Lyra', 'Torren'][i], i ? 'dwarf' : raceForClass(c, 0, 1)]),
+    fill = (team, def, n) =>
+      def.slice(0, Math.max(0, n)).map((d, k) => {
+        const p = picks[team]?.[k];
+        return CLASS[p?.cls] && RACE[p.race] ? [p.cls, d[1], p.race] : d; // choix illisible : défaut
+      });
+  return { ally: fill('ally', defA, size - 1 - nAllies), enemy: fill('enemy', base.foes, size - nFoes) };
+}
+function netTeamsFor(on, pcls, size) {
+  const allies = on.allies.map(g => [g.cls, g.name, g.race, g.gid]),
+    foes = on.foes.map(g => [g.cls, g.name, g.race, g.gid]),
+    ai = netAiFill(pcls, size, allies.length, foes.length, on.ai);
+  return { allies: [...allies, ...ai.ally].slice(0, size - 1), foes: [...foes, ...ai.enemy].slice(0, size) };
 }
 function teamsFor(pcls, size) {
   const allies = compForPlayer(pcls),

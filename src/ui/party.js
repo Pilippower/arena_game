@@ -25,6 +25,7 @@ function partyView() {
       map: MAP_ID,
       diff: DIFFICULTY,
       code: NET.code,
+      ai: netAiSlots(),
       me: 0,
       lead: true
     };
@@ -46,28 +47,44 @@ function partySettingsHTML(v) {
 <div class="pSet"><h4>AI difficulty</h4><div class="pOpts diffs">${PARTY_DIFFS.map(d => opt('diff', d, d[0].toUpperCase() + d.slice(1), d === v.diff)).join('')}</div></div>
 </div>`;
 }
-// une place d'équipe : portrait de race, médaillon de classe, nom ; place libre = IA
-function partySlotHTML(m, v, n, over) {
-  if (!m)
+// portrait de race et médaillon de classe d'une place
+const partyFaceHTML = (race, cls) =>
+  `<span class="pFace">${RACE[race] ? `<img src="assets/ui/lobby2/race_${race}.webp" alt="">` : ''}${CLASS[cls] ? `<img class="pBadge" src="assets/ui/lobby2/class_${cls}.webp" alt="">` : ''}</span>`;
+const partyHeroName = (race, cls) => `${RACE[race]?.name || ''} · ${CLASS[cls]?.name || ''}`;
+// place libre : l'IA qui la jouera (a) ; l'hôte choisit sa race et sa classe
+function partyAiSlotHTML(a, v, n, team, k) {
+  if (!a)
     return `<div class="pSlot ai"><span class="pNum">${n}</span><span class="pFace"></span><span class="pInfo"><b>AI</b><small>Open slot</small></span></div>`;
+  const pick = (kind, cur, table) =>
+    `<select data-ai="${team}:${k}" data-kind="${kind}" title="AI ${kind}">${Object.entries(table)
+      .map(([id, x]) => `<option value="${id}"${id === cur ? ' selected' : ''}>${x.name}</option>`)
+      .join('')}</select>`;
+  return `<div class="pSlot ai"><span class="pNum">${n}</span>${partyFaceHTML(a.race, a.cls)}<span class="pInfo"><b>AI</b>${
+    v.lead
+      ? `<span class="pPick">${pick('race', a.race, RACE)}${pick('cls', a.cls, CLASS)}</span>`
+      : `<small>${partyHeroName(a.race, a.cls)}</small>`
+  }</span></div>`;
+}
+// une place d'ami (ou de l'hôte) : portrait, nom, outils
+function partySlotHTML(m, v, n, over) {
   const me = m.id === v.me,
-    face = m.race ? `<img src="assets/ui/lobby2/race_${m.race}.webp" alt="">` : '',
-    badge = m.cls ? `<img class="pBadge" src="assets/ui/lobby2/class_${m.cls}.webp" alt="">` : '',
-    who = m.cls ? `${RACE[m.race]?.name || ''} · ${CLASS[m.cls]?.name || ''}` : 'Choosing a hero…',
+    who = m.cls ? partyHeroName(m.race, m.cls) : 'Choosing a hero…',
     tools = me
       ? '<button data-hero title="Pick your race and class">Change hero</button>'
       : v.lead
         ? `<button data-move="${m.id}" title="Switch side">⇄</button><button data-kick="${m.id}" title="Remove from the party">Kick</button>`
         : '';
-  return `<div class="pSlot${me ? ' me' : ''}${over ? ' over' : ''}"><span class="pNum">${n}</span><span class="pFace">${face}${badge}</span><span class="pInfo"><b>${m.host ? '♛ ' : ''}${partyEsc(m.name)}${me ? ' (you)' : ''}</b><small>${over ? `No slot in ${v.size}v${v.size}` : partyEsc(who)}</small></span><span class="pTools">${tools}</span></div>`;
+  return `<div class="pSlot${me ? ' me' : ''}${over ? ' over' : ''}"><span class="pNum">${n}</span>${partyFaceHTML(m.race, m.cls)}<span class="pInfo"><b>${m.host ? '♛ ' : ''}${partyEsc(m.name)}${me ? ' (you)' : ''}</b><small>${over ? `No slot in ${v.size}v${v.size}` : partyEsc(who)}</small></span><span class="pTools">${tools}</span></div>`;
 }
-// deux équipes face à face, mon équipe à gauche ; autant de places que le mode
+// deux équipes face à face, mon équipe à gauche ; autant de places que le mode, les libres jouées par l'IA
 function partyTeamsHTML(v) {
   const mine = v.members.find(m => m.id === v.me)?.team || 'ally',
     col = (team, title) => {
       const list = v.members.filter(m => m.team === team),
         slots = Array.from({ length: Math.max(v.size, list.length) }, (_, k) =>
-          partySlotHTML(list[k], v, k + 1, k >= v.size)
+          k < list.length
+            ? partySlotHTML(list[k], v, k + 1, k >= v.size)
+            : partyAiSlotHTML(v.ai?.[team]?.[k - list.length], v, k + 1, team, k - list.length)
         );
       return `<div class="pTeam ${team === mine ? 'mine' : 'foe'}"><h3>${title}</h3>${slots.join('')}</div>`;
     };
@@ -119,6 +136,15 @@ ${partyTeamsHTML(v)}
     const m = v.members.find(x => x.id === +b.dataset.move);
     b.onclick = () => netMoveGuest(m.id, m.team === 'ally' ? 'enemy' : 'ally');
   });
+  // IA : race et classe choisies par l'hôte (les deux listes de la place)
+  box.querySelectorAll('select[data-ai]').forEach(
+    s =>
+      (s.onchange = () => {
+        const [team, k] = s.dataset.ai.split(':'),
+          val = kind => box.querySelector(`select[data-ai="${s.dataset.ai}"][data-kind="${kind}"]`).value;
+        netSetAI(team, +k, val('cls'), val('race'));
+      })
+  );
   box.querySelectorAll('[data-kick]').forEach(b => (b.onclick = () => netKick(+b.dataset.kick)));
 }
 $('tabSolo').onclick = () => lobbyTab('solo');

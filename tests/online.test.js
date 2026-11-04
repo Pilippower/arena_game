@@ -41,8 +41,19 @@ function netWorld({ stored = {}, role = 'host' } = {}) {
     DIFFICULTY: 'hard',
     MAPS: { castle: { name: 'The Castle' }, bridge: { name: 'The Bridge' } },
     MAP_ART: {},
-    CLASS: { arcanist: { name: 'Mage' }, warlock: { name: 'Warlock' } },
-    RACE: { human: { name: 'Human' }, orc: { name: 'Orc' } },
+    CLASS: Object.fromEntries(
+      [
+        ['sentinel', 'Warrior'],
+        ['arcanist', 'Mage'],
+        ['oracle', 'Priest'],
+        ['shade', 'Rogue'],
+        ['warlock', 'Warlock'],
+        ['reaver', 'Death Knight']
+      ].map(([k, name]) => [k, { name }])
+    ),
+    RACE: Object.fromEntries(
+      ['human', 'orc', 'elf', 'dwarf', 'undead'].map(k => [k, { name: k[0].toUpperCase() + k.slice(1) }])
+    ),
     AI_PROFILES: { medium: { m: 1 } },
     state: null,
     fx() {},
@@ -52,6 +63,9 @@ function netWorld({ stored = {}, role = 'host' } = {}) {
     leaveMatch: () => calls.leaveMatch++,
     partyRender() {}
   });
+  // compositions : le vrai code (IA des places libres)
+  S.fn('src/data/classes.js', 'raceForClass');
+  for (const f of ['compForPlayer', 'teamsFor', 'netAiFill', 'netTeamsFor']) S.fn('src/game/combat.js', f);
   S.load('src/net/online.js');
   S.ctx.NET.role = role;
   return { ...S, storage, calls, els: el };
@@ -93,6 +107,45 @@ const lastParty = c => c.sent.filter(m => m.t === 'party').at(-1);
   assert.equal(c3.c.sent.at(-1).t, 'kicked', 'ami exclu prévenu');
   assert.ok(!w.ctx.NET.guests.has(c3.g.id), 'ami exclu retiré');
   assert.equal(lastParty(a.c).members.length, 3, 'groupe mis à jour');
+}
+
+// ---------- IA des places libres : race et classe choisies par l'hôte ----------
+{
+  const w = netWorld();
+  w.ctx.NET_CHOICE = { race: 'human', cls: 'sentinel' };
+  const a = join(w, 'Lyra', 'warlock', 'orc');
+  const names = T => [...T.allies, ...T.foes].map(([c, , r]) => r + ' ' + c).join(', ');
+  // sans choix : la composition hors ligne (inchangée)
+  assert.equal(
+    names(w.ctx.netTeamsFor(w.ctx.netOnlineTeams(), 'sentinel', 3)),
+    'human oracle, dwarf arcanist, orc warlock, orc reaver, elf arcanist',
+    'IA par défaut : composition hors ligne'
+  );
+  assert.equal(
+    lastParty(a.c)
+      .ai.enemy.map(x => x.race + ' ' + x.cls)
+      .join(),
+    'orc reaver,elf arcanist',
+    'amis : IA affichées = IA jouées'
+  );
+  // l'hôte choisit : 2e IA en face = nain démoniste ; 1re alliée = mort-vivant voleur
+  w.ctx.netSetAI('enemy', 1, 'warlock', 'dwarf');
+  w.ctx.netSetAI('ally', 0, 'shade', 'undead');
+  assert.equal(
+    names(w.ctx.netTeamsFor(w.ctx.netOnlineTeams(), 'sentinel', 3)),
+    'undead shade, dwarf arcanist, orc warlock, orc reaver, dwarf warlock',
+    'IA choisies par l’hôte jouées en match'
+  );
+  assert.equal(lastParty(a.c).ai.ally[0].cls, 'shade', 'choix envoyé aux amis');
+  w.ctx.netSetAI('enemy', 0, 'nope', 'orc');
+  assert.equal(lastParty(a.c).ai.enemy[0].cls, 'reaver', 'classe inconnue refusée');
+  // gardés dans le navigateur ; un choix illisible revient à l'IA par défaut
+  const w2 = netWorld({ stored: { arenaNetAI: w.storage.arenaNetAI } });
+  w2.ctx.NET_CHOICE = { race: 'human', cls: 'sentinel' };
+  assert.equal(w2.ctx.netAiSlots().enemy[1].race, 'dwarf', 'choix des IA gardés d’une fois sur l’autre');
+  const w3 = netWorld({ stored: { arenaNetAI: '{"ally":[{"cls":"x","race":"y"}]}' } });
+  w3.ctx.NET_CHOICE = { race: 'human', cls: 'sentinel' };
+  assert.equal(w3.ctx.netAiSlots().ally[0].cls, 'oracle', 'choix illisible : IA par défaut');
 }
 
 // ---------- le groupe survit au match ----------
@@ -203,13 +256,30 @@ function partyTests() {
   w.ctx.partyRender();
   assert.equal(slots() + ' ' + aiSlots(), '3 0', '1v1 : une place par équipe (+ l’ami en trop)');
   assert.match(box.innerHTML, /pSlot over[^]*No slot in 1v1/, 'ami sans place signalé');
+  // hôte : chaque IA a ses deux listes (race, classe), valeur jouée sélectionnée
+  w.ctx.TEAM_SIZE = 3;
+  w.ctx.partyRender();
+  assert.equal((box.innerHTML.match(/<select data-ai=/g) || []).length, 6, 'hôte : race + classe pour chaque IA (3)');
+  assert.match(box.innerHTML, /data-ai="enemy:0" data-kind="cls"[^]*?value="reaver" selected/, 'classe jouée choisie');
   // ami : réglages en lecture seule, choisis par l'hôte
   w.ctx.NET.role = 'guest';
-  w.ctx.NET.party = { code: 'ABCDE', size: 2, map: 'castle', diff: 'easy', me: 1, members: [] };
+  w.ctx.NET.party = {
+    code: 'ABCDE',
+    size: 2,
+    map: 'castle',
+    diff: 'easy',
+    me: 1,
+    members: [],
+    ai: { ally: [{ cls: 'warlock', race: 'dwarf' }], enemy: [] }
+  };
   w.ctx.partyRender();
   assert.ok(!box.innerHTML.includes('Start match') && box.innerHTML.includes('Leave party'), 'ami : Leave party');
   assert.match(box.innerHTML, /pOpt selected" data-size="2" disabled/, 'ami : mode de l’hôte, non modifiable');
   assert.equal(aiSlots(), 4, 'ami : places du mode de l’hôte');
+  assert.ok(
+    !box.innerHTML.includes('<select') && box.innerHTML.includes('Dwarf · Warlock'),
+    'ami : IA lues, non modifiables'
+  );
   console.log(
     'OK - groupe en ligne (tests unitaires : membres, équipes, places, exclure, groupe gardé entre les matchs, code gardé, onglet Multiplayer)'
   );
