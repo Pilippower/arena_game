@@ -15,7 +15,8 @@ function renderBindGrid() {
   if (!box) return;
   const cls = bindClass(),
     kb = keybindsFor(cls),
-    names = kb.skills.map((_, i) => (cls && CLASS[cls].skills[i]?.n) || `Spell ${i + 1}`),
+    // une ligne par sort de la classe (7 emplacements pour les réglages communs : le druide a 7 sorts)
+    names = kb.skills.slice(0, cls ? CLASS[cls].skills.length : undefined).map((_, i) => (cls && CLASS[cls].skills[i]?.n) || `Spell ${i + 1}`),
     btn = (type, i, code) =>
       `<button class="bindBtn ${captureBind?.type === type && captureBind.i === i ? 'capturing' : ''}${code ? '' : ' unset'}" data-bind="${type}" data-i="${i}">${captureBind?.type === type && captureBind.i === i ? 'Press a key…' : code ? keyLabel(code) : 'Unset'}</button>`;
   const MOVES = [

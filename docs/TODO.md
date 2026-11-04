@@ -8,8 +8,6 @@ validé dans `docs/SPEC.md`.
 Du plus simple au plus compliqué, un commit par tâche. Images de référence des épaules (planches de classe génériques
 fournies par l'utilisateur, à suivre au plus près) : `assets_src/ui/ref_shoulders_{mage,warlock,rogue,priest}.png`.
 
-4. Raccourcis par classe, réglables dans le lobby (ex. mage : 2 → F ; démoniste : 2 → X), qui fonctionnent en jeu et
-   restent après fermeture du navigateur (vérifier ce que le lot du 04/11 a déjà fait et compléter).
 5. Ordre des sorts changé avec Shift + glisser : faisable aussi dans le lobby, gardé par classe.
 6. Lobby, druide : remplacer les 3 boutons de forme à droite par un clic sur le sort de forme dans la barre (Cat Form /
    Bear Form), qui change la barre affichée.

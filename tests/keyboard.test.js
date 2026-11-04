@@ -54,7 +54,11 @@ function keyboardWorld(stored = null) {
     settingsOpen: false,
     captureBind: null,
     LOBBY_UNIT: null,
-    CLASS: { warden: { name: 'Druid', skills: [] }, sentinel: { name: 'Warrior', skills: [] } },
+    CLASS: {
+      warden: { name: 'Druid', skills: [] },
+      sentinel: { name: 'Warrior', skills: [] },
+      arcanist: { name: 'Mage', skills: ['Frost Bolt', 'Frost Nova', 'Counterspell', 'Arcane Barrier', 'Blink', 'Polymorph'].map(n => ({ n })) }
+    },
     updateUI() {},
     endCast: (u, why) => (u.cast = null), // fin d'incantation (src/game/combat.js : saut = annulation)
     renderSkillBar() {},
@@ -188,6 +192,17 @@ function keyboardWorld(stored = null) {
   // jamais deux actions sur la même touche, dans une même classe
   w.bind('skill', 1, 'KeyT');
   assert.equal(kb('warden').skills.slice(0, 2).join(), ',KeyT', 'druide : touche reprise, ancienne action Unset');
+  // Settings : une ligne par sort de la classe (mage : 6 sorts, pas de « 7. Spell 7 » ; sans classe : 7 emplacements)
+  w.inLobby('arcanist');
+  w.ctx.renderBindGrid();
+  const grid = () => w.$el('bindGrid').innerHTML;
+  assert.ok(grid().includes('6. Polymorph') && !grid().includes('7. '), 'mage : 6 lignes de sorts');
+  const played = w.ctx.state;
+  w.ctx.state = null; // ni partie ni classe choisie : réglages communs
+  w.inLobby(null);
+  w.ctx.renderBindGrid();
+  assert.ok(grid().includes('7. Spell 7'), 'réglages communs : 7 emplacements');
+  w.ctx.state = played;
   // au lobby : la classe choisie
   w.inLobby('sentinel');
   w.bind('trinket', 0, 'KeyV');
