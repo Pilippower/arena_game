@@ -542,10 +542,7 @@ console.log('OK - spécifications validées (docs/SPEC.md)');
     h3.includes('b.quaternion.equals(k.out[i])) b.quaternion.copy(k.anim[i])'),
     'IK : repart de la pose animée'
   );
-  assert.ok(
-    h3.includes('setFromUnitVectors(blade, want).multiply(H.getWorldQuaternion'),
-    'IK : lame tournée au plus court, sans rotation du clip'
-  );
+  // lame orientée exactement, même avec les os étirés du nain et de l'elfe : tests/gameplay.test.js (hfTurnLocal)
 }
 // Fin de match : flammes animées sur les flammes peintes des torches
 assert.ok(

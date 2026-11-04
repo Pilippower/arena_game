@@ -180,6 +180,35 @@ function playerWorld() {
   assert.equal(S.ctx.activeCC(u).kind, 'stun', 'étourdi : prioritaire');
   assert.equal(S.ctx.activeCC({ ...u, alive: false }), null, 'mort : rien');
 }
+// ---------- Arme à deux mains du DK : orientation exacte avec des os étirés (src/render/hero_anim.js) ----------
+{
+  const THREE = require('three');
+  const S = sandbox({ THREE });
+  S.fn('src/render/hero_anim.js', 'hfTurnLocal');
+  // bras du nain : échelle non uniforme [1,28 ; 0,88 ; 1,28], avant-bras tourné, main, lame vers +y de la main
+  const arm = new THREE.Bone(),
+    fore = new THREE.Bone(),
+    hand = new THREE.Bone(),
+    blade = new THREE.Object3D();
+  arm.scale.set(1.281, 0.882, 1.281);
+  arm.rotation.set(0.4, 0.3, -0.7);
+  fore.position.set(0, 0.3, 0);
+  fore.rotation.set(-0.9, 0.2, 0.5);
+  hand.position.set(0, 0.25, 0);
+  hand.scale.set(0.98, 1.38, 0.98);
+  arm.add(fore);
+  fore.add(hand);
+  hand.add(blade);
+  arm.updateMatrixWorld(true);
+  const dir = () => new THREE.Vector3(0, 1, 0).transformDirection(blade.matrixWorld);
+  const want = new THREE.Vector3(-0.25, 0.05, 0.97).normalize();
+  S.ctx.hfTurnLocal(hand, dir(), want);
+  assert.ok(dir().angleTo(want) < 1e-6, 'lame orientée exactement malgré les os étirés');
+  // une 2e fois sur une pose déjà juste : plus rien ne bouge (pas d'oscillation d'une image à l'autre)
+  const q = hand.quaternion.clone();
+  S.ctx.hfTurnLocal(hand, dir(), want);
+  assert.ok(hand.quaternion.angleTo(q) < 1e-6, 'pose stable d’une image à l’autre');
+}
 console.log(
-  'OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic, contrôles)'
+  'OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic, contrôles, IK)'
 );

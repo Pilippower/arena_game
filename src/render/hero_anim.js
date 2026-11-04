@@ -104,18 +104,20 @@ const ATTACK_HIT = {
 };
 // Arme à deux mains (chevalier de la mort) : la main gauche rejoint la poignée sous la main droite à chaque image
 // (cinématique inverse à deux os : bras, avant-bras ; le coude garde son côté), aussi pendant la frappe.
-let IK_V = null,
-  IK_Q = null; // créés à la première utilisation (THREE peut manquer : modèle de secours)
+let IK_V = null; // créés à la première utilisation (THREE peut manquer : modèle de secours)
 function hfAimBone(bone, from, to) {
-  // tourne `bone` (en espace monde) pour que la direction from→(enfant) devienne from→to
-  const [a, b] = [IK_V[4], IK_V[5]],
-    [qd, qp, qb] = IK_Q;
-  a.copy(from[1]).sub(from[0]).normalize();
-  b.copy(to).sub(from[0]).normalize();
-  qd.setFromUnitVectors(a, b);
-  bone.parent.getWorldQuaternion(qp);
-  bone.getWorldQuaternion(qb);
-  bone.quaternion.copy(qp.invert().multiply(qd.multiply(qb)));
+  // tourne `bone` pour que la direction from→(enfant) devienne from→to (calcul exact, voir hfTurnLocal)
+  const [a, b] = [IK_V[4], IK_V[5]];
+  hfTurnLocal(bone, a.copy(from[1]).sub(from[0]), b.copy(to).sub(from[0]));
+}
+// Tourne `bone` pour que la direction monde `from` (portée par lui ou un enfant) devienne `to`. Calcul exact dans le
+// repère de son parent (vraie matrice, échelles non uniformes comprises) : la rotation s'applique avant l'échelle du
+// parent, donc directions ramenées par la matrice inverse puis rotation au plus court.
+function hfTurnLocal(bone, from, to) {
+  const inv = new THREE.Matrix4().copy(bone.parent.matrixWorld).invert(),
+    a = from.clone().transformDirection(inv),
+    b = to.clone().transformDirection(inv);
+  bone.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(a, b));
   bone.updateMatrixWorld(true);
 }
 // Bras (épaule, coude, main) dirigé vers `target` : le coude reste dans le plan du bras actuel.
@@ -180,7 +182,6 @@ function hfTwoHandIK(rec) {
   const m = rec.model;
   if (!IK_V) {
     IK_V = [0, 1, 2, 3, 4, 5].map(() => new THREE.Vector3());
-    IK_Q = [new THREE.Quaternion(), new THREE.Quaternion(), new THREE.Quaternion()];
   }
   if (!rec.ik) {
     const f = n => m.getObjectByName(n),
@@ -264,18 +265,21 @@ function hfTwoHandIK(rec) {
   const [up, lo, hand] = k.L;
   hfArmIK(...k.R, m.localToWorld(k.cur.p.clone()), poleR);
   m.updateMatrixWorld(true);
-  // orientation de la main : on part de son orientation de l'image précédente (dans le repère du personnage) et on la
-  // tourne au plus court vers la direction voulue de la lame : aucune rotation parasite venant du clip
+  // orientation de la main droite : la lame est tournée au plus court vers la direction voulue, puis la main roule
+  // autour de la lame pour garder la paume tournée comme à l'image précédente (dans le repère du personnage) : aucune
+  // rotation parasite venant du clip. Rotations exactes dans le repère de l'avant-bras (hfTurnLocal) : avec les os
+  // étirés du nain et de l'elfe, l'ancien calcul par rotations « monde » approchées faisait trembler l'arme.
   const H = k.R[2],
-    toLocal = q => H.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(q);
-  if (k.handQ) H.quaternion.copy(toLocal(mq.clone().multiply(k.handQ)));
-  m.updateMatrixWorld(true);
-  const blade = new THREE.Vector3(0, 1, 0).transformDirection(k.grip.matrixWorld),
     want = k.cur.d.clone().applyQuaternion(mq),
-    hw = new THREE.Quaternion().setFromUnitVectors(blade, want).multiply(H.getWorldQuaternion(new THREE.Quaternion()));
-  H.quaternion.copy(toLocal(hw));
-  k.handQ = mq.clone().invert().multiply(hw);
-  m.updateMatrixWorld(true);
+    bladeNow = () => new THREE.Vector3(0, 1, 0).transformDirection(k.grip.matrixWorld),
+    palmNow = () => new THREE.Vector3(-1, 0, 0).transformDirection(H.matrixWorld),
+    across = v => v.addScaledVector(want, -v.dot(want)).normalize();
+  hfTurnLocal(H, bladeNow(), want);
+  if (k.palm) {
+    hfTurnLocal(H, across(palmNow()), across(k.palm.clone().applyQuaternion(mq)));
+    hfTurnLocal(H, bladeNow(), want);
+  }
+  k.palm = palmNow().applyQuaternion(mq.clone().invert());
   // main gauche : sa PAUME (pas son poignet) sur la poignée, juste sous la droite, paume tournée du même côté que la
   // droite et pouce vers la lame (prise à deux mains). Repère d'une main : +y = doigts, +z = pouce, paume en +x
   // (gauche) / -x (droite) ; centre de la paume à (±0,028 ; 0,075 ; 0) du poignet.
@@ -290,7 +294,11 @@ function hfTwoHandIK(rec) {
     tgt = wrist;
   hfArmIK(up, lo, hand, tgt, poleL);
   m.updateMatrixWorld(true);
-  hand.quaternion.copy(hand.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(qL));
+  // orientation qL appliquée par rotations exactes (pouce vers la lame, puis paume), comme la main droite
+  const axis = v => v.transformDirection(hand.matrixWorld);
+  hfTurnLocal(hand, axis(new THREE.Vector3(0, 0, 1)), zL);
+  const xNow = axis(new THREE.Vector3(1, 0, 0));
+  hfTurnLocal(hand, xNow.addScaledVector(zL, -xNow.dot(zL)).normalize(), xL);
   bones.forEach((b, i) => (k.out[i] = (k.out[i] || new THREE.Quaternion()).copy(b.quaternion)));
 }
 
