@@ -58,7 +58,52 @@ const PACK = {
   // druide en forme de chat : grognements d'un vrai tigre (« angry tiger », schots, CC0), hauteur naturelle. Seuls les
   // cris graves sont gardés, chacun au début exact d'un cri (pas de doublon) : ceux de 3,0 s, 5,4 s, 21,8 s et 40,5 s ont des
   // pics aigus (jusqu'à 35 % d'énergie au-dessus de 3 kHz) qui faisaient mal aux oreilles.
-  snarl_cat: [0.21, 11.09, 15.47, 26.08].map(at => ['beasts/angry-tiger.wav', 0.75, null, at])
+  snarl_cat: [0.21, 11.09, 15.47, 26.08].map(at => ['beasts/angry-tiger.wav', 0.75, null, at]),
+  // ---------- sorts (04/11/2026, « des sons réalistes » : eau / glace pour le givre, sacré pour les soins) ----------
+  // 5e valeur = passe-bas (Hz) appliqué à la découpe : règle d'écoute « pas d'aigu strident » (les éclats de glace
+  // enregistrés ont 70 à 90 % de leur énergie au-dessus de 3 kHz) ; vérifié par tests/combat.test.js.
+  // eau qui tourbillonne (incantation de Frost Bolt)
+  water_swirl: [
+    ['spells/water-splash-slime-sfx/loop_water_01.ogg', 2.4, null, null, 2200],
+    ['spells/water-splash-slime-sfx/loop_water_02.ogg', 2.4, null, null, 2200]
+  ],
+  // glace qui se brise (libération de Frost Bolt, Frost Nova)
+  ice_shatter: ['LedasLuzta33.ogg', 'LedasLuzta4.ogg', 'LedasLuzta5.ogg'].map(f => [
+    'spells/IceShatters_0/IceShatters/' + f,
+    0.9,
+    null,
+    null,
+    2400
+  ]),
+  // petite éclaboussure (sous l'éclat de glace)
+  splash: ['splash_02.ogg', 'splash_09.ogg', 'splash_10.ogg'].map(f => [
+    'spells/water-splash-slime-sfx/' + f,
+    0.6,
+    null,
+    null,
+    2600
+  ]),
+  // gel qui se propage (Frost Nova) et claquement de froid
+  freeze: [['spells/freeze.wav', 1.6, null, 0.5, 2600]],
+  ice_snap: [['spells/icespells/coldsnap.wav', 0.8, null, null, 1900]],
+  // énergie magique tenue (Polymorph, Arcane Barrier)
+  arcane: [
+    ['spells/magical_1_0.ogg', 1.6, null, null, 2800],
+    ['spells/magical_3.ogg', 1.8, null, null, 2800]
+  ],
+  shimmer: [
+    ['spells/magical_4.ogg', 1.8, null, null, 2800],
+    ['spells/magical_5.ogg', 1.4, null, null, 2600]
+  ],
+  sheep: [['spells/Sheep_bleat.ogg', 0.5, null, null, 3000]],
+  // déplacement d'air (Blink)
+  teleport: [['spells/teleport.wav', 1.2, null, null, 3000]],
+  // sacré : bol chantant tenu (incantations du prêtre) ou frappé (Power Shield), cloches, harpe, carillon
+  bowl_hum: [['spells/SingingBowl2.ogg', 2.6, null, 2.5, 3000]],
+  bowl_strike: [['spells/SingingBowl1.ogg', 2.2, null, null, 3000]],
+  bell: ['bell_ding2.wav', 'bell_ding3.wav', 'bell_ding4.wav'].map(f => ['spells/' + f, 1.5, null, null, 2600]),
+  harp: [['spells/health_restore.wav', 2.0, null, null, 3000]],
+  chime: ['Cure2.wav', 'Cure3.wav', 'Cure8.wav'].map(f => ['spells/curemagic/' + f, 1.2, null, null, 2800])
 };
 
 const wav = (pcm, sr) => {
@@ -87,17 +132,25 @@ const wav = (pcm, sr) => {
   let bytes = 0;
   for (const [key, list] of Object.entries(PACK)) {
     out[key] = [];
-    for (const [file, maxDur, seg, at] of list) {
+    for (const [file, maxDur, seg, at, lowpass] of list) {
       const b64 = fs.readFileSync(path.join(SRC, file)).toString('base64');
       const pcm = await page.evaluate(
-        async ({ b64, maxDur, seg, at, SR }) => {
+        async ({ b64, maxDur, seg, at, lowpass, SR }) => {
           const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
           const raw = await new OfflineAudioContext(1, 1, 44100).decodeAudioData(bin.buffer);
-          // mono + rééchantillonnage
+          // mono + rééchantillonnage (+ passe-bas à deux étages si demandé)
           const off = new OfflineAudioContext(1, Math.ceil(raw.duration * SR), SR),
             src = off.createBufferSource();
           src.buffer = raw;
-          src.connect(off.destination);
+          let node = src;
+          for (let k = 0; lowpass && k < 2; k++) {
+            const f = off.createBiquadFilter();
+            f.type = 'lowpass';
+            f.frequency.value = lowpass;
+            node.connect(f);
+            node = f;
+          }
+          node.connect(off.destination);
           src.start();
           const d = (await off.startRendering()).getChannelData(0);
           // enveloppe 10 ms → début de chaque cri
@@ -138,7 +191,7 @@ const wav = (pcm, sr) => {
             return Math.round(Math.max(-1, Math.min(1, v * g * f)) * 32767);
           });
         },
-        { b64, maxDur, seg, at, SR }
+        { b64, maxDur, seg, at, lowpass, SR }
       );
       if (pcm.length < SR * 0.15) continue; // bruit parasite (ex. un cri découpé trop court)
       const w = wav(pcm, SR);

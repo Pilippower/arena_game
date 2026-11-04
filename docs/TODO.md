@@ -5,7 +5,10 @@ validé dans `docs/SPEC.md`.
 
 ## Liste n°2 du 04/11/2026 : terminée, restent des propositions à valider par l'utilisateur
 
-9. Sons de sorts : **étude faite le 04/11/2026, Drain Life corrigé ; propositions à faire valider par l'utilisateur.**
+9. Sons de sorts : **étude faite le 04/11/2026, Drain Life corrigé ; sons enregistrés réalistes validés et faits pour le
+   Mage et le Prêtre (SPEC.md) ; restent le Druide (vent, feuilles, bois, pluie), le Démoniste (feu qui gronde,
+   grésillement, murmures, aspiration), le Chevalier de la mort (chaînes, glace massive, souffle spectral), le chœur du
+   Prêtre (aucun enregistrement libre trouvé) et Pain (murmures).** Propositions de l'étude (a à f) :
    Sources publiques : Blizzard, « Under the Hood: Anatomy of Sound Design » (créatures de WoW : voix + ours + tigre
    superposés puis traités ; variations nombreuses) ; Brian Farr (Hearthstone, ex-WoW) : les sorts de Warcraft ont « un
    élément musical atonal » qui les rend reconnaissables ; guides de design de sorts (Game Developer, RPG Magic 2) : 3 à

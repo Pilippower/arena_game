@@ -9,8 +9,9 @@ function sfxCtx() {
   return ctx;
 }
 // ---------- Bruitages enregistrés : assets/audio/sfx_pack.js (tools/build_sfx_pack.js, licences LICENSES.md) ----------
-// Cris d'effort, lame qui fend l'air, impacts d'épée / de masse / de hache. Décodés une fois ; tant qu'ils ne sont
-// pas prêts (ou si le pack manque), les sons procéduraux d'origine prennent le relais.
+// Cris d'effort, lame qui fend l'air, impacts d'épée / de masse / de hache, textures des sorts (eau, glace, cloches…).
+// Décodés une fois ; tant qu'ils ne sont pas prêts (ou si le pack manque), les sons procéduraux d'origine prennent le
+// relais.
 const SAMPLES = { buf: null, last: {} };
 // décodés dès la première interaction (clic ou touche dans le lobby) : prêts avant le premier coup de la partie
 for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, () => sfxCtx(), { once: true, capture: true });
@@ -29,16 +30,21 @@ function sfxSamplesLoad(ctx) {
   }
 }
 // Une variante au hasard (jamais deux fois la même d'affilée) ; rate = hauteur / vitesse, lowpass = voix étouffée.
-function sfxSample(kind, vol, pan = 0, { rate = 1, delay = 0, lowpass = 0 } = {}) {
-  const ctx = sfxCtx(),
-    list = SAMPLES.buf?.[kind];
-  if (!ctx || !list?.length) return false;
+function sfxPick(kind) {
+  const list = SAMPLES.buf?.[kind];
+  if (!list?.length) return null;
   let i = Math.floor(Math.random() * list.length);
   if (list.length > 1 && i === SAMPLES.last[kind]) i = (i + 1) % list.length;
   SAMPLES.last[kind] = i;
+  return list[i];
+}
+function sfxSample(kind, vol, pan = 0, { rate = 1, delay = 0, lowpass = 0 } = {}) {
+  const ctx = sfxCtx(),
+    buf = ctx && sfxPick(kind);
+  if (!buf) return false;
   const src = ctx.createBufferSource(),
     g = ctx.createGain();
-  src.buffer = list[i];
+  src.buffer = buf;
   src.playbackRate.value = rate;
   g.gain.value = vol;
   let node = src;
@@ -135,7 +141,8 @@ const SFX = {
     if (beast) {
       const a = sfxSpatial(u),
         pitch = 0.94 + Math.random() * 0.12; // même variation pour toutes les couches : un seul cri
-      for (const l of beast) sfxSample(l.kind, l.vol * a.level, a.pan, { rate: l.rate * pitch, lowpass: l.lowpass || 0 });
+      for (const l of beast)
+        sfxSample(l.kind, l.vol * a.level, a.pan, { rate: l.rate * pitch, lowpass: l.lowpass || 0 });
       return;
     }
     if (u.form) return;
@@ -324,6 +331,7 @@ function sfxNoise(dur = 0.16, vol = 0.1, filterFreq = 1200, delay = 0, pan = 0, 
 //   voice(fréq, { type, vol, to, rise, vib, vibDepth, trem, tremDepth, lp }) : voix tenue, glissée vers `to` en `rise`
 //     secondes (montée de l'incantation), vibrato (Hz, écart en Hz), trémolo (Hz, profondeur 0–1), passe-bas ;
 //   air(fréq, { vol, q, kind, sweep, sweepDepth }) : souffle (bruit en boucle filtré), centre balayé par un LFO.
+//   sample(sorte, { vol, rate }) : bruitage enregistré du pack, en boucle.
 function sfxBed(pan = 0, max = 8, rev = 0.35) {
   const ctx = sfxCtx();
   if (!ctx || !MUSIC.sfxMaster) return null;
@@ -392,6 +400,16 @@ function sfxBed(pan = 0, max = 8, rev = 0.35) {
       filter.Q.value = q;
       lfo(filter.frequency, sweep, sweepDepth);
       layer(run(n), vol, 0, 0, filter);
+    },
+    // bruitage enregistré tenu (eau qui tourne, bol chantant), en boucle jusqu'à stop() ; rien si le pack manque
+    sample(kind, { vol = 0.3, rate = 1 } = {}) {
+      const buf = sfxPick(kind);
+      if (!buf) return;
+      const n = ctx.createBufferSource();
+      n.buffer = buf;
+      n.loop = true;
+      n.playbackRate.value = rate;
+      layer(run(n), vol, 0, 0, null);
     },
     stop(fade = 0.12) {
       const t = ctx.currentTime;

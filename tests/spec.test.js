@@ -786,7 +786,7 @@ assert.ok(read('index.html').includes('animation:npTargetGlow'), 'cible : contou
   assert.equal(V.cat.map(l => l.kind).join(), 'snarl_cat', 'chat : tigre');
   assert.equal(V.bear.map(l => l.kind).join(), 'roar_bear,snarl_cat', 'ours : grizzly + tigre');
   assert.ok(V.bear[1].rate < 0.7 && V.bear[1].lowpass > 0, 'ours : tigre abaissé, aigus coupés');
-  assert.ok(src.includes('for (const l of beast) sfxSample('), 'toutes les couches jouées');
+  assert.ok(/for \(const l of beast\)\s*sfxSample\(/.test(src), 'toutes les couches jouées');
 }
 assert.ok(
   read('assets/audio/LICENSES.md').includes('roar_bear') && read('assets/audio/LICENSES.md').includes('snarl_cat'),

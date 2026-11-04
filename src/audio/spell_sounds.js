@@ -1,6 +1,7 @@
 'use strict';
-// Sons des sorts (synthèse originale, aucun fichier audio ; esprit des MMO fantasy sans rien copier). Un sort = une
-// entrée par table :
+// Sons des sorts (esprit des MMO fantasy sans rien copier) : bruitages enregistrés sous licences libres (eau, glace,
+// bol chantant, cloches… : s.sample, pack assets/audio/sfx_pack.js, licences LICENSES.md) et synthèse originale. Un
+// sort = une entrée par table :
 //   SPELL_SOUND  : son au lancement (instantanés : tout le sort ; incantations : l'appel de l'énergie) ;
 //   SPELL_LOOP   : nappe tenue pendant l'incantation / la canalisation (SFX.castStart → SFX.castEnd) ;
 //   SPELL_IMPACT : libération à la fin d'une incantation réussie (pas pour les canalisations) ;
@@ -10,7 +11,8 @@
 //   s.sweep(durée, volume, fréq départ, fréq arrivée, délai, type de filtre, Q)
 //   s.noise(durée, volume, fréq du filtre, délai, type de filtre)
 //   s.metal(volume, délai, fréquence de base)
-// Nappe : (l, durée) avec l = { voice, air } (voir sfxBed, sfx.js).
+//   s.sample(sorte du pack, volume, { rate, delay, lowpass }) : bruitage enregistré, hauteur variée à chaque lancer
+// Nappe : (l, durée) avec l = { voice, air, sample } (voir sfxBed, sfx.js).
 // Les sorts de corps à corps gardent en plus le cri, le souffle de l'arme et l'impact enregistrés (sfx.js).
 // Règle d'écoute : pas d'aigu strident (fréquences dominantes sous ~3 kHz, aigus brefs et doux).
 // Couches communes : signature par école = accords (arcane / givre cristallins, sacré lumineux), souffles, sub grave.
@@ -80,56 +82,55 @@ const SPELL_SOUND = {
     swell(s, 147, 0.45, 0.05, { type: 'sawtooth', to: 220, lp: 1100, delay: 0.05 });
     sub(s, 55, 0.4, 0.1, 0.1);
   },
-  // ---------- Mage : arcane et givre, cristallins ----------
+  // ---------- Mage (04/11/2026, « réaliste » : le givre sonne comme de l'eau et de la glace) ----------
   'Frost Bolt': s => {
-    // l'énergie glacée se rassemble (la nappe prend le relais)
-    s.sweep(0.45, 0.07, 2600, 900, 0, 'bandpass', 4);
-    sparkle(s, 1760, 880, 5, 0.03);
-    swell(s, 330, 0.5, 0.05, { to: 440 });
+    // l'eau se rassemble (la nappe d'eau qui tourne prend le relais)
+    s.sample('splash', 0.2, { rate: 1.1 });
+    s.sweep(0.45, 0.04, 600, 1800, 0, 'bandpass', 3);
+    sub(s, 98, 0.35, 0.05);
   },
   'Frost Nova': s => {
-    s.sweep(0.7, 0.13, 3000, 500, 0, 'bandpass', 1.2);
-    crackle(s, 7, 0.08, 1800, 0.03, 0.035);
-    sparkle(s, 2400, 1100, 7, 0.035, 0.05, 0.035);
+    s.sample('freeze', 0.4);
+    s.sample('ice_snap', 0.3, { rate: 0.85 });
+    s.sample('ice_shatter', 0.25, { rate: 0.8, delay: 0.15 });
     sub(s, 80, 0.45, 0.14);
-    chord(s, [220, 330, 440], 0.9, 0.04, { delay: 0.04, glide: 0.94 });
   },
   Counterspell: s => {
-    s.tone(880, 0.14, 'triangle', 0.06, 300, 0, 2500, 0.15);
-    s.tone(932, 0.14, 'triangle', 0.04, 320, 0, 2500, 0.15);
-    s.tone(450, 0.3, 'sine', 0.06, 150, 0.04, 0, 0.35);
-    s.noise(0.07, 0.08, 2200, 0);
+    s.sample('thud', 0.35, { rate: 1.25 });
+    s.sample('shimmer', 0.2, { rate: 1.6 });
+    s.noise(0.07, 0.06, 2200, 0);
     sub(s, 90, 0.25, 0.1, 0.02);
   },
   'Arcane Barrier': s => {
-    s.sweep(0.7, 0.07, 400, 2400, 0, 'bandpass', 5);
-    chord(s, [523, 784, 1047, 1319], 0.9, 0.04, { spread: 0.05, glide: 1.01, attack: 0.08 });
-    sparkle(s, 1047, 2093, 5, 0.025, 0.15);
+    // cristal qui chante : bol chantant frappé, plus aigu
+    s.sample('bowl_strike', 0.3, { rate: 1.5 });
+    s.sample('shimmer', 0.25);
     sub(s, 98, 0.5, 0.08);
   },
   Blink: s => {
-    s.sweep(0.22, 0.1, 400, 2600, 0, 'bandpass', 2);
-    s.tone(700, 0.18, 'sine', 0.06, 1400, 0, 0, 0.35);
-    s.sweep(0.3, 0.07, 2400, 500, 0.12, 'bandpass', 2);
-    sparkle(s, 1568, 784, 4, 0.03, 0.14);
+    s.sample('teleport', 0.4);
+    s.sample('shimmer', 0.12, { rate: 1.4 });
+    s.sweep(0.22, 0.06, 400, 2400, 0, 'bandpass', 2);
   },
   Polymorph: s => {
-    // petit arpège espiègle qui monte, la nappe prend le relais
-    [392, 494, 587, 784].forEach((f, i) => s.tone(f, 0.35, 'triangle', 0.04, f * 1.06, i * 0.07, 0, 0.4));
-    s.sweep(0.4, 0.05, 600, 1800, 0, 'bandpass', 3);
+    // énergie espiègle (la nappe prend le relais)
+    s.sample('arcane', 0.25);
+    s.sweep(0.4, 0.04, 600, 1800, 0, 'bandpass', 3);
+    s.tone(494, 0.3, 'triangle', 0.025, 587, 0.05, 0, 0.4);
   },
-  // ---------- Prêtre : sacré lumineux (accords majeurs, chœur), ombre pour Pain / Holy Terror ----------
+  // ---------- Prêtre : sacré (bol chantant, cloches, harpe, carillon), ombre pour Pain / Holy Terror ----------
   'Flash Heal': s => {
-    chord(s, [659, 831, 988], 0.5, 0.05, { spread: 0.05, attack: 0.12 });
-    s.sweep(0.5, 0.05, 700, 2200, 0, 'bandpass', 3);
+    s.sample('chime', 0.22);
+    s.sweep(0.5, 0.04, 700, 2200, 0, 'bandpass', 3);
+    swell(s, 523, 0.5, 0.025);
   },
   'Power Shield': s => {
-    s.sweep(0.6, 0.08, 400, 2400, 0, 'bandpass', 4);
-    chord(s, [440, 659, 880, 1319], 1.0, 0.045, { spread: 0.04, attack: 0.05 });
-    s.metal(0.03, 0.02, 880);
+    s.sample('bowl_strike', 0.4);
+    s.sample('chime', 0.18, { rate: 0.9, delay: 0.05 });
     sub(s, 110, 0.5, 0.09);
   },
   'Holy Terror': s => {
+    s.sample('bell', 0.3, { rate: 0.6 });
     s.tone(196, 1.0, 'sawtooth', 0.06, 147, 0, 900, 0.45);
     s.tone(208, 1.0, 'sawtooth', 0.04, 139, 0.02, 800, 0.45);
     sub(s, 82, 0.9, 0.14);
@@ -137,14 +138,14 @@ const SPELL_SOUND = {
     s.sweep(0.6, 0.06, 300, 1200, 0, 'lowpass', 1);
   },
   Dispel: s => {
-    sparkle(s, 784, 2093, 6, 0.04, 0, 0.045);
-    s.sweep(0.5, 0.06, 900, 2600, 0, 'bandpass', 3);
-    chord(s, [1047, 1319, 1568], 0.6, 0.03, { delay: 0.2, spread: 0.02 });
+    s.sample('chime', 0.3, { rate: 1.1 });
+    s.sample('chime', 0.2, { rate: 0.85, delay: 0.18 });
+    s.sweep(0.5, 0.04, 900, 2600, 0, 'bandpass', 3);
   },
   Smite: s => {
-    swell(s, 440, 0.55, 0.05, { type: 'triangle', to: 660 });
-    swell(s, 660, 0.55, 0.035, { to: 990, delay: 0.05 });
-    s.sweep(0.5, 0.05, 800, 2000, 0, 'bandpass', 4);
+    s.sample('chime', 0.18, { rate: 0.8 });
+    swell(s, 440, 0.55, 0.03, { type: 'triangle', to: 660 });
+    s.sweep(0.5, 0.04, 800, 2000, 0, 'bandpass', 4);
   },
   Pain: s => {
     s.tone(140, 0.6, 'sawtooth', 0.06, 90, 0, 700, 0.35);
@@ -362,25 +363,23 @@ const SPELL_SOUND = {
 };
 // Nappes d'incantation / canalisation par école : durée de l'incantation d = montée jusqu'à la libération.
 const BED = {
-  // givre : quinte cristalline qui monte, souffle glacé qui tourne, sub qui pulse doucement
-  frost: (l, d) => {
-    l.voice(440, { vol: 0.045, to: 660, rise: d, vib: 5, vibDepth: 3 });
-    l.voice(660, { type: 'triangle', vol: 0.025, to: 990, rise: d, trem: 7, tremDepth: 0.5 });
-    l.air(1800, { vol: 0.05, q: 3, sweep: 0.7, sweepDepth: 500 });
-    l.voice(110, { vol: 0.05, trem: 3, tremDepth: 0.5 });
+  // givre : eau qui tourne (enregistrée), souffle froid léger, sub
+  frost: l => {
+    l.sample('water_swirl', { vol: 0.3 });
+    l.air(1600, { vol: 0.02, q: 2, sweep: 0.5, sweepDepth: 300 });
+    l.voice(110, { vol: 0.03 });
   },
-  // arcane (mouton) : accord qui ondule (vibrato), souffle scintillant
-  arcane: (l, d) => {
-    [392, 494, 587].forEach((f, i) =>
-      l.voice(f, { type: 'triangle', vol: 0.025, to: f * 1.12, rise: d, vib: 5.5 + i, vibDepth: 4 })
-    );
-    l.air(1300, { vol: 0.04, q: 2.5, sweep: 1.3, sweepDepth: 400 });
+  // arcane (mouton) : énergie magique tenue (enregistrée), souffle, note qui ondule
+  arcane: l => {
+    l.sample('arcane', { vol: 0.28 });
+    l.air(1300, { vol: 0.02, q: 2.5, sweep: 0.8, sweepDepth: 300 });
+    l.voice(196, { type: 'triangle', vol: 0.02, vib: 5, vibDepth: 3 });
   },
-  // sacré : chœur lumineux (accord majeur tenu qui s'élève), souffle doux
-  holy: (l, d) => {
-    [523, 659, 784].forEach((f, i) => l.voice(f, { vol: 0.03, to: f * 1.06, rise: d, vib: 4.5, vibDepth: 2 + i }));
-    l.voice(262, { type: 'triangle', vol: 0.025, trem: 2, tremDepth: 0.3 });
-    l.air(1500, { vol: 0.035, q: 2, sweep: 0.5, sweepDepth: 300 });
+  // sacré : bol chantant tenu (enregistré), note grave douce, souffle
+  holy: l => {
+    l.sample('bowl_hum', { vol: 0.35 });
+    l.voice(262, { type: 'triangle', vol: 0.015, trem: 2, tremDepth: 0.3 });
+    l.air(1500, { vol: 0.02, q: 2, sweep: 0.5, sweepDepth: 300 });
   },
   // nature : bois qui chante (triangle au vibrato lent), vent dans les feuilles
   nature: (l, d) => {
@@ -419,29 +418,26 @@ const SPELL_LOOP = {
 // Libération à la fin d'une incantation réussie : éclat (souffle bref), épanouissement harmonique, sub, longue réverb.
 const SPELL_IMPACT = {
   'Frost Bolt': s => {
-    s.sweep(0.25, 0.1, 600, 2400, 0, 'bandpass', 2); // départ du trait
-    s.sweep(0.45, 0.12, 2800, 500, 0.12, 'bandpass', 1.5);
-    crackle(s, 5, 0.07, 1900, 0.14, 0.035); // glace qui éclate
-    sub(s, 70, 0.4, 0.14, 0.12);
-    chord(s, [440, 660, 880], 0.8, 0.035, { delay: 0.12, glide: 0.97 });
+    s.sweep(0.25, 0.06, 600, 2000, 0, 'bandpass', 2); // départ du trait
+    s.sample('ice_shatter', 0.4, { rate: 0.9, delay: 0.1 }); // glace qui se brise
+    s.sample('splash', 0.25, { delay: 0.12 });
+    sub(s, 70, 0.4, 0.12, 0.1);
   },
   Polymorph: s => {
-    [784, 988, 1175, 1568].forEach((f, i) => s.tone(f, 0.4, 'sine', 0.04, null, i * 0.05, 0, 0.45));
-    s.sweep(0.3, 0.07, 500, 2000, 0, 'bandpass', 2);
-    s.tone(330, 0.35, 'triangle', 0.05, 494, 0.1, 0, 0.4);
-    s.noise(0.2, 0.05, 1500, 0.05);
+    s.sample('shimmer', 0.25);
+    s.sample('sheep', 0.35, { delay: 0.08 });
+    s.noise(0.2, 0.04, 1500, 0); // petit « pouf »
   },
   'Flash Heal': s => {
-    chord(s, [659, 831, 988, 1319], 1.3, 0.055, { spread: 0.045, attack: 0.02, rev: 0.55 });
-    sparkle(s, 988, 2637, 6, 0.03, 0.05, 0.04);
-    s.sweep(0.6, 0.06, 600, 2400, 0, 'bandpass', 2);
-    sub(s, 131, 0.5, 0.07);
+    s.sample('harp', 0.38);
+    s.sample('chime', 0.25, { delay: 0.05 });
+    sub(s, 131, 0.5, 0.06);
   },
   Smite: s => {
-    s.tone(880, 0.35, 'triangle', 0.05, 440, 0, 0, 0.4);
-    chord(s, [440, 554, 659], 0.7, 0.04, { delay: 0.03, attack: 0.01 });
+    s.sample('bell', 0.42); // cloche frappée
+    s.sample('chime', 0.15, { delay: 0.03 });
     sub(s, 70, 0.4, 0.14);
-    s.sweep(0.35, 0.09, 2400, 700, 0, 'bandpass', 1.5);
+    s.sweep(0.35, 0.07, 2400, 700, 0, 'bandpass', 1.5);
   },
   Wrath: s => {
     s.sweep(0.4, 0.11, 700, 2400, 0, 'bandpass', 2);
@@ -481,6 +477,8 @@ const SPELL_FIZZLE = s => {
 // Volume des sons de sorts (04/11/2026 : +70 % demandé, trop discrets face aux coups de mêlée enregistrés) ; le
 // limiteur de sortie (music.js) évite la saturation quand plusieurs sorts se superposent.
 const SPELL_GAIN = 1.7;
+// bruitage enregistré : hauteur variée de ±4 % à chaque lancer (jamais deux fois exactement le même son)
+const sfxVary = () => 0.96 + Math.random() * 0.08;
 // Joue une recette ponctuelle à la position de l'unité.
 function playRecipe(recipe, u) {
   const a = sfxSpatial(u),
@@ -491,7 +489,9 @@ function playRecipe(recipe, u) {
       sfxTone(f, d, type, v * L, slide, delay, P, filter, rev, attack),
     sweep: (d, v, f0, f1, delay = 0, kind = 'bandpass', q = 1.2) => sfxSweep(d, v * L, f0, f1, delay, P, kind, q),
     noise: (d, v, f, delay = 0, kind = 'bandpass') => sfxNoise(d, v * L, f, delay, P, kind),
-    metal: (v, delay = 0, base = 420) => sfxMetal(v * L, P, delay, base)
+    metal: (v, delay = 0, base = 420) => sfxMetal(v * L, P, delay, base),
+    sample: (kind, v, { rate = 1, delay = 0, lowpass = 0 } = {}) =>
+      sfxSample(kind, v * L, P, { rate: rate * sfxVary(), delay, lowpass })
   });
 }
 // Son d'un sort dans une table ; false si le sort n'y a pas de son dédié.
@@ -515,7 +515,8 @@ function castStart(u, name, dur = 1.5, channel = false) {
     recipe(
       {
         voice: (f, o = {}) => bed.voice(f, { ...o, vol: (o.vol ?? 0.05) * L }),
-        air: (f, o = {}) => bed.air(f, { ...o, vol: (o.vol ?? 0.04) * L })
+        air: (f, o = {}) => bed.air(f, { ...o, vol: (o.vol ?? 0.04) * L }),
+        sample: (kind, o = {}) => bed.sample(kind, { ...o, vol: (o.vol ?? 0.3) * L, rate: (o.rate ?? 1) * sfxVary() })
       },
       dur
     );

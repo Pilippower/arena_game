@@ -576,17 +576,22 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   S.ctx.SPELL_LOOP['Drain Life']({ voice: (f, o) => layers.push(o), air: (f, o) => layers.push(o) }, 5);
   assert.ok(layers.length >= 2, 'Drain Life : nappe à plusieurs couches');
   assert.ok(!layers.some(o => o.type === 'sawtooth'), 'Drain Life : pas de scie (bourdonnement)');
-  assert.ok(!layers.some(o => (o.trem || 0) > 1.2 || (o.vib || 0) > 1.2 || (o.sweep || 0) > 1.2), 'Drain Life : rien de plus rapide que les tics');
+  assert.ok(
+    !layers.some(o => (o.trem || 0) > 1.2 || (o.vib || 0) > 1.2 || (o.sweep || 0) > 1.2),
+    'Drain Life : rien de plus rapide que les tics'
+  );
   assert.ok(layers.reduce((s, o) => s + o.vol, 0) <= 0.1, 'Drain Life : nappe discrète');
 }
 // ---------- Sons des sorts (src/audio/spell_sounds.js) : lancement, nappe, libération, échec ----------
 {
   const { sandbox } = require('./sources.js');
   const calls = [],
-    beds = [];
+    beds = [],
+    kinds = new Set(); // bruitages enregistrés demandés par les sorts
   const S = sandbox({
     SFX: {},
     sfxSpatial: () => ({ level: 1, pan: 0 }),
+    sfxSample: (kind, v, pan, o) => (kinds.add(kind), calls.push({ kind: 'sample', freqs: [], v, rate: o.rate })),
     sfxTone: (f, d, type, v, slide) => calls.push({ kind: 'tone', freqs: [f, slide || f], v }),
     sfxSweep: (d, v, f0, f1) => calls.push({ kind: 'sweep', freqs: [f0, f1], v }),
     sfxNoise: (d, v, f) => calls.push({ kind: 'noise', freqs: [f], v }),
@@ -598,6 +603,7 @@ const { combatWorld, spell, run } = require('./combat_world.js');
       return {
         voice: (f, o) => bed.layers.push({ freqs: [f, o.to || f, f + (o.vibDepth || 0)], v: o.vol }),
         air: (f, o) => bed.layers.push({ freqs: [f + (o.sweepDepth || 0)], v: o.vol }),
+        sample: (kind, o) => (kinds.add(kind), bed.layers.push({ kind: 'sample', freqs: [], v: o.vol })),
         stop: () => bed.stopped++
       };
     }
@@ -612,7 +618,8 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   const gentle = (list, what) => {
     for (const c of list) {
       if (c.kind !== 'metal') assert.ok(Math.max(...c.freqs) <= 3300, `${what} : pas d'aigu strident (${c.freqs})`);
-      assert.ok(c.v <= 0.3, `${what} : volume modéré (${c.v})`);
+      // enregistrement : normalisé à 0,9 dans le pack, joué comme les coups de mêlée ; aigus vérifiés sur le pack
+      assert.ok(c.v <= (c.kind === 'sample' ? 0.75 : 0.3), `${what} : volume modéré (${c.v})`);
     }
   };
   const signatures = new Set();
@@ -629,7 +636,8 @@ const { combatWorld, spell, run } = require('./combat_world.js');
       tone: (f, d, t, v) => rec(v),
       sweep: (d, v) => rec(v),
       noise: (d, v) => rec(v),
-      metal: v => rec(v)
+      metal: v => rec(v),
+      sample: (k, v) => rec(v)
     });
     raw.forEach(([v], k) => assert.ok(calls[k].v >= 1.6 * v, `${n} : volume relevé`));
     if (!sp.cast && !sp.channel) {
@@ -667,6 +675,58 @@ const { combatWorld, spell, run } = require('./combat_world.js');
     assert.ok(beds[0].stopped === 1 && calls.length === 0, `${n} : mort / fin de manche, fondu silencieux`);
   }
   assert.equal(signatures.size, spells.size, 'chaque sort a un son différent');
+  // bruitages enregistrés des sorts (04/11/2026, « réalistes » : eau, glace, sacré…) : présents dans le pack, hauteur
+  // variée à chaque lancer, pas d'aigu strident (moins de 15 % de l'énergie au-dessus de 3 kHz ; les éclats de glace
+  // bruts en ont 70 à 90 %, d'où le passe-bas de tools/build_sfx_pack.js)
+  for (const n of ['Frost Bolt', 'Frost Nova', 'Polymorph', 'Blink', 'Flash Heal', 'Smite', 'Power Shield', 'Dispel']) {
+    calls.length = 0;
+    A.playSpellSound(A.SPELL_SOUND, {}, n);
+    A.playSpellSound(A.SPELL_IMPACT, {}, n);
+    assert.ok(
+      calls.some(c => c.kind === 'sample'),
+      `${n} : bruitage enregistré`
+    );
+  }
+  const rates = new Set();
+  for (let k = 0; k < 4; k++) {
+    calls.length = 0;
+    A.playSpellSound(A.SPELL_IMPACT, {}, 'Frost Bolt');
+    rates.add(calls.find(c => c.kind === 'sample').rate);
+  }
+  assert.ok(rates.size > 1, 'hauteur variée à chaque lancer');
+  const packSrc = require('node:fs').readFileSync(
+      require('node:path').join(__dirname, '../assets/audio/sfx_pack.js'),
+      'utf8'
+    ),
+    PACK = JSON.parse(packSrc.slice(packSrc.indexOf('{'), packSrc.lastIndexOf('}') + 1));
+  // part de l'énergie au-dessus de 3 kHz (DFT sur des fenêtres de 256 échantillons)
+  const highShare = uri => {
+    const b = Buffer.from(uri.split(',')[1], 'base64'),
+      sr = b.readUInt32LE(24),
+      n = (b.length - 44) / 2,
+      N = 256;
+    let hi = 0,
+      tot = 0;
+    for (let s0 = 0; s0 + N <= n; s0 += N)
+      for (let k = 1; k < N / 2; k++) {
+        let re = 0,
+          im = 0;
+        for (let t = 0; t < N; t++) {
+          const x = (b.readInt16LE(44 + (s0 + t) * 2) / 32768) * (0.5 - 0.5 * Math.cos((2 * Math.PI * t) / (N - 1))),
+            a = (2 * Math.PI * k * t) / N;
+          re += x * Math.cos(a);
+          im -= x * Math.sin(a);
+        }
+        tot += re * re + im * im;
+        if ((k * sr) / N > 3000) hi += re * re + im * im;
+      }
+    return hi / tot;
+  };
+  const MELEE = new Set(['effort_m', 'effort_f', 'whoosh', 'clash', 'thud', 'bong', 'clink', 'roar_bear', 'snarl_cat']);
+  for (const k of kinds) {
+    assert.ok(PACK[k]?.length, `bruitage ${k} dans le pack`);
+    if (!MELEE.has(k)) PACK[k].forEach((u, i) => assert.ok(highShare(u) < 0.15, `${k} n°${i} : pas d'aigu strident`));
+  }
   assert.ok(A.SPELL_SOUND.Trinket, 'trinket : son dédié');
 }
 {
