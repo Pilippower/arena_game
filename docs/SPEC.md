@@ -42,6 +42,7 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - Sorts de zone (Frost Nova, Holy Terror, Swipe…) : se lancent même si aucun ennemi n'est à portée. 🧪
 - Druide en forme d'ours ou de félin : insensible au mouton du mage (« Immune ») ; changer de forme libère des racines et ralentissements. 🧪
 - Blink du mage : utilisable étourdi, brise l'étourdissement. 🧪
+- Blink (et Demonic Gate) **pendant un saut** : distance complète vers l'avant, arrivée **posée au sol** (sur le tablier si on sautait dessus) ; bug corrigé le 04/11/2026 : le mage restait sur place. 🧪
 - Saut (et chute) : la trajectoire du décollage est gardée jusqu'à l'atterrissage ; les touches ne la changent plus en l'air. 🧪
 - Boucliers (Power Shield, Shield Wall, Trinket…) : les dégâts absorbés comptent comme soins du poseur dans le récapitulatif. 🧪
 - Étourdissement : deux cercles jaunes lumineux au-dessus de la tête (pas de bulles), qui tournent en sens contraire. 🧪

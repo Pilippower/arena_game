@@ -531,14 +531,17 @@ function pointWalkable(x, z, margin = 0.68, y = 0) {
 // pont) comme une marche ; on s'arrête devant un pilier, un mur, le flanc d'une rampe, un garde-corps ou un vide.
 // keepRoot : la cible reste immobilisée à l'arrivée (Demonic Gate) ; sinon les racines sont brisées (Blink).
 function blinkForward(u, distance = 7.0, keepRoot = false, yaw = u.yaw) {
+  // en l'air (saut) : on part du sol sous le personnage, sinon le sable passait pour un vide sous le tablier et le
+  // blink restait sur place (bug du 04/11/2026) ; on arrive posé au sol
   const ox = u.x,
     oz = u.z,
     oy = u.y || 0,
+    gy = groundAt(u),
     sx = Math.sin(yaw),
     sz = Math.cos(yaw),
     step = 0.18,
-    probe = { x: ox, z: oz, y: oy };
-  let best = { x: ox, z: oz, y: oy };
+    probe = { x: ox, z: oz, y: gy };
+  let best = { x: ox, z: oz, y: gy };
   for (let d = step; d <= distance + 1e-6; d += step) {
     Object.assign(probe, { x: ox + sx * d, z: oz + sz * d, y: best.y });
     if (!pointWalkable(probe.x, probe.z, 0.68, best.y) || blockedBySurface(probe)) break;

@@ -11,7 +11,6 @@ validé dans `docs/SPEC.md`.
 5. Échap ouvre / ferme les Settings.
 7. Débuffs flottants (à droite de la barre de vie) : icônes des contrôles (CC) 30 % plus grandes que les autres
    débuffs (demandé deux fois : la tâche précédente n'était pas allée au bout).
-13. Bug : Blink pendant un saut (le mage reste sur place au lieu d'arriver au sol à destination).
 14. Mobile : icônes en haut à droite (son, settings…) pas centrées dans leur carré ; reprendre les icônes du PC.
 15. Ciblage : boîte invisible de la barre flottante (incluse) jusqu'au sol, un clic entre la barre et le personnage
     le sélectionne.

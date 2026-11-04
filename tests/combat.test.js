@@ -166,6 +166,22 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   assert.ok(mage.stun === 0 && mage.root === 0, 'Blink : brise étourdissement et racines');
 }
 {
+  // Blink pendant un saut : distance complète vers l'avant, posé au sol (bug : il restait sur place)
+  const { ctx, unit } = combatWorld();
+  const dist = ctx.CLASS.arcanist.skills[spell(ctx, 'arcanist', 'Blink')].dist,
+    mage = unit('arcanist', 0, 0, 0, { yaw: 0, y: 1.5, vy: 3, grounded: false });
+  assert.ok(ctx.useSkill(mage, spell(ctx, 'arcanist', 'Blink')), 'Blink en l’air');
+  assert.ok(Math.abs(mage.z - dist) < 0.2 && Math.abs(mage.x) < 1e-6, `Blink en l’air : ${dist} m devant (${mage.z})`);
+  assert.ok(mage.y === 0 && mage.vy === 0 && mage.grounded, 'Blink en l’air : posé au sol');
+  // sur le tablier du pont : arrive sur le tablier, pas en bas
+  ctx.applyMap('bridge');
+  ctx.arena.pillars = [];
+  const B = ctx.arena.bridge,
+    m2 = unit('arcanist', 0, 0, 0, { yaw: Math.PI / 2, y: B.y + 1.5, vy: 0, grounded: false });
+  assert.ok(ctx.useSkill(m2, spell(ctx, 'arcanist', 'Blink')), 'Blink en l’air sur le pont');
+  assert.ok(Math.abs(m2.x - dist) < 0.2 && m2.y === B.y && m2.grounded, 'Blink en l’air sur le pont : sur le tablier');
+}
+{
   // Dispel : effets magiques seulement ; joueur : uniquement sa cible actuelle amie (ou soi quand on se cible)
   const { ctx, unit } = combatWorld();
   const priest = unit('oracle', 0, 0, 0),
