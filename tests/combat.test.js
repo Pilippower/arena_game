@@ -547,47 +547,129 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   ctx.update(1);
   assert.equal(ctx.state.elapsed, 0, 'chargement : chrono arrêté');
 }
-// ---------- Son dédié de chaque sort (src/audio/spell_sounds.js) ----------
+// ---------- Sons des sorts (src/audio/spell_sounds.js) : lancement, nappe, libération, échec ----------
 {
   const { sandbox } = require('./sources.js');
-  const calls = [];
+  const calls = [],
+    beds = [];
   const S = sandbox({
+    SFX: {},
     sfxSpatial: () => ({ level: 1, pan: 0 }),
     sfxTone: (f, d, type, v, slide) => calls.push({ kind: 'tone', freqs: [f, slide || f], v }),
     sfxSweep: (d, v, f0, f1) => calls.push({ kind: 'sweep', freqs: [f0, f1], v }),
     sfxNoise: (d, v, f) => calls.push({ kind: 'noise', freqs: [f], v }),
-    sfxMetal: (v, p, delay, base = 420) => calls.push({ kind: 'metal', freqs: [base, base * 8.93], v })
+    sfxMetal: (v, p, delay, base = 420) => calls.push({ kind: 'metal', freqs: [base, base * 8.93], v }),
+    // nappe : couches (voix, souffle) et arrêt
+    sfxBed: (pan, max) => {
+      const bed = { layers: [], max, stopped: 0 };
+      beds.push(bed);
+      return {
+        voice: (f, o) => bed.layers.push({ freqs: [f, o.to || f, f + (o.vibDepth || 0)], v: o.vol }),
+        air: (f, o) => bed.layers.push({ freqs: [f + (o.sweepDepth || 0)], v: o.vol }),
+        stop: () => bed.stopped++
+      };
+    }
   });
   S.load('src/audio/spell_sounds.js');
+  const A = S.ctx;
   const { ctx } = combatWorld();
   const spells = new Map();
   for (const C of Object.values(ctx.CLASS))
     for (const bar of [C.skills, ...Object.values(C.bars || {})]) for (const sp of bar) spells.set(sp.n, sp);
+  // pas d'aigu strident : fréquences dominantes sous 3,3 kHz (sauf partiels brefs du métal), volumes modérés
+  const gentle = (list, what) => {
+    for (const c of list) {
+      if (c.kind !== 'metal') assert.ok(Math.max(...c.freqs) <= 3300, `${what} : pas d'aigu strident (${c.freqs})`);
+      assert.ok(c.v <= 0.3, `${what} : volume modéré (${c.v})`);
+    }
+  };
   const signatures = new Set();
   for (const [n, sp] of spells) {
     calls.length = 0;
-    assert.ok(S.ctx.playSpellSound(S.ctx.SPELL_SOUND, {}, n), `son dédié : ${n}`);
-    assert.ok(calls.length > 0, `son audible : ${n}`);
+    assert.ok(A.playSpellSound(A.SPELL_SOUND, {}, n), `son dédié : ${n}`);
+    assert.ok(calls.length >= 3, `son riche (plusieurs couches) : ${n}`);
     signatures.add(JSON.stringify(calls));
-    if (sp.cast) assert.ok(S.ctx.SPELL_IMPACT[n], `son d'impact : ${n}`);
-    // pas d'aigu strident : fréquences dominantes sous 3,3 kHz (sauf partiels brefs du métal), volumes modérés
-    for (const c of calls) {
-      if (c.kind !== 'metal') assert.ok(Math.max(...c.freqs) <= 3300, `${n} : pas d'aigu strident (${c.freqs})`);
-      assert.ok(c.v <= 0.3, `${n} : volume modéré (${c.v})`);
-    }
+    gentle(calls, n);
     // volume relevé (04/11/2026) : chaque composant joué ≥ 1,6 × sa valeur dans la recette
     const raw = [],
-      rec = (...a) => raw.push(a);
-    S.ctx.SPELL_SOUND[n]({
+      rec = (...v) => raw.push(v);
+    A.SPELL_SOUND[n]({
       tone: (f, d, t, v) => rec(v),
       sweep: (d, v) => rec(v),
       noise: (d, v) => rec(v),
       metal: v => rec(v)
     });
     raw.forEach(([v], k) => assert.ok(calls[k].v >= 1.6 * v, `${n} : volume relevé`));
+    if (!sp.cast && !sp.channel) {
+      assert.ok(!A.SPELL_LOOP[n], `${n} : instantané, pas de nappe`);
+      continue;
+    }
+    // incantation / canalisation : nappe tenue (plusieurs couches) jusqu'à la fin, arrêtée explicitement
+    const u = {};
+    beds.length = calls.length = 0;
+    A.SFX.castStart(u, n, sp.cast || sp.dur, !!sp.channel);
+    assert.ok(beds.length === 1 && beds[0].layers.length >= 3, `${n} : nappe d'incantation`);
+    assert.ok(beds[0].max >= (sp.cast || sp.dur), `${n} : la nappe dure toute l'incantation`);
+    gentle(beds[0].layers, `${n} (nappe)`);
+    A.SFX.castEnd(u, 'done');
+    assert.equal(beds[0].stopped, 1, `${n} : nappe arrêtée à la fin`);
+    if (sp.channel) assert.equal(calls.length, 0, `${n} : canalisation, pas de son de libération`);
+    else {
+      assert.ok(A.SPELL_IMPACT[n] && calls.length >= 3, `${n} : son de libération`);
+      gentle(calls, `${n} (libération)`);
+    }
+    // interrompu : nappe coupée, son d'échec (distinct de la libération), une seule fois
+    const impact = JSON.stringify(calls);
+    for (const reason of ['interrupt', 'cancel', 'fail']) {
+      beds.length = calls.length = 0;
+      A.SFX.castStart(u, n, 1.5);
+      A.SFX.castEnd(u, reason);
+      A.SFX.castEnd(u, reason);
+      assert.equal(beds[0].stopped, 1, `${n} : nappe coupée (${reason})`);
+      assert.ok(calls.length >= 3 && JSON.stringify(calls) !== impact, `${n} : son d'échec (${reason})`);
+      gentle(calls, `${n} (échec)`);
+    }
+    beds.length = calls.length = 0;
+    A.SFX.castStart(u, n, 1.5);
+    A.SFX.castEnd(u, 'stop');
+    assert.ok(beds[0].stopped === 1 && calls.length === 0, `${n} : mort / fin de manche, fondu silencieux`);
   }
   assert.equal(signatures.size, spells.size, 'chaque sort a un son différent');
-  assert.ok(S.ctx.SPELL_SOUND.Trinket, 'trinket : son dédié');
+  assert.ok(A.SPELL_SOUND.Trinket, 'trinket : son dédié');
+}
+{
+  // combat : la nappe démarre avec l'incantation et s'arrête avec la bonne raison (réussite, interruption, échec)
+  const { ctx, unit, sounds } = combatWorld();
+  const ends = u => sounds.filter(s => s.name === 'castEnd' && s.unit === u).map(s => s.args[1]);
+  const mage = unit('arcanist', 0, 0, 0),
+    foe = unit('warlock', 0, 20, 1);
+  mage.target = foe;
+  foe.target = mage;
+  const FB = spell(ctx, 'arcanist', 'Frost Bolt');
+  assert.ok(ctx.useSkill(mage, FB), 'Frost Bolt lancé');
+  const start = sounds.find(s => s.name === 'castStart' && s.unit === mage);
+  assert.ok(
+    start && start.args[1] === 'Frost Bolt' && start.args[2] === mage.cast.dur,
+    'nappe : début de l’incantation'
+  );
+  run(ctx, mage.cast.dur + 0.05);
+  assert.deepEqual(ends(mage), ['done'], 'incantation réussie : libération');
+  run(ctx, 1.2);
+  assert.ok(ctx.useSkill(mage, FB), 'Frost Bolt relancé');
+  assert.ok(ctx.interrupt(foe, mage), 'interruption');
+  assert.deepEqual(ends(mage), ['done', 'interrupt'], 'interrompu : son d’échec');
+  // canalisation : fin normale
+  assert.ok(ctx.useSkill(foe, spell(ctx, 'warlock', 'Drain Life')), 'Drain Life');
+  run(ctx, 6.1);
+  assert.deepEqual(ends(foe), ['done'], 'canalisation terminée');
+  // ligne de vue perdue : échec
+  const m2 = unit('arcanist', 5, 0, 0);
+  m2.target = foe;
+  run(ctx, 1.2);
+  assert.ok(ctx.useSkill(m2, FB), 'Frost Bolt (2)');
+  ctx.arena.pillars.push({ x: 2.5, z: 10, r: 1.5, h: 9 });
+  run(ctx, m2.cast.dur + 0.05);
+  assert.deepEqual(ends(m2), ['fail'], 'ligne de vue perdue : son d’échec');
 }
 console.log(
   'OK - règles de combat (tests unitaires : DR, contrôles, dégâts, soins, sorts, incantations, auras, fin de manche, sons des sorts)'

@@ -8,6 +8,7 @@ const near = (a, b, eps = 1e-6) => Math.abs(a - b) < eps;
 
 // ---------- Déplacement du joueur (src/game/player.js) ----------
 function playerWorld() {
+  const ended = []; // incantations arrêtées (endCast, combat.js) et leur raison
   const S = sandbox({
     GameLogic,
     camera: { yaw: 0, pitch: 0 },
@@ -18,12 +19,13 @@ function playerWorld() {
     MOBILE: { enabled: false, moveForward: 0, moveRight: 0, lookPointer: null },
     keyboardTurn() {},
     resolveWalls() {},
-    moveSpeed: () => 7
+    moveSpeed: () => 7,
+    endCast: (u, reason) => (ended.push(reason), (u.cast = null))
   });
   S.load('src/game/player.js');
   const p = { alive: true, grounded: true, x: 0, z: 0, yaw: 0, movePhase: 0, stun: 0, fear: 0, poly: 0, root: 0 };
   S.ctx.state = { player: p, keys: {} };
-  return { ...S, p };
+  return { ...S, p, ended };
 }
 {
   const { ctx } = playerWorld();
@@ -74,6 +76,18 @@ function playerWorld() {
   ctx.playerMove(0.1);
   const fw = GameLogic.forward(0);
   assert.ok(p.moving && p.x * fw.x + p.z * fw.z > 0.6, 'gauche + droit : avance');
+}
+{
+  // bouger pendant une incantation l'annule (son d'échec : raison « cancel ») ; immobile, elle continue
+  const { ctx, p, ended } = playerWorld();
+  p.cast = { name: 'Frost Bolt' };
+  ctx.playerMove(0.1);
+  assert.ok(p.cast && !ended.length, 'immobile : incantation gardée');
+  ctx.state.keys = { KeyW: true, w: true, z: true };
+  ctx.MOUSE_BTN = 3;
+  ctx.playerMove(0.1);
+  assert.deepEqual(ended, ['cancel'], 'bouger : incantation annulée');
+  assert.equal(p.cast, null, 'bouger : plus d’incantation');
 }
 
 // ---------- IA de mêlée : suit la cible qui recule (src/game/ai.js) ----------

@@ -1,5 +1,6 @@
 'use strict';
-// Bruitages procéduraux (sorts, coups, pas).
+// Bruitages : primitives de synthèse (sfxTone, sfxSweep, sfxNoise, sfxMetal, nappe tenue sfxBed), sons de mêlée
+// enregistrés, SFX ; les recettes des sorts sont dans spell_sounds.js.
 // ---------- Original fantasy spell SFX (procedural; no Blizzard/WoW audio files) ----------
 function sfxCtx() {
   const ctx = musicEnsure();
@@ -185,17 +186,6 @@ const SFX = {
     sfxTone(heavy ? 95 : 120, 0.16, 'sine', (heavy ? 0.2 : 0.14) * L, 45, 0.06, P);
     sfxNoise(0.07, 0.16 * L, 2600, 0.06, P);
   },
-  holy(u, big) {
-    const a = sfxSpatial(u),
-      L = a.level,
-      P = a.pan;
-    const ch = big ? [523.25, 659.25, 783.99, 1046.5, 1318.5] : [659.25, 830.6, 987.77, 1318.5];
-    ch.forEach((f, i) => {
-      sfxTone(f, big ? 1.4 : 1.0, 'sine', (0.06 * L) / (1 + i * 0.3), null, i * 0.045, P + (i - 2) * 0.08, 0, 0.4);
-      sfxTone(f * 2.01, 0.6, 'sine', 0.018 * L, null, i * 0.045 + 0.01, P, 0, 0.4);
-    });
-    sfxSweep(big ? 1.2 : 0.8, 0.05 * L, 2500, 9000, 0, P, 'highpass', 0.7);
-  },
   spellHit(u, school) {
     const a = sfxSpatial(u),
       L = a.level,
@@ -214,14 +204,6 @@ const SFX = {
       sfxTone(70, 0.3, 'sine', 0.13 * L, 35, 0, P);
       sfxNoise(0.06, 0.09 * L, 6000, 0.01, P, 'highpass');
     }
-  },
-  cc(u) {
-    const a = sfxSpatial(u),
-      L = a.level,
-      P = a.pan;
-    sfxTone(220, 0.5, 'triangle', 0.06 * L, 110, 0, P, 0, 0.4);
-    sfxTone(330, 0.5, 'sine', 0.04 * L, 140, 0.05, P, 0, 0.4);
-    sfxSweep(0.5, 0.06 * L, 1500, 300, 0, P, 'bandpass', 3);
   }
 };
 // Sort lancé : son dédié du sort (SPELL_SOUND, audio/spell_sounds.js) ; les coups de mêlée gardent en plus le cri,
@@ -242,14 +224,6 @@ function spellSfx(u, i) {
 function spellSfxKind(u, S) {
   sfxForSkill(u, S);
 }
-// Impact d'un sort à incantation : son dédié (SPELL_IMPACT), sinon son générique selon l'effet.
-function spellImpactSfx(u, kind = 'damage', name = '') {
-  if (playSpellSound(SPELL_IMPACT, u, name)) return;
-  if (kind === 'heal') return SFX.holy(u, false);
-  if (kind === 'fear') return SFX.cc(u);
-  const S = CLASS[u.cls].skills[0];
-  SFX.spellHit(u, S?.s);
-}
 function sfxSpatial(u) {
   if (!state?.player || !u) return { pan: 0, level: 1 };
   const dx = u.x - state.player.x,
@@ -269,7 +243,8 @@ function sfxTone(
   delay = 0,
   pan = 0,
   filterFreq = 0,
-  rev = 0.12
+  rev = 0.12,
+  attack = 0.008 // montée du son : courte = attaque franche, longue = nappe qui s'épanouit
 ) {
   const ctx = sfxCtx();
   if (!ctx) return;
@@ -280,9 +255,8 @@ function sfxTone(
   o.frequency.setValueAtTime(Math.max(20, freq), t);
   if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(20, slide), t + dur);
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t + 0.008);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t + Math.min(attack, dur * 0.6));
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  let inp = o;
   if (filterFreq) {
     const f = ctx.createBiquadFilter();
     f.type = 'lowpass';
@@ -321,8 +295,89 @@ function sfxNoise(dur = 0.16, vol = 0.1, filterFreq = 1200, delay = 0, pan = 0, 
   n.start(t);
   n.stop(t + dur + 0.02);
 }
-function sfxChord(freqs, dur, type, vol, pan = 0, delay = 0) {
-  freqs.forEach((f, i) =>
-    sfxTone(f, dur, type, vol / (1 + i * 0.22), null, delay + i * 0.008, pan + (i - 1) * 0.05, 2200, 0.18)
-  );
+// Nappe tenue (incantation, canalisation) : sources continues reliées à un gain commun qui monte en douceur.
+// stop(fondu) les arrête toutes ensemble (aucune source laissée en vie) ; garde-fou : tout s'arrête seul après `max`
+// secondes si stop() n'est jamais appelé. null sans contexte audio.
+//   voice(fréq, { type, vol, to, rise, vib, vibDepth, trem, tremDepth, lp }) : voix tenue, glissée vers `to` en `rise`
+//     secondes (montée de l'incantation), vibrato (Hz, écart en Hz), trémolo (Hz, profondeur 0–1), passe-bas ;
+//   air(fréq, { vol, q, kind, sweep, sweepDepth }) : souffle (bruit en boucle filtré), centre balayé par un LFO.
+function sfxBed(pan = 0, max = 8, rev = 0.35) {
+  const ctx = sfxCtx();
+  if (!ctx || !MUSIC.sfxMaster) return null;
+  const t0 = ctx.currentTime,
+    out = ctx.createGain(),
+    srcs = [];
+  out.gain.setValueAtTime(0.0001, t0);
+  out.gain.exponentialRampToValueAtTime(1, t0 + 0.2);
+  const pn = audioPan(out, pan);
+  pn.connect(MUSIC.sfxMaster);
+  if (MUSIC.reverb && rev > 0) {
+    const rg = ctx.createGain();
+    rg.gain.value = rev;
+    pn.connect(rg);
+    rg.connect(MUSIC.reverb);
+  }
+  const run = n => {
+    n.start(t0);
+    n.stop(t0 + max);
+    srcs.push(n);
+    return n;
+  };
+  const lfo = (param, rate, depth) => {
+    if (!rate || !depth) return;
+    const o = ctx.createOscillator(),
+      g = ctx.createGain();
+    o.frequency.value = rate;
+    g.gain.value = depth;
+    o.connect(g);
+    g.connect(param);
+    run(o);
+  };
+  const layer = (src, vol, trem, tremDepth, filter) => {
+    const g = ctx.createGain();
+    g.gain.value = vol * (1 - tremDepth / 2);
+    lfo(g.gain, trem, (vol * tremDepth) / 2);
+    (filter ? (src.connect(filter), filter) : src).connect(g);
+    g.connect(out);
+  };
+  const bed = {
+    voice(
+      f,
+      { type = 'sine', vol = 0.05, to = 0, rise = 1, vib = 0, vibDepth = 0, trem = 0, tremDepth = 0, lp = 0 } = {}
+    ) {
+      const o = ctx.createOscillator();
+      o.type = type;
+      o.frequency.setValueAtTime(f, t0);
+      if (to) o.frequency.exponentialRampToValueAtTime(to, t0 + rise);
+      lfo(o.frequency, vib, vibDepth);
+      let filter = null;
+      if (lp) {
+        filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = lp;
+      }
+      layer(run(o), vol, trem, tremDepth, filter);
+    },
+    air(f, { vol = 0.04, q = 1.5, kind = 'bandpass', sweep = 0, sweepDepth = 0 } = {}) {
+      if (!MUSIC.noise) return;
+      const n = ctx.createBufferSource(),
+        filter = ctx.createBiquadFilter();
+      n.buffer = MUSIC.noise;
+      n.loop = true;
+      filter.type = kind;
+      filter.frequency.value = f;
+      filter.Q.value = q;
+      lfo(filter.frequency, sweep, sweepDepth);
+      layer(run(n), vol, 0, 0, filter);
+    },
+    stop(fade = 0.12) {
+      const t = ctx.currentTime;
+      out.gain.cancelScheduledValues(t);
+      out.gain.setValueAtTime(Math.max(0.0001, out.gain.value), t);
+      out.gain.exponentialRampToValueAtTime(0.0001, t + fade);
+      for (const n of srcs) n.stop(t + fade + 0.03);
+      bed.stop = () => {};
+    }
+  };
+  return bed;
 }

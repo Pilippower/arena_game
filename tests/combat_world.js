@@ -16,7 +16,7 @@ const GAME_FILES = [
 ];
 
 function combatWorld() {
-  const sounds = []; // bruitages demandés (SFX.<nom>), pour vérifier les cris
+  const sounds = []; // bruitages demandés (SFX.<nom>, arguments), pour vérifier les cris et les nappes d'incantation
   const S = sandbox({
     Math: Object.create(Math), // propre au monde : un test peut fixer Math.random
     window: {},
@@ -28,7 +28,6 @@ function combatWorld() {
     clamp: (v, a, b) => Math.max(a, Math.min(b, v)),
     updateUI() {},
     spellSfx() {},
-    spellImpactSfx() {},
     spellSfxKind() {},
     showSplash() {},
     setTimeout() {},
@@ -40,7 +39,7 @@ function combatWorld() {
         get:
           (o, name) =>
           (...args) =>
-            sounds.push({ name, unit: args[0] })
+            sounds.push({ name, unit: args[0], args })
       }
     )
   });

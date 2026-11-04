@@ -26,9 +26,6 @@ validé dans `docs/SPEC.md`.
 23. Étourdissement : la tête ne doit plus partir en arrière ; animation dédiée (tête légèrement penchée en avant, yeux
     fermés, petits cercles lents).
 24. Nain : la barbe reste immobile quand la tête bouge (capture de l'utilisateur) : elle doit suivre la tête.
-25. Sons des sorts plus expressifs (lanceurs et mêlée, ex. Cloak, Stealth) : son pendant l'incantation / la
-    canalisation, son de libération à la fin d'une incantation, son d'échec quand une incantation est interrompue ou
-    arrêtée ; esprit des sons de MMO sans les copier.
 26. Cartes : une salle de chaque côté, reliée à l'arène, où chaque équipe apparaît ; compte à rebours de 20 s affiché ;
     à 0, les portes s'ouvrent avec un son qui marque le début de l'arène.
 

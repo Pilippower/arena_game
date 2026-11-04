@@ -355,7 +355,7 @@ function netHostUpdate(dt) {
       u.yaw = m.yaw;
       u.moving = m.mv;
       u.movePhase = m.mp;
-      if (m.mv && u.cast) u.cast = null; // bouger interrompt l'incantation, comme pour le joueur
+      if (m.mv) endCast(u, 'cancel'); // bouger interrompt l'incantation, comme pour le joueur
     } else if (forced) u.moving = !!u.mobility || u.fear > 0;
   }
   NET.sendT -= dt;

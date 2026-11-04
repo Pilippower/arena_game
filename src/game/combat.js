@@ -287,7 +287,7 @@ function damage(src, t, v, crit = false, school = src.curSchool || 'physical') {
   if (t.hp <= 0) {
     recordKill(src, t);
     t.alive = false;
-    t.cast = null;
+    endCast(t, 'stop');
     t.mobility = null;
     t.fear = 0;
     addFloat(t, 'K.O.', '#ffe6a6');
@@ -404,7 +404,7 @@ function control(t, type, dur, src = null, drKey = type) {
   if (type === 'root') t.rootSchool = src?.curSchool || 'magic';
   t.dr[drKey] = m === 1 ? 0.5 : m === 0.5 ? 0.25 : 0;
   t.drT[drKey] = DR_RESET;
-  if (type === 'stun' || type === 'fear' || type === 'silence' || type === 'poly') t.cast = null;
+  if (type === 'stun' || type === 'fear' || type === 'silence' || type === 'poly') endCast(t, 'interrupt');
   if (type === 'poly') {
     t.polyOwner = src?.id ?? null;
     t.polyX = t.x;
@@ -473,11 +473,18 @@ function moveSpeed(u) {
 function refundCast(u, ca) {
   if (CLASS[u.cls].skills[ca.i]) u.cd[ca.i] = 0;
 }
+// Fin d'une incantation / canalisation (seul point qui en coupe une) : arrête sa nappe sonore ; raison = 'done'
+// (réussie), 'interrupt' / 'cancel' (bouger, sauter) / 'fail' (son d'échec), 'stop' (mort, fin de manche : fondu).
+function endCast(u, reason) {
+  if (!u?.cast) return;
+  u.cast = null;
+  SFX.castEnd(u, reason);
+}
 function interrupt(u, t) {
   if (!t?.cast) return false;
   const S = CLASS[t.cls].skills[t.cast.i],
     sch = S?.s;
-  t.cast = null;
+  endCast(t, 'interrupt');
   if (sch) {
     skillsOf(t).forEach((k, j) => {
       if (k.s === sch) t.cd[j] = Math.max(t.cd[j], 4);
@@ -492,7 +499,7 @@ function interrupt(u, t) {
 // Death Grip : la cible est tirée jusqu'à 1,5 m devant le chevalier
 function startGrip(u, t) {
   face(u, t);
-  t.cast = null;
+  endCast(t, 'interrupt');
   const tx = u.x + Math.sin(u.yaw) * 1.5,
     tz = u.z + Math.cos(u.yaw) * 1.5;
   // durée calée sur la distance (portée 30 m) : la cible arrive toujours devant le chevalier
@@ -572,7 +579,7 @@ function beginCharge(u, t, hitCC = { cc: 'stun', dur: 2 }) {
   if (d < 2.8 || d > 15 || !los(u, t)) return false;
   face(u, t);
   u.mobility = { type: 'charge', cc: hitCC, target: t, life: 0.72, speed: 24, stop: 1.48, hit: false, trailTick: 0 };
-  u.cast = null;
+  endCast(u, 'stop');
   u.root = 0;
   action(u, 'dash');
   fx('chargeStart', u.x, (u.y || 0) + 0.85, u.z, CLASS[u.cls].accent, 0.42, 0.62);
@@ -785,6 +792,7 @@ function useSkill(u, i) {
   if (C.run(c) === false) return false;
   C.fx?.(c);
   spellSfx(u, i, t);
+  if (u.cast) SFX.castStart(u, S.n, u.cast.dur, !!u.cast.channel); // nappe tenue jusqu'à endCast
   // sort à incantation : la ressource n'est prise qu'à la fin (interrompu ou annulé = rien perdu, sim.js)
   // (canalisation : prise au lancement)
   if (!(u.cast && u.cast.i === i && u.cast.end > now() && !u.cast.channel)) pay(u, i);

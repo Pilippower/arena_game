@@ -293,7 +293,7 @@ const SPELL_CAST = {
       u.spellImmune = c.S.dur;
       if (u.root > 0 && u.rootSchool !== 'physical') u.root = 0;
       if (u.slow > 0 && u.slowMagic) u.slow = 0;
-      u.cast = null;
+      endCast(u, 'stop');
       fx('cloak', ...chest(u, 1), [0.6, 0.4, 0.9], 0.9, 0.7);
       fx('ring', u.x, 0.1, u.z, c.col, 0.7, 0.9);
       action(u, 'cast');

@@ -149,7 +149,7 @@ function useSpecialSkill(u, i) {
     if (!t || d > S.range || !los(u, t) || t.poly > 0) return false;
     face(u, t);
     if (control(t, 'poly', S.dur, u)) t.polyKind = 'sap';
-    t.cast = null;
+    endCast(t, 'interrupt');
     action(u, 'melee');
   } else return false;
   if (!ok) return false;

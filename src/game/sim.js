@@ -15,7 +15,7 @@ function update(dt) {
       u.prevZ = u.z;
       u.prevYaw = u.yaw;
       u.moving = false;
-      u.cast = null;
+      endCast(u, 'stop');
       u.mobility = null;
     }
     updateVisualState(dt);
@@ -82,7 +82,7 @@ function update(dt) {
     if (u.cast?.channel) {
       const ca = u.cast,
         t = ca.target;
-      if (!t?.alive) u.cast = null;
+      if (!t?.alive) endCast(u, 'stop');
       else {
         ca.tick += dt;
         while (ca.tick >= 0.5 && u.cast) {
@@ -92,13 +92,14 @@ function update(dt) {
           drain(u, t, ca.value * 0.5, 'shadow', DRAIN_HEAL); // soin doublé (PV +50 %)
           fx('healBeam', t.x, (t.y || 0) + 1.2, t.z, [0.55, 1, 0.35], 0.55, 0.16, [u.x, (u.y || 0) + 1.4, u.z]);
         }
-        if (u.cast && now() >= ca.end) u.cast = null;
+        if (u.cast && now() >= ca.end) endCast(u, 'done');
       }
     }
     if (u.cast && !u.cast.channel && now() >= u.cast.end) {
       const ca = u.cast;
       SPELL_NOW = ca.name;
-      if (!(ca.target?.alive && los(u, ca.target))) {
+      const ok = ca.target?.alive && los(u, ca.target);
+      if (!ok) {
         refundCast(u, ca);
         unitError(u, ca.target?.alive ? 'Target not in line of sight' : 'Invalid target');
       } else {
@@ -113,12 +114,10 @@ function update(dt) {
           u.curSchool = CLASS[u.cls].skills[ca.i]?.s || 'magic';
           damage(u, ca.target, ca.value);
           if (ca.slow) applySlow(ca.target, ca.slow.pct, ca.slow.dur, true); // Frost Bolt : sans rendements décroissants
-          spellImpactSfx(u, 'damage', ca.name);
         } else if (ca.type === 'poly') {
           for (const e of state.units) if (e !== ca.target && e.poly > 0 && e.polyOwner === u.id) endPoly(e, false);
           if (control(ca.target, 'poly', ca.value, u) && (ca.target.polyKind = 'sheep'))
             fx('blinkBurst', ca.target.x, (ca.target.y || 0) + 0.8, ca.target.z, [0.95, 0.85, 1], 0.7, 0.8);
-          spellImpactSfx(u, 'fear', ca.name);
         } else if (ca.type === 'fear') {
           for (const e of state.units)
             if (e !== ca.target && e.fear > 0 && e.fearOwner === u.id) {
@@ -127,7 +126,6 @@ function update(dt) {
             }
           control(ca.target, 'fear', ca.value, u);
           fx('fear', ca.target.x, (ca.target.y || 0) + 1.15, ca.target.z, CLASS[u.cls].accent, 1.0, 1.05);
-          spellImpactSfx(u, 'fear', ca.name);
         } else {
           fx('healBeam', u.x, (u.y || 0) + 1.45, u.z, CLASS[u.cls].accent, 0.34, 0.16, [
             ca.target.x,
@@ -136,10 +134,9 @@ function update(dt) {
           ]);
           heal(u, ca.target, ca.value);
           if (ca.hot) addAura(ca.target, u, ca.name, 'hot', ca.hot.total, ca.hot.dur, 'nature'); // Regrowth
-          spellImpactSfx(u, 'heal', ca.name);
         }
       }
-      u.cast = null;
+      endCast(u, ok ? 'done' : 'fail'); // libération du sort, ou son d'échec
     }
     if ((u === state.player || u.remote) && u.queuedSkill) {
       const q = u.queuedSkill;
