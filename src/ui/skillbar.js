@@ -129,10 +129,12 @@ function skillTooltip(u, i) {
           : S.t === 'aoe'
             ? 'Around you'
             : 'Self';
-  const castT = S.cast;
+  const castT = S.cast,
+    bar = u === LOBBY_UNIT ? lobbyBarAfter(u, S) : null,
+    hint = bar == null ? '' : `<div class="tNote">${bar ? 'Click: show the spells of this bar' : 'Click: back to the normal spell bar'}</div>`;
   return `<div class="tName">${S.n}</div><div class="tRow"><span>${S.c ? `${S.c} ${C.res}` : 'Free'}</span><span>${range}</span></div>
   <div class="tRow"><span>${castT ? `${fmtS(castT)} cast` : 'Instant'}</span><span>${S.cd ? `${fmtS(S.cd)} cooldown` : 'No cooldown'}</span></div>
-  <div class="tDesc">${S.text ? S.text(S, D, H) : ''}</div>${burst > 1 ? '<div class="tNote">Burst active: damage +35% included</div>' : ''}${dmp < 1 ? `<div class="tNote">Dampening: healing -${Math.round((1 - dmp) * 100)}% included</div>` : ''}`;
+  <div class="tDesc">${S.text ? S.text(S, D, H) : ''}</div>${burst > 1 ? '<div class="tNote">Burst active: damage +35% included</div>' : ''}${dmp < 1 ? `<div class="tNote">Dampening: healing -${Math.round((1 - dmp) * 100)}% included</div>` : ''}${hint}`;
 }
 // Trinket PvP : mêmes valeurs que useTrinket (combat.js)
 function trinketTooltip(u) {

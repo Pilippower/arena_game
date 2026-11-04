@@ -391,37 +391,41 @@ assert.match(
   /updateSelectPreview\(selectedRace, selectedClass\);\s*lobbySkillBar\(selectedClass\);/,
   'lobby : barre de sorts de la classe choisie'
 );
-// Lobby : onglets Normal / Cat / Bear (druide) pour lire les barres de forme
+// Lobby : un clic sur un sort de forme (druide) ou sur Stealth (voleur) affiche sa barre ; rien n'est lancé
 {
   const { sandbox } = require('./sources.js'),
-    els = { skills: {}, lobbyBars: { innerHTML: '', querySelectorAll: () => [] } },
+    els = { skills: {} },
     shown = [];
   const S = sandbox({
     CLASS: ctx.CLASS,
     barKey: ctx.barKey,
+    skillsOf: ctx.skillsOf,
     $: id => els[id],
     renderSkillBar: u => shown.push(ctx.skillsOf(u)[0].n)
   });
   const src = read('src/ui/settings.js');
-  vm.runInContext('var LOBBY_UNIT = null; var ' + src.match(/const (LOBBY_BAR_LABEL = [\s\S]*?;)\n/)[1], S.ctx);
-  S.fn('src/ui/settings.js', 'lobbySkillBar');
-  S.fn('src/ui/settings.js', 'lobbyBarTabs');
-  const tabs = () => [...els.lobbyBars.innerHTML.matchAll(/<button data-bar="(\w*)"( class="selected")?>(\w+)/g)];
-  S.ctx.lobbySkillBar('warden');
-  assert.deepEqual(
-    tabs().map(m => m[3]),
-    ['Normal', 'Cat', 'Bear'],
-    'druide : onglets Normal / Cat / Bear'
-  );
-  S.ctx.lobbySkillBar('warden', 'bear');
-  assert.equal(shown.at(-1), 'Maul', 'onglet Bear : barre de l’ours');
-  assert.equal(tabs().find(m => m[2])[3], 'Bear', 'onglet choisi marqué');
-  S.ctx.lobbySkillBar('warden'); // choix d'une race : même classe, la barre de forme reste
+  vm.runInContext('var LOBBY_UNIT = null; var ' + src.match(/const (LOBBY_FORMS = [\s\S]*?;)\r?\n/)[1], S.ctx);
+  for (const f of ['lobbySkillBar', 'lobbyBarAfter', 'lobbySpellClick']) S.fn('src/ui/settings.js', f);
+  const X = S.ctx,
+    click = name => X.lobbySpellClick(X.LOBBY_UNIT, ctx.skillsOf(X.LOBBY_UNIT).findIndex(s => s.n === name));
+  X.lobbySkillBar('warden');
+  click('Bear Form');
+  assert.equal(shown.at(-1), 'Maul', 'Bear Form : barre de l’ours');
+  X.lobbySkillBar('warden'); // choix d'une race : même classe, la barre de forme reste
   assert.equal(shown.at(-1), 'Maul', 'forme gardée tant que la classe ne change pas');
-  S.ctx.lobbySkillBar('warden', 'cat');
-  assert.equal(shown.at(-1), 'Shred', 'onglet Cat : barre du félin');
-  S.ctx.lobbySkillBar('sentinel');
-  assert.equal(els.lobbyBars.innerHTML, '', 'classe sans forme : pas d’onglets');
+  click('Cat Form');
+  assert.equal(shown.at(-1), 'Shred', 'Cat Form (barre de l’ours) : barre du félin');
+  click('Human Form');
+  assert.equal(X.LOBBY_UNIT.form, null, 'Human Form : barre de base');
+  const n = shown.length;
+  click(ctx.skillsOf(X.LOBBY_UNIT)[0].n);
+  assert.equal(shown.length, n, 'sort ordinaire : la barre ne change pas');
+  X.lobbySkillBar('shade');
+  click('Stealth');
+  assert.ok(X.LOBBY_UNIT.stealth, 'voleur : Stealth affiche la barre de camouflage');
+  click('Stealth');
+  assert.ok(!X.LOBBY_UNIT.stealth, 'Stealth dans sa barre : retour à la barre de base');
+  assert.ok(!read('index.html').includes('lobbyBars'), 'plus d’onglets Normal / Cat / Bear');
 }
 // Lobby, 2e design : étiquettes de la panoplie, arènes illustrées, récapitulatif, grand PLAY
 {
@@ -802,15 +806,9 @@ assert.ok(
   read('src/ui/hud.css').includes('body .unitRow .hpb > div:not(.shieldSpan),'),
   'bouclier visible dans les groupes'
 );
-// lobby mobile : les onglets de forme ne déplacent pas la barre du bas (régression du 04/11/2026)
-{
-  const css = read('src/ui/lobby.css').replace(/\s+/g, ' ');
-  assert.ok(
-    css.includes('body.lobby:not(.mobile-mode) #bottom { position: relative; }') &&
-      !css.includes('} body.lobby #bottom { position: relative; }'),
-    'lobby mobile : barre du bas à sa place'
-  );
-}
+// lobby mobile : rien ne déplace la barre du bas (régression du 04/11/2026 : « position: relative » des anciens
+// onglets de forme la faisait recouvrir la moitié du lobby)
+assert.ok(!/#bottom\s*\{\s*position:\s*relative/.test(read('src/ui/lobby.css')), 'lobby mobile : barre du bas à sa place');
 // Tourner au clavier : même rotation que le glisser au clic droit (convention validée)
 assert.ok(
   read('src/input/controls.js').includes('GameLogic.applyLook(camera.yaw, camera.pitch, dir * TURN_PX_PER_S * dt, 0)'),

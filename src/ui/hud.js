@@ -212,10 +212,11 @@ function renderSkillBar(p) {
       `<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(kb.trinket, true)}</span><span class="cdw"></span></button>`;
     box.querySelectorAll('.skill[data-i]').forEach(b => {
       b.onclick = () => {
-        if (!MOBILE.enabled) tryPlayerSkill(+b.dataset.i);
+        if (p === LOBBY_UNIT) lobbySpellClick(p, +b.dataset.i); // lobby : rien n'est lancé, un sort de forme change la barre
+        else if (!MOBILE.enabled) tryPlayerSkill(+b.dataset.i);
       };
       b.onpointerdown = e => {
-        if (MOBILE.enabled) {
+        if (MOBILE.enabled && p !== LOBBY_UNIT) {
           e.preventDefault();
           tryPlayerSkill(+b.dataset.i);
         }

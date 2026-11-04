@@ -8,8 +8,6 @@ validé dans `docs/SPEC.md`.
 Du plus simple au plus compliqué, un commit par tâche. Images de référence des épaules (planches de classe génériques
 fournies par l'utilisateur, à suivre au plus près) : `assets_src/ui/ref_shoulders_{mage,warlock,rogue,priest}.png`.
 
-6. Lobby, druide : remplacer les 3 boutons de forme à droite par un clic sur le sort de forme dans la barre (Cat Form /
-   Bear Form), qui change la barre affichée.
 7. Nain : une petite barbe reste figée dans l'air quand il marche (une partie de la barbe ne suit pas la tête) : le
    vérifier soi-même en marchant, corriger.
 8. Ours : ses sons ressemblent encore à un cochon ; nouvelle étude des sons (enregistrements d'ours libres de droits).
@@ -17,7 +15,8 @@ fournies par l'utilisateur, à suivre au plus près) : `assets_src/ui/ref_should
    publiques, sans copier ni extraire leurs sons), puis propositions ; Drain Life du démoniste très gênant.
 11. Mobile, surtout le lobby, « complètement cassé » (ajoutée le 04/11/2026). Cause principale trouvée et corrigée le
     jour même (régression du commit 1880ec3 : la barre du bas recouvrait la moitié du lobby) ; reste à faire une revue
-    complète du mobile (lobby en entier jusqu'au bouton PLAY, Settings, jeu, fin de match) sur plusieurs tailles.
+    complète du mobile (lobby en entier jusqu'au bouton PLAY, Settings, jeu, fin de match) sur plusieurs tailles. Vu le 04/11 : texte « Play » en double sur le bouton PLAY du lobby
+    mobile ; barre de sorts du lobby invisible en mobile.
 10. Épaules (épaulières) du mage, du démoniste, du voleur et du prêtre : se rapprocher au plus près des planches de
     référence (formes, couches, matières, couleurs, gemmes) ; seules les épaulières changent (pas les visages ni les
     coiffures). Mage : grandes épaulières bleu roi en plusieurs pointes dorées, cristaux bleus lumineux ; démoniste :

@@ -359,20 +359,19 @@ function lobbySkillBar(cls, bar = LOBBY_UNIT?.cls === cls ? barKey(LOBBY_UNIT) :
     box.innerHTML = '';
     box._key = null;
   }
-  lobbyBarTabs();
 }
-// Onglets à côté de la barre de sorts du lobby : une barre de forme ou de camouflage pour la lire (infobulles)
-// avant de jouer. Classes sans barre de forme : aucun onglet.
-const LOBBY_BAR_LABEL = { '': 'Normal', cat: 'Cat', bear: 'Bear', stealth: 'Stealth' },
-  LOBBY_FORMS = new Set(['cat', 'bear']);
-function lobbyBarTabs() {
-  const el = $('lobbyBars'),
-    u = LOBBY_UNIT,
-    bars = u && CLASS[u.cls].bars ? ['', ...Object.keys(CLASS[u.cls].bars)] : [];
-  el.innerHTML = bars
-    .map(k => `<button data-bar="${k}"${k === barKey(u) ? ' class="selected"' : ''}>${LOBBY_BAR_LABEL[k]}</button>`)
-    .join('');
-  el.querySelectorAll('button').forEach(b => (b.onclick = () => lobbySkillBar(u.cls, b.dataset.bar)));
+const LOBBY_FORMS = new Set(['cat', 'bear']);
+// Lobby : un clic sur un sort de forme ou de camouflage affiche sa barre, pour lire les infobulles avant de jouer
+// (Cat Form → barre du félin ; Human Form, ou Stealth dans sa barre → barre de base). '' = barre de base, null = sort
+// sans barre (un clic au lobby ne lance rien).
+function lobbyBarAfter(u, s) {
+  if (!s?.k) return null;
+  if (s.k === 'human' || s.k === barKey(u)) return '';
+  return CLASS[u.cls].bars?.[s.k] ? s.k : null;
+}
+function lobbySpellClick(u, i) {
+  const next = lobbyBarAfter(u, skillsOf(u)[i]);
+  if (next != null) lobbySkillBar(u.cls, next);
 }
 function chooseClass() {
   playLobbyMusic();
