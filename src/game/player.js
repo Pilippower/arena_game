@@ -76,7 +76,7 @@ function playerMove(dt) {
   }
   p.moving = !!(dx || dz);
   if (!p.moving) return;
-  if (p.cast) p.cast = null;
+  endCast(p, 'cancel');
   const fw = GameLogic.forward(base),
     back = (dx * fw.x + dz * fw.z) / (Math.hypot(dx, dz) || 1) < -0.5; // recul : on garde le regard vers l'avant
   const sp = moveSpeed(p) * (back ? 0.62 : 1);

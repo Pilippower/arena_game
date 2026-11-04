@@ -4,9 +4,26 @@
 function syncBar(u) {
   u.cdSets = u.cdSets || { '': u.cd };
   const k = barKey(u);
-  u.cdSets[k] = u.cdSets[k] || skillsOf(u).map(() => 0);
+  u.cdSets[k] = u.cdSets[k] || skillsOf(u).map(S => sharedCooldown(u, S.n));
   u.cd = u.cdSets[k];
   u.queuedSkill = null;
+}
+// Un sort présent dans plusieurs barres (Shadowstep : base et camouflage) n'a qu'une recharge : sinon on le relançait
+// aussitôt en changeant de barre. Les autres sorts gardent la recharge de leur propre barre.
+const barOf = (u, k) => (k && CLASS[u.cls].bars?.[k]) || CLASS[u.cls].skills;
+function sharedCooldown(u, name) {
+  let cd = 0;
+  for (const [k, cs] of Object.entries(u.cdSets || {}))
+    barOf(u, k).forEach((S, j) => {
+      if (S.n === name) cd = Math.max(cd, cs[j] || 0);
+    });
+  return cd;
+}
+function shareCooldown(u, name, value) {
+  for (const [k, cs] of Object.entries(u.cdSets || {}))
+    barOf(u, k).forEach((S, j) => {
+      if (S.n === name) cs[j] = value;
+    });
 }
 function setForm(u, form) {
   const was = u.form,
@@ -25,7 +42,6 @@ function setForm(u, form) {
   // changer de forme libère des entraves (racines, ralentissements) et de la Métamorphose
   u.root = 0;
   u.rootKind = null;
-  u.rootBreakDamage = 0;
   u.slow = 0;
   if (u.poly > 0 && u.polyKind !== 'sap') endPoly(u, false);
   syncBar(u);
@@ -133,7 +149,7 @@ function useSpecialSkill(u, i) {
     if (!t || d > S.range || !los(u, t) || t.poly > 0) return false;
     face(u, t);
     if (control(t, 'poly', S.dur, u)) t.polyKind = 'sap';
-    t.cast = null;
+    endCast(t, 'interrupt');
     action(u, 'melee');
   } else return false;
   if (!ok) return false;

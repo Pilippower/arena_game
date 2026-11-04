@@ -4,12 +4,12 @@
 function updatePolyWander(u, dt) {
   if (!u?.alive || !(u.poly > 0)) return;
   if (u.polyKind === 'sap') {
-    u.cast = null;
+    endCast(u, 'interrupt');
     u.mobility = null;
     u.moving = false;
     return;
   }
-  u.cast = null;
+  endCast(u, 'interrupt');
   u.mobility = null;
   u.wanderT = (u.wanderT || 0) - dt;
   if (u.wanderT <= 0 || u.wanderX == null) {

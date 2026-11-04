@@ -4,11 +4,10 @@ for (const name of [
   'footstepSfx',
   'spellSfx',
   'spellSfxKind',
-  'spellImpactSfx',
   'sfxTone',
   'sfxNoise',
   'sfxSweep',
-  'sfxChord',
+  'sfxBed',
   'sfxMetal'
 ]) {
   const fn = window[name];

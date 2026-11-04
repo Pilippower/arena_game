@@ -86,7 +86,7 @@ const AI_ROLE = {
   warden: { dmg: 'Wrath', root: 'Entangling Roots', hot: 'Rejuvenation', dot: 'Moonfire', selfHeal: 'Regrowth' },
   warden_cat: { melee: 1, dmg: 'Shred', slow: 'Rake', stun: 'Maim', kickStun: 'Maim', gap: 'Wild Charge' },
   warden_bear: { melee: 1, dmg: 'Maul', aoe: 'Swipe', def: 'Demoralizing Roar', gap: 'Wild Charge' },
-  shade_stealth: { melee: 1 },
+  shade_stealth: { melee: 1, gap: 'Shadowstep' },
   shade: {
     melee: 1,
     dmg: 'Backstab',

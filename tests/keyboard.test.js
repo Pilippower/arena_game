@@ -56,6 +56,7 @@ function keyboardWorld(stored = null) {
     LOBBY_UNIT: null,
     CLASS: { warden: { name: 'Druid', skills: [] }, sentinel: { name: 'Warrior', skills: [] } },
     updateUI() {},
+    endCast: (u, why) => (u.cast = null), // fin d'incantation (src/game/combat.js : saut = annulation)
     renderSkillBar() {},
     setMusicVolume() {},
     applyFramePositions() {},

@@ -83,7 +83,7 @@ window.addEventListener('keydown', e => {
     if (p.alive && p.stun <= 0 && p.fear <= 0 && !(p.poly > 0) && p.grounded) {
       p.vy = 7.5;
       p.grounded = false;
-      p.cast = null;
+      endCast(p, 'cancel');
     }
   }
 });

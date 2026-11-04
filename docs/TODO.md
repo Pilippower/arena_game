@@ -5,13 +5,6 @@ validé dans `docs/SPEC.md`.
 
 ## Liste du 04/11/2026 (priorité, dans cet ordre : du plus simple au plus compliqué, un commit par tâche)
 
-6. Augmenter le volume des sons des sorts.
-8. Voleur : Backstab ralentit la cible de 60 % pendant 6 s.
-9. Voleur : Shadowstep téléporte dans le dos de la cible, portée 20 m, utilisable aussi camouflé.
-10. Les racines (roots) ne cassent plus quand la cible subit des dégâts.
-11. Démoniste : Corruption vole la vie (chaque dégât infligé est rendu au démoniste).
-12. Bug : un lanceur qui saute peut commencer une incantation (ne doit pas pouvoir).
-13. Bug : Blink pendant un saut (le mage reste sur place au lieu d'arriver au sol à destination).
 20. Bouclier d'absorption visible sur la barre de vie (flottante et cadres de groupe) : portion superposée, couleur
     distincte, style MMO sans copier.
 21. Régression des glaives du voleur : il frappait en tranchant avec ses glaives, il frappe de nouveau comme des coups de
@@ -20,9 +13,6 @@ validé dans `docs/SPEC.md`.
 23. Étourdissement : la tête ne doit plus partir en arrière ; animation dédiée (tête légèrement penchée en avant, yeux
     fermés, petits cercles lents).
 24. Nain : la barbe reste immobile quand la tête bouge (capture de l'utilisateur) : elle doit suivre la tête.
-25. Sons des sorts plus expressifs (lanceurs et mêlée, ex. Cloak, Stealth) : son pendant l'incantation / la
-    canalisation, son de libération à la fin d'une incantation, son d'échec quand une incantation est interrompue ou
-    arrêtée ; esprit des sons de MMO sans les copier.
 26. Cartes : une salle de chaque côté, reliée à l'arène, où chaque équipe apparaît ; compte à rebours de 20 s affiché ;
     à 0, les portes s'ouvrent avec un son qui marque le début de l'arène.
 

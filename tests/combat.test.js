@@ -125,6 +125,19 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   assert.ok(Math.abs(ctx.moveSpeed(t) - ctx.CLASS.arcanist.speed * 0.5) < 1e-9, 'Hamstring : vitesse divisée par 2');
 }
 {
+  // Backstab (voleur) : ralentit de 60 % pendant 6 s, ralentissement de mêlée (non magique)
+  const { ctx, unit } = combatWorld();
+  const rogue = unit('shade', 0, 0, 0),
+    t = unit('arcanist', 0, 1.5, 1);
+  rogue.target = t;
+  assert.ok(ctx.useSkill(rogue, spell(ctx, 'shade', 'Backstab')), 'Backstab lancé');
+  assert.ok(Math.abs(ctx.moveSpeed(t) - ctx.CLASS.arcanist.speed * 0.4) < 1e-9, 'Backstab : vitesse × 0,4');
+  assert.equal(t.slow, 6, 'Backstab : 6 s');
+  assert.equal(t.slowMagic, false, 'Backstab : ralentissement de mêlée');
+  run(ctx, 6.1);
+  assert.ok(Math.abs(ctx.moveSpeed(t) - ctx.CLASS.arcanist.speed) < 1e-9, 'Backstab : vitesse rendue après 6 s');
+}
+{
   // Charge : vraie ruée (pas de téléportation), étourdit à l'arrivée
   const { ctx, unit } = combatWorld();
   const war = unit('sentinel', 0, 0, 0),
@@ -151,6 +164,22 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   assert.ok(ctx.useSkill(mage, spell(ctx, 'arcanist', 'Blink')), 'Blink : utilisable étourdi');
   assert.ok(mage.x > 5 && Math.abs(mage.z) < 0.01, 'Blink : suit la direction du personnage, pas la cible');
   assert.ok(mage.stun === 0 && mage.root === 0, 'Blink : brise étourdissement et racines');
+}
+{
+  // Blink pendant un saut : distance complète vers l'avant, posé au sol (bug : il restait sur place)
+  const { ctx, unit } = combatWorld();
+  const dist = ctx.CLASS.arcanist.skills[spell(ctx, 'arcanist', 'Blink')].dist,
+    mage = unit('arcanist', 0, 0, 0, { yaw: 0, y: 1.5, vy: 3, grounded: false });
+  assert.ok(ctx.useSkill(mage, spell(ctx, 'arcanist', 'Blink')), 'Blink en l’air');
+  assert.ok(Math.abs(mage.z - dist) < 0.2 && Math.abs(mage.x) < 1e-6, `Blink en l’air : ${dist} m devant (${mage.z})`);
+  assert.ok(mage.y === 0 && mage.vy === 0 && mage.grounded, 'Blink en l’air : posé au sol');
+  // sur le tablier du pont : arrive sur le tablier, pas en bas
+  ctx.applyMap('bridge');
+  ctx.arena.pillars = [];
+  const B = ctx.arena.bridge,
+    m2 = unit('arcanist', 0, 0, 0, { yaw: Math.PI / 2, y: B.y + 1.5, vy: 0, grounded: false });
+  assert.ok(ctx.useSkill(m2, spell(ctx, 'arcanist', 'Blink')), 'Blink en l’air sur le pont');
+  assert.ok(Math.abs(m2.x - dist) < 0.2 && m2.y === B.y && m2.grounded, 'Blink en l’air sur le pont : sur le tablier');
 }
 {
   // Dispel : effets magiques seulement ; joueur : uniquement sa cible actuelle amie (ou soi quand on se cible)
@@ -184,7 +213,95 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   u.stealth = true;
   assert.ok(Math.abs(ctx.moveSpeed(u) - base * 0.7) < 1e-9, 'camouflé : -30 % de vitesse');
 }
+{
+  // Shadowstep : dans le dos de la cible, face à elle ; portée 20 m ; utilisable camouflé sans casser le camouflage
+  const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-6, `${msg} (${a} au lieu de ${b})`);
+  const SS = ctx => spell(ctx, 'shade', 'Shadowstep');
+  {
+    const { ctx, unit } = combatWorld();
+    const rogue = unit('shade', 0, 0, 0),
+      foe = unit('arcanist', 0, 10, 1);
+    rogue.target = foe;
+    foe.yaw = Math.PI; // la cible regarde le voleur : son dos est au-delà d'elle
+    assert.ok(ctx.useSkill(rogue, SS(ctx)), 'Shadowstep lancé');
+    near(rogue.z, 11.2, 'Shadowstep : 1,2 m dans le dos de la cible');
+    near(rogue.x, 0, 'Shadowstep : dans l’axe de la cible');
+    near(Math.cos(rogue.yaw), -1, 'Shadowstep : face à la cible');
+    assert.ok(foe.hp < foe.maxHp, 'Shadowstep : dégâts à l’arrivée');
+  }
+  {
+    const { ctx, unit } = combatWorld();
+    const rogue = unit('shade', 0, 0, 0),
+      foe = unit('arcanist', 0, 19.5, 1, { yaw: 0 });
+    rogue.target = foe;
+    assert.ok(ctx.useSkill(rogue, SS(ctx)), 'Shadowstep : 19,5 m accepté');
+    near(rogue.z, 18.3, 'Shadowstep : cible de dos');
+    const far = combatWorld(),
+      r2 = far.unit('shade', 0, 0, 0),
+      f2 = far.unit('arcanist', 0, 20.5, 1);
+    r2.target = f2;
+    assert.ok(!far.ctx.useSkill(r2, SS(far.ctx)), 'Shadowstep : refusé au-delà de 20 m');
+    assert.equal(r2.z, 0, 'Shadowstep refusé : pas de déplacement');
+    assert.equal(far.ctx.skillFailReason(r2, SS(far.ctx)), "I'm out of range", 'Shadowstep : message de portée');
+  }
+  {
+    // dos contre le mur de l'arène : arrive à côté de la cible, dans l'arène
+    const { ctx, unit } = combatWorld();
+    const zWall = ctx.arena.halfZ - 0.9,
+      rogue = unit('shade', 0, 10, 0),
+      foe = unit('arcanist', 0, zWall, 1);
+    rogue.target = foe;
+    foe.yaw = Math.PI;
+    assert.ok(ctx.useSkill(rogue, SS(ctx)), 'Shadowstep : cible dos au mur');
+    assert.ok(rogue.z <= ctx.arena.halfZ - 0.68 && Math.hypot(rogue.x, rogue.z - zWall) < 1.3, 'Shadowstep : à côté');
+  }
+  {
+    const { ctx, unit } = combatWorld();
+    const rogue = unit('shade', 0, 0, 0),
+      foe = unit('arcanist', 0, 10, 1, { yaw: 0 });
+    rogue.target = foe;
+    ctx.setStealth(rogue, true);
+    const j = ctx.skillsOf(rogue).findIndex(s => s.n === 'Shadowstep');
+    assert.ok(j >= 0, 'Shadowstep dans la barre de camouflage');
+    assert.ok(ctx.useSkill(rogue, j), 'Shadowstep camouflé');
+    near(rogue.z, 8.8, 'Shadowstep camouflé : dans le dos');
+    assert.ok(rogue.stealth, 'Shadowstep : camouflage gardé');
+    assert.equal(foe.hp, foe.maxHp, 'Shadowstep camouflé : pas de dégâts');
+    ctx.setStealth(rogue, false);
+    assert.ok(rogue.cd[SS(ctx)] > 12, 'Shadowstep : une seule recharge pour les deux barres');
+    // même touche en camouflage que hors camouflage (barre de sorts, ui/skillbar.js)
+    const { sandbox } = require('./sources.js');
+    const B = sandbox({ window: {}, PREFS: { ui: {} } });
+    B.load('src/data/classes.js');
+    B.fn('src/ui/skillbar.js', 'slotOrder');
+    const order = B.ctx.slotOrder({ cls: 'shade', stealth: true });
+    assert.equal(order[SS(ctx)], j, 'Shadowstep camouflé : même emplacement que dans la barre de base');
+  }
+}
 // ---------- Incantations (pas de simulation réel : update de sim.js) ----------
+{
+  // en l'air (saut) : pas d'incantation ni de canalisation, rien n'est consommé ; les instantanés restent permis
+  const { ctx, unit } = combatWorld();
+  const mage = unit('arcanist', 0, 0, 0, { y: 1.5, vy: 0, grounded: false }),
+    lock = unit('warlock', 3, 0, 0, { y: 1.5, vy: 0, grounded: false }),
+    foe = unit('sentinel', 0, 1.5, 1);
+  mage.target = lock.target = foe;
+  const FB = spell(ctx, 'arcanist', 'Frost Bolt');
+  assert.ok(!ctx.useSkill(mage, FB), 'en sautant : Frost Bolt refusé');
+  assert.ok(!mage.cast && mage.cd[FB] === 0 && mage.gcd === 0 && mage.res === 100, 'refusé : rien consommé');
+  assert.equal(ctx.skillFailReason(mage, FB), "You can't do that while jumping", 'en sautant : message');
+  assert.ok(!ctx.useSkill(lock, spell(ctx, 'warlock', 'Drain Life')) && !lock.cast, 'en sautant : pas de canalisation');
+  assert.ok(ctx.useSkill(mage, spell(ctx, 'arcanist', 'Frost Nova')), 'en sautant : sort instantané permis');
+  // file d'attente : un Frost Bolt appuyé juste avant la fin du GCD ne part pas en l'air
+  Object.assign(mage, { gcd: 0.1, vy: 7.5 });
+  ctx.state.player = mage;
+  assert.ok(ctx.tryPlayerSkill(FB) && mage.queuedSkill, 'Frost Bolt mis en file');
+  run(ctx, 0.2);
+  assert.ok(!mage.grounded && !mage.cast, 'file d’attente : pas d’incantation en l’air');
+  run(ctx, 1);
+  assert.ok(mage.grounded, 'au sol');
+  assert.ok(ctx.useSkill(mage, FB) && mage.cast, 'au sol : Frost Bolt permis');
+}
 {
   // ressource prise à la fin de l'incantation, dégâts à l'impact ; portée 30 m
   const { ctx, unit } = combatWorld();
@@ -271,6 +388,42 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   unit('sentinel', 0, 25, 1);
   const FN = spell(ctx, 'arcanist', 'Frost Nova');
   assert.ok(ctx.useSkill(mage, FN) && mage.cd[FN] > 0, 'Frost Nova sans cible proche');
+}
+{
+  // Corruption (démoniste) : chaque tic rend au démoniste les dégâts réellement infligés (après armure et bouclier)
+  const { ctx, unit } = combatWorld();
+  const lock = unit('warlock', 0, 0, 0, { hp: 800 }),
+    foe = unit('sentinel', 0, 10, 1);
+  lock.target = foe;
+  assert.ok(ctx.useSkill(lock, spell(ctx, 'warlock', 'Corruption')), 'Corruption lancée');
+  run(ctx, 3.05);
+  const dealt = foe.maxHp - foe.hp;
+  assert.ok(dealt > 0, 'Corruption : dégâts dans la durée');
+  assert.equal(lock.hp - 800, dealt, 'Corruption : PV rendus = dégâts infligés');
+  assert.ok(ctx.auraOf(foe, 'Corruption')?.kind === 'dot', 'Corruption : débuff (dispel, icône)');
+  foe.shield = 10000;
+  const hp = lock.hp;
+  run(ctx, 2);
+  assert.equal(lock.hp, hp, 'Corruption : dégâts absorbés par un bouclier = rien rendu');
+}
+{
+  // racines (Frost Nova, Entangling Roots) : aucun dégât ne les casse
+  const { ctx, unit } = combatWorld();
+  const mage = unit('arcanist', 0, 0, 0),
+    druid = unit('warden', 0, -12, 0),
+    foe = unit('sentinel', 0, 2, 1),
+    foe2 = unit('shade', 4, 0, 1);
+  assert.ok(ctx.useSkill(mage, spell(ctx, 'arcanist', 'Frost Nova')) && foe.root > 0, 'Frost Nova : racines');
+  druid.target = foe2;
+  assert.ok(ctx.useSkill(druid, spell(ctx, 'warden', 'Entangling Roots')), 'Entangling Roots lancé');
+  run(ctx, ctx.CLASS.warden.skills[spell(ctx, 'warden', 'Entangling Roots')].cast || 0.05);
+  assert.ok(foe2.root > 0, 'Entangling Roots : racines');
+  for (const t of [foe, foe2]) {
+    const left = t.root;
+    for (let k = 0; k < 4; k++) ctx.damage(mage, t, 200, false, 'arcane');
+    ctx.damage(mage, t, 300, false, 'physical');
+    assert.equal(t.root, left, `${t.cls} : racines gardées malgré les dégâts`);
+  }
 }
 {
   // Demonic Gate : vers l'avant (pas vers la cible), racines gardées
@@ -394,37 +547,129 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   ctx.update(1);
   assert.equal(ctx.state.elapsed, 0, 'chargement : chrono arrêté');
 }
-// ---------- Son dédié de chaque sort (src/audio/spell_sounds.js) ----------
+// ---------- Sons des sorts (src/audio/spell_sounds.js) : lancement, nappe, libération, échec ----------
 {
   const { sandbox } = require('./sources.js');
-  const calls = [];
+  const calls = [],
+    beds = [];
   const S = sandbox({
+    SFX: {},
     sfxSpatial: () => ({ level: 1, pan: 0 }),
     sfxTone: (f, d, type, v, slide) => calls.push({ kind: 'tone', freqs: [f, slide || f], v }),
     sfxSweep: (d, v, f0, f1) => calls.push({ kind: 'sweep', freqs: [f0, f1], v }),
     sfxNoise: (d, v, f) => calls.push({ kind: 'noise', freqs: [f], v }),
-    sfxMetal: (v, p, delay, base = 420) => calls.push({ kind: 'metal', freqs: [base, base * 8.93], v })
+    sfxMetal: (v, p, delay, base = 420) => calls.push({ kind: 'metal', freqs: [base, base * 8.93], v }),
+    // nappe : couches (voix, souffle) et arrêt
+    sfxBed: (pan, max) => {
+      const bed = { layers: [], max, stopped: 0 };
+      beds.push(bed);
+      return {
+        voice: (f, o) => bed.layers.push({ freqs: [f, o.to || f, f + (o.vibDepth || 0)], v: o.vol }),
+        air: (f, o) => bed.layers.push({ freqs: [f + (o.sweepDepth || 0)], v: o.vol }),
+        stop: () => bed.stopped++
+      };
+    }
   });
   S.load('src/audio/spell_sounds.js');
+  const A = S.ctx;
   const { ctx } = combatWorld();
   const spells = new Map();
   for (const C of Object.values(ctx.CLASS))
     for (const bar of [C.skills, ...Object.values(C.bars || {})]) for (const sp of bar) spells.set(sp.n, sp);
+  // pas d'aigu strident : fréquences dominantes sous 3,3 kHz (sauf partiels brefs du métal), volumes modérés
+  const gentle = (list, what) => {
+    for (const c of list) {
+      if (c.kind !== 'metal') assert.ok(Math.max(...c.freqs) <= 3300, `${what} : pas d'aigu strident (${c.freqs})`);
+      assert.ok(c.v <= 0.3, `${what} : volume modéré (${c.v})`);
+    }
+  };
   const signatures = new Set();
   for (const [n, sp] of spells) {
     calls.length = 0;
-    assert.ok(S.ctx.playSpellSound(S.ctx.SPELL_SOUND, {}, n), `son dédié : ${n}`);
-    assert.ok(calls.length > 0, `son audible : ${n}`);
+    assert.ok(A.playSpellSound(A.SPELL_SOUND, {}, n), `son dédié : ${n}`);
+    assert.ok(calls.length >= 3, `son riche (plusieurs couches) : ${n}`);
     signatures.add(JSON.stringify(calls));
-    if (sp.cast) assert.ok(S.ctx.SPELL_IMPACT[n], `son d'impact : ${n}`);
-    // pas d'aigu strident : fréquences dominantes sous 3,3 kHz (sauf partiels brefs du métal), volumes modérés
-    for (const c of calls) {
-      if (c.kind !== 'metal') assert.ok(Math.max(...c.freqs) <= 3300, `${n} : pas d'aigu strident (${c.freqs})`);
-      assert.ok(c.v <= 0.17, `${n} : volume modéré`);
+    gentle(calls, n);
+    // volume relevé (04/11/2026) : chaque composant joué ≥ 1,6 × sa valeur dans la recette
+    const raw = [],
+      rec = (...v) => raw.push(v);
+    A.SPELL_SOUND[n]({
+      tone: (f, d, t, v) => rec(v),
+      sweep: (d, v) => rec(v),
+      noise: (d, v) => rec(v),
+      metal: v => rec(v)
+    });
+    raw.forEach(([v], k) => assert.ok(calls[k].v >= 1.6 * v, `${n} : volume relevé`));
+    if (!sp.cast && !sp.channel) {
+      assert.ok(!A.SPELL_LOOP[n], `${n} : instantané, pas de nappe`);
+      continue;
     }
+    // incantation / canalisation : nappe tenue (plusieurs couches) jusqu'à la fin, arrêtée explicitement
+    const u = {};
+    beds.length = calls.length = 0;
+    A.SFX.castStart(u, n, sp.cast || sp.dur, !!sp.channel);
+    assert.ok(beds.length === 1 && beds[0].layers.length >= 3, `${n} : nappe d'incantation`);
+    assert.ok(beds[0].max >= (sp.cast || sp.dur), `${n} : la nappe dure toute l'incantation`);
+    gentle(beds[0].layers, `${n} (nappe)`);
+    A.SFX.castEnd(u, 'done');
+    assert.equal(beds[0].stopped, 1, `${n} : nappe arrêtée à la fin`);
+    if (sp.channel) assert.equal(calls.length, 0, `${n} : canalisation, pas de son de libération`);
+    else {
+      assert.ok(A.SPELL_IMPACT[n] && calls.length >= 3, `${n} : son de libération`);
+      gentle(calls, `${n} (libération)`);
+    }
+    // interrompu : nappe coupée, son d'échec (distinct de la libération), une seule fois
+    const impact = JSON.stringify(calls);
+    for (const reason of ['interrupt', 'cancel', 'fail']) {
+      beds.length = calls.length = 0;
+      A.SFX.castStart(u, n, 1.5);
+      A.SFX.castEnd(u, reason);
+      A.SFX.castEnd(u, reason);
+      assert.equal(beds[0].stopped, 1, `${n} : nappe coupée (${reason})`);
+      assert.ok(calls.length >= 3 && JSON.stringify(calls) !== impact, `${n} : son d'échec (${reason})`);
+      gentle(calls, `${n} (échec)`);
+    }
+    beds.length = calls.length = 0;
+    A.SFX.castStart(u, n, 1.5);
+    A.SFX.castEnd(u, 'stop');
+    assert.ok(beds[0].stopped === 1 && calls.length === 0, `${n} : mort / fin de manche, fondu silencieux`);
   }
   assert.equal(signatures.size, spells.size, 'chaque sort a un son différent');
-  assert.ok(S.ctx.SPELL_SOUND.Trinket, 'trinket : son dédié');
+  assert.ok(A.SPELL_SOUND.Trinket, 'trinket : son dédié');
+}
+{
+  // combat : la nappe démarre avec l'incantation et s'arrête avec la bonne raison (réussite, interruption, échec)
+  const { ctx, unit, sounds } = combatWorld();
+  const ends = u => sounds.filter(s => s.name === 'castEnd' && s.unit === u).map(s => s.args[1]);
+  const mage = unit('arcanist', 0, 0, 0),
+    foe = unit('warlock', 0, 20, 1);
+  mage.target = foe;
+  foe.target = mage;
+  const FB = spell(ctx, 'arcanist', 'Frost Bolt');
+  assert.ok(ctx.useSkill(mage, FB), 'Frost Bolt lancé');
+  const start = sounds.find(s => s.name === 'castStart' && s.unit === mage);
+  assert.ok(
+    start && start.args[1] === 'Frost Bolt' && start.args[2] === mage.cast.dur,
+    'nappe : début de l’incantation'
+  );
+  run(ctx, mage.cast.dur + 0.05);
+  assert.deepEqual(ends(mage), ['done'], 'incantation réussie : libération');
+  run(ctx, 1.2);
+  assert.ok(ctx.useSkill(mage, FB), 'Frost Bolt relancé');
+  assert.ok(ctx.interrupt(foe, mage), 'interruption');
+  assert.deepEqual(ends(mage), ['done', 'interrupt'], 'interrompu : son d’échec');
+  // canalisation : fin normale
+  assert.ok(ctx.useSkill(foe, spell(ctx, 'warlock', 'Drain Life')), 'Drain Life');
+  run(ctx, 6.1);
+  assert.deepEqual(ends(foe), ['done'], 'canalisation terminée');
+  // ligne de vue perdue : échec
+  const m2 = unit('arcanist', 5, 0, 0);
+  m2.target = foe;
+  run(ctx, 1.2);
+  assert.ok(ctx.useSkill(m2, FB), 'Frost Bolt (2)');
+  ctx.arena.pillars.push({ x: 2.5, z: 10, r: 1.5, h: 9 });
+  run(ctx, m2.cast.dur + 0.05);
+  assert.deepEqual(ends(m2), ['fail'], 'ligne de vue perdue : son d’échec');
 }
 console.log(
   'OK - règles de combat (tests unitaires : DR, contrôles, dégâts, soins, sorts, incantations, auras, fin de manche, sons des sorts)'

@@ -10,11 +10,13 @@
 // Ajouter un sort : valeurs + texte dans SPELLS, place dans CLASS[cls].skills et SKILL_META, puis une entrée ici.
 const allyOf = u => (u.ai ? lowestAlly(u) : friendlyTarget(u));
 const chest = (o, h = 1.1) => [o.x, (o.y || 0) + h, o.z];
-// coup de mêlée avec chance de critique ; antiheal = réduction des soins reçus (max 50 %)
+// coup de mêlée avec chance de critique ; antiheal = réduction des soins reçus (max 50 %) ; slow = ralentissement de
+// mêlée (non magique) pendant S.dur
 function strike(c) {
   const { u, t, S } = c;
   if (!c.melee) return false;
   damage(u, t, S.dmg, Math.random() < S.crit);
+  if (S.slow) applySlow(t, S.slow, S.dur);
   if (S.antiheal) {
     t.antiheal = Math.min(0.5, t.antiheal + S.antiheal);
     markDebuff(t, 'antiheal');
@@ -232,9 +234,7 @@ const SPELL_CAST = {
       const { u, t, S } = c;
       if (!c.range) return false;
       fx('shadowProjectile', ...chest(u, 1.5), [0.55, 1, 0.45], 0.45, 0.3, chest(t, 1.2));
-      const h0 = t.hp;
-      damage(u, t, t.maxHp * S.pct);
-      if (h0 > t.hp) heal(u, u, h0 - t.hp);
+      drain(u, t, t.maxHp * S.pct);
       action(u, 'cast');
     }
   },
@@ -291,12 +291,9 @@ const SPELL_CAST = {
     run(c) {
       const u = c.u;
       u.spellImmune = c.S.dur;
-      if (u.root > 0 && u.rootSchool !== 'physical') {
-        u.root = 0;
-        u.rootBreakDamage = 0;
-      }
+      if (u.root > 0 && u.rootSchool !== 'physical') u.root = 0;
       if (u.slow > 0 && u.slowMagic) u.slow = 0;
-      u.cast = null;
+      endCast(u, 'stop');
       fx('cloak', ...chest(u, 1), [0.6, 0.4, 0.9], 0.9, 0.7);
       fx('ring', u.x, 0.1, u.z, c.col, 0.7, 0.9);
       action(u, 'cast');
@@ -319,13 +316,14 @@ const SPELL_CAST = {
     },
     fx: c => fx('darkAura', c.u.x, 0.1, c.u.z, c.col, 0.9, 1.0)
   },
+  // dans le dos de la cible ; aussi depuis le camouflage (barre de camouflage), qu'il ne casse pas : pas de dégâts
+  // camouflé, pour enchaîner Cheap Shot / Ambush
   Shadowstep: {
     mobility: true,
     run(c) {
       const { u, t, S } = c;
-      if (!t || !c.range) return false;
-      dashToward(u, t, 8);
-      if (d2(u, t) < 2.7) damage(u, t, S.dmg);
+      if (!t || !c.range || c.d > S.range || !stepBehind(u, t)) return false;
+      if (!u.stealth) damage(u, t, S.dmg);
       action(u, 'dash');
       landed(c);
     },
@@ -342,11 +340,11 @@ const SPELL_CAST = {
     fx: c => fx('fear', ...chest(c.t || c.u), c.col, 0.85, 0.85)
   },
   'Spell Lock': { run: kick, fx: c => fx('silence', ...chest(c.t || c.u, 1.25), c.col, 0.55, 0.72) },
-  // dégâts dans la durée
+  // dégâts dans la durée qui volent la vie : chaque tic soigne le démoniste des dégâts infligés
   Corruption: {
     run(c) {
       if (!c.range) return false;
-      addAura(c.t, c.u, c.S.n, 'dot', c.S.dot, c.S.dur, 'shadow');
+      addAura(c.t, c.u, c.S.n, 'dot', c.S.dot, c.S.dur, 'shadow', true);
       action(c.u, 'cast');
     },
     fx: c => fx('silence', ...chest(c.t || c.u, 1.25), [0.6, 0.35, 0.9], 0.6, 0.7)

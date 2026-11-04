@@ -46,8 +46,6 @@ function makeUnit(cls, x, z, team, name, ai = false, race = null, slot = 0) {
     fearSourceX: x,
     fearSourceZ: z,
     fearPhase: Math.random() * 6.28,
-    rootBreakDamage: 0,
-    rootMin: 0,
     prevX: x,
     prevZ: z,
     prevYaw: team ? Math.PI : 0,
@@ -284,24 +282,23 @@ function damage(src, t, v, crit = false, school = src.curSchool || 'physical') {
     t.fearOwner = null;
     addFloat(t, 'Fear broken', '#d8a7ff');
   }
-  if (t.root > 0 && t.rootBreakDamage > 0) {
-    t.rootBreakDamage -= v;
-    if (t.rootMin <= 0 && t.rootBreakDamage <= 0) {
-      t.root = 0;
-      t.rootBreakDamage = 0;
-      addFloat(t, 'Nova broken', '#9de8ff');
-    }
-  }
   addFloat(t, crit ? `-${v}!` : `-${v}`, SCHOOL_COLOR[school] || SCHOOL_COLOR.physical, crit);
   fx('burst', t.x, 1.15, t.z, [1, 0.18, 0.08], 0.42, 0.35);
   if (t.hp <= 0) {
     recordKill(src, t);
     t.alive = false;
-    t.cast = null;
+    endCast(t, 'stop');
     t.mobility = null;
     t.fear = 0;
     addFloat(t, 'K.O.', '#ffe6a6');
   }
+}
+// Vol de vie (Death Coil, Drain Life, Corruption) : dégâts, puis le lanceur est soigné de ratio × les dégâts réellement
+// infligés (après armure et bouclier, plafonnés aux PV restants) ; le soin suit les règles habituelles (dampening).
+function drain(src, t, v, school = src.curSchool || 'physical', ratio = 1) {
+  const h0 = t?.hp || 0;
+  damage(src, t, v, false, school);
+  if (h0 > t.hp) heal(src, src, (h0 - t.hp) * ratio);
 }
 // Dampening : les soins baissent au fil de la manche (0 % jusqu'à 35 s, puis montée sur 90 s jusqu'à 45 %).
 const DAMPENING = { start: 35, ramp: 90, max: 0.45 };
@@ -319,6 +316,7 @@ function heal(src, t, v) {
 }
 // Effets dans la durée (auras) : 'dot' = dégâts / s, 'hot' = soins / s (tic chaque seconde, comptés dans le récap),
 // 'weaken' = les coups physiques de la cible perdent `per` dégâts par seconde de cadence. Réappliquer rafraîchit.
+// drain (dot) : chaque tic soigne le lanceur des dégâts infligés (Corruption).
 // Dispel du prêtre : effets magiques retirés (mouton, peurs, racines et ralentissements magiques, dégâts dans la
 // durée magiques) ; restent les ralentissements de mêlée (Hamstring, Rake), Sap et les étourdissements.
 function dispellable(u) {
@@ -339,7 +337,6 @@ function dispel(u) {
   }
   if (u.root > 0 && u.rootSchool !== 'physical') {
     u.root = 0;
-    u.rootBreakDamage = 0;
     u.rootKind = null;
   }
   if (u.slow > 0 && u.slowMagic) u.slow = 0;
@@ -347,10 +344,10 @@ function dispel(u) {
   addFloat(u, 'Dispelled', '#fff3b0');
   return true;
 }
-function addAura(t, src, n, kind, total, dur, school = 'magic') {
+function addAura(t, src, n, kind, total, dur, school = 'magic', drain = false) {
   if (!t?.alive) return;
   t.auras = (t.auras || []).filter(a => !(a.n === n && a.src === src));
-  t.auras.push({ n, src, kind, per: kind === 'weaken' ? total : total / dur, rem: dur, dur, acc: 0, school });
+  t.auras.push({ n, src, kind, per: kind === 'weaken' ? total : total / dur, rem: dur, dur, acc: 0, school, drain });
 }
 function updateAuras(u, dt) {
   if (!u.auras?.length) return;
@@ -360,7 +357,8 @@ function updateAuras(u, dt) {
     while (a.kind !== 'weaken' && a.acc >= 0.999 && u.alive) {
       a.acc -= 1;
       SPELL_NOW = a.n;
-      if (a.kind === 'dot') damage(a.src, u, a.per, false, a.school);
+      if (a.kind === 'dot' && a.drain) drain(a.src, u, a.per, a.school);
+      else if (a.kind === 'dot') damage(a.src, u, a.per, false, a.school);
       else heal(a.src, u, a.per);
     }
   }
@@ -406,7 +404,7 @@ function control(t, type, dur, src = null, drKey = type) {
   if (type === 'root') t.rootSchool = src?.curSchool || 'magic';
   t.dr[drKey] = m === 1 ? 0.5 : m === 0.5 ? 0.25 : 0;
   t.drT[drKey] = DR_RESET;
-  if (type === 'stun' || type === 'fear' || type === 'silence' || type === 'poly') t.cast = null;
+  if (type === 'stun' || type === 'fear' || type === 'silence' || type === 'poly') endCast(t, 'interrupt');
   if (type === 'poly') {
     t.polyOwner = src?.id ?? null;
     t.polyX = t.x;
@@ -475,11 +473,18 @@ function moveSpeed(u) {
 function refundCast(u, ca) {
   if (CLASS[u.cls].skills[ca.i]) u.cd[ca.i] = 0;
 }
+// Fin d'une incantation / canalisation (seul point qui en coupe une) : arrête sa nappe sonore ; raison = 'done'
+// (réussie), 'interrupt' / 'cancel' (bouger, sauter) / 'fail' (son d'échec), 'stop' (mort, fin de manche : fondu).
+function endCast(u, reason) {
+  if (!u?.cast) return;
+  u.cast = null;
+  SFX.castEnd(u, reason);
+}
 function interrupt(u, t) {
   if (!t?.cast) return false;
   const S = CLASS[t.cls].skills[t.cast.i],
     sch = S?.s;
-  t.cast = null;
+  endCast(t, 'interrupt');
   if (sch) {
     skillsOf(t).forEach((k, j) => {
       if (k.s === sch) t.cd[j] = Math.max(t.cd[j], 4);
@@ -494,7 +499,7 @@ function interrupt(u, t) {
 // Death Grip : la cible est tirée jusqu'à 1,5 m devant le chevalier
 function startGrip(u, t) {
   face(u, t);
-  t.cast = null;
+  endCast(t, 'interrupt');
   const tx = u.x + Math.sin(u.yaw) * 1.5,
     tz = u.z + Math.cos(u.yaw) * 1.5;
   // durée calée sur la distance (portée 30 m) : la cible arrive toujours devant le chevalier
@@ -504,13 +509,24 @@ function startGrip(u, t) {
 function face(u, t) {
   if (t) u.yaw = Math.atan2(t.x - u.x, t.z - u.z);
 }
-function dashToward(u, t, a) {
-  if (!t) return;
-  let dx = t.x - u.x,
-    dz = t.z - u.z,
-    d = Math.hypot(dx, dz) || 1;
-  // même déplacement que Blink : suit le sol (rampes du pont), s'arrête devant un obstacle ; racines gardées
-  blinkForward(u, Math.max(0, Math.min(a, d - 1.6)), true, Math.atan2(dx, dz));
+// Téléportation dans le dos de la cible (Shadowstep), face à elle, à `gap` m. Si un mur, un pilier, le flanc d'une
+// rampe ou un garde-corps occupe ce point, on essaie de biais puis sur les côtés (BEHIND_TRIES, angles depuis le dos) ;
+// false si aucun point n'est libre. Posé au sol (rampes et tablier du pont compris) ; racines gardées.
+const BEHIND_TRIES = [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8, Math.PI];
+function stepBehind(u, t, gap = 1.2) {
+  const ty = t.y || 0,
+    back = (t.yaw || 0) + Math.PI;
+  for (const a of BEHIND_TRIES) {
+    const p = { x: t.x + Math.sin(back + a) * gap, z: t.z + Math.cos(back + a) * gap, y: ty },
+      pz = p.z;
+    if (!pointWalkable(p.x, p.z, 0.68, ty) || blockedBySurface(p)) continue;
+    bridgeRail(p);
+    if (Math.abs(p.z - pz) > 1e-6) continue;
+    Object.assign(u, { x: p.x, z: p.z, y: groundAt(p), vy: 0, grounded: true, visualSnap: true });
+    face(u, t);
+    return true;
+  }
+  return false;
 }
 function pointWalkable(x, z, margin = 0.68, y = 0) {
   if (x < -arena.halfX + margin || x > arena.halfX - margin || z < -arena.halfZ + margin || z > arena.halfZ - margin)
@@ -522,14 +538,17 @@ function pointWalkable(x, z, margin = 0.68, y = 0) {
 // pont) comme une marche ; on s'arrête devant un pilier, un mur, le flanc d'une rampe, un garde-corps ou un vide.
 // keepRoot : la cible reste immobilisée à l'arrivée (Demonic Gate) ; sinon les racines sont brisées (Blink).
 function blinkForward(u, distance = 7.0, keepRoot = false, yaw = u.yaw) {
+  // en l'air (saut) : on part du sol sous le personnage, sinon le sable passait pour un vide sous le tablier et le
+  // blink restait sur place (bug du 04/11/2026) ; on arrive posé au sol
   const ox = u.x,
     oz = u.z,
     oy = u.y || 0,
+    gy = groundAt(u),
     sx = Math.sin(yaw),
     sz = Math.cos(yaw),
     step = 0.18,
-    probe = { x: ox, z: oz, y: oy };
-  let best = { x: ox, z: oz, y: oy };
+    probe = { x: ox, z: oz, y: gy };
+  let best = { x: ox, z: oz, y: gy };
   for (let d = step; d <= distance + 1e-6; d += step) {
     Object.assign(probe, { x: ox + sx * d, z: oz + sz * d, y: best.y });
     if (!pointWalkable(probe.x, probe.z, 0.68, best.y) || blockedBySurface(probe)) break;
@@ -560,7 +579,7 @@ function beginCharge(u, t, hitCC = { cc: 'stun', dur: 2 }) {
   if (d < 2.8 || d > 15 || !los(u, t)) return false;
   face(u, t);
   u.mobility = { type: 'charge', cc: hitCC, target: t, life: 0.72, speed: 24, stop: 1.48, hit: false, trailTick: 0 };
-  u.cast = null;
+  endCast(u, 'stop');
   u.root = 0;
   action(u, 'dash');
   fx('chargeStart', u.x, (u.y || 0) + 0.85, u.z, CLASS[u.cls].accent, 0.42, 0.62);
@@ -678,6 +697,7 @@ function skillFailReason(u, i) {
       ? 'That school is locked'
       : "That ability isn't ready yet";
   if (u.cast) return 'Not ready yet'; // une autre incantation est en cours (sauter ou bouger l'interrompt)
+  if (airborneCast(u, S)) return "You can't do that while jumping";
   if (u.gcd > 0) return '';
   if (S.s && u.silence > 0) return "I can't do that while silenced";
   if (!canPay(u, i)) return `I don't have enough ${C.res.toLowerCase()}`;
@@ -725,6 +745,9 @@ function tryPlayerSkill(i) {
   showError(skillFailReason(p, i));
   return false;
 }
+// Incantation ou canalisation impossible en l'air (bug : un lanceur qui sautait commençait son sort) ; les sorts
+// instantanés restent permis. Vaut aussi pour la file d'attente des sorts (sim.js), qui repasse par useSkill.
+const airborneCast = (u, S) => !u.grounded && !!(S.cast || S.channel);
 // Sorts de la barre de base : conditions communes ici, effet propre à chaque sort dans SPELL_CAST (game/spells.js).
 function useSkill(u, i) {
   if (!u || !skillsOf(u)[i] || u.poly > 0) return false;
@@ -743,6 +766,7 @@ function useSkill(u, i) {
     u.cd[i] > 0 ||
     u.cast ||
     u.mobility ||
+    airborneCast(u, S) ||
     !canPay(u, i)
   )
     return false;
@@ -768,10 +792,12 @@ function useSkill(u, i) {
   if (C.run(c) === false) return false;
   C.fx?.(c);
   spellSfx(u, i, t);
+  if (u.cast) SFX.castStart(u, S.n, u.cast.dur, !!u.cast.channel); // nappe tenue jusqu'à endCast
   // sort à incantation : la ressource n'est prise qu'à la fin (interrompu ou annulé = rien perdu, sim.js)
   // (canalisation : prise au lancement)
   if (!(u.cast && u.cast.i === i && u.cast.end > now() && !u.cast.channel)) pay(u, i);
   u.cd[i] = S.cd;
+  shareCooldown(u, S.n, S.cd);
   u.gcd = u.gcdMax = C.mobility ? 0.35 : 1.05; // mobilité : GCD court
   updateUI();
   return true;
@@ -783,8 +809,6 @@ function useTrinket(u) {
     u.stun = u.root = u.silence = u.fear = u.poly = 0;
     u.polyOwner = null;
     u.fearOwner = null;
-    u.rootBreakDamage = 0;
-    u.rootMin = 0;
     u.trinket = TRINKET.cd;
     u.shield += TRINKET.shield;
     u.shieldName = 'Trinket';
