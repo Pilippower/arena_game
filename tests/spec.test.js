@@ -301,6 +301,11 @@ run('src/ui/hud.js');
   assert.ok(!hud.includes('class="tag"'), 'pas de bulles sur la barre du bas');
   assert.match(read('src/game/match.js'), /function leaveMatch[\s\S]*?state = null/, 'quitter arrête le match');
   assert.ok(read('index.html').includes('id="leaveConfirm"'), 'confirmation avant de quitter');
+  assert.match(
+    read('index.html'),
+    /id="restartBtn"><i class="ico shield"><\/i>Return to Lobby</,
+    'bouton « Return to Lobby »'
+  );
   assert.ok(
     read('src/ui/lobby.css').replace(/\s+/g, ' ').includes('body.lobby #status { display: none;'),
     'lobby épuré'
