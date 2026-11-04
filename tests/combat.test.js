@@ -264,6 +264,29 @@ const { combatWorld, spell, run } = require('./combat_world.js');
 }
 // ---------- Incantations (pas de simulation réel : update de sim.js) ----------
 {
+  // en l'air (saut) : pas d'incantation ni de canalisation, rien n'est consommé ; les instantanés restent permis
+  const { ctx, unit } = combatWorld();
+  const mage = unit('arcanist', 0, 0, 0, { y: 1.5, vy: 0, grounded: false }),
+    lock = unit('warlock', 3, 0, 0, { y: 1.5, vy: 0, grounded: false }),
+    foe = unit('sentinel', 0, 1.5, 1);
+  mage.target = lock.target = foe;
+  const FB = spell(ctx, 'arcanist', 'Frost Bolt');
+  assert.ok(!ctx.useSkill(mage, FB), 'en sautant : Frost Bolt refusé');
+  assert.ok(!mage.cast && mage.cd[FB] === 0 && mage.gcd === 0 && mage.res === 100, 'refusé : rien consommé');
+  assert.equal(ctx.skillFailReason(mage, FB), "You can't do that while jumping", 'en sautant : message');
+  assert.ok(!ctx.useSkill(lock, spell(ctx, 'warlock', 'Drain Life')) && !lock.cast, 'en sautant : pas de canalisation');
+  assert.ok(ctx.useSkill(mage, spell(ctx, 'arcanist', 'Frost Nova')), 'en sautant : sort instantané permis');
+  // file d'attente : un Frost Bolt appuyé juste avant la fin du GCD ne part pas en l'air
+  Object.assign(mage, { gcd: 0.1, vy: 7.5 });
+  ctx.state.player = mage;
+  assert.ok(ctx.tryPlayerSkill(FB) && mage.queuedSkill, 'Frost Bolt mis en file');
+  run(ctx, 0.2);
+  assert.ok(!mage.grounded && !mage.cast, 'file d’attente : pas d’incantation en l’air');
+  run(ctx, 1);
+  assert.ok(mage.grounded, 'au sol');
+  assert.ok(ctx.useSkill(mage, FB) && mage.cast, 'au sol : Frost Bolt permis');
+}
+{
   // ressource prise à la fin de l'incantation, dégâts à l'impact ; portée 30 m
   const { ctx, unit } = combatWorld();
   const mage = unit('arcanist', 0, 0, 0),

@@ -498,6 +498,7 @@ const SPELLS = {
     text: (S, D) => `Instant: ${D(S.dot)} shadow damage over ${sec(S.dur)}; each tick heals you for the damage dealt.`
   },
   'Drain Life': {
+    channel: true,
     dur: 6,
     dps: 50,
     text: (S, D, H) =>

@@ -687,6 +687,7 @@ function skillFailReason(u, i) {
       ? 'That school is locked'
       : "That ability isn't ready yet";
   if (u.cast) return 'Not ready yet'; // une autre incantation est en cours (sauter ou bouger l'interrompt)
+  if (airborneCast(u, S)) return "You can't do that while jumping";
   if (u.gcd > 0) return '';
   if (S.s && u.silence > 0) return "I can't do that while silenced";
   if (!canPay(u, i)) return `I don't have enough ${C.res.toLowerCase()}`;
@@ -734,6 +735,9 @@ function tryPlayerSkill(i) {
   showError(skillFailReason(p, i));
   return false;
 }
+// Incantation ou canalisation impossible en l'air (bug : un lanceur qui sautait commençait son sort) ; les sorts
+// instantanés restent permis. Vaut aussi pour la file d'attente des sorts (sim.js), qui repasse par useSkill.
+const airborneCast = (u, S) => !u.grounded && !!(S.cast || S.channel);
 // Sorts de la barre de base : conditions communes ici, effet propre à chaque sort dans SPELL_CAST (game/spells.js).
 function useSkill(u, i) {
   if (!u || !skillsOf(u)[i] || u.poly > 0) return false;
@@ -752,6 +756,7 @@ function useSkill(u, i) {
     u.cd[i] > 0 ||
     u.cast ||
     u.mobility ||
+    airborneCast(u, S) ||
     !canPay(u, i)
   )
     return false;
