@@ -747,6 +747,7 @@ assert.ok(
   ])
     PACK[k].forEach((u, i) => assert.ok(brightness(u) < max, `${k} n° ${i} trop aigu`));
 }
+assert.ok(!read('index.html').includes('pointerHint'), 'pas d’aide « Click: target » en haut au centre');
 // Tourner au clavier : même rotation que le glisser au clic droit (convention validée)
 assert.ok(
   read('src/input/controls.js').includes('GameLogic.applyLook(camera.yaw, camera.pitch, dir * TURN_PX_PER_S * dt, 0)'),

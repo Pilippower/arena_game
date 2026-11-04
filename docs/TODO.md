@@ -5,7 +5,6 @@ validé dans `docs/SPEC.md`.
 
 ## Liste du 04/11/2026 (priorité, dans cet ordre : du plus simple au plus compliqué, un commit par tâche)
 
-1. Retirer l'aide en haut au centre en jeu « Click: target · Hold right click: turn camera ».
 2. Retirer de la barre du haut en jeu « Arena Ascendant — 1v1 to 3v3 · WebGL… ».
 3. Renommer en jeu « Change class » en « Return to Lobby ».
 4. Retirer le bouton « Change class » du lobby.

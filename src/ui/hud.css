@@ -159,9 +159,6 @@ body:not(.mobile-mode) #help b:first-child {
   font-size: 14px;
   color: #ffd56a;
 }
-body:not(.mobile-mode) #pointerHint {
-  top: 46px;
-}
 
 /* ---------- cadres d'unité ---------- */
 body #selfFrame,
