@@ -34,6 +34,12 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   ctx.SPELL_NOW = 'Kidney Shot';
   ctx.control(t, 'stun', 6);
   assert.equal(t.debuffSpell.stun, 'Kidney Shot', 'contrôle : sort noté');
+  // durée totale notée pour l'horloge des portraits ; un contrôle plus court ne la remplace pas
+  assert.equal(t.ccTotal.stun, 6, 'contrôle : durée totale notée');
+  t.stun = 5;
+  t.dr.stun = 1;
+  ctx.control(t, 'stun', 2);
+  assert.ok(t.ccTotal.stun === 6 && t.stun === 5, 'contrôle plus court : durée totale gardée');
 }
 {
   // formes du druide insensibles au mouton ; mouton brisé par les dégâts

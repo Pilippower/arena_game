@@ -155,4 +155,31 @@ function playerWorld() {
   // clic approximatif près du torse : ancienne règle (62 px) gardée
   assert.equal(pick(400 + 55, 340, [{ ...at(A, 400), head: { x: 400, y: 360, z: 10 } }]), A, 'près du torse : cible');
 }
-console.log('OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic)');
+
+// ---------- Contrôle affiché sur les portraits (src/ui/hud.js) ----------
+{
+  const { read } = require('./sources.js');
+  const order = read('src/ui/hud.js').match(/const CC_ORDER = (\[[^\]]*\]);/)[1];
+  const S = sandbox();
+  require('node:vm').runInContext(`var CC_ORDER = ${order};`, S.ctx);
+  S.fn('src/ui/hud.js', 'activeCC');
+  const u = { alive: true, stun: 0, poly: 0, fear: 0, silence: 0, root: 0 };
+  assert.equal(S.ctx.activeCC(u), null, 'sans contrôle : rien');
+  Object.assign(u, {
+    root: 4,
+    fear: 2.5,
+    ccTotal: { fear: 6, root: 6 },
+    debuffSpell: { fear: 'Fear', root: 'Frost Nova' }
+  });
+  const c = S.ctx.activeCC(u);
+  assert.ok(
+    c.kind === 'fear' && c.spell === 'Fear' && c.left === 2.5 && c.total === 6,
+    'peur avant racines, sort et durées'
+  );
+  u.stun = 1;
+  assert.equal(S.ctx.activeCC(u).kind, 'stun', 'étourdi : prioritaire');
+  assert.equal(S.ctx.activeCC({ ...u, alive: false }), null, 'mort : rien');
+}
+console.log(
+  'OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic, contrôles)'
+);

@@ -400,6 +400,7 @@ function control(t, type, dur, src = null, drKey = type) {
     return false;
   }
   dur *= m;
+  if (dur >= (t[type] || 0)) (t.ccTotal ||= {})[type] = dur; // durée totale (horloge des portraits)
   t[type] = Math.max(t[type] || 0, dur);
   markDebuff(t, type);
   if (type === 'root') t.rootSchool = src?.curSchool || 'magic';

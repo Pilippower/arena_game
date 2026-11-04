@@ -331,6 +331,7 @@ function netUnitState(u) {
     tg: netIdx(u.target),
     au: (u.auras || []).map(a => ({ n: a.n, k: a.kind, r: r2(a.rem), s: netIdx(a.src) })),
     ds: u.debuffSpell || null,
+    cct: u.ccTotal || null,
     lo: u.lockout && u.lockout.until > now() ? r2(u.lockout.until - now()) : 0,
     ah: r2(u.antiheal || 0),
     tr: r2(u.trinket),
@@ -447,6 +448,7 @@ const NET_COPY = u => s => {
   u.target = state.units[s.tg] || null;
   u.auras = (s.au || []).map(a => ({ n: a.n, kind: a.k, rem: a.r, src: state.units[a.s] }));
   u.debuffSpell = s.ds;
+  u.ccTotal = s.cct;
   u.lockout = s.lo ? { until: now() + s.lo } : null;
   u.antiheal = s.ah;
   u.trinket = s.tr;

@@ -76,7 +76,30 @@ function aurasHTML(b, cls) {
 // Portrait : rendu 3D du visage (hfMakePortraits) ou, en attendant, l'icône de classe.
 function portraitHTML(u) {
   const r = HF.records?.get(u.id);
-  return `<div class="portrait">${r?.portrait ? `<img src="${r.portrait}" alt="">` : skillIconSVG(u.cls, 0)}${u.poly > 0 ? '<div class="cc">🐑</div>' : u.stun > 0 ? '<div class="cc">🌀</div>' : u.fear > 0 ? '<div class="cc">👁</div>' : ''}</div>`;
+  return `<div class="portrait">${r?.portrait ? `<img src="${r.portrait}" alt="">` : skillIconSVG(u.cls, 0)}${ccPortraitHTML(u)}</div>`;
+}
+// Contrôle subi le plus fort, dans cet ordre : étourdi, mouton / Sap, peur, silence, racines.
+const CC_ORDER = ['stun', 'poly', 'fear', 'silence', 'root'];
+const CC_FALLBACK = { stun: '🌀', poly: '🐑', fear: '👁', silence: '🤐', root: '🌿' }; // sort source inconnu
+function activeCC(u) {
+  if (!u?.alive) return null;
+  for (const kind of CC_ORDER)
+    if (u[kind] > 0)
+      return {
+        kind,
+        left: u[kind],
+        total: Math.max(u.ccTotal?.[kind] || 0, u[kind]),
+        spell: u.debuffSpell?.[kind] || null
+      };
+  return null;
+}
+// Icône du sort de contrôle sur tout le portrait (cadre du joueur, de la cible, des groupes), horloge qui tourne
+// (partie sombre = temps restant, comme les recharges) et secondes restantes.
+function ccPortraitHTML(u) {
+  const c = activeCC(u);
+  if (!c) return '';
+  const icon = (c.spell && auraIcon(c.spell)) || `<span class="ccEmoji">${CC_FALLBACK[c.kind]}</span>`;
+  return `<div class="ccOverlay">${icon}<span class="sweep" style="--p:${((100 * c.left) / c.total).toFixed(1)}%"></span><b>${c.left < 3 ? c.left.toFixed(1) : Math.ceil(c.left)}</b></div>`;
 }
 function unitRowHTML(u, enemy) {
   const p = state.player,
