@@ -27,9 +27,15 @@ function update(dt) {
     u.prevZ = u.z;
     u.prevYaw = u.yaw;
   }
-  state.t = Math.max(0, state.t - dt);
-  state.elapsed = (state.elapsed || 0) + dt;
-  state.dampening = dampeningAt(state.elapsed);
+  // préparation dans les salles de départ : chrono de manche et dampening arrêtés jusqu'à l'ouverture des portes
+  if (state.prep > 0) {
+    state.prep = Math.max(0, state.prep - dt);
+    if (!state.prep) openGates();
+  } else {
+    state.t = Math.max(0, state.t - dt);
+    state.elapsed = (state.elapsed || 0) + dt;
+    state.dampening = dampeningAt(state.elapsed);
+  }
   playerMove(dt);
   if (window.NET?.role === 'host') netHostUpdate(dt);
   for (const u of state.units) {
@@ -168,7 +174,7 @@ function update(dt) {
         useSkill(u, q.i);
       }
     }
-    if (u.ai) ai(u, dt);
+    if (u.ai && gatesOpen()) ai(u, dt); // l'IA attend l'ouverture des portes
   }
   updateHealthShrines(dt);
   updateVisualState(dt);
@@ -185,6 +191,12 @@ function update(dt) {
     state.uiTick = 0.08;
     updateUI();
   }
+}
+// Fin de la préparation : les portes s'ouvrent (décor : render/start_rooms.js, d'après state.gatesAt) avec le son
+// du début de l'arène.
+function openGates() {
+  state.gatesAt = now();
+  SFX.gates();
 }
 function updateVisualState(dt) {
   for (const f of state.fx) {

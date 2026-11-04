@@ -96,12 +96,23 @@ function teamsFor(pcls, size) {
   if (size === 2) return { allies: allies.slice(0, 1), foes: [foes[0], foes[2]] };
   return { allies: [], foes: [pcls === 'reaver' ? ['sentinel', 'Kargan', 'orc'] : foes[0]] };
 }
+// Préparation : chaque équipe attend dans sa salle de départ (data/maps.js), porte fermée, pendant GATE_TIME s ; à 0,
+// les portes s'ouvrent et le combat commence (chrono de manche et dampening démarrent alors, game/sim.js).
+// ?gates=<s> (tests, captures) raccourcit l'attente.
+const GATE_TIME = (() => {
+  try {
+    const v = new URLSearchParams(location.search).get('gates');
+    return v != null && v !== '' && +v >= 0 ? +v : 20;
+  } catch (_) {
+    return 20;
+  }
+})();
+const gatesOpen = () => !(state?.prep > 0);
 function resetRound() {
   const o = state || {},
     size = o.size || TEAM_SIZE,
     T = o.online ? netTeamsFor(o.online, o.pcls || 'sentinel', size) : teamsFor(o.pcls || 'sentinel', size),
-    allies = T.allies,
-    spot = (i, n, gap) => (i - (n - 1) / 2) * gap; // en 3v3 : mêmes places qu'avant (alliés tous les 5, adversaires tous les 6)
+    allies = T.allies;
   state = {
     pcls: o.pcls || 'sentinel',
     prace: o.prace || raceForClass(o.pcls || 'sentinel'),
@@ -113,6 +124,7 @@ function resetRound() {
     online: o.online || null, // en ligne : amis avec / contre l'hôte (src/net/online.js)
     size,
     t: 150,
+    prep: GATE_TIME,
     elapsed: 0,
     dampening: 0,
     ended: false,
@@ -129,13 +141,18 @@ function resetRound() {
         [allies[0], 'Lyra', raceForClass(allies[0], 0, 1)],
         [allies[1], 'Torren', 'dwarf']
       ].slice(0, allies.length);
+  // chaque équipe dans sa salle de départ, face à la porte
+  const at = (u, team, i) => {
+    const p = spawnPoint(team, i, size);
+    return Object.assign(u, { x: p.x, z: p.z, prevX: p.x, prevZ: p.z, yaw: p.yaw, prevYaw: p.yaw });
+  };
   state.units = [
-    makeUnit(state.pcls, -26, spot(0, size, 5), 0, 'You', false, state.prace, 0),
+    at(makeUnit(state.pcls, 0, 0, 0, 'You', false, state.prace, 0), 0, 0),
     ...mates.map(([c, n, r, gid], i) =>
-      Object.assign(makeUnit(c, -26, spot(i + 1, size, 5), 0, n, true, r, i + 1), { remoteId: gid ?? null })
+      Object.assign(at(makeUnit(c, 0, 0, 0, n, true, r, i + 1), 0, i + 1), { remoteId: gid ?? null })
     ),
     ...T.foes.map(([c, n, r, gid], i) =>
-      Object.assign(makeUnit(c, 26, spot(i, size, 6), 1, n, true, r, i), { remoteId: gid ?? null })
+      Object.assign(at(makeUnit(c, 0, 0, 1, n, true, r, i), 1, i), { remoteId: gid ?? null })
     )
   ];
   state.units.forEach((u, i) => (u.slotIndex = i));
@@ -190,12 +207,20 @@ function los(a, b) {
       under = u => !top(u) && Math.abs(u.z) < B.halfW + 0.2;
     if ((top(a) && under(b)) || (top(b) && under(a))) return false;
   }
+  // salles de départ : on ne voit l'arène (ou l'autre salle) que par la porte, et seulement ouverte
+  if (!seesThroughDoors(a, b, gatesOpen())) return false;
   const low = Math.min(a.y || 0, b.y || 0) + 1.2;
   return !arena.pillars.some(p => p.h > low && segmentCircle(a.x, a.z, b.x, b.z, p.x, p.z, p.r + 0.18));
 }
+// Murs : on reste dans sa zone (arène ou salle de départ, d'après la position au début du pas) et, porte ouverte, dans
+// son passage ; contre un mur on glisse le long.
 function resolveWalls(u) {
-  u.x = clamp(u.x, -arena.halfX + 0.72, arena.halfX - 0.72);
-  u.z = clamp(u.z, -arena.halfZ + 0.72, arena.halfZ - 0.72);
+  const rects = zoneRects(zoneOf(u.prevX ?? u.x), 0.72, gatesOpen());
+  if (!rects.some(R => inRect(R, u.x, u.z))) {
+    const p = nearestInRects(rects, u.x, u.z);
+    u.x = p.x;
+    u.z = p.z;
+  }
   if (blockedBySurface(u) && u.prevX != null) {
     u.x = u.prevX;
     u.z = u.prevZ;
@@ -527,8 +552,7 @@ function dashToward(u, t, a) {
   blinkForward(u, Math.max(0, Math.min(a, d - 1.6)), true, Math.atan2(dx, dz));
 }
 function pointWalkable(x, z, margin = 0.68, y = 0) {
-  if (x < -arena.halfX + margin || x > arena.halfX - margin || z < -arena.halfZ + margin || z > arena.halfZ - margin)
-    return false;
+  if (!zoneRects(zoneOf(x), margin, gatesOpen()).some(R => inRect(R, x, z))) return false;
   // un obstacle plus bas que soi (sous le pont) ne gêne pas
   return !arena.pillars.some(p => p.h > y && Math.hypot(x - p.x, z - p.z) < p.r + margin);
 }

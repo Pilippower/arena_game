@@ -138,7 +138,7 @@ async function run() {
         units: state.units.length,
         pcls: state.pcls,
         prace: state.prace,
-        elapsed: state.elapsed,
+        advanced: state.prep < GATE_TIME || state.elapsed > 0, // préparation (salles de départ) puis combat
         overlay: getComputedStyle(document.getElementById('overlay')).display
       }));
       assert.equal(s.overlay, 'none', 'overlay de sélection doit disparaître');
@@ -146,7 +146,7 @@ async function run() {
       assert.equal(s.units, 6, '3v3 = 6 unités');
       assert.equal(s.pcls, 'arcanist');
       assert.equal(s.prace, 'orc');
-      assert.ok(s.elapsed > 0, 'la simulation doit avancer');
+      assert.ok(s.advanced, 'la simulation doit avancer');
       assert.equal(await page.evaluate(() => ENV.ok), true, 'décor 3D (environment.js) chargé');
       assert.equal(await bootError(page), '');
       assert.deepEqual(errors, [], 'erreurs JS desktop');
@@ -166,11 +166,11 @@ async function run() {
         const s = await page.evaluate(() => ({
           pcls: state?.pcls,
           units: state?.units?.length,
-          elapsed: state?.elapsed
+          advanced: state.prep < GATE_TIME || state.elapsed > 0
         }));
         assert.equal(s.pcls, cls);
         assert.equal(s.units, 6);
-        assert.ok(s.elapsed > 0, `${cls}: simulation figée`);
+        assert.ok(s.advanced, `${cls}: simulation figée`);
         assert.equal(await bootError(page), '', `${cls}: erreur de démarrage`);
         assert.deepEqual(errors, [], `${cls}: erreurs JS`);
         await page.close();
@@ -183,7 +183,8 @@ async function run() {
       const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
       const page = await ctx.newPage();
       const errors = watchErrors(page);
-      await page.goto(url('index.html', '?autoplay=arcanist&race=human'));
+      // gates=0 : portes ouvertes tout de suite, les attentes ci-dessous se mesurent au chrono de la manche
+      await page.goto(url('index.html', '?autoplay=arcanist&race=human&gates=0'));
       await page
         .waitForFunction(
           () => {

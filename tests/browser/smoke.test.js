@@ -27,13 +27,13 @@ const isNoise = t => /Failed to load resource|net::ERR_|Failed to fetch|CORS/i.t
     const r = await page.evaluate(() => ({
       env: ENV.ok,
       kits: state.units.filter(u => HF.records.get(u.id)?.kit).length,
-      elapsed: state.elapsed,
+      advanced: state.prep < GATE_TIME || state.elapsed > 0.5, // préparation dans les salles de départ, puis combat
       mapOk: ArenaEnv.mapId === MAP_ID && MAP_ID === 'bridge' && arena.pillars.length === MAPS.bridge.pillars.length
     }));
     assert.equal(r.mapOk, true, 'décor et obstacles de la même carte');
     assert.equal(r.env, true, 'décor 3D chargé');
     assert.equal(r.kits, 6, '6 personnages assemblés');
-    assert.ok(r.elapsed > 0.5, 'la simulation avance');
+    assert.ok(r.advanced, 'la simulation avance');
     assert.deepEqual(errors, [], 'erreurs JS');
     console.log('OK - partie lancée, décor + 6 personnages, aucune erreur');
   } finally {

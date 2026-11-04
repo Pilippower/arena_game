@@ -450,8 +450,23 @@ function hfRebuildOccluders() {
     hz = arena.halfZ;
   add(new THREE.BoxGeometry(hx * 2 + 0.6, 4.9, 0.3), 0, 2.45, -hz - 0.15);
   add(new THREE.BoxGeometry(hx * 2 + 0.6, 4.9, 0.3), 0, 2.45, hz + 0.15);
-  add(new THREE.BoxGeometry(0.3, 4.9, hz * 2 + 0.6), -hx - 0.15, 2.45, 0);
-  add(new THREE.BoxGeometry(0.3, 4.9, hz * 2 + 0.6), hx + 0.15, 2.45, 0);
+  // remparts est / ouest percés d'une porte (salles de départ, data/maps.js) ; murs des salles et linteau de la porte
+  for (const side of [-1, 1]) {
+    const r = arena.rooms?.find(q => q.side === side),
+      cuts = r
+        ? [
+            [-hz - 0.3, r.z - r.door],
+            [r.z + r.door, hz + 0.3]
+          ]
+        : [[-hz - 0.3, hz + 0.3]];
+    for (const [a, b] of cuts) add(new THREE.BoxGeometry(0.3, 4.9, b - a), side * (hx + 0.15), 2.45, (a + b) / 2);
+    if (!r) continue;
+    const len = r.wall + r.depth;
+    add(new THREE.BoxGeometry(0.3, 1.9, r.door * 2), side * (hx + 0.15), 3.85, r.z);
+    add(new THREE.BoxGeometry(0.3, 4.9, r.halfW * 2 + 1.6), side * (hx + len + 0.4), 2.45, r.z);
+    for (const k of [-1, 1])
+      add(new THREE.BoxGeometry(len, 4.9, 0.3), side * (hx + len / 2), 2.45, r.z + k * (r.halfW + 0.4));
+  }
   HF.scene.add(g);
   // tablier et rampes du pont : groupe à part, les personnages qu'ils cachent sont dessinés en silhouette (hfRenderGhosts)
   if (HF.bridgeOcc) {

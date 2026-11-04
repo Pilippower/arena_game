@@ -19,7 +19,7 @@
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i),
         z = pos.getZ(i),
-        d = Math.max(Math.abs(x) - hx, Math.abs(z) - hz, 0);
+        d = ArenaEnv.outsideDist(arena, x, z); // relief plat autour de l'arène et des salles de départ
       pos.setY(
         i,
         -0.05 +
@@ -33,7 +33,7 @@
     tm.position.y = -0.03;
     S.add(tm);
     E.terrainY = (x, z) => {
-      const d = Math.max(Math.abs(x) - hx, Math.abs(z) - hz, 0);
+      const d = ArenaEnv.outsideDist(arena, x, z); // relief plat autour de l'arène et des salles de départ
       return (
         -0.08 +
         smooth(4, 60, d) * (noise2(x * 0.006 + 9, z * 0.006 + 9, 256, 4) * 26 - 6) +
@@ -78,7 +78,7 @@
         d = 48 + Math.pow(r(), 1.4) * 190,
         x = Math.sin(a) * d * 1.2,
         z = Math.cos(a) * d;
-      if (Math.abs(x) < hx + 8 && Math.abs(z) < hz + 8) continue;
+      if (ArenaEnv.outsideDist(arena, x, z) < 8) continue; // ni dans l'arène ni sur les salles de départ
       if (z < -hz - 4 && Math.abs(x) < 75) continue; // dégagement : le château reste visible
       const sc = 1.4 + r() * 1.8,
         y = E.terrainY(x, z);
@@ -364,6 +364,7 @@
         o = 3 + r() * 14,
         x = side < 2 ? (side ? 1 : -1) * (hx + o) : t * (hx + o),
         z = side < 2 ? t * (hz + o) : (side === 2 ? 1 : -1) * (hz + o);
+      if (ArenaEnv.inRoomArea(arena, x, z, 1)) continue; // pas dans les salles de départ
       const sc = 0.4 + r() * 1.1,
         y = ty(x, z);
       m.compose(p.set(x, y + 0.6 * sc, z), q.identity(), s.setScalar(sc));

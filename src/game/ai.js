@@ -217,11 +217,27 @@ function aiStep(u, h, step) {
   u.z = z0;
   return null;
 }
+// Salles de départ : pour changer de zone (salle ↔ arène), on passe par la porte : d'abord en face d'elle du côté où
+// l'on est, puis de l'autre côté. Renvoie le point de passage, ou null dans la même zone.
+function aiDoorWaypoint(u, goal) {
+  const zu = zoneOf(u.x),
+    zg = zoneOf(goal.x);
+  if (zu === zg) return null;
+  const side = zu || zg,
+    r = roomOf(side),
+    inner = { x: side * (arena.halfX + r.wall + 1.2), y: 0, z: r.z },
+    outer = { x: side * (arena.halfX - 1.5), y: 0, z: r.z },
+    aligned = Math.abs(u.z - r.z) < r.door - 0.75;
+  if (zu) return aligned ? outer : inner;
+  return aligned ? inner : outer;
+}
 // The Bridge : passer du sable au tablier (ou l'inverse) se fait par une rampe. Renvoie le prochain point de
 // passage (pied puis haut de la rampe, ou l'inverse), ou goal si on est au même niveau. Rampe gardée en mémoire.
 // sur le tablier = dans la zone du garde-corps (bridgeRail va 0,6 m au-delà du bord)
 const onDeck = v => !!arena.bridge && (v.y || 0) > arena.bridge.y - 0.6 && Math.abs(v.z) <= arena.bridge.halfW + 0.6;
 function aiWaypoint(u, goal) {
+  const door = aiDoorWaypoint(u, goal);
+  if (door) return door;
   const B = arena.bridge,
     deck = onDeck;
   // sur une rampe, cible au sol du côté du pont (près du flanc ou sous le bord du tablier) : on descend juste assez

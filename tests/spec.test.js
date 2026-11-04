@@ -114,6 +114,7 @@ for (const sx of [-1, 1])
 assert.equal(ctx.groundAt({ x: 0, z: 0, y: 0 }), 0, 'sous le pont : on reste au sol');
 assert.ok(ctx.blockedBySurface({ x: B.rampX, z: B.halfW + 1, y: 0 }), 'on ne traverse pas une rampe par le côté');
 // IA sur The Bridge : sable → tablier par une rampe (pied, puis haut), pas en dessous de la cible
+vm.runInContext('var state=null;var gatesOpen=()=>true;', ctx); // portes ouvertes (salles de départ : combat.test.js)
 vm.runInContext(read('src/game/combat.js').match(/function resolveWalls[\s\S]*?\n\}/)[0], ctx);
 run('src/game/ai.js');
 {

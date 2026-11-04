@@ -14,6 +14,7 @@ function resize() {
   }
   gl.viewport(0, 0, w, h);
 }
+const CAM_DOOR_H = 2.5; // m : la caméra passe sous la poterne d'une salle de départ, pas à travers son linteau
 function cameraSafe(target, desired) {
   let safe = 1;
   for (let i = 1; i <= 30; i++) {
@@ -21,12 +22,8 @@ function cameraSafe(target, desired) {
       x = lerp(target[0], desired[0], t),
       y = lerp(target[1], desired[1], t),
       z = lerp(target[2], desired[2], t);
-    let hit =
-      x < -arena.halfX - 0.05 ||
-      x > arena.halfX + 0.05 ||
-      z < -arena.halfZ - 0.05 ||
-      z > arena.halfZ + 0.05 ||
-      y < 0.32;
+    // remparts de l'arène et murs des salles de départ ; le passage d'une porte seulement sous sa poterne
+    let hit = !insideWalls(x, z, -0.05, y < CAM_DOOR_H) || y < 0.32;
     for (const p of arena.pillars) if (Math.hypot(x - p.x, z - p.z) < p.r + 0.28 && y < p.h + 0.25) hit = true;
     if (hit) {
       safe = (i - 1) / 30;
@@ -57,6 +54,12 @@ function setupCamera() {
   gl.uniformMatrix4fv(loc.vp, false, viewProj);
   gl.uniform3fv(loc.cam, camPos);
   gl.uniform1f(loc.time, now());
+}
+// Herses des salles de départ : fermées pendant la préparation, levées en GATE_LIFT_T s à l'ouverture (state.gatesAt).
+const GATE_LIFT_T = 2.2;
+function gateOpening() {
+  if (!state || (!(state.prep > 0) && state.gatesAt == null)) return 1;
+  return state.prep > 0 ? 0 : clamp((now() - state.gatesAt) / GATE_LIFT_T, 0, 1);
 }
 function interpolateUnits() {
   if (!state?.units) return;
@@ -90,6 +93,7 @@ function render() {
   if (envOn) {
     const p = state?.player || { x: 0, y: 0, z: 0 },
       r = canvas.getBoundingClientRect();
+    ArenaEnv.setGates?.(gateOpening());
     perfTime('env', () =>
       ArenaEnv.render(camPos, [p.rx ?? p.x, (p.ry ?? p.y ?? 0) + 1.25, p.rz ?? p.z], state?.units, r.width, r.height)
     );

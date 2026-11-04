@@ -365,6 +365,7 @@ function netHostUpdate(dt) {
     t: 's',
     u: state.units.map(netUnitState),
     T: r2(state.t),
+    pr: r2(state.prep || 0), // préparation : compte à rebours et portes (game/combat.js)
     el: r2(state.elapsed || 0),
     dp: state.dampening || 0,
     ended: !!state.ended,
@@ -389,6 +390,7 @@ function netGuestBuild(m) {
     map: m.map,
     size: m.size,
     t: 150,
+    prep: GATE_TIME,
     elapsed: 0,
     dampening: 0,
     ended: false,
@@ -468,6 +470,8 @@ function netGuestUpdate(dt) {
   }
   if (S) {
     state.t = S.T;
+    if (state.prep > 0 && !S.pr) state.gatesAt = now(); // les portes s'ouvrent aussi chez l'invité (le son est relayé)
+    state.prep = S.pr;
     state.elapsed = S.el;
     state.dampening = S.dp;
     state.scoreA = P.team ? S.sb : S.sa;
