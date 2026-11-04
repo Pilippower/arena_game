@@ -21,8 +21,7 @@ regroupés dans `sfx_pack.js` par `node tools/build_sfx_pack.js` (sources dans `
 | `sfx_pack.js` › `teleport` | déplacement d'air | [Teleport Spell](https://opengameart.org/content/teleport-spell) | Ogrebane | CC0 |
 | `sfx_pack.js` › `chime` | carillon de soin | [Cure Magic](https://opengameart.org/content/cure-magic) | Someoneman | CC0 |
 | `sfx_pack.js` › `harp` | harpe de soin (`health_restore.wav`) | [Magic Words + Healing Sound Effect](https://opengameart.org/content/magic-words-healing-sound-effect) | Spring Spring | CC0 |
-| `sfx_pack.js` › `bell` | cloches frappées | [Bell dings/chimes](https://opengameart.org/node/53288) | PWL | CC0 |
-| `sfx_pack.js` › `bowl_hum`, `bowl_strike` | bol chantant tenu / frappé | [SingingBowl2.ogg](https://commons.wikimedia.org/wiki/File:SingingBowl2.ogg), [SingingBowl1.ogg](https://commons.wikimedia.org/wiki/File:SingingBowl1.ogg) (Wikimedia Commons) | BambooBeast | domaine public |
+| `sfx_pack.js` › `bowl_strike` | bol chantant frappé | [SingingBowl1.ogg](https://commons.wikimedia.org/wiki/File:SingingBowl1.ogg) (Wikimedia Commons) | BambooBeast | domaine public |
 | `sfx_pack.js` › `sheep` | bêlement de mouton (Polymorph) | [Sheep bleat.ogg](https://commons.wikimedia.org/wiki/File:Sheep_bleat.ogg) (Wikimedia Commons) | Eviatar Bach | CC0 |
 
 Les autres bruitages (sorts des autres classes, couches de synthèse, pas, interface) sont synthétisés à la volée

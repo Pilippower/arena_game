@@ -591,7 +591,10 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   const S = sandbox({
     SFX: {},
     sfxSpatial: () => ({ level: 1, pan: 0 }),
-    sfxSample: (kind, v, pan, o) => (kinds.add(kind), calls.push({ kind: 'sample', freqs: [], v, rate: o.rate })),
+    sfxSample: (kind, v, pan, o) => (
+      kinds.add(kind),
+      calls.push({ kind: 'sample', name: kind, freqs: [], v, rate: o.rate })
+    ),
     sfxTone: (f, d, type, v, slide) => calls.push({ kind: 'tone', freqs: [f, slide || f], v }),
     sfxSweep: (d, v, f0, f1) => calls.push({ kind: 'sweep', freqs: [f0, f1], v }),
     sfxNoise: (d, v, f) => calls.push({ kind: 'noise', freqs: [f], v }),
@@ -687,6 +690,16 @@ const { combatWorld, spell, run } = require('./combat_world.js');
       `${n} : bruitage enregistré`
     );
   }
+  // Prêtre (04/11/2026, « trop gênant, surtout les cloches ; c'est un jeu d'arène ») : rien qui résonne, sons bas
+  for (const sp of ctx.CLASS.oracle.skills)
+    for (const table of [A.SPELL_SOUND, A.SPELL_IMPACT]) {
+      calls.length = 0;
+      A.playSpellSound(table, {}, sp.n);
+      for (const c of calls.filter(c => c.kind === 'sample')) {
+        assert.ok(!/bell|bowl/.test(c.name), `${sp.n} : ni cloche ni bol chantant (${c.name})`);
+        assert.ok(c.v <= 0.45, `${sp.n} : bruitage discret (${c.v})`);
+      }
+    }
   const rates = new Set();
   for (let k = 0; k < 4; k++) {
     calls.length = 0;

@@ -98,11 +98,10 @@ const PACK = {
   sheep: [['spells/Sheep_bleat.ogg', 0.5, null, null, 3000]],
   // déplacement d'air (Blink)
   teleport: [['spells/teleport.wav', 1.2, null, null, 3000]],
-  // sacré : bol chantant tenu (incantations du prêtre) ou frappé (Power Shield), cloches, harpe, carillon
-  bowl_hum: [['spells/SingingBowl2.ogg', 2.6, null, 2.5, 3000]],
+  // bol chantant frappé (Arcane Barrier) ; prêtre : harpe brève (Flash Heal), carillon (Dispel). Cloches et bol tenu
+  // retirés le 04/11/2026 (« trop gênant, surtout les cloches »)
   bowl_strike: [['spells/SingingBowl1.ogg', 2.2, null, null, 3000]],
-  bell: ['bell_ding2.wav', 'bell_ding3.wav', 'bell_ding4.wav'].map(f => ['spells/' + f, 1.5, null, null, 2600]),
-  harp: [['spells/health_restore.wav', 2.0, null, null, 3000]],
+  harp: [['spells/health_restore.wav', 1.2, null, null, 3000]],
   chime: ['Cure2.wav', 'Cure3.wav', 'Cure8.wav'].map(f => ['spells/curemagic/' + f, 1.2, null, null, 2800])
 };
 

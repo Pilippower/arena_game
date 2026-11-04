@@ -118,19 +118,20 @@ const SPELL_SOUND = {
     s.sweep(0.4, 0.04, 600, 1800, 0, 'bandpass', 3);
     s.tone(494, 0.3, 'triangle', 0.025, 587, 0.05, 0, 0.4);
   },
-  // ---------- Prêtre : sacré (bol chantant, cloches, harpe, carillon), ombre pour Pain / Holy Terror ----------
+  // ---------- Prêtre : lumière douce et brève (souffles, harpe discrète), ombre pour Pain / Holy Terror ----------
+  // 04/11/2026, « trop gênant, surtout les cloches ; c'est un jeu d'arène » : rien qui résonne (ni cloche, ni bol
+  // chantant), sons courts et bas (tests/combat.test.js).
   'Flash Heal': s => {
-    s.sample('chime', 0.22);
-    s.sweep(0.5, 0.04, 700, 2200, 0, 'bandpass', 3);
-    swell(s, 523, 0.5, 0.025);
+    s.sweep(0.4, 0.035, 500, 1800, 0, 'bandpass', 2);
+    s.sample('shimmer', 0.12, { rate: 0.9 });
+    sub(s, 131, 0.3, 0.04);
   },
   'Power Shield': s => {
-    s.sample('bowl_strike', 0.4);
-    s.sample('chime', 0.18, { rate: 0.9, delay: 0.05 });
-    sub(s, 110, 0.5, 0.09);
+    s.sample('shimmer', 0.2, { rate: 0.8 });
+    s.sweep(0.5, 0.05, 300, 1600, 0, 'bandpass', 2);
+    sub(s, 110, 0.4, 0.08);
   },
   'Holy Terror': s => {
-    s.sample('bell', 0.3, { rate: 0.6 });
     s.tone(196, 1.0, 'sawtooth', 0.06, 147, 0, 900, 0.45);
     s.tone(208, 1.0, 'sawtooth', 0.04, 139, 0.02, 800, 0.45);
     sub(s, 82, 0.9, 0.14);
@@ -138,14 +139,14 @@ const SPELL_SOUND = {
     s.sweep(0.6, 0.06, 300, 1200, 0, 'lowpass', 1);
   },
   Dispel: s => {
-    s.sample('chime', 0.3, { rate: 1.1 });
-    s.sample('chime', 0.2, { rate: 0.85, delay: 0.18 });
-    s.sweep(0.5, 0.04, 900, 2600, 0, 'bandpass', 3);
+    s.sample('chime', 0.15);
+    s.sweep(0.4, 0.04, 800, 2200, 0, 'bandpass', 2);
+    s.noise(0.15, 0.03, 1400, 0.05);
   },
   Smite: s => {
-    s.sample('chime', 0.18, { rate: 0.8 });
-    swell(s, 440, 0.55, 0.03, { type: 'triangle', to: 660 });
-    s.sweep(0.5, 0.04, 800, 2000, 0, 'bandpass', 4);
+    s.sweep(0.45, 0.035, 500, 1600, 0, 'bandpass', 2);
+    s.sample('shimmer', 0.1, { rate: 1.1 });
+    sub(s, 98, 0.3, 0.04);
   },
   Pain: s => {
     s.tone(140, 0.6, 'sawtooth', 0.06, 90, 0, 700, 0.35);
@@ -375,11 +376,11 @@ const BED = {
     l.air(1300, { vol: 0.02, q: 2.5, sweep: 0.8, sweepDepth: 300 });
     l.voice(196, { type: 'triangle', vol: 0.02, vib: 5, vibDepth: 3 });
   },
-  // sacré : bol chantant tenu (enregistré), note grave douce, souffle
+  // sacré : lumière qui se rassemble (énergie enregistrée très basse, souffle doux, note grave), sans résonance
   holy: l => {
-    l.sample('bowl_hum', { vol: 0.35 });
-    l.voice(262, { type: 'triangle', vol: 0.015, trem: 2, tremDepth: 0.3 });
-    l.air(1500, { vol: 0.02, q: 2, sweep: 0.5, sweepDepth: 300 });
+    l.sample('arcane', { vol: 0.12, rate: 0.85 });
+    l.air(1200, { vol: 0.025, q: 1.2, sweep: 0.4, sweepDepth: 250 });
+    l.voice(220, { vol: 0.012 });
   },
   // nature : bois qui chante (triangle au vibrato lent), vent dans les feuilles
   nature: (l, d) => {
@@ -429,15 +430,15 @@ const SPELL_IMPACT = {
     s.noise(0.2, 0.04, 1500, 0); // petit « pouf »
   },
   'Flash Heal': s => {
-    s.sample('harp', 0.38);
-    s.sample('chime', 0.25, { delay: 0.05 });
-    sub(s, 131, 0.5, 0.06);
+    s.sample('harp', 0.2); // harpe brève et discrète
+    s.sweep(0.35, 0.04, 600, 1800, 0, 'bandpass', 2);
+    sub(s, 131, 0.35, 0.05);
   },
   Smite: s => {
-    s.sample('bell', 0.42); // cloche frappée
-    s.sample('chime', 0.15, { delay: 0.03 });
-    sub(s, 70, 0.4, 0.14);
-    s.sweep(0.35, 0.07, 2400, 700, 0, 'bandpass', 1.5);
+    // éclat de lumière bref : souffle qui frappe, coup sourd, sub (rien qui résonne)
+    s.sample('teleport', 0.25, { rate: 1.6 });
+    s.sample('thud', 0.22, { rate: 1.4 });
+    sub(s, 70, 0.35, 0.12);
   },
   Wrath: s => {
     s.sweep(0.4, 0.11, 700, 2400, 0, 'bandpass', 2);
