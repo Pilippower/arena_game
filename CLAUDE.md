@@ -103,6 +103,7 @@ But : un code **maintenable**, où l'on sait **tout de suite où regarder et quo
 
 - **Changer une valeur de sort** (dégâts, durée, recharge…) : `SPELLS` (`data/classes.js`) ; l'infobulle suit seule. Recharge/coût : `cd` / `c` dans `CLASS[cls].skills`.
 - **Ajouter / remplacer un sort** : entrée `SPELLS` (valeurs + `text`), place dans `CLASS[cls].skills` + `SKILL_META`, mécanique dans `SPELL_CAST` (`game/spells.js`), rôle dans `AI_ROLE` si l'IA doit l'utiliser, son : `SPELL_SOUND` (+ `SPELL_IMPACT` s'il a une incantation, `audio/spell_sounds.js`), icône : `SPELL_ART` (`ui/icons.js` ; ou `art:` dans `SPELLS` pour réutiliser l'image d'un autre sort). `tests/spec.test.js` vérifie que chaque sort a sa mécanique et chaque rôle d'IA un vrai sort.
+- **Effet visuel qui suit une unité** (projectile, soin lancé) : `fx(type, …, to, fxFollow(cible))` ; le rendu appelle `fxAim(f)` à chaque image (`game/combat.js`).
 - **Effet dans la durée** : `addAura(cible, lanceur, nom, 'dot'|'hot', total, durée, école)` ; affiché seul sur les cadres et au-dessus des personnages (`buffList` / `debuffList`).
 - **Contrôle** : `control(t, 'stun'|'root'|'fear'|'poly', durée, src, drKey?)` (rendements décroissants inclus).
 - **Images d'interface** fournies par l'utilisateur : planche dans `assets_src/ui/`, coordonnées de découpe dans le `tools/build_*_assets.js` correspondant, sortie `.webp` dans `assets/ui/<écran>/`. Placement en CSS **relatif** uniquement (%, `cqh`, variables `--u`), jamais en pixels.

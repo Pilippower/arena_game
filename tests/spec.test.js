@@ -761,3 +761,8 @@ assert.ok(
 // IA de mêlée : suit un pas en arrière : tests/gameplay.test.js
 // Dispel : sans recharge, uniquement sur la cible actuelle amie
 assert.equal(skill('oracle', 'Dispel').cd, 0, 'Dispel sans recharge');
+// Projectiles des sorts : les deux moteurs d'effets visent la cible à chaque image (règle : tests/combat.test.js)
+assert.ok(
+  read('src/render/effects.js').includes('fxAim(o.f)') && read('src/render/fx_webgl.js').includes('fxAim(f)'),
+  'les projectiles suivent leur cible au rendu'
+);

@@ -217,8 +217,9 @@
     X.scene.add(m);
     X.meshes.push({ m, life, max: life, kind: 'bubble', ref, size });
   }
-  function orb(from, to, c, size, life) {
-    X.meshes.push({ kind: 'orb', from, to, c, size, life, max: life, emitT: 0 });
+  // f : effet du jeu, quand l'orbe suit sa cible (fxAim met à jour `to` à chaque image)
+  function orb(from, to, c, size, life, f = null) {
+    X.meshes.push({ kind: 'orb', from, to, c, size, life, max: life, emitT: 0, f });
   }
 
   // ---- traduction des effets du jeu ----
@@ -236,7 +237,7 @@
       case 'shadowProjectile':
       case 'projectile':
         if (f.to) {
-          orb([x, y, z], f.to, c, s, L);
+          orb([x, y, z], f.to, c, s, L, f);
           return true;
         }
         return false;
@@ -275,7 +276,7 @@
         return true;
       case 'healBeam':
         if (f.to) {
-          orb([x, y, z], f.to, [c[0] * 0.6 + 0.4, c[1] * 0.6 + 0.4, c[2] * 0.6 + 0.4], 0.22, L);
+          orb([x, y, z], f.to, [c[0] * 0.6 + 0.4, c[1] * 0.6 + 0.4, c[2] * 0.6 + 0.4], 0.22, L, f);
           burst(f.to[0], f.to[1] - 0.6, f.to[2], c, 26, 1.2, 0.22, 1.1, { up: 2.2, g: 0.4, white: 0.4 });
           return true;
         }
@@ -428,6 +429,7 @@
       } else if (o.kind === 'bubble') {
         o.m.material.uniforms.a.value = Math.min(1, o.life * 3) * (0.8 + Math.sin(k * 20) * 0.08);
       } else if (o.kind === 'orb') {
+        if (o.f) fxAim(o.f);
         const q = k,
           px = lerp(o.from[0], o.to[0], q),
           py = lerp(o.from[1], o.to[1], q) + Math.sin(q * Math.PI) * 0.35,

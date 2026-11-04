@@ -231,7 +231,7 @@ const SPELL_CAST = {
     run(c) {
       const { u, t, S } = c;
       if (!c.range) return false;
-      fx('shadowProjectile', ...chest(u, 1.5), [0.55, 1, 0.45], 0.45, 0.3, chest(t, 1.2));
+      fx('shadowProjectile', ...chest(u, 1.5), [0.55, 1, 0.45], 0.45, 0.3, chest(t, FX_TORSO), fxFollow(t));
       const h0 = t.hp;
       damage(u, t, t.maxHp * S.pct);
       if (h0 > t.hp) heal(u, u, h0 - t.hp);

@@ -4,6 +4,7 @@ function renderFx() {
   if (!state) return;
   for (const f of state.fx) {
     if (f.fx3d) continue; // dessiné par effects.js
+    fxAim(f); // projectile qui suit sa cible
     const k = clamp(f.life / f.max, 0, 1),
       t = 1 - k,
       grow = f.size * (1.65 - k * 0.65),

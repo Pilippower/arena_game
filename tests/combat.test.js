@@ -204,6 +204,25 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   run(ctx, mage.cast.end - ctx.clock + 0.02);
   assert.ok(!mage.cast && mage.res < 100, 'fin de l’incantation : ressource prise');
   assert.ok(foe.hp < foe.maxHp && foe.slow > 0, 'Frost Bolt : dégâts et ralentissement à l’impact');
+  // le projectile suit la cible qui se déplace et frappe son torse (rendu : fxAim à chaque image, aussi en ligne :
+  // la cible est désignée par sa place dans state.units)
+  const bolt = ctx.state.fx.find(f => /Projectile$/.test(f.type));
+  assert.ok(bolt && bolt.extra?.follow === ctx.state.units.indexOf(foe), 'projectile lié à sa cible');
+  Object.assign(foe, { rx: 4, ry: 0, rz: 17 }); // position affichée de la cible qui s'écarte pendant le vol
+  assert.deepEqual([...ctx.fxAim(bolt)], [4, ctx.FX_TORSO, 17], 'le projectile vise le torse de la cible déplacée');
+  assert.ok(ctx.FX_TORSO > 0.9 && ctx.FX_TORSO < 1.5, 'point d’impact : le torse');
+  assert.ok(JSON.parse(JSON.stringify(bolt.extra)).follow >= 0, 'lien transmissible à l’ami en ligne (JSON)');
+}
+{
+  // Death Coil (instantané) : le projectile suit aussi sa cible
+  const { ctx, unit } = combatWorld();
+  const dk = unit('reaver', 0, 0, 0),
+    foe = unit('arcanist', 0, 10, 1);
+  dk.target = foe;
+  ctx.state.player = dk;
+  assert.ok(ctx.useSkill(dk, spell(ctx, 'reaver', 'Death Coil')), 'Death Coil lancé');
+  const coil = ctx.state.fx.find(f => f.type === 'shadowProjectile');
+  assert.equal(coil?.extra?.follow, ctx.state.units.indexOf(foe), 'Death Coil : projectile lié à sa cible');
 }
 {
   // interruption : l'incantation s'arrête, rien n'est dépensé, l'école est verrouillée 4 s

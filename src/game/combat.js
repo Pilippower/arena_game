@@ -247,6 +247,20 @@ function fx(type, x, y, z, color, life = 0.55, size = 0.4, to = null, extra = nu
   } catch (_) {}
   state.fx.push(f);
 }
+// Effet qui suit une unité (projectile, soin lancé) : extra.follow = place de la cible dans state.units (la même chez
+// l'ami en ligne, qui rejoue l'effet tel quel). Le rendu vise son torse à sa position affichée à chaque image (fxAim) :
+// le projectile suit la cible qui se déplace et frappe son corps.
+const FX_TORSO = 1.2;
+const fxFollow = t => ({ follow: state.units.indexOf(t) });
+function fxAim(f) {
+  const t = f.to && f.extra?.follow >= 0 ? state?.units?.[f.extra.follow] : null;
+  if (t) {
+    f.to[0] = t.rx ?? t.x;
+    f.to[1] = (t.ry ?? t.y ?? 0) + FX_TORSO;
+    f.to[2] = t.rz ?? t.z;
+  }
+  return f.to;
+}
 // school : 'physical' ou école du sort ; par défaut l'école du sort en cours du lanceur (src.curSchool).
 function damage(src, t, v, crit = false, school = src.curSchool || 'physical') {
   if (!t?.alive) return;
