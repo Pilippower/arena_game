@@ -27,8 +27,6 @@ validé dans `docs/SPEC.md`.
 19. Écran Defeat : flammes mal placées (Victory est juste) ; vérifier en plein écran F11 : proportions gardées.
 20. Bouclier d'absorption visible sur la barre de vie (flottante et cadres de groupe) : portion superposée, couleur
     distincte, style MMO sans copier.
-21. Régression des glaives du voleur : il frappait en tranchant avec ses glaives, il frappe de nouveau comme des coups de
-    poing. Corriger et ajouter un test de non-régression.
 22. Les sorts des lanceurs suivent la cible en mouvement et frappent son corps.
 23. Étourdissement : la tête ne doit plus partir en arrière ; animation dédiée (tête légèrement penchée en avant, yeux
     fermés, petits cercles lents).

@@ -231,39 +231,99 @@ function hfArmIK(up, lo, hand, target, pole) {
   hfAimBone(lo, [Bp, Cp], A.clone().addScaledVector(dir, d));
 }
 // Voleur : coup de glaive. Le coup de poing du clip (Punch_Jab = main gauche, Punch_Cross = main droite) donne l'élan ;
-// par-dessus, le bras balaie de l'extérieur vers l'intérieur en s'élevant, et le poignet roule : la lame en croissant
-// tranche en arc au lieu de frapper droit.
+// par-dessus, le bras balaie de l'extérieur vers l'intérieur et la lame est couchée à l'horizontale le long d'un arc
+// (repère du personnage : la rotation du buste des frappes par race ne l'annule pas) : elle tranche au lieu de frapper
+// droit comme un poing.
+const SLASH_DUR = 0.36; // durée du coup à vitesse 1 (s) = durée de l'action de mêlée
+let Y_AXIS = null,
+  Z_AXIS = null; // créés à la première utilisation (THREE peut manquer : modèle de secours)
+// Courbe du coup (p = 0..1 depuis le début du coup, arc = amplitude de la race). Fonction pure (testée) :
+//  w = poids de la surcouche (part de 0 et y revient : pas de saut depuis le clip) ; sweep / lift = balayage horizontal
+//  et élévation du bras (rad) ; yaw = direction de la lame dans le plan horizontal (0 = vers l'extérieur, π/2 = devant,
+//  π = vers l'intérieur) ; pitch = élévation de la lame (levée à l'armé, un peu basse à la fin).
+function bladeSlashPose(p, arc) {
+  const w = smoothstep(0, 0.2, p) * (1 - smoothstep(0.65, 1, p)),
+    e = smoothstep(0.1, 0.6, p);
+  return {
+    w,
+    sweep: (0.9 - 1.8 * e) * w * arc,
+    lift: -0.35 * w * arc,
+    yaw: 0.15 + 2.4 * arc * e,
+    pitch: 0.5 - 0.75 * e
+  };
+}
+// Orientation d'un repère donné par deux axes (y, puis z rendu perpendiculaire) : continue, même si les axes mesurés
+// sur un os étiré ne sont pas tout à fait perpendiculaires.
+function frameOf(y, z) {
+  const yy = y.clone().normalize(),
+    zz = z.clone().addScaledVector(yy, -z.dot(yy)).normalize();
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(yy.clone().cross(zz), yy, zz));
+}
+// Repart de la pose animée à chaque image (hfFromAnimPose) : la main gauche de Punch_Jab n'a qu'une pose fixe, le
+// mixeur ne la réécrit jamais ; une correction qui partait de son propre résultat s'ajoutait à elle-même à chaque image
+// et le glaive tournoyait au hasard (selon la cadence d'images).
 function hfBladeSlash(rec, u) {
-  const a = rec.action,
-    n = a?.getClip().name;
-  if (rec.animKey !== 'attack' || !/^Punch_/.test(n)) return;
-  const m = rec.model,
-    left = n === 'Punch_Jab',
-    up = m.getObjectByName(left ? 'upperarm_l' : 'upperarm_r'),
-    hand = m.getObjectByName(left ? 'hand_l' : 'hand_r');
-  if (!up || !hand) return;
-  const q = clamp(a.time / a.getClip().duration, 0, 1),
-    env = Math.sin(Math.PI * clamp(q / 0.62, 0, 1)) * raceStrike(u).arc,
-    k = clamp((q - 0.04) / 0.36, 0, 1),
-    e = k * k * (3 - 2 * k),
-    side = left ? 1 : -1,
-    mq = m.getWorldQuaternion(new THREE.Quaternion()),
-    rot = new THREE.Quaternion()
-      .setFromAxisAngle(new THREE.Vector3(0, 1, 0).applyQuaternion(mq), side * (1.05 - 2 * e) * env)
-      .multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0).applyQuaternion(mq), -0.35 * env)),
-    turn = (bone, r) => {
-      const pw = bone.parent.getWorldQuaternion(new THREE.Quaternion()),
-        bw = bone.getWorldQuaternion(new THREE.Quaternion());
-      bone.quaternion.copy(pw.invert().multiply(r.multiply(bw)));
-      bone.updateMatrixWorld(true);
-    };
-  turn(up, rot);
-  // roulis du poignet autour de l'avant-bras
-  const fore = hand
-    .getWorldPosition(new THREE.Vector3())
-    .sub(hand.parent.getWorldPosition(new THREE.Vector3()))
-    .normalize();
-  turn(hand, new THREE.Quaternion().setFromAxisAngle(fore, -side * 1.1 * env));
+  const m = rec.model;
+  if (!rec.slash) {
+    const f = n => m.getObjectByName(n),
+      L = [f('upperarm_l'), f('hand_l')],
+      R = [f('upperarm_r'), f('hand_r')];
+    rec.slash = [...L, ...R].every(Boolean) ? { L, R, bones: [...L, ...R] } : false;
+  }
+  const S = rec.slash;
+  if (!S) return;
+  Y_AXIS = Y_AXIS || new THREE.Vector3(0, 1, 0);
+  Z_AXIS = Z_AXIS || new THREE.Vector3(0, 0, 1);
+  hfFromAnimPose(S, S.bones);
+  // le coup commence avec le clip de frappe et va au bout de sa courbe (poids revenu à 0), même si le clip suivant a
+  // déjà pris le relais : couper la surcouche en cours faisait sauter la lame
+  const t = performance.now() / 1000,
+    n = rec.action?.getClip().name,
+    on = rec.animKey === 'attack' && /^Punch_/.test(n);
+  if (on && !S.on) Object.assign(S, { t0: t, left: n === 'Punch_Jab', G0: null });
+  S.on = on;
+  const P = raceStrike(u),
+    pose = S.t0 != null ? bladeSlashPose(((t - S.t0) * P.speed) / SLASH_DUR, P.arc) : null;
+  if (pose && pose.w > 0) {
+    const [up, hand] = S.left ? S.L : S.R,
+      side = S.left ? 1 : -1, // +x du personnage = sa gauche : l'extérieur de la main gauche
+      mq = m.getWorldQuaternion(new THREE.Quaternion());
+    m.updateMatrixWorld(true);
+    // bras : élévation autour de l'axe latéral du personnage, puis balayage autour de sa verticale. Rotations par axe
+    // (hfRotateLocal) : reconstruire l'orientation monde d'un os étiré (elfe, nain) donnait des sauts d'une image à l'autre
+    hfRotateLocal(up, new THREE.Vector3(1, 0, 0).applyQuaternion(mq), pose.lift);
+    hfRotateLocal(up, Y_AXIS.clone().applyQuaternion(mq), side * pose.sweep);
+    // Glaive couché le long de l'arc. Au début du coup, la lame du clip est couchée sur la direction de départ de l'arc
+    // (moitié du glaive la plus proche : deux lames symétriques) : orientation de départ G0 (repère du personnage). La
+    // cible suit ensuite l'arc (yaw, pitch) : cible = arc(p)·arc(départ)⁻¹·G0, continue et indépendante du clip (le
+    // poing de Punch_Cross monte et redressait la lame). La main est tournée de la pose du clip vers la cible, pondérée
+    // par w, par une rotation autour d'un axe (hfRotateLocal) : pas de bascule d'une image à l'autre ni de saut sur les
+    // bras étirés (elfe, nain).
+    const arc = (yaw, pitch) =>
+        new THREE.Quaternion()
+          .setFromAxisAngle(Y_AXIS, -side * yaw)
+          .multiply(new THREE.Quaternion().setFromAxisAngle(Z_AXIS, side * pitch)),
+      toModel = mq.clone().invert(),
+      glaive = hand.children.find(c => c.name === 'Dagger') || hand,
+      axis = v => v.transformDirection(glaive.matrixWorld).applyQuaternion(toModel),
+      bladeY = axis(new THREE.Vector3(0, 1, 0)),
+      bladeZ = axis(new THREE.Vector3(0, 0, 1)),
+      live = frameOf(bladeY, bladeZ);
+    if (!S.G0) {
+      const want = new THREE.Vector3(side, 0, 0).applyQuaternion(arc(pose.yaw, pose.pitch)),
+        b = bladeY.clone().multiplyScalar(bladeY.dot(want) < 0 ? -1 : 1);
+      S.G0 = new THREE.Quaternion().setFromUnitVectors(b, want).multiply(live);
+      S.arc0 = arc(pose.yaw, pose.pitch).invert();
+    }
+    const target = arc(pose.yaw, pose.pitch).multiply(S.arc0).multiply(S.G0),
+      fix = target.multiply(live.invert());
+    if (fix.w < 0) fix.set(-fix.x, -fix.y, -fix.z, -fix.w); // le plus court chemin
+    const angle = 2 * Math.acos(Math.min(1, fix.w)) * pose.w,
+      sn = Math.sqrt(Math.max(0, 1 - fix.w * fix.w));
+    if (sn > 1e-6)
+      hfRotateLocal(hand, new THREE.Vector3(fix.x, fix.y, fix.z).divideScalar(sn).applyQuaternion(mq), angle);
+  }
+  hfKeepOutput(S, S.bones);
 }
 function hfTwoHandIK(rec, u) {
   const m = rec.model;

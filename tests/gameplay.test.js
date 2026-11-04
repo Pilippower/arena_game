@@ -304,6 +304,115 @@ function playerWorld() {
   hfFromAnimPose(store, [bone]);
   assert.ok(store.anim[0].angleTo(bone.quaternion) < 1e-6, 'nouvelle pose du clip mémorisée');
 }
+// ---------- Voleur : les glaives tranchent en arc, pas en coup de poing (src/render/hero_anim.js) ----------
+// Régression du 04/11/2026 : la main gauche de Punch_Jab n'a qu'une pose fixe, le mixeur ne la réécrit jamais ; la
+// surcouche repartait de son propre résultat et le glaive tournoyait au hasard (selon la cadence d'images) au lieu de
+// trancher. Squelette minimal : bras pendants, glaive (axe y) le long de l'avant-bras, comme au repos.
+{
+  const THREE = require('three');
+  const S = sandbox({ THREE, clamp: (v, a, b) => Math.max(a, Math.min(b, v)), performance: { now: () => S.ctx.ms } });
+  S.load('src/render/hero_anim.js');
+  const rig = () => {
+    const model = new THREE.Group();
+    for (const [side, x] of [
+      ['l', 0.2],
+      ['r', -0.2]
+    ]) {
+      const up = new THREE.Bone(),
+        lo = new THREE.Bone(),
+        hand = new THREE.Bone(),
+        glaive = new THREE.Object3D();
+      up.name = 'upperarm_' + side;
+      hand.name = 'hand_' + side;
+      glaive.name = 'Dagger';
+      up.position.set(x, 1.4, 0);
+      up.rotation.x = Math.PI; // bras vers le bas
+      lo.position.y = 0.3;
+      hand.position.y = 0.25;
+      model.add(up);
+      up.add(lo);
+      lo.add(hand);
+      hand.add(glaive);
+    }
+    model.rotation.y = 0.7; // personnage tourné : tout se mesure dans son repère
+    model.updateMatrixWorld(true);
+    return model;
+  };
+  // une frappe de la main gauche (Punch_Jab) vue à `fps` images/s ; direction de la lame dans le repère du personnage
+  const strike = (race, fps, clip = 'Punch_Jab') => {
+    const model = rig(),
+      rec = { model, animKey: 'idle', action: { time: 0, getClip: () => ({ name: clip, duration: 0.87 }) } },
+      u = { race, cls: 'shade' },
+      glaive = model.getObjectByName(clip === 'Punch_Jab' ? 'hand_l' : 'hand_r').children[0],
+      inv = () => new THREE.Quaternion().copy(model.quaternion).invert(),
+      dirs = [];
+    S.ctx.ms = 1000;
+    S.ctx.hfBladeSlash(rec, u); // pose de repos mémorisée
+    rec.animKey = 'attack';
+    for (let f = 0; f <= Math.round(0.5 * fps); f++) {
+      S.ctx.ms = 1000 + (f * 1000) / fps;
+      rec.action.time = (f / fps) * 1.6;
+      S.ctx.hfBladeSlash(rec, u);
+      model.updateMatrixWorld(true);
+      dirs.push({
+        t: f / fps,
+        d: new THREE.Vector3(0, 1, 0).transformDirection(glaive.matrixWorld).applyQuaternion(inv())
+      });
+    }
+    // glaive à deux lames symétriques : on suit la moitié couchée vers l'extérieur à l'armé
+    const out = clip === 'Punch_Jab' ? 1 : -1,
+      sign = Math.sign(dirs.find(x => x.t >= 0.07).d.x * out);
+    return dirs.map(x => ({ t: x.t, d: x.d.multiplyScalar(sign) }));
+  };
+  const at = (dirs, t) => dirs.reduce((a, b) => (Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a)).d;
+  const yaw = d => Math.atan2(d.z, d.x); // 0 = vers sa gauche (extérieur de la main gauche), π/2 = devant
+  for (const race of ['human', 'elf', 'dwarf', 'orc', 'undead']) {
+    const D = strike(race, 60),
+      tp = p => (p * 0.36) / S.ctx.RACE_STRIKE[race].speed; // instant d'une avancée du coup (vitesse de la race)
+    // lame couchée (presque horizontale) et pointée vers l'extérieur à l'armé, devant au milieu, à l'intérieur à la fin
+    const mid = D.filter(x => x.t > tp(0.15) && x.t < tp(0.6));
+    assert.ok(
+      mid.every(x => Math.abs(x.d.y) < 0.6),
+      `${race} : lame couchée pendant le coup (pas dressée comme un poing)`
+    );
+    const yaws = mid.map(x => Math.abs(yaw(x.d)));
+    const sweep = Math.max(...yaws) - Math.min(...yaws);
+    assert.ok(sweep > 1.5, `${race} : la lame balaie un arc horizontal (${sweep.toFixed(2)} rad)`);
+    assert.ok(at(D, tp(0.12)).x > 0.3 && at(D, tp(0.6)).x < -0.3, `${race} : de l'extérieur vers l'intérieur`);
+    // retour exact à la pose du clip après le coup (rien ne s'accumule)
+    assert.ok(Math.abs(D[D.length - 1].d.y) > 1 - 1e-3, `${race} : retour à la pose du clip`);
+    // même pose à 30 et à 120 images/s : la frappe ne dépend pas de la cadence d'images (l'ancienne surcouche
+    // ajoutait son roulis à chaque image)
+    const slow = strike(race, 30),
+      fast = strike(race, 120);
+    for (const t of [3 / 30, 5 / 30, 6 / 30])
+      assert.ok(
+        at(slow, t).distanceTo(at(fast, t)) < 0.03,
+        `${race} : même pose à 30 et 120 images/s (t=${t.toFixed(2)})`
+      );
+    // sans à-coup : à 120 images/s, la vitesse de la lame (angle parcouru par image) change en douceur ; un saut ou
+    // une bascule donne un pic isolé (mesuré : 0,06 au plus, vitesse max 0,2)
+    const steps = fast.slice(1).map((x, i) => x.d.angleTo(fast[i].d)),
+      jerk = Math.max(...steps.slice(1).map((v, i) => Math.abs(v - steps[i])));
+    assert.ok(jerk < 0.1, `${race} : lame sans saut (variation de vitesse ${jerk.toFixed(3)} rad par image)`);
+  }
+  // main droite (Punch_Cross) : arc symétrique, de sa droite vers sa gauche
+  const R = strike('human', 60, 'Punch_Cross');
+  assert.ok(at(R, 0.04).x < -0.3 && at(R, 0.2).x > 0.3, 'main droite : de l’extérieur vers l’intérieur');
+  // l'elfe trace un plus grand arc que le nain
+  const span = race => {
+    const y = strike(race, 60).map(x => Math.abs(yaw(x.d)));
+    return Math.max(...y) - Math.min(...y);
+  };
+  assert.ok(span('elf') > span('dwarf'), 'arc plus ample pour l’elfe que pour le nain');
+  // la surcouche est bien appelée à chaque image pour le voleur, après le mixeur
+  const h3 = require('node:fs').readFileSync(require('node:path').join(__dirname, '../src/render/heroes3d.js'), 'utf8');
+  assert.match(
+    h3,
+    /mixer\.update\(dt\);[\s\S]{0,200}u\.cls === 'shade'[^\n]*hfBladeSlash\(rec, u\)/,
+    'hfBladeSlash appelé'
+  );
+}
 console.log(
-  'OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic, contrôles, IK, glaives, frappes par race)'
+  'OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic, contrôles, IK, glaives, frappe des glaives en arc, frappes par race)'
 );
