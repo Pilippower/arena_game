@@ -717,3 +717,39 @@ body.lobby:not(.mobile-mode) .pickRight {
 #overlay .mapCard.selected::after {
   bottom: -6px;
 }
+/* onglets des barres de forme (druide Normal / Cat / Bear, voleur Normal / Stealth) à droite de la barre de sorts,
+   lobby seulement (lobbyBarTabs dans settings.js) */
+#lobbyBars {
+  display: none;
+}
+body.lobby #bottom {
+  position: relative;
+}
+body.lobby #lobbyBars {
+  position: absolute;
+  right: 2%;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+body.lobby #lobbyBars button {
+  min-width: 84px;
+  padding: 1px 10px;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 12px;
+  line-height: 1.2;
+  background: linear-gradient(180deg, #27324a 0%, #151d2e 55%, #0e1420 100%) !important;
+  border: 1px solid #c99a4a !important;
+  border-radius: 6px !important;
+  color: #e9dcc0 !important;
+}
+body.lobby #lobbyBars button.selected {
+  background: linear-gradient(180deg, #7a5420 0%, #4a3012 55%, #2e1d0a 100%) !important;
+  color: var(--lobby-gold) !important;
+  border-color: var(--lobby-gold) !important;
+  box-shadow:
+    0 0 8px #f5c25a88,
+    inset 0 0 6px #f5c25a44 !important;
+}

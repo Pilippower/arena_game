@@ -152,8 +152,10 @@ document.addEventListener('pointermove', e => {
     return;
   }
   const i = b.id === 'trinketBtn' ? 'trinket' : +b.dataset.i;
-  if (TIP_SLOT !== u.cls + i) {
-    TIP_SLOT = u.cls + i;
+  // la barre (forme, camouflage) fait partie de la clé : même case, autre sort
+  const slot = u.cls + barKey(u) + i;
+  if (TIP_SLOT !== slot) {
+    TIP_SLOT = slot;
     tip.innerHTML = i === 'trinket' ? trinketTooltip(u) : skillTooltip(u, i);
   }
   tip.style.display = 'block';

@@ -319,14 +319,41 @@ function lobbyChipsHTML(race, cls) {
     .filter(Boolean)
     .join('');
 }
-function lobbySkillBar(cls) {
+// bar : barre affichée ('' = de base, sinon une clé de CLASS[cls].bars : cat / bear du druide, stealth du voleur) ;
+// gardée tant que la classe ne change pas (choisir une race ne ramène pas à la barre de base)
+function lobbySkillBar(cls, bar = LOBBY_UNIT?.cls === cls ? barKey(LOBBY_UNIT) : '') {
   const box = $('skills');
-  LOBBY_UNIT = cls ? { cls, cd: [], gcd: 0, trinket: 0, res: 100, burst: 0, form: null, stealth: false } : null;
+  LOBBY_UNIT = cls
+    ? {
+        cls,
+        cd: [],
+        gcd: 0,
+        trinket: 0,
+        res: 100,
+        burst: 0,
+        form: LOBBY_FORMS.has(bar) ? bar : null,
+        stealth: bar === 'stealth'
+      }
+    : null;
   if (LOBBY_UNIT) renderSkillBar(LOBBY_UNIT);
   else {
     box.innerHTML = '';
     box._key = null;
   }
+  lobbyBarTabs();
+}
+// Onglets à côté de la barre de sorts du lobby : une barre de forme ou de camouflage pour la lire (infobulles)
+// avant de jouer. Classes sans barre de forme : aucun onglet.
+const LOBBY_BAR_LABEL = { '': 'Normal', cat: 'Cat', bear: 'Bear', stealth: 'Stealth' },
+  LOBBY_FORMS = new Set(['cat', 'bear']);
+function lobbyBarTabs() {
+  const el = $('lobbyBars'),
+    u = LOBBY_UNIT,
+    bars = u && CLASS[u.cls].bars ? ['', ...Object.keys(CLASS[u.cls].bars)] : [];
+  el.innerHTML = bars
+    .map(k => `<button data-bar="${k}"${k === barKey(u) ? ' class="selected"' : ''}>${LOBBY_BAR_LABEL[k]}</button>`)
+    .join('');
+  el.querySelectorAll('button').forEach(b => (b.onclick = () => lobbySkillBar(u.cls, b.dataset.bar)));
 }
 function chooseClass() {
   playLobbyMusic();

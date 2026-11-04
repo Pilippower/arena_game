@@ -389,6 +389,38 @@ assert.match(
   /updateSelectPreview\(selectedRace, selectedClass\);\s*lobbySkillBar\(selectedClass\);/,
   'lobby : barre de sorts de la classe choisie'
 );
+// Lobby : onglets Normal / Cat / Bear (druide) pour lire les barres de forme
+{
+  const { sandbox } = require('./sources.js'),
+    els = { skills: {}, lobbyBars: { innerHTML: '', querySelectorAll: () => [] } },
+    shown = [];
+  const S = sandbox({
+    CLASS: ctx.CLASS,
+    barKey: ctx.barKey,
+    $: id => els[id],
+    renderSkillBar: u => shown.push(ctx.skillsOf(u)[0].n)
+  });
+  const src = read('src/ui/settings.js');
+  vm.runInContext('var LOBBY_UNIT = null; var ' + src.match(/const (LOBBY_BAR_LABEL = [\s\S]*?;)\n/)[1], S.ctx);
+  S.fn('src/ui/settings.js', 'lobbySkillBar');
+  S.fn('src/ui/settings.js', 'lobbyBarTabs');
+  const tabs = () => [...els.lobbyBars.innerHTML.matchAll(/<button data-bar="(\w*)"( class="selected")?>(\w+)/g)];
+  S.ctx.lobbySkillBar('warden');
+  assert.deepEqual(
+    tabs().map(m => m[3]),
+    ['Normal', 'Cat', 'Bear'],
+    'druide : onglets Normal / Cat / Bear'
+  );
+  S.ctx.lobbySkillBar('warden', 'bear');
+  assert.equal(shown.at(-1), 'Maul', 'onglet Bear : barre de l’ours');
+  assert.equal(tabs().find(m => m[2])[3], 'Bear', 'onglet choisi marqué');
+  S.ctx.lobbySkillBar('warden'); // choix d'une race : même classe, la barre de forme reste
+  assert.equal(shown.at(-1), 'Maul', 'forme gardée tant que la classe ne change pas');
+  S.ctx.lobbySkillBar('warden', 'cat');
+  assert.equal(shown.at(-1), 'Shred', 'onglet Cat : barre du félin');
+  S.ctx.lobbySkillBar('sentinel');
+  assert.equal(els.lobbyBars.innerHTML, '', 'classe sans forme : pas d’onglets');
+}
 // Lobby, 2e design : étiquettes de la panoplie, arènes illustrées, récapitulatif, grand PLAY
 {
   const fs = require('node:fs'),
