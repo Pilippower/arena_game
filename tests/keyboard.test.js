@@ -27,11 +27,16 @@ function keyboardWorld(stored = null) {
     $el = id => els.get(id) || (els.set(id, fakeEl()), els.get(id)),
     handlers = {},
     storage = stored ? { arenaAscendantPrefs_v1: JSON.stringify(stored) } : {},
-    cast = [];
+    cast = [],
+    body = new Set();
   const on = (type, f) => (handlers[type] = handlers[type] || []).push(f);
   const S = sandbox({
     window: { addEventListener: on },
-    document: { getElementById: $el, body: { classList: { add() {} } }, addEventListener() {} },
+    document: {
+      getElementById: $el,
+      body: { classList: { add: c => body.add(c), remove: c => body.delete(c), contains: c => body.has(c) } },
+      addEventListener() {}
+    },
     location: { search: '' },
     URLSearchParams,
     matchMedia: () => ({ matches: false }),
@@ -49,8 +54,9 @@ function keyboardWorld(stored = null) {
     settingsOpen: false,
     captureBind: null,
     LOBBY_UNIT: null,
-    CLASS: {},
+    CLASS: { warden: { name: 'Druid', skills: [] }, sentinel: { name: 'Warrior', skills: [] } },
     updateUI() {},
+    renderSkillBar() {},
     setMusicVolume() {},
     applyFramePositions() {},
     setUiEditMode() {},
@@ -61,7 +67,17 @@ function keyboardWorld(stored = null) {
     setTarget() {}
   });
   S.load('src/core/setup.js');
-  for (const f of ['openSettings', 'closeSettings', 'toggleSettings', 'renderBindGrid', 'assignCapturedBind'])
+  S.fn('src/ui/skillbar.js', 'shownUnit');
+  for (const f of [
+    'openSettings',
+    'closeSettings',
+    'toggleSettings',
+    'bindClass',
+    'renderBindGrid',
+    'assignCapturedBind',
+    'refreshKeyLabels',
+    'resetBindings'
+  ])
     S.fn('src/ui/settings.js', f);
   S.load('src/input/controls.js');
   // touche pressée : { code, shiftKey, ctrlKey, altKey } ; renvoie l'événement (defaultPrevented lisible)
@@ -70,11 +86,25 @@ function keyboardWorld(stored = null) {
     for (const f of handlers.keydown) f(e);
     return e;
   };
-  const inGame = () => {
-    S.ctx.state = { keys: {}, player: { alive: true, grounded: true, stun: 0, fear: 0, poly: 0, vy: 0 } };
+  // partie lancée avec cette classe (lobby fermé)
+  const inGame = (cls = 'warden') => {
+    S.ctx.state = { keys: {}, player: { cls, alive: true, grounded: true, stun: 0, fear: 0, poly: 0, vy: 0 } };
     $el('overlay').style.display = 'none';
+    body.delete('lobby');
   };
-  return { ...S, $el, press, inGame, cast, storage };
+  // lobby, classe choisie (barre de sorts affichée)
+  const inLobby = cls => {
+    S.ctx.LOBBY_UNIT = cls ? { cls } : null;
+    body.add('lobby');
+  };
+  // saisie dans Settings : on tient le modificateur puis on appuie sur la touche
+  const bind = (type, i, code, mods = {}) => {
+    S.ctx.captureBind = { type, i };
+    if (mods.shiftKey || mods.ctrlKey || mods.altKey)
+      press(mods.shiftKey ? 'ShiftLeft' : mods.ctrlKey ? 'ControlLeft' : 'AltLeft', mods);
+    press(code, mods);
+  };
+  return { ...S, $el, press, inGame, inLobby, bind, cast, storage };
 }
 
 // ---------- Échap ouvre / ferme Settings ----------
@@ -96,14 +126,10 @@ function keyboardWorld(stored = null) {
 
 // ---------- Raccourcis Shift + Espace et Ctrl + touche ----------
 {
-  const { ctx, press, inGame, cast } = keyboardWorld();
-  // saisie dans Settings : on tient le modificateur puis on appuie sur la touche
-  const bind = (i, code, mods) => {
-    ctx.captureBind = { type: 'skill', i };
-    press(mods.shiftKey ? 'ShiftLeft' : mods.ctrlKey ? 'ControlLeft' : 'AltLeft', mods);
-    press(code, mods);
-    return ctx.PREFS.keybinds.skills[i];
-  };
+  const w = keyboardWorld(),
+    { ctx, press, inGame, cast } = w;
+  w.inGame();
+  const bind = (i, code, mods) => (w.bind('skill', i, code, mods), ctx.keybindsFor('warden').skills[i]);
   assert.equal(bind(0, 'Space', { shiftKey: true }), 'Shift+Space', 'Shift + Espace accepté');
   assert.equal(ctx.keyLabel('Shift+Space'), 'Shift + Space', 'libellé en anglais');
   assert.equal(ctx.keyLabel('Shift+Space', true), '⇧Spc', 'libellé court sur la case de sort');
@@ -117,7 +143,7 @@ function keyboardWorld(stored = null) {
   // refusés : Espace seul (saut), Échap (Settings), raccourcis gardés par le navigateur
   ctx.captureBind = { type: 'skill', i: 4 };
   press('Space');
-  assert.equal(ctx.PREFS.keybinds.skills[4], 'KeyQ', 'Espace seul reste le saut');
+  assert.equal(ctx.keybindsFor('warden').skills[4], 'KeyQ', 'Espace seul reste le saut');
   for (const [code, mods] of [
     ['Escape', { shiftKey: true }],
     ['KeyW', { ctrlKey: true }],
@@ -125,11 +151,10 @@ function keyboardWorld(stored = null) {
   ]) {
     ctx.captureBind = { type: 'skill', i: 4 };
     press(code, mods);
-    assert.equal(ctx.PREFS.keybinds.skills[4], 'KeyQ', `${code} refusé`);
+    assert.equal(ctx.keybindsFor('warden').skills[4], 'KeyQ', `${code} refusé`);
   }
   ctx.captureBind = null;
   // en jeu : la combinaison lance son sort (sans sauter, sans bouger, sans raccourci du navigateur)
-  inGame();
   const p = ctx.state.player;
   assert.equal(press('Space', { shiftKey: true }).defaultPrevented, true, 'Shift + Espace pris par le jeu');
   assert.deepEqual(cast, [0], 'Shift + Espace : sort 1');
@@ -142,4 +167,74 @@ function keyboardWorld(stored = null) {
   assert.equal(p.vy, 7.5, 'Espace seul : saut');
 }
 
-console.log('OK - clavier (tests unitaires : Échap / Settings, Shift + Espace, Ctrl + touche)');
+// ---------- Raccourcis propres à chaque classe ----------
+{
+  // anciens réglages (une seule configuration) : valeur de départ de chaque classe
+  const old = {
+    keybinds: { skills: ['KeyF', 'Digit2', 'Digit3', 'Digit4', 'KeyQ', 'KeyE', 'Digit5'], trinket: 'KeyG' }
+  };
+  const w = keyboardWorld(old),
+    { ctx, press, cast } = w,
+    kb = cls => ctx.keybindsFor(cls);
+  assert.equal(kb('warden').skills[0], 'KeyF', 'druide : anciens réglages repris');
+  assert.equal(kb('sentinel').trinket, 'KeyG', 'guerrier : anciens réglages repris');
+  // Settings en jeu (druide) : seule la configuration du druide change
+  w.inGame('warden');
+  w.bind('skill', 0, 'KeyT');
+  assert.equal(kb('warden').skills[0], 'KeyT', 'druide : nouvelle touche');
+  assert.equal(kb('sentinel').skills[0], 'KeyF', 'guerrier : inchangé');
+  assert.equal(w.$el('bindTitle').textContent, 'Keybinds · Druid', 'Settings : classe réglée affichée');
+  // jamais deux actions sur la même touche, dans une même classe
+  w.bind('skill', 1, 'KeyT');
+  assert.equal(kb('warden').skills.slice(0, 2).join(), ',KeyT', 'druide : touche reprise, ancienne action Unset');
+  // au lobby : la classe choisie
+  w.inLobby('sentinel');
+  w.bind('trinket', 0, 'KeyV');
+  assert.equal(kb('sentinel').trinket, 'KeyV', 'lobby : réglage de la classe choisie');
+  assert.equal(kb('warden').trinket, 'KeyG', 'lobby : les autres classes ne changent pas');
+  // en jeu, chaque classe ses touches
+  w.inGame('sentinel');
+  press('KeyV');
+  press('KeyF');
+  assert.deepEqual(cast, ['trinket', 0], 'guerrier : ses touches');
+  w.inGame('warden');
+  cast.length = 0;
+  press('KeyT');
+  press('KeyV');
+  assert.deepEqual(cast, [1], 'druide : ses touches (V ne lance rien)');
+  // déplacements aussi propres à la classe
+  w.bind('move', 'forward', 'KeyI');
+  press('KeyI');
+  assert.equal(ctx.state.keys.w, true, 'druide : avance avec I');
+  w.inGame('sentinel');
+  press('KeyI');
+  assert.ok(!ctx.state.keys.w, 'guerrier : I ne fait pas avancer');
+  // enregistré dans le navigateur, relu au prochain lancement
+  const again = keyboardWorld(JSON.parse(w.storage.arenaAscendantPrefs_v1));
+  assert.equal(again.ctx.keybindsFor('warden').skills[1], 'KeyT', 'druide relu');
+  assert.equal(again.ctx.keybindsFor('sentinel').trinket, 'KeyV', 'guerrier relu');
+  assert.equal(again.ctx.keybindsFor('arcanist').skills[0], 'KeyF', 'classe jamais réglée : anciens réglages');
+  // « Default keys » : la classe réglée seulement
+  w.inGame('warden');
+  ctx.resetBindings();
+  assert.equal(kb('warden').skills[0], 'Digit1', 'druide : touches par défaut');
+  assert.equal(kb('sentinel').trinket, 'KeyV', 'guerrier : gardé');
+}
+
+// ---------- Anciens réglages : jamais deux sorts sur la même touche (bug : druide, 2 sorts sur 5) ----------
+for (const stored of [
+  ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'KeyE'],
+  ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'KeyQ', 'Digit5'],
+  ['Digit1', 'Digit1', 'KeyW', 'Digit4', 'KeyQ', 'KeyE'],
+  ['', 'Digit2', 'Digit1', 'Digit4', 'KeyQ', 'KeyE', 'Digit5']
+]) {
+  const { ctx } = keyboardWorld({ keybinds: { skills: stored }, classKeybinds: { warden: { skills: stored } } });
+  for (const kb of [ctx.keybindsFor(null), ctx.keybindsFor('warden')]) {
+    const all = [...kb.skills, kb.trinket, ...Object.values(kb.move)].filter(Boolean);
+    if (stored[0] === '') assert.equal(kb.skills[0], '', 'case Unset gardée');
+    assert.equal(kb.skills.length, 7, '7 cases');
+    assert.equal(new Set(all).size, all.length, 'touches uniques : ' + kb.skills.join(','));
+  }
+}
+
+console.log('OK - clavier (tests unitaires : Échap / Settings, Shift + Espace, Ctrl + touche, raccourcis par classe)');

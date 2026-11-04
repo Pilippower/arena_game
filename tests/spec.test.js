@@ -540,7 +540,7 @@ assert.ok(
     'déplacements réglables, tourner à gauche / à droite non réglés par défaut'
   );
   assert.ok(
-    read('src/input/controls.js').includes('const mv = PREFS.keybinds.move'),
+    read('src/input/controls.js').includes('const mv = keybindsFor(state.player?.cls).move'),
     'déplacements selon les réglages'
   );
   assert.ok(read('src/ui/settings.js').includes("localStorage.setItem('arenaLastPick'"), 'race et classe mémorisées');
@@ -679,40 +679,7 @@ assert.ok(
     code('src/render/').includes('const STRIKE_T = 0.6 / raceStrike(u).speed;'),
   'DK : garde à deux mains devant lui et frappe calculée (pas de mélange avec le clip)'
 );
-// Raccourcis : jamais deux sorts sur la même touche, même avec d'anciens réglages à 6 cases (bug : druide, 2 sorts sur 5)
-{
-  const vm = require('node:vm'),
-    src = read('src/core/setup.js'),
-    pick = re => src.match(re)[0];
-  for (const stored of [
-    ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'KeyE'],
-    ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'KeyQ', 'Digit5'],
-    ['Digit1', 'Digit1', 'KeyW', 'Digit4', 'KeyQ', 'KeyE'],
-    ['', 'Digit2', 'Digit1', 'Digit4', 'KeyQ', 'KeyE', 'Digit5']
-  ]) {
-    const c = {
-      clamp: (v, a, b) => Math.min(b, Math.max(a, v)),
-      localStorage: { getItem: () => JSON.stringify({ keybinds: { skills: stored } }) }
-    };
-    vm.createContext(c);
-    vm.runInContext(
-      [
-        /const PREF_KEY[^\n]*/,
-        /const DEFAULT_PREFS = \{[\s\S]*?\n\};/,
-        /function cloneDefaults[\s\S]*?\n\}/,
-        /function loadPrefs[\s\S]*?\n\}/
-      ]
-        .map(pick)
-        .join('\n') + '\nvar out = loadPrefs();',
-      c
-    );
-    const kb = c.out.keybinds,
-      all = [...kb.skills, kb.trinket, ...Object.values(kb.move)].filter(Boolean);
-    if (stored[0] === '') assert.equal(kb.skills[0], '', 'case Unset gardée');
-    assert.equal(kb.skills.length, 7, '7 cases');
-    assert.equal(new Set(all).size, all.length, 'touches uniques : ' + kb.skills.join(','));
-  }
-}
+// Raccourcis : jamais deux sorts sur la même touche, même avec d'anciens réglages : tests/keyboard.test.js
 // Chevalier de la mort : paume gauche sur la poignée, sous la droite (mains alignées)
 assert.ok(
   code('src/render/').includes('palmL = k.grip.localToWorld(new THREE.Vector3(0, -0.09, 0))'),
@@ -731,7 +698,7 @@ assert.ok(!read('src/audio/sfx.js').includes("lowpass: u.race === 'undead'"), 'c
 assert.ok(read('src/ui/settings.js').includes("if (other) set(other, '');"), 'touche reprise : ancienne action Unset');
 assert.ok(
   read('src/core/setup.js').includes('if (!combo) return -1;') &&
-    read('src/input/controls.js').includes('bindIndex(PREFS.keybinds.skills, e)'),
+    read('src/input/controls.js').includes('bindIndex(kb.skills, e)'),
   'Unset : aucune touche'
 );
 // PV de base (+50 %)

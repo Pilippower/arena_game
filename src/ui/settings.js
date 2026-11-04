@@ -5,11 +5,17 @@ let settingsOpen = false,
   captureBind = null,
   uiEditMode = false,
   dragFrame = null;
+// Classe dont on règle les raccourcis : celle de la barre de sorts affichée (jouée, ou choisie au lobby) ; aucune =
+// réglages communs, suivis par les classes jamais réglées.
+function bindClass() {
+  return shownUnit()?.cls || null;
+}
 function renderBindGrid() {
   const box = $('bindGrid');
   if (!box) return;
-  const cls = state?.player?.cls || LOBBY_UNIT?.cls,
-    names = PREFS.keybinds.skills.map((_, i) => (cls && CLASS[cls].skills[i]?.n) || `Spell ${i + 1}`),
+  const cls = bindClass(),
+    kb = keybindsFor(cls),
+    names = kb.skills.map((_, i) => (cls && CLASS[cls].skills[i]?.n) || `Spell ${i + 1}`),
     btn = (type, i, code) =>
       `<button class="bindBtn ${captureBind?.type === type && captureBind.i === i ? 'capturing' : ''}${code ? '' : ' unset'}" data-bind="${type}" data-i="${i}">${captureBind?.type === type && captureBind.i === i ? 'Press a key…' : code ? keyLabel(code) : 'Unset'}</button>`;
   const MOVES = [
@@ -20,10 +26,11 @@ function renderBindGrid() {
     ['turnLeft', 'Turn left'],
     ['turnRight', 'Turn right']
   ];
+  $('bindTitle').textContent = cls ? `Keybinds · ${CLASS[cls].name}` : 'Keybinds · all classes';
   box.innerHTML =
-    MOVES.map(([k, n]) => `<span>${n}</span>${btn('move', k, PREFS.keybinds.move[k])}`).join('') +
-    names.map((n, i) => `<span>${i + 1}. ${n}</span>${btn('skill', i, PREFS.keybinds.skills[i])}`).join('') +
-    `<span>Trinket PvP</span>${btn('trinket', 0, PREFS.keybinds.trinket)}`;
+    MOVES.map(([k, n]) => `<span>${n}</span>${btn('move', k, kb.move[k])}`).join('') +
+    names.map((n, i) => `<span>${i + 1}. ${n}</span>${btn('skill', i, kb.skills[i])}`).join('') +
+    `<span>Trinket PvP</span>${btn('trinket', 0, kb.trinket)}`;
   box.querySelectorAll('[data-bind]').forEach(
     b =>
       (b.onclick = () => {
@@ -45,9 +52,9 @@ function assignCapturedBind(code) {
     $('bindStatus').textContent = `${keyLabel(code)} ${refusal}.`;
     return true;
   }
-  // toutes les touches (sorts, trinket, déplacements) : une touche déjà prise est retirée de son ancienne action, qui
-  // devient « Unset » (pas d'échange : la permutation déplaçait une touche ailleurs sans qu'on le voie)
-  const kb = PREFS.keybinds,
+  // toutes les touches (sorts, trinket, déplacements) de la classe réglée : une touche déjà prise est retirée de son
+  // ancienne action, qui devient « Unset » (pas d'échange : la permutation déplaçait une touche ailleurs sans qu'on le voie)
+  const kb = editableKeybinds(bindClass()),
     slots = [...kb.skills.map((_, i) => ['skill', i]), ['trinket', 0], ...Object.keys(kb.move).map(k => ['move', k])],
     get = ([t, i]) => (t === 'skill' ? kb.skills[i] : t === 'move' ? kb.move[i] : kb.trinket),
     set = ([t, i], c) => (t === 'skill' ? (kb.skills[i] = c) : t === 'move' ? (kb.move[i] = c) : (kb.trinket = c)),
@@ -59,15 +66,22 @@ function assignCapturedBind(code) {
   $('bindStatus').textContent = `Keybind set: ${keyLabel(code)}` + (other ? ' (previous action is now unset)' : '');
   captureBind = null;
   renderBindGrid();
-  if (state) updateUI();
+  refreshKeyLabels();
   return true;
 }
+// touches affichées sur la barre de sorts (en jeu, ou celle de la classe choisie au lobby)
+function refreshKeyLabels() {
+  const u = shownUnit();
+  if (u && u === LOBBY_UNIT) renderSkillBar(u);
+  else if (state) updateUI();
+}
+// « Default keys » : la classe réglée seulement (ou les réglages communs sans classe choisie)
 function resetBindings() {
-  PREFS.keybinds = cloneDefaults().keybinds;
+  Object.assign(editableKeybinds(bindClass()), cloneDefaults().keybinds);
   captureBind = null;
   savePrefs();
   renderBindGrid();
-  if (state) updateUI();
+  refreshKeyLabels();
   $('bindStatus').textContent = 'Default keybinds restored.';
 }
 function frameIds() {

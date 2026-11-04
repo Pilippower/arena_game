@@ -138,14 +138,17 @@ function trinketTooltip(u) {
   <div class="tRow"><span>Instant · usable while controlled</span><span>${fmtS(TRINKET.cd)} cooldown</span></div>
   <div class="tDesc">Breaks free from every loss of control (stun, fear, sheep, sap, root, silence) and grants a shield absorbing <b class="tHeal">${TRINKET.shield}</b> damage.</div>${u?.trinket > 0 ? `<div class="tNote">Ready in ${Math.ceil(u.trinket)} s</div>` : ''}`;
 }
+// Unité dont la barre de sorts est affichée : au lobby la classe choisie (LOBBY_UNIT, settings.js), sinon le joueur.
+function shownUnit() {
+  return document.body.classList.contains('lobby') && LOBBY_UNIT ? LOBBY_UNIT : state?.player;
+}
 let TIP_SLOT = null;
 document.addEventListener('pointermove', e => {
   if (e.pointerType === 'touch') return;
   const b = e.target.closest?.('#skills .skill[data-i], #skills #trinketBtn');
   const tip = $('skillTip');
   if (!tip) return;
-  // au lobby, la barre montre la classe choisie (LOBBY_UNIT, settings.js)
-  const u = document.body.classList.contains('lobby') && LOBBY_UNIT ? LOBBY_UNIT : state?.player;
+  const u = shownUnit();
   if (!b || !u) {
     tip.style.display = 'none';
     TIP_SLOT = null;

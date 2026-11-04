@@ -1,11 +1,11 @@
 'use strict';
 // Contrôles desktop validés (ZQSD, caméra clic droit, ciblage) — ne pas modifier les conventions.
 // ---------- controls: exact requested spec ----------
-// Déplacements : touches réglables (PREFS.keybinds.move, codes physiques : ZQSD en AZERTY = WASD en QWERTY)
-// + flèches. Traduites vers les touches logiques de GameLogic (w avant, s arrière, a gauche, d droite).
+// Déplacements : touches réglables de la classe jouée (keybindsFor(cls).move, codes physiques : ZQSD en AZERTY =
+// WASD en QWERTY) + flèches. Traduites vers les touches logiques de GameLogic (w avant, s arrière, a gauche, d droite).
 function setMoveKey(e, down) {
   if (!state) return false;
-  const mv = PREFS.keybinds.move,
+  const mv = keybindsFor(state.player?.cls).move,
     m = {
       [mv.forward]: 'w',
       [mv.back]: 's',
@@ -50,8 +50,9 @@ window.addEventListener('keydown', e => {
   }
   if (settingsOpen) return;
   // une combinaison réglée (ex. Shift + W) passe avant le déplacement de la touche seule
-  const comboSkill = e.ctrlKey || e.altKey || e.shiftKey ? PREFS.keybinds.skills.indexOf(bindCombo(e)) : -1,
-    comboTrinket = (e.ctrlKey || e.altKey || e.shiftKey) && bindCombo(e) === PREFS.keybinds.trinket;
+  const kb = keybindsFor(state?.player?.cls),
+    comboSkill = e.ctrlKey || e.altKey || e.shiftKey ? kb.skills.indexOf(bindCombo(e)) : -1,
+    comboTrinket = (e.ctrlKey || e.altKey || e.shiftKey) && bindCombo(e) === kb.trinket;
   if (comboSkill < 0 && !comboTrinket && setMoveKey(e, true)) return;
   if (!state || $('overlay').style.display !== 'none') return;
   if (e.code === 'Tab') {
@@ -64,14 +65,14 @@ window.addEventListener('keydown', e => {
     }
     return;
   }
-  const skillIndex = bindIndex(PREFS.keybinds.skills, e);
+  const skillIndex = bindIndex(kb.skills, e);
   if (skillIndex >= 0) {
     e.preventDefault();
     const o = slotOrder(state.player);
     if (o[skillIndex] != null) tryPlayerSkill(o[skillIndex]);
     return;
   }
-  if (bindIndex([PREFS.keybinds.trinket], e) === 0) {
+  if (bindIndex([kb.trinket], e) === 0) {
     e.preventDefault();
     useTrinket(state.player);
     return;

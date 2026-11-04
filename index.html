@@ -134,12 +134,12 @@ body.mobile-mode #playBtn{font-size:14px!important;padding:9px 14px!important}
   <h3>⚙ Settings & keybinds</h3>
   <div class="settingRow"><label for="musicVolume"><b>Music / SFX volume</b></label><div><input id="musicVolume" type="range" min="0" max="200" value="65"> <span id="volumeValue">65%</span></div></div>
   <div class="settingRow"><label for="camReturnToggle"><b>Camera returns behind you</b><br><span class="settingsHint">after a left-drag look-around</span></label><input id="camReturnToggle" type="checkbox" checked></div>
-  <div class="selectorTitle">Spell keybinds</div>
+  <div class="selectorTitle" id="bindTitle">Keybinds</div>
   <div id="bindGrid" class="bindGrid"></div>
   <div id="bindStatus"></div>
   <div class="selectorTitle">Portraits / frames</div>
   <div class="settingsActions"><button id="editUiBtn">Move frames</button><button id="resetUiBtn">Reset positions</button><button id="resetBindsBtn">Default keys</button></div>
-  <div class="settingsHint">In move mode, drag your frame, the target frame or the arena frames. Keys (movement, spells, trinket), frame positions, volume, music, map, mode, difficulty, race and class are saved in this browser and kept between games. Space, TAB, Esc and the arrows stay reserved.</div>
+  <div class="settingsHint">In move mode, drag your frame, the target frame or the arena frames. Keys (movement, spells, trinket) are set per class: the class you play, or the one chosen in the lobby. Keys, frame positions, volume, music, map, mode, difficulty, race and class are saved in this browser and kept between games. Space, TAB and the arrows alone stay reserved (Shift / Ctrl / Alt + any key is allowed); Esc opens and closes Settings.</div>
   <div class="settingsActions"><button id="closeSettingsBtn">Close</button></div>
 </div>
 </main>

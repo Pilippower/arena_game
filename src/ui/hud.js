@@ -166,7 +166,8 @@ function renderSkillBar(p) {
   const box = $('skills'),
     bar = skillsOf(p),
     order = slotOrder(p),
-    key = [p.cls, barKey(p), order, PREFS.keybinds.skills, PREFS.keybinds.trinket].join('|');
+    kb = keybindsFor(p.cls),
+    key = [p.cls, barKey(p), order, kb.skills, kb.trinket].join('|');
   if (box._key !== key) {
     box._key = key;
     box.classList.toggle('six', order.length > 5);
@@ -176,11 +177,11 @@ function renderSkillBar(p) {
           const s = bar[i];
           // emplacement vide d'une barre de forme : la touche reste affichée, aucun sort
           if (!s)
-            return `<button class="skill empty" data-slot="${slot}" tabindex="-1"><span class="key">${keyLabel(PREFS.keybinds.skills[slot], true)}</span></button>`;
-          return `<button class="skill" data-i="${i}" data-slot="${slot}"><span class="icon">${skillIconSVG(p.cls, i, s)}</span><span class="cdw"></span><span class="skillName">${s.n}</span><span class="cost">${s.c || ''}</span><span class="key">${keyLabel(PREFS.keybinds.skills[slot], true)}</span></button>`;
+            return `<button class="skill empty" data-slot="${slot}" tabindex="-1"><span class="key">${keyLabel(kb.skills[slot], true)}</span></button>`;
+          return `<button class="skill" data-i="${i}" data-slot="${slot}"><span class="icon">${skillIconSVG(p.cls, i, s)}</span><span class="cdw"></span><span class="skillName">${s.n}</span><span class="cost">${s.c || ''}</span><span class="key">${keyLabel(kb.skills[slot], true)}</span></button>`;
         })
         .join('') +
-      `<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(PREFS.keybinds.trinket, true)}</span><span class="cdw"></span></button>`;
+      `<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(kb.trinket, true)}</span><span class="cdw"></span></button>`;
     box.querySelectorAll('.skill[data-i]').forEach(b => {
       b.onclick = () => {
         if (!MOBILE.enabled) tryPlayerSkill(+b.dataset.i);
