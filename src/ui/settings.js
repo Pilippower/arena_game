@@ -16,7 +16,9 @@ function renderBindGrid() {
   const cls = bindClass(),
     kb = keybindsFor(cls),
     // une ligne par sort de la classe (7 emplacements pour les réglages communs : le druide a 7 sorts)
-    names = kb.skills.slice(0, cls ? CLASS[cls].skills.length : undefined).map((_, i) => (cls && CLASS[cls].skills[i]?.n) || `Spell ${i + 1}`),
+    names = kb.skills
+      .slice(0, cls ? CLASS[cls].skills.length : undefined)
+      .map((_, i) => (cls && CLASS[cls].skills[i]?.n) || `Spell ${i + 1}`),
     btn = (type, i, code) =>
       `<button class="bindBtn ${captureBind?.type === type && captureBind.i === i ? 'capturing' : ''}${code ? '' : ' unset'}" data-bind="${type}" data-i="${i}">${captureBind?.type === type && captureBind.i === i ? 'Press a key…' : code ? keyLabel(code) : 'Unset'}</button>`;
   const MOVES = [
@@ -419,8 +421,7 @@ function chooseClass() {
       localStorage.setItem('arenaLastPick', JSON.stringify({ race: selectedRace, cls: selectedClass }));
     } catch (_) {}
     LOBBY_CHIPS();
-    if (window.NET?.role === 'guest') netLobbyChoice(selectedRace, selectedClass);
-    else NET_CHOICE = { race: selectedRace, cls: selectedClass };
+    if (typeof netLobbyChoice === 'function') netLobbyChoice(selectedRace, selectedClass); // vu par le groupe
   };
   LOBBY_CHIPS = () => ($('lobbyChips').innerHTML = lobbyChipsHTML(selectedRace, selectedClass));
   raceBox.querySelectorAll('button').forEach(
@@ -457,7 +458,7 @@ function chooseClass() {
         } catch (_) {}
         sizeRefresh();
         LOBBY_CHIPS();
-        if (typeof netRenderGuests === 'function') netRenderGuests();
+        if (typeof netPartySync === 'function') netPartySync(); // groupe en ligne : nouveau nombre de places
       })
   );
   sizeRefresh();
@@ -476,7 +477,7 @@ function chooseClass() {
     // en ligne (hôte) : le mode du lobby, amis placés avec / contre lui, IA pour les places libres
     const online = window.NET?.role === 'host' ? netOnlineTeams() : null;
     if (window.NET?.role === 'host' && !online) {
-      $('netPanel').style.display = 'flex';
+      lobbyTab('party');
       return netStatus('Waiting for your friends to join and pick a class…');
     }
     state = {

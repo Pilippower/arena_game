@@ -486,9 +486,9 @@ body.mobile-mode .torchFire {
   background: linear-gradient(180deg, transparent, #e3bf68, transparent);
 }
 /* mobile : ligne compacte, sinon elle débordait des deux côtés sur un petit téléphone (667 px : étiquette Mode et
-   bouton Online coupés, revue mobile du 04/11/2026) */
+   fin de ligne coupés, revue mobile du 04/11/2026) */
 body.mobile-mode #overlay .lobbyOpts {
-  flex-wrap: wrap; /* très petit écran (568 px) : Online passe à la ligne plutôt que de sortir du cadre */
+  flex-wrap: wrap; /* très petit écran (568 px) : passage à la ligne plutôt que de sortir du cadre */
   gap: 4px;
 }
 body.mobile-mode #overlay .lobbyOpts .diffs {
@@ -561,7 +561,8 @@ body.mobile-mode #overlay .optSep {
 #overlay .diffs button:hover {
   border-color: #e9c46a !important;
 }
-#overlay .diffs button.selected {
+#overlay .diffs button.selected,
+#overlay .lobbyTabs button.selected {
   color: #ffd56a !important;
   border-color: #ffd36a !important;
   box-shadow:
@@ -745,4 +746,111 @@ body.lobby:not(.mobile-mode) .pickRight {
 }
 #overlay .mapCard.selected::after {
   bottom: -6px;
+}
+/* onglets Arena / Party et vue du groupe en ligne (ui/party.js) : la vue Party remplace les choix du lobby */
+#overlay .lobbyTabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+#overlay .lobbyTabs button {
+  min-width: clamp(84px, 9vw, 140px);
+}
+#overlay .partyView {
+  display: none;
+  max-width: 760px;
+  margin: 0 auto;
+}
+#overlay .modal.partyMode .partyView {
+  display: block;
+}
+#overlay .modal.partyMode .lobbyOpts,
+#overlay .modal.partyMode .pickerLayout {
+  display: none;
+}
+#overlay .partyView .pRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0;
+}
+#overlay .partyView input {
+  width: 200px;
+  padding: 7px;
+  font-size: 15px;
+  text-align: center;
+  color: #fff;
+  background: #0a0f26;
+  border: 2px solid #b8893c;
+  border-radius: 8px;
+}
+#overlay .partyView #partyCode {
+  width: 130px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+#overlay .partyHint {
+  margin: 6px 0;
+  text-align: center;
+  font-size: 13px;
+  color: #dfe5ff;
+}
+#overlay .partyCode {
+  font-size: 15px;
+  color: #f3ead2;
+}
+#overlay .partyCode b {
+  font-size: 26px;
+  letter-spacing: 0.18em;
+  color: #ffd56a;
+}
+#overlay .partyTeams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 10px 0;
+}
+#overlay .partyTeam h3 {
+  margin: 0 0 6px;
+  text-align: center;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 15px;
+  color: #ffd56a;
+}
+#overlay .partyTeam.foe h3 {
+  color: #ff8a7a;
+}
+#overlay .pmember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  padding: 6px 10px;
+  border: 1px solid #c99a4a;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #1d2740, #121a2b);
+}
+#overlay .pmember.me {
+  box-shadow: 0 0 8px #f5c25a88;
+}
+#overlay .pmember.ai {
+  opacity: 0.55;
+  border-style: dashed;
+}
+#overlay .pmName {
+  flex: 1;
+  font-weight: 700;
+  color: #f3ead2;
+}
+#overlay .pmClass {
+  font-size: 12px;
+  color: #cfd6ee;
+}
+#overlay .pmember button {
+  min-width: 0;
+  padding: 2px 8px;
+  font-size: 12px;
 }

@@ -1,14 +1,15 @@
 'use strict';
 // Jeu en ligne entre amis (1v1, 2v2, 3v3 : le mode du lobby) — connexion directe entre navigateurs (WebRTC via
 // PeerJS, chargé seulement quand on clique « Online » ; le service public PeerJS ne sert qu'à se trouver).
-// L'hôte reçoit plusieurs amis (une connexion chacun) et place chacun dans son équipe ou en face (salon « Online ») ;
-// les places libres sont jouées par l'IA.
+// L'hôte reçoit plusieurs amis (une connexion chacun) et place chacun dans son équipe ou en face (onglet « Party » du
+// lobby, ui/party.js) ; les places libres sont jouées par l'IA. Le groupe reste formé entre les matchs (retour au lobby
+// pour tous, code de l'hôte gardé dans le navigateur) jusqu'à « Leave party » / « Disband party ».
 // L'hôte fait autorité : il simule la partie (dégâts, sorts, contrôles, manches) et envoie l'état 20 fois/s.
 // L'invité se déplace en local avec les mêmes contrôles (pas de latence) et envoie sa position ; ses sorts, sa cible
 // et son trinket partent chez l'hôte, qui lui renvoie les mêmes messages d'erreur que hors ligne (unitError). Pendant un déplacement imposé par l'hôte (ruée, blink, peur, étourdissement,
 // mouton) ou en cas d'écart > 3 m, l'invité reprend la position de l'hôte.
 // Points d'accroche : update() (sim.js), resetRound / tryPlayerSkill / useTrinket (combat.js), setTarget (rules.js),
-// showResults (match.js), bouton Play du lobby (settings.js).
+// showResults / leaveMatch (match.js), bouton Play et choix de classe du lobby (settings.js), onglet Party (ui/party.js).
 var NET = {
   // var : visible comme window.NET par les points d'accroche
   role: null, // 'host' | 'guest' | null
@@ -16,6 +17,7 @@ var NET = {
   conn: null, // invité : la connexion à l'hôte
   code: '',
   guests: new Map(), // hôte : id → { id, conn, name, cls, race, team: 'ally' | 'enemy', input, ready }
+  party: null, // invité : le groupe vu de chez lui (message « party » de l'hôte)
   gid: 0,
   events: [],
   sendT: 0,
@@ -35,13 +37,21 @@ function netSendTo(g, m) {
   if (g?.conn?.open) g.conn.send(m);
 }
 const netGuestOf = u => (u?.remoteId != null ? NET.guests.get(u.remoteId) : null);
-let NET_NAME = (() => {
+// code de son groupe (hôte) et dernier code rejoint (invité), gardés dans le navigateur : pas de nouveau code à donner
+const netStored = k => {
   try {
-    return localStorage.getItem('arenaNetName') || '';
+    return localStorage.getItem(k) || '';
   } catch (_) {
     return '';
   }
-})();
+};
+const netStore = (k, v) => {
+  try {
+    if (v) localStorage.setItem(k, v);
+    else localStorage.removeItem(k);
+  } catch (_) {}
+};
+let NET_NAME = netStored('arenaNetName');
 function netStatus(t) {
   const el = $('netStatus');
   if (el) el.textContent = t;
@@ -67,10 +77,9 @@ function netClose(msg) {
     NET.peer?.destroy();
   } catch (_) {}
   NET.guests.clear();
-  Object.assign(NET, { role: null, peer: null, conn: null, snap: null, events: [] });
+  Object.assign(NET, { role: null, peer: null, conn: null, snap: null, events: [], party: null });
   netStatus(msg || 'Offline');
   netLobbyButtons();
-  netRenderGuests();
 }
 // ---------- salon de l'hôte : amis connectés, avec moi / contre moi ----------
 const NET_MAX = 5; // 3v3 : 2 alliés + 3 adversaires
@@ -85,36 +94,40 @@ function netSlots() {
     enemyMax: size
   };
 }
-function netRenderGuests() {
-  const box = $('netGuests');
-  if (!box) return;
-  if (NET.role !== 'host') return (box.innerHTML = '');
-  const S = netSlots(),
-    gs = [...NET.guests.values()];
-  box.innerHTML =
-    `<div class="netMode">Mode ${S.size}v${S.size} · with you ${S.ally}/${S.allyMax} · against you ${S.enemy}/${S.enemyMax} · empty slots: AI</div>` +
-    (gs.length
-      ? gs
-          .map(
-            g =>
-              `<div class="netGuest"><b>${g.name}</b><span>${g.cls ? `${RACE[g.race]?.name || ''} ${CLASS[g.cls].name}` : 'choosing…'}</span><button data-g="${g.id}" data-t="ally" class="${g.team === 'ally' ? 'selected' : ''}">With me</button><button data-g="${g.id}" data-t="enemy" class="${g.team === 'enemy' ? 'selected' : ''}">Against me</button></div>`
-          )
-          .join('')
-      : '<div class="netHint">No friend connected yet.</div>');
-  box.querySelectorAll('[data-g]').forEach(
-    b =>
-      (b.onclick = () => {
-        const g = NET.guests.get(+b.dataset.g),
-          S2 = netSlots();
-        if (!g || g.team === b.dataset.t) return;
-        if (b.dataset.t === 'ally' ? S2.ally >= S2.allyMax : S2.enemy >= S2.enemyMax)
-          return netStatus(
-            `No free slot ${b.dataset.t === 'ally' ? 'in your team' : 'in the enemy team'} in ${S2.size}v${S2.size}.`
-          );
-        g.team = b.dataset.t;
-        netRenderGuests();
-      })
-  );
+// Membres du groupe vus de l'hôte (hôte d'abord) : 'ally' = avec l'hôte, 'enemy' = contre lui.
+function netPartyMembers() {
+  return [
+    { id: 0, name: NET_NAME || 'Host', race: NET_CHOICE.race, cls: NET_CHOICE.cls, team: 'ally', host: true },
+    ...[...NET.guests.values()].map(g => ({ id: g.id, name: g.name, race: g.race, cls: g.cls, team: g.team }))
+  ];
+}
+// hôte : le groupe envoyé à chaque ami (mêmes équipes chez tous), puis affiché
+function netPartySync() {
+  if (NET.role === 'host')
+    for (const g of NET.guests.values())
+      netSendTo(g, { t: 'party', code: NET.code, size: TEAM_SIZE, me: g.id, members: netPartyMembers() });
+  partyRender();
+}
+// hôte : change un ami de côté ; refusé si l'équipe visée est pleine dans le mode du lobby
+function netMoveGuest(id, team) {
+  const g = NET.guests.get(id),
+    S = netSlots();
+  if (!g || g.team === team) return false;
+  if (team === 'ally' ? S.ally >= S.allyMax : S.enemy >= S.enemyMax) {
+    netStatus(`No free slot ${team === 'ally' ? 'in your team' : 'in the enemy team'} in ${S.size}v${S.size}.`);
+    return false;
+  }
+  g.team = team;
+  netPartySync();
+  return true;
+}
+// hôte : retire un ami du groupe (il est prévenu, puis la connexion est fermée)
+function netKick(id) {
+  const g = NET.guests.get(id);
+  if (!g) return;
+  netSendTo(g, { t: 'kicked' });
+  netGuestLeft(g);
+  setTimeout(() => g.conn?.close(), 300);
 }
 function netGuestJoined(c) {
   if (NET.guests.size >= NET_MAX) return c.close();
@@ -131,28 +144,35 @@ function netGuestJoined(c) {
   NET.guests.set(g.id, g);
   c.on('data', m => netOnData(m, g));
   c.on('close', () => netGuestLeft(g));
-  netRenderGuests();
+  netPartySync();
 }
-function netGuestLeft(g) {
-  if (!NET.guests.delete(g.id)) return;
+// personnage d'un ami parti (du groupe ou seulement du match) : l'IA le joue, la partie continue
+function netUnitToAI(g, why) {
   if (state?.units)
     for (const u of state.units)
       if (u.remoteId === g.id) {
-        // son personnage passe à l'IA, la partie continue
         u.remote = false;
         u.remoteId = null;
         u.ai = true;
         u.aiP = u.aiP || AI_PROFILES.medium;
-        showError?.(`${g.name} left — an AI takes over`);
+        showError?.(why);
       }
-  netStatus(`${g.name} left.`);
-  netRenderGuests();
+}
+function netGuestLeft(g) {
+  if (!NET.guests.delete(g.id)) return;
+  netUnitToAI(g, `${g.name} left — an AI takes over`);
+  netStatus(`${g.name} left the party.`);
+  netPartySync();
+}
+// Sortie d'un match en ligne (Back to lobby, Leave) : le groupe reste formé. L'hôte ramène tout le monde au lobby ;
+// l'ami qui s'en va laisse son personnage à l'IA.
+function netLeaveMatch() {
+  netSend({ t: NET.role === 'host' ? 'lobby' : 'leftMatch' });
 }
 function netLobbyButtons() {
-  const b = $('onlineBtn');
-  if (b) b.classList.toggle('selected', !!NET.role);
   const play = $('playBtn');
   if (play && NET.role === 'guest') play.disabled = true;
+  partyRender();
 }
 // ---------- lobby ----------
 async function netHost() {
@@ -162,17 +182,21 @@ async function netHost() {
   } catch (e) {
     return netStatus('Online play unavailable (no connection to the PeerJS service).');
   }
-  NET.code = netCode();
+  NET.code = netStored('arenaNetCode') || netCode();
   NET.role = 'host';
   NET.peer = new Peer(NET_PREFIX + NET.code);
   NET.peer.on('open', () => {
-    $('netCode').textContent = NET.code;
-    netStatus('Share this code with your friends, place each one with you or against you, then press Play.');
+    netStore('arenaNetCode', NET.code);
+    netStatus('Share this code with your friends (it stays the same next time), place each one, then press Start.');
+    netPartySync();
   });
-  NET.peer.on('error', e => netStatus('Error: ' + (e.type || e.message)));
+  NET.peer.on('error', e => {
+    // code encore pris (ancienne page restée ouverte) : nouveau code
+    if (e.type === 'unavailable-id') return (netStore('arenaNetCode', ''), netHost());
+    netStatus('Error: ' + (e.type || e.message));
+  });
   NET.peer.on('connection', netGuestJoined);
   netLobbyButtons();
-  netRenderGuests();
 }
 async function netJoin(code) {
   code = (code || '').trim().toUpperCase();
@@ -191,7 +215,8 @@ async function netJoin(code) {
   NET.peer.on('open', () => {
     const c = (NET.conn = NET.peer.connect(NET_PREFIX + code, { reliable: true }));
     c.on('open', () => {
-      netStatus('Connected! Pick your race and class — the host starts the match.');
+      netStore('arenaNetJoin', code);
+      netStatus('Connected! Pick your race and class in the Arena tab — the host starts the match.');
       netLobbyChoice();
     });
     c.on('data', netOnData);
@@ -204,7 +229,14 @@ let NET_CHOICE = { race: null, cls: null };
 function netLobbyChoice(race, cls) {
   if (race !== undefined) NET_CHOICE = { race, cls };
   if (NET.role === 'guest') netSend({ t: 'hello', race: NET_CHOICE.race, cls: NET_CHOICE.cls, name: NET_NAME });
+  if (NET.role === 'host') netPartySync(); // les amis voient la classe de l'hôte
   netLobbyButtons();
+}
+// nom affiché aux amis, gardé dans le navigateur
+function netSetName(name) {
+  NET_NAME = (name || '').trim().slice(0, 16);
+  netStore('arenaNetName', NET_NAME);
+  netLobbyChoice();
 }
 function netLost(msg) {
   const wasGuestInGame = NET.role === 'guest' && state?.units;
@@ -227,9 +259,10 @@ function netOnData(m, g) {
           ? `${g.name} is ready: ${RACE[g.race].name} ${CLASS[g.cls].name}.`
           : `${g.name} joined — choosing a class…`
       );
-      netRenderGuests();
+      netPartySync();
       return;
     }
+    if (m.t === 'leftMatch') return netUnitToAI(g, `${g.name} left the match — an AI takes over`);
     const u = state?.units?.find(v => v.remoteId === g.id);
     if (!u) return;
     if (m.t === 'ready') g.ready = m.round;
@@ -248,6 +281,10 @@ function netOnData(m, g) {
   }
   // invité
   if (m.t === 'roster') netGuestBuild(m);
+  else if (m.t === 'party') ((NET.party = m), partyRender());
+  else if (m.t === 'lobby')
+    state?.units && leaveMatch(); // l'hôte est revenu au lobby : tout le groupe aussi
+  else if (m.t === 'kicked') netLost('You were removed from the party.');
   else if (m.t === 's') NET.snap = m;
   else if (m.t === 'err') showError(m.text);
   else if (m.t === 'results' && state?.units) {
@@ -274,7 +311,6 @@ function netOnlineTeams() {
 // chaque ami reçoit la composition vue de chez lui (son personnage = « You »)
 function netSendRoster() {
   if (NET.role !== 'host' || !state?.units) return;
-  $('netPanel').style.display = 'none';
   for (const g of NET.guests.values()) {
     g.ready = 0;
     netSendTo(g, {
@@ -411,7 +447,6 @@ function netGuestBuild(m) {
   NET.snap = null;
   NET.lastEnded = false;
   hideResults();
-  $('netPanel').style.display = 'none';
   $('overlay').style.display = 'none';
   camera.yaw = state.player.team ? -Math.PI / 2 : Math.PI / 2;
   camera.pitch = 0.2;
@@ -581,20 +616,3 @@ for (const k of Object.keys(SFX)) {
     return f(...a);
   };
 }
-// ---------- panneau « Online » du lobby ----------
-$('onlineBtn').onclick = () => ($('netPanel').style.display = 'flex');
-$('netClose').onclick = () => ($('netPanel').style.display = 'none');
-$('netHostBtn').onclick = () => netHost();
-$('netJoinBtn').onclick = () => netJoin($('netJoinCode').value);
-$('netName').value = NET_NAME;
-$('netName').onchange = () => {
-  NET_NAME = $('netName').value.trim().slice(0, 16);
-  try {
-    localStorage.setItem('arenaNetName', NET_NAME);
-  } catch (_) {}
-  if (NET.role === 'guest') netLobbyChoice();
-};
-$('netLeaveBtn').onclick = () => {
-  netClose('Offline');
-  $('netCode').textContent = '—';
-};

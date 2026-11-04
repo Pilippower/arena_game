@@ -498,9 +498,10 @@ assert.ok(
     /NET\?\.role === 'guest'\) return \(?netSend\(\{ t: 'skill', i \}\)/,
     'invité : sorts envoyés à l’hôte'
   );
+  // jeu en ligne : onglet Party du lobby (plus de fenêtre Online) ; comportement : tests/online.test.js
   assert.ok(
-    read('index.html').includes('id="onlineBtn"') && read('index.html').includes('id="netPanel"'),
-    'lobby : bouton Online'
+    read('index.html').includes('id="tabParty"') && !read('index.html').includes('netPanel'),
+    'lobby : onglet Party'
   );
 }
 {
@@ -586,11 +587,6 @@ assert.ok(
   'glaives du voleur, frappe fluide du chevalier'
 );
 {
-  const on = read('src/net/online.js');
-  assert.ok(
-    on.includes('guests: new Map()') && on.includes('function netRenderGuests') && on.includes('With me'),
-    'en ligne : plusieurs amis, avec / contre'
-  );
   assert.ok(read('src/game/combat.js').includes('function netTeamsFor'), 'en ligne : IA pour les places libres');
   assert.ok(!read('src/ui/settings.js').includes('size: online ? 1'), 'en ligne : mode du lobby respecté');
 }

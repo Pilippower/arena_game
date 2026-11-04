@@ -21,6 +21,12 @@ function loadingProgress(k, text) {
   LOADING.el.querySelector('.ldBar i').style.width = `${Math.round(Math.min(1, k) * 100)}%`;
   if (text) LOADING.el.querySelector('.ldText').textContent = text;
 }
+// match quitté pendant sa préparation (retour au lobby ; en ligne, l'hôte qui revient au lobby pendant que l'ami charge
+// encore) : préparation abandonnée et écran retiré, sinon il restait affiché par-dessus le lobby (04/11/2026)
+function loadingCancel() {
+  LOADING.token++;
+  loadingHide();
+}
 function loadingHide() {
   if (LOADING.el) LOADING.el.style.display = 'none';
   LOADING.shown = false;

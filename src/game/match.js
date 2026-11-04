@@ -117,7 +117,8 @@ function backToLobby() {
 }
 // Sortie du match : retour au lobby (sa musique) et partie réellement arrêtée (plus de simulation ni de sons).
 function leaveMatch() {
-  if (window.NET?.role && state?.units) netClose('Offline');
+  if (window.NET?.role && state?.units) netLeaveMatch(); // le groupe en ligne reste formé
+  loadingCancel();
   hideResults();
   $('leaveConfirm').style.display = 'none';
   chooseClass(); // relit la race et la classe de la partie pour les présélectionner
