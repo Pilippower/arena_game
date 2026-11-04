@@ -86,6 +86,20 @@ async function run() {
       });
       assert.ok(fit.lobby, 'body.lobby pendant la sélection');
       assert.ok(fit.scroll <= 1, `lobby : défilement inattendu (${fit.scroll}px)`);
+      // onglet Multiplayer (groupe simulé, sans réseau) : chaque réglage tient dans son bouton (bug du 04/11/2026 :
+      // « Medium » sortait de son cadre)
+      const overflow = await page.evaluate(() => {
+        NET.role = 'host';
+        NET.code = 'TEST01';
+        lobbyTab('party');
+        const out = [...document.querySelectorAll('#partyBox .pOpt')]
+          .filter(b => b.scrollWidth > b.clientWidth + 1)
+          .map(b => b.textContent);
+        NET.role = null;
+        lobbyTab('solo');
+        return out;
+      });
+      assert.deepEqual(overflow, [], 'Multiplayer : texte qui déborde de son bouton');
       await page.click('#raceChoices button[data-r="orc"]');
       await page.click('#classChoices button[data-c="arcanist"]');
       assert.ok(await page.locator('#playBtn').isEnabled(), 'Jouer doit être actif après sélection');

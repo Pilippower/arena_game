@@ -875,7 +875,10 @@ body.lobby:not(.mobile-mode) .pickRight {
   text-transform: uppercase;
   color: #e9c46a;
 }
+/* largeur selon le texte (la règle .diffs button d'index.html partage la place à parts égales : « Medium »
+   débordait) */
 #overlay .pOpt {
+  flex: none;
   min-width: 0;
   padding: 5px 13px;
 }
