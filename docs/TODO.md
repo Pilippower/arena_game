@@ -5,25 +5,13 @@ validé dans `docs/SPEC.md`.
 
 ## Liste du 04/11/2026 (priorité, dans cet ordre : du plus simple au plus compliqué, un commit par tâche)
 
-2. Retirer de la barre du haut en jeu « Arena Ascendant — 1v1 to 3v3 · WebGL… ».
-3. Renommer en jeu « Change class » en « Return to Lobby ».
-4. Retirer le bouton « Change class » du lobby.
-5. Échap ouvre / ferme les Settings.
 6. Augmenter le volume des sons des sorts.
-7. Débuffs flottants (à droite de la barre de vie) : icônes des contrôles (CC) 30 % plus grandes que les autres
-   débuffs (demandé deux fois : la tâche précédente n'était pas allée au bout).
 8. Voleur : Backstab ralentit la cible de 60 % pendant 6 s.
 9. Voleur : Shadowstep téléporte dans le dos de la cible, portée 20 m, utilisable aussi camouflé.
 10. Les racines (roots) ne cassent plus quand la cible subit des dégâts.
 11. Démoniste : Corruption vole la vie (chaque dégât infligé est rendu au démoniste).
 12. Bug : un lanceur qui saute peut commencer une incantation (ne doit pas pouvoir).
 13. Bug : Blink pendant un saut (le mage reste sur place au lieu d'arriver au sol à destination).
-14. Mobile : icônes en haut à droite (son, settings…) pas centrées dans leur carré ; reprendre les icônes du PC.
-15. Ciblage : boîte invisible de la barre flottante (incluse) jusqu'au sol, un clic entre la barre et le personnage
-    le sélectionne.
-16. Lobby : pour le druide, choisir la forme ours / félin pour voir et lire leur barre de sorts.
-17. Raccourcis : pouvoir utiliser Shift + Espace et Ctrl + touche.
-18. Raccourcis propres à chaque classe (autant de configurations que de classes).
 20. Bouclier d'absorption visible sur la barre de vie (flottante et cadres de groupe) : portion superposée, couleur
     distincte, style MMO sans copier.
 21. Régression des glaives du voleur : il frappait en tranchant avec ses glaives, il frappe de nouveau comme des coups de

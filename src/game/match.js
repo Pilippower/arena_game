@@ -34,7 +34,7 @@ function endRound(win) {
   else SFX.defeat();
   const match = state;
   setTimeout(() => {
-    if (state !== match) return; // match quitté entre-temps (Change class)
+    if (state !== match) return; // match quitté entre-temps (Return to Lobby)
     if (state.round >= MATCH_ROUNDS) showResults();
     else resetRound();
   }, 1500);
@@ -123,7 +123,7 @@ function leaveMatch() {
   chooseClass(); // relit la race et la classe de la partie pour les présélectionner
   state = null;
 }
-// « Change class » pendant un match : on demande d'abord si l'on veut vraiment le quitter.
+// « Return to Lobby » pendant un match : on demande d'abord si l'on veut vraiment le quitter.
 function requestChangeClass() {
   if (!state?.units || $('overlay').style.display !== 'none') chooseClass();
   else $('leaveConfirm').style.display = 'flex';

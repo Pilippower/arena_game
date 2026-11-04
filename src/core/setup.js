@@ -35,6 +35,9 @@ const DEFAULT_PREFS = {
     // tourner à gauche / à droite au clavier : non réglé par défaut (« Unset »)
     move: { forward: 'KeyW', back: 'KeyS', left: 'KeyA', right: 'KeyD', turnLeft: '', turnRight: '' }
   },
+  // raccourcis propres à chaque classe (classe → même forme que keybinds), créés à la première modification ;
+  // une classe jamais réglée suit `keybinds` (réglages d'avant le 04/11/2026 = valeur de départ de chaque classe)
+  classKeybinds: {},
   ui: {}
 };
 function cloneDefaults() {
@@ -47,32 +50,50 @@ function loadPrefs() {
     if (!raw) return d;
     const v = JSON.parse(raw);
     if (Number.isFinite(v.volume)) d.volume = clamp(v.volume, 0, 2.0);
-    // anciens réglages par défaut (1–6) : remplacés par les nouveaux ; réglages personnalisés gardés et complétés
-    const old = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6'];
-    const sk = v.keybinds?.skills,
-      custom = Array.isArray(sk) && sk.length >= 5 && !old.every((c, i) => sk[i] === c || (i === 5 && sk.length === 5));
-    if (v.keybinds?.move && typeof v.keybinds.move === 'object')
-      for (const k of Object.keys(d.keybinds.move))
-        if (typeof v.keybinds.move[k] === 'string') d.keybinds.move[k] = v.keybinds.move[k];
-    if (typeof v.keybinds?.trinket === 'string') d.keybinds.trinket = v.keybinds.trinket;
-    // une touche ne commande jamais deux choses : une case sans touche valide (ou en double) prend sa touche par
-    // défaut si elle est libre, sinon la première libre (bug : la 7e case du druide héritait du « 5 » déjà pris) ;
-    // une case laissée « Unset » (touche reprise par une autre action dans Settings) le reste
-    const used = new Set([...Object.values(d.keybinds.move), d.keybinds.trinket].filter(Boolean)),
-      spare = ['Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'KeyF', 'KeyG', 'KeyT', 'KeyV', 'KeyC', 'KeyX'];
-    d.keybinds.skills = d.keybinds.skills.map((def, i) => {
-      if (custom && sk[i] === '') return '';
-      const c = [custom && sk[i], def, ...spare].find(k => typeof k === 'string' && k && !used.has(k));
-      used.add(c);
-      return c;
-    });
+    d.keybinds = normalizeKeybinds(v.keybinds);
+    if (v.classKeybinds && typeof v.classKeybinds === 'object')
+      for (const cls of Object.keys(v.classKeybinds))
+        if (/^[a-z]+$/.test(cls)) d.classKeybinds[cls] = normalizeKeybinds(v.classKeybinds[cls]);
     if (v.ui && typeof v.ui === 'object') d.ui = v.ui;
     if (typeof v.musicOn === 'boolean') d.musicOn = v.musicOn;
     if (typeof v.cameraReturn === 'boolean') d.cameraReturn = v.cameraReturn;
   } catch (_) {}
   return d;
 }
+// Raccourcis enregistrés (une classe ou les réglages communs) remis d'aplomb : touches manquantes complétées.
+function normalizeKeybinds(raw) {
+  const d = cloneDefaults().keybinds;
+  // anciens réglages par défaut (1–6) : remplacés par les nouveaux ; réglages personnalisés gardés et complétés
+  const old = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6'];
+  const sk = raw?.skills,
+    custom = Array.isArray(sk) && sk.length >= 5 && !old.every((c, i) => sk[i] === c || (i === 5 && sk.length === 5));
+  if (raw?.move && typeof raw.move === 'object')
+    for (const k of Object.keys(d.move)) if (typeof raw.move[k] === 'string') d.move[k] = raw.move[k];
+  if (typeof raw?.trinket === 'string') d.trinket = raw.trinket;
+  // une touche ne commande jamais deux choses : une case sans touche valide (ou en double) prend sa touche par
+  // défaut si elle est libre, sinon la première libre (bug : la 7e case du druide héritait du « 5 » déjà pris) ;
+  // une case laissée « Unset » (touche reprise par une autre action dans Settings) le reste
+  const used = new Set([...Object.values(d.move), d.trinket].filter(Boolean)),
+    spare = ['Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'KeyF', 'KeyG', 'KeyT', 'KeyV', 'KeyC', 'KeyX'];
+  d.skills = d.skills.map((def, i) => {
+    if (custom && sk[i] === '') return '';
+    const c = [custom && sk[i], def, ...spare].find(k => typeof k === 'string' && k && !used.has(k));
+    used.add(c);
+    return c;
+  });
+  return d;
+}
 let PREFS = loadPrefs();
+// Raccourcis d'une classe (lecture) : les siens s'ils ont été réglés, sinon les réglages communs.
+function keybindsFor(cls) {
+  return (cls && PREFS.classKeybinds[cls]) || PREFS.keybinds;
+}
+// Raccourcis d'une classe à modifier : créés à partir des réglages communs à la première modification (sans classe
+// choisie, on modifie les réglages communs, suivis par toutes les classes jamais réglées).
+function editableKeybinds(cls) {
+  if (!cls) return PREFS.keybinds;
+  return (PREFS.classKeybinds[cls] ||= JSON.parse(JSON.stringify(PREFS.keybinds)));
+}
 function savePrefs() {
   try {
     localStorage.setItem(PREF_KEY, JSON.stringify(PREFS));
@@ -117,10 +138,11 @@ function keyLabel(code, short = false) {
     if (short) return parts.map(m => ({ Shift: '⇧', Ctrl: '^', Alt: 'Alt' })[m] || m).join('') + key;
     return [...parts, key].join(' + ');
   }
+  if (short && code === 'Space') return 'Spc'; // case de sort étroite (« ⇧Spc »)
   const lay = KEY_LAYOUT?.get?.(code);
   if (lay && /^Key[A-Z]$/.test(code)) return lay.toUpperCase(); // chiffres : toujours 1, 2, 3…
   const m = {
-    Space: 'Espace',
+    Space: 'Space',
     Tab: 'TAB',
     Escape: 'Esc',
     ShiftLeft: 'Shift G',
@@ -145,8 +167,24 @@ function keyLabel(code, short = false) {
   if (/^F\d+$/.test(code)) return code;
   return code.replace(/^Numpad/, 'Num ');
 }
-// touches non attribuables (les déplacements sont vérifiés à part : ils sont eux aussi réglables)
+// touches non attribuables seules (Espace = saut, TAB = cible, flèches = déplacement ; les déplacements réglables sont
+// vérifiés à part) ; avec Shift / Ctrl / Alt elles deviennent libres (Shift + Espace…), sauf Échap (Settings)
 const RESERVED_BIND_CODES = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Tab', 'Escape']);
+// combinaisons gardées par le navigateur ou le système (fermer / ouvrir un onglet ou une fenêtre, changer d'onglet) :
+// la page ne les reçoit jamais, le sort ne partirait pas
+const BROWSER_BIND_CODES = new Set(
+  ['Ctrl+KeyW', 'Ctrl+KeyT', 'Ctrl+KeyN', 'Ctrl+Tab', 'Ctrl+F4', 'Alt+Tab', 'Alt+F4'].flatMap(c => [
+    c,
+    c.replace(/^(Ctrl|Alt)\+/, '$1+Shift+')
+  ])
+);
+// raison du refus d'un raccourci de sort ou de trinket ('' = accepté)
+function bindRefusal(code) {
+  const key = code.split('+').pop();
+  if (key === 'Escape' || (code === key && RESERVED_BIND_CODES.has(key))) return 'is reserved for movement/gameplay';
+  if (BROWSER_BIND_CODES.has(code)) return 'is used by the browser';
+  return '';
+}
 const gl =
   canvas.getContext('webgl', { antialias: true, alpha: true, premultipliedAlpha: true }) ||
   canvas.getContext('experimental-webgl');

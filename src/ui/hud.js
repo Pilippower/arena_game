@@ -38,12 +38,13 @@ function buffList(u) {
   if (u.form) b.push({ n: u.form === 'cat' ? 'Cat Form' : 'Bear Form' });
   return b;
 }
-// Débuffs : effets posés par les adversaires, avec le sort qui les a posés (debuffSpell, noté par le combat).
+// Débuffs : effets posés par les adversaires, avec le sort qui les a posés (debuffSpell, noté par le combat) ;
+// les contrôles (CC_ORDER) sont marqués `cc` : icône 30 % plus grande au-dessus des personnages.
 const DEBUFF_KEYS = ['poly', 'stun', 'fear', 'silence', 'root', 'slow'];
 function debuffList(u) {
   const src = u.debuffSpell || {},
     b = [];
-  for (const k of DEBUFF_KEYS) if (u[k] > 0 && src[k]) b.push({ n: src[k], t: u[k] });
+  for (const k of DEBUFF_KEYS) if (u[k] > 0 && src[k]) b.push({ n: src[k], t: u[k], cc: CC_ORDER.includes(k) });
   if (u.lockout?.until > now() && src.lockout) b.push({ n: src.lockout, t: u.lockout.until - now() });
   if (u.antiheal > 0.01 && src.antiheal) b.push({ n: src.antiheal, t: u.antiheal / 0.025 });
   for (const a of u.auras || []) if (a.kind !== 'hot') b.push({ n: a.n, t: a.rem });
@@ -69,7 +70,7 @@ function aurasHTML(b, cls) {
   return `<div class="${cls}">${b
     .map(
       x =>
-        `<span class="buff" title="${x.n}">${auraIcon(x.n)}${x.t != null ? `<b>${time(x.t)}</b>` : ''}${x.v != null ? `<i>${x.v}</i>` : ''}</span>`
+        `<span class="buff${x.cc ? ' cc' : ''}" title="${x.n}">${auraIcon(x.n)}${x.t != null ? `<b>${time(x.t)}</b>` : ''}${x.v != null ? `<i>${x.v}</i>` : ''}</span>`
     )
     .join('')}</div>`;
 }
@@ -165,7 +166,8 @@ function renderSkillBar(p) {
   const box = $('skills'),
     bar = skillsOf(p),
     order = slotOrder(p),
-    key = [p.cls, barKey(p), order, PREFS.keybinds.skills, PREFS.keybinds.trinket].join('|');
+    kb = keybindsFor(p.cls),
+    key = [p.cls, barKey(p), order, kb.skills, kb.trinket].join('|');
   if (box._key !== key) {
     box._key = key;
     box.classList.toggle('six', order.length > 5);
@@ -175,11 +177,11 @@ function renderSkillBar(p) {
           const s = bar[i];
           // emplacement vide d'une barre de forme : la touche reste affichée, aucun sort
           if (!s)
-            return `<button class="skill empty" data-slot="${slot}" tabindex="-1"><span class="key">${keyLabel(PREFS.keybinds.skills[slot], true)}</span></button>`;
-          return `<button class="skill" data-i="${i}" data-slot="${slot}"><span class="icon">${skillIconSVG(p.cls, i, s)}</span><span class="cdw"></span><span class="skillName">${s.n}</span><span class="cost">${s.c || ''}</span><span class="key">${keyLabel(PREFS.keybinds.skills[slot], true)}</span></button>`;
+            return `<button class="skill empty" data-slot="${slot}" tabindex="-1"><span class="key">${keyLabel(kb.skills[slot], true)}</span></button>`;
+          return `<button class="skill" data-i="${i}" data-slot="${slot}"><span class="icon">${skillIconSVG(p.cls, i, s)}</span><span class="cdw"></span><span class="skillName">${s.n}</span><span class="cost">${s.c || ''}</span><span class="key">${keyLabel(kb.skills[slot], true)}</span></button>`;
         })
         .join('') +
-      `<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(PREFS.keybinds.trinket, true)}</span><span class="cdw"></span></button>`;
+      `<button class="skill trinket" id="trinketBtn" title="Trinket PvP"><span class="icon">${trinketIconSVG()}</span><span class="skillName">Trinket</span><span class="key">${keyLabel(kb.trinket, true)}</span><span class="cdw"></span></button>`;
     box.querySelectorAll('.skill[data-i]').forEach(b => {
       b.onclick = () => {
         if (!MOBILE.enabled) tryPlayerSkill(+b.dataset.i);

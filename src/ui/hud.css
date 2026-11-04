@@ -513,6 +513,16 @@ body.mobile-mode:not(.lobby) #top {
   border-image: url(../../assets/ui/hud/top_bar.webp) 20 70 fill / 8px 26px round stretch !important;
   background: #2a1a10 !important;
 }
+/* boutons du haut : même cadre sombre et mêmes icônes que sur PC (les icônes ont un fond sombre carré, invisible
+   seulement sur ce cadre) ; icône centrée dans le carré (index.html) */
+body.mobile-mode:not(.lobby) #top button {
+  border: 0 !important;
+  border-image: url(../../assets/ui/hud/button.webp) 30 40 fill / 8px 10px stretch !important;
+  background: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  filter: drop-shadow(0 2px 3px #000a);
+}
 /* emplacement vide d'une barre de forme (druide, voleur camouflé) : la case et sa touche restent visibles */
 #skills .skill.empty {
   opacity: 0.4;

@@ -259,6 +259,26 @@ run('src/ui/hud.js');
     'Kidney Shot',
     'débuff : sort qui l’a posé, tant qu’il dure'
   );
+  // contrôles (étourdi, mouton / Sap, peur, silence, racines) : icône 30 % plus grande que les autres débuffs
+  const deb = ctx.aurasHTML(
+    ctx.debuffList({
+      stun: 2,
+      slow: 3,
+      root: 1,
+      debuffSpell: { stun: 'Kidney Shot', slow: 'Hamstring', root: 'Frost Nova' }
+    }),
+    'buffs debuffs'
+  );
+  assert.equal((deb.match(/class="buff cc"/g) || []).length, 2, 'étourdi et racines marqués CC');
+  assert.match(deb, /class="buff" title="Hamstring"/, 'ralentissement : taille normale');
+  const auraCss = read('index.html');
+  assert.ok(
+    auraCss.includes('.npAuras .buff{width:34px;height:34px}.npAuras .buff.cc{width:44px;height:44px}') &&
+      auraCss.includes(
+        'body.mobile-mode .npAuras .buff{width:26px;height:26px}body.mobile-mode .npAuras .buff.cc{width:34px;height:34px}'
+      ),
+    'CC : 44 px (34 × 1,3), mobile 34 px (26 × 1,3)'
+  );
   assert.ok(
     code('src/render/').includes("aurasHTML(debuffList(u), 'buffs debuffs')"),
     'auras au-dessus des personnages'
@@ -301,9 +321,30 @@ run('src/ui/hud.js');
   assert.ok(!hud.includes('class="tag"'), 'pas de bulles sur la barre du bas');
   assert.match(read('src/game/match.js'), /function leaveMatch[\s\S]*?state = null/, 'quitter arrête le match');
   assert.ok(read('index.html').includes('id="leaveConfirm"'), 'confirmation avant de quitter');
+  assert.match(
+    read('index.html'),
+    /id="restartBtn"><i class="ico shield"><\/i>Return to Lobby</,
+    'bouton « Return to Lobby »'
+  );
   assert.ok(
-    read('src/ui/lobby.css').replace(/\s+/g, ' ').includes('body.lobby #top .sub, body.lobby #status { display: none;'),
+    read('src/ui/lobby.css')
+      .replace(/\s+/g, ' ')
+      .includes('body.lobby #status, body.lobby #top #restartBtn { display: none;'),
     'lobby épuré'
+  );
+  // barre du haut en jeu : ni titre « Arena Ascendant » ni sous-titre « 1v1 to 3v3 · WebGL… » (le lobby garde le titre)
+  assert.ok(!read('index.html').includes('1v1 to 3v3 · WebGL'), 'pas de sous-titre du jeu');
+  assert.ok(read('index.html').includes('body:not(.lobby) #top h1{display:none}'), 'titre masqué en jeu');
+  // mobile : icônes de la panoplie PC (pas de glyphes ⚙ ♫ ↻), centrées dans le bouton
+  assert.ok(
+    !/#(settingsBtn|musicBtn|restartBtn):after/.test(read('index.html')),
+    'mobile : pas de glyphes à la place des icônes'
+  );
+  assert.ok(
+    read('index.html').includes(
+      'body.mobile-mode #top button{font-size:0;padding:0;min-width:34px;height:32px;display:inline-grid;place-items:center}'
+    ) && read('index.html').includes('body.mobile-mode #top button .ico{width:20px;height:20px;margin:0;'),
+    'mobile : icônes PC centrées'
   );
 }
 assert.match(
@@ -348,6 +389,38 @@ assert.match(
   /updateSelectPreview\(selectedRace, selectedClass\);\s*lobbySkillBar\(selectedClass\);/,
   'lobby : barre de sorts de la classe choisie'
 );
+// Lobby : onglets Normal / Cat / Bear (druide) pour lire les barres de forme
+{
+  const { sandbox } = require('./sources.js'),
+    els = { skills: {}, lobbyBars: { innerHTML: '', querySelectorAll: () => [] } },
+    shown = [];
+  const S = sandbox({
+    CLASS: ctx.CLASS,
+    barKey: ctx.barKey,
+    $: id => els[id],
+    renderSkillBar: u => shown.push(ctx.skillsOf(u)[0].n)
+  });
+  const src = read('src/ui/settings.js');
+  vm.runInContext('var LOBBY_UNIT = null; var ' + src.match(/const (LOBBY_BAR_LABEL = [\s\S]*?;)\n/)[1], S.ctx);
+  S.fn('src/ui/settings.js', 'lobbySkillBar');
+  S.fn('src/ui/settings.js', 'lobbyBarTabs');
+  const tabs = () => [...els.lobbyBars.innerHTML.matchAll(/<button data-bar="(\w*)"( class="selected")?>(\w+)/g)];
+  S.ctx.lobbySkillBar('warden');
+  assert.deepEqual(
+    tabs().map(m => m[3]),
+    ['Normal', 'Cat', 'Bear'],
+    'druide : onglets Normal / Cat / Bear'
+  );
+  S.ctx.lobbySkillBar('warden', 'bear');
+  assert.equal(shown.at(-1), 'Maul', 'onglet Bear : barre de l’ours');
+  assert.equal(tabs().find(m => m[2])[3], 'Bear', 'onglet choisi marqué');
+  S.ctx.lobbySkillBar('warden'); // choix d'une race : même classe, la barre de forme reste
+  assert.equal(shown.at(-1), 'Maul', 'forme gardée tant que la classe ne change pas');
+  S.ctx.lobbySkillBar('warden', 'cat');
+  assert.equal(shown.at(-1), 'Shred', 'onglet Cat : barre du félin');
+  S.ctx.lobbySkillBar('sentinel');
+  assert.equal(els.lobbyBars.innerHTML, '', 'classe sans forme : pas d’onglets');
+}
 // Lobby, 2e design : étiquettes de la panoplie, arènes illustrées, récapitulatif, grand PLAY
 {
   const fs = require('node:fs'),
@@ -467,7 +540,7 @@ assert.ok(
     'déplacements réglables, tourner à gauche / à droite non réglés par défaut'
   );
   assert.ok(
-    read('src/input/controls.js').includes('const mv = PREFS.keybinds.move'),
+    read('src/input/controls.js').includes('const mv = keybindsFor(state.player?.cls).move'),
     'déplacements selon les réglages'
   );
   assert.ok(read('src/ui/settings.js').includes("localStorage.setItem('arenaLastPick'"), 'race et classe mémorisées');
@@ -609,40 +682,7 @@ assert.ok(
     code('src/render/').includes('const STRIKE_T = 0.6 / raceStrike(u).speed;'),
   'DK : garde à deux mains devant lui et frappe calculée (pas de mélange avec le clip)'
 );
-// Raccourcis : jamais deux sorts sur la même touche, même avec d'anciens réglages à 6 cases (bug : druide, 2 sorts sur 5)
-{
-  const vm = require('node:vm'),
-    src = read('src/core/setup.js'),
-    pick = re => src.match(re)[0];
-  for (const stored of [
-    ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'KeyE'],
-    ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'KeyQ', 'Digit5'],
-    ['Digit1', 'Digit1', 'KeyW', 'Digit4', 'KeyQ', 'KeyE'],
-    ['', 'Digit2', 'Digit1', 'Digit4', 'KeyQ', 'KeyE', 'Digit5']
-  ]) {
-    const c = {
-      clamp: (v, a, b) => Math.min(b, Math.max(a, v)),
-      localStorage: { getItem: () => JSON.stringify({ keybinds: { skills: stored } }) }
-    };
-    vm.createContext(c);
-    vm.runInContext(
-      [
-        /const PREF_KEY[^\n]*/,
-        /const DEFAULT_PREFS = \{[\s\S]*?\n\};/,
-        /function cloneDefaults[\s\S]*?\n\}/,
-        /function loadPrefs[\s\S]*?\n\}/
-      ]
-        .map(pick)
-        .join('\n') + '\nvar out = loadPrefs();',
-      c
-    );
-    const kb = c.out.keybinds,
-      all = [...kb.skills, kb.trinket, ...Object.values(kb.move)].filter(Boolean);
-    if (stored[0] === '') assert.equal(kb.skills[0], '', 'case Unset gardée');
-    assert.equal(kb.skills.length, 7, '7 cases');
-    assert.equal(new Set(all).size, all.length, 'touches uniques : ' + kb.skills.join(','));
-  }
-}
+// Raccourcis : jamais deux sorts sur la même touche, même avec d'anciens réglages : tests/keyboard.test.js
 // Chevalier de la mort : paume gauche sur la poignée, sous la droite (mains alignées)
 assert.ok(
   code('src/render/').includes('palmL = k.grip.localToWorld(new THREE.Vector3(0, -0.09, 0))'),
@@ -661,7 +701,7 @@ assert.ok(!read('src/audio/sfx.js').includes("lowpass: u.race === 'undead'"), 'c
 assert.ok(read('src/ui/settings.js').includes("if (other) set(other, '');"), 'touche reprise : ancienne action Unset');
 assert.ok(
   read('src/core/setup.js').includes('if (!combo) return -1;') &&
-    read('src/input/controls.js').includes('bindIndex(PREFS.keybinds.skills, e)'),
+    read('src/input/controls.js').includes('bindIndex(kb.skills, e)'),
   'Unset : aucune touche'
 );
 // PV de base (+50 %)
