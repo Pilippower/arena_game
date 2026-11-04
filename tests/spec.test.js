@@ -307,7 +307,9 @@ run('src/ui/hud.js');
     'bouton « Return to Lobby »'
   );
   assert.ok(
-    read('src/ui/lobby.css').replace(/\s+/g, ' ').includes('body.lobby #status { display: none;'),
+    read('src/ui/lobby.css')
+      .replace(/\s+/g, ' ')
+      .includes('body.lobby #status, body.lobby #restartBtn { display: none;'),
     'lobby épuré'
   );
   // barre du haut en jeu : ni titre « Arena Ascendant » ni sous-titre « 1v1 to 3v3 · WebGL… » (le lobby garde le titre)

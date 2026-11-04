@@ -61,8 +61,9 @@ body.lobby #score {
   font-size: 12px;
   line-height: 1.1;
 }
-/* lobby épuré : pas d'infos de partie en bas à gauche */
-body.lobby #status {
+/* lobby épuré : pas d'infos de partie en bas à gauche, pas de bouton « Return to Lobby » (on y est déjà) */
+body.lobby #status,
+body.lobby #restartBtn {
   display: none;
 }
 /* PC : bande du bas plus fine pendant le lobby, tout tient dans la page */
