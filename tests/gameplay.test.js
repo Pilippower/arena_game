@@ -123,4 +123,36 @@ function playerWorld() {
   S.ctx.updateFearMovement(rooted, 1);
   assert.equal(rooted.x, 1, 'fear sous racines : immobile');
 }
-console.log('OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear)');
+
+// ---------- Ciblage au clic façon MMO (src/ui/cursor.js) ----------
+{
+  const { read } = require('./sources.js');
+  const src = read('src/ui/cursor.js'),
+    num = n => +src.match(new RegExp(`const ${n} = ([\\d.]+)`))[1];
+  const S = sandbox({ BODY_HALF_WIDTH: num('BODY_HALF_WIDTH'), BODY_MIN_HALF_WIDTH: num('BODY_MIN_HALF_WIDTH') });
+  S.fn('src/ui/cursor.js', 'pickUnitAt');
+  // personnage debout : pieds en (400, 500), tête en (400, 300), torse en (400, 365) ; barre de nom au-dessus
+  const at = (u, x, z = 10, plate = null) => ({
+    u,
+    plate,
+    feet: { x, y: 500, z },
+    head: { x, y: 300, z },
+    chest: { x, y: 365, z }
+  });
+  const A = { n: 'A' },
+    B = { n: 'B' };
+  const pick = (sx, sy, items) => S.ctx.pickUnitAt(sx, sy, items, 62);
+  assert.equal(pick(400, 490, [at(A, 400)]), A, 'clic sur les pieds : cible');
+  assert.equal(pick(400, 305, [at(A, 400)]), A, 'clic sur la tête : cible');
+  assert.equal(pick(430, 420, [at(A, 400)]), A, 'clic sur le flanc : cible');
+  assert.equal(pick(520, 420, [at(A, 400)]), null, 'clic à côté : rien');
+  const plate = { l: 350, t: 250, r: 450, b: 280 };
+  assert.equal(pick(445, 255, [at(A, 400, 10, plate)]), A, 'clic sur la barre de vie flottante : cible');
+  // la barre de nom passe avant la silhouette d'un autre personnage devant
+  assert.equal(pick(400, 265, [at(B, 400, 5), at(A, 400, 10, plate)]), A, 'barre de nom prioritaire');
+  // deux silhouettes superposées : la plus proche de la caméra
+  assert.equal(pick(400, 400, [at(A, 400, 10), at(B, 405, 4)]), B, 'silhouettes superposées : la plus proche');
+  // clic approximatif près du torse : ancienne règle (62 px) gardée
+  assert.equal(pick(400 + 55, 340, [{ ...at(A, 400), head: { x: 400, y: 360, z: 10 } }]), A, 'près du torse : cible');
+}
+console.log('OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic)');

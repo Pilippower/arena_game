@@ -6,7 +6,7 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 
 ## Contrôles (desktop) — `src/input/controls.js`, `src/ui/cursor.js`
 - ZQSD (Q gauche, D droite), Espace saut, molette zoom, TAB cible, 1–6 sorts, R trinket. Signes de `screenRight` / `applyLook` intouchables (`game_logic.js`).
-- Clic gauche **ou** droit sans glisser = cibler l'unité sous le curseur.
+- Clic gauche **ou** droit sans glisser = cibler l'unité sous le curseur, comme dans un MMO : sa **barre de nom flottante** (nom + barre de vie, prioritaire), sinon sa **silhouette** des pieds à la tête, sinon le plus proche du torse ; entre deux personnages superposés, le plus proche de la caméra (04/11/2026 : un clic sur la barre d'un ennemi pouvait cibler un autre). 🧪
 - Glisser au **clic droit** = caméra **et** orientation/trajectoire du personnage.
 - Glisser au **clic gauche** = caméra **seule** : la trajectoire du personnage ne change pas ; au relâchement la caméra revient derrière lui. 🧪
 - Gauche + droit enfoncés (dans les deux ordres) = avancer.

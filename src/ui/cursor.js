@@ -36,22 +36,57 @@ function setGameCursor(kind) {
 }
 setGameCursor('ally');
 setGameCursor('gauntlet');
-// Unité sous le curseur (même règle que le ciblage au clic).
-function unitAtScreen(sx, sy) {
-  if (!state?.units) return null;
+// Ciblage façon MMO, par priorité : la barre de nom flottante (nom + barre de vie), puis la silhouette du personnage
+// (des pieds à la tête), enfin la proximité du torse (clic approximatif). Entre deux candidats, le plus proche de la
+// caméra (z le plus petit). Fonction pure : items = [{ u, plate: { l, t, r, b } | null, feet, head, chest }] en pixels.
+const BODY_HALF_WIDTH = 0.22; // demi-largeur de la silhouette, en fraction de sa hauteur à l'écran
+const BODY_MIN_HALF_WIDTH = 12; // px : un personnage lointain reste cliquable
+function pickUnitAt(sx, sy, items, nearPx) {
+  const front = list => list.reduce((a, b) => (b.chest.z < a.chest.z ? b : a)).u;
+  const inPlate = items.filter(
+    i => i.plate && sx >= i.plate.l && sx <= i.plate.r && sy >= i.plate.t && sy <= i.plate.b
+  );
+  if (inPlate.length) return front(inPlate);
+  const onBody = items.filter(i => {
+    const dx = i.head.x - i.feet.x,
+      dy = i.head.y - i.feet.y,
+      len2 = dx * dx + dy * dy || 1,
+      k = Math.max(0, Math.min(1, ((sx - i.feet.x) * dx + (sy - i.feet.y) * dy) / len2)),
+      half = Math.max(BODY_MIN_HALF_WIDTH, BODY_HALF_WIDTH * Math.sqrt(len2));
+    return Math.hypot(sx - (i.feet.x + k * dx), sy - (i.feet.y + k * dy)) <= half;
+  });
+  if (onBody.length) return front(onBody);
   let best = null,
-    bestD = MOBILE.enabled ? 90 : 62; // doigt moins précis que la souris
-  for (const u of state.units) {
-    if (!u.alive || (u.stealth && u.team !== state.player.team)) continue;
-    const p = projectScreen(u.rx ?? u.x, (u.ry ?? u.y ?? 0) + 1.35, u.rz ?? u.z);
-    if (!p) continue;
-    const d = Math.hypot(sx - p.x, sy - p.y);
-    if (d < bestD) {
-      best = u;
-      bestD = d;
-    }
+    bestD = nearPx;
+  for (const i of items) {
+    const d = Math.hypot(sx - i.chest.x, sy - i.chest.y);
+    if (d < bestD) ((best = i.u), (bestD = d));
   }
   return best;
+}
+// Unité sous le curseur (même règle que le ciblage au clic) : positions à l'écran des personnages ciblables.
+function unitAtScreen(sx, sy) {
+  if (!state?.units) return null;
+  const cr = canvas.getBoundingClientRect(),
+    items = [];
+  for (const u of state.units) {
+    if (!u.alive || (u.stealth && u.team !== state.player.team)) continue;
+    const x = u.rx ?? u.x,
+      y = u.ry ?? u.y ?? 0,
+      z = u.rz ?? u.z,
+      chest = projectScreen(x, y + 1.35, z),
+      feet = projectScreen(x, y, z),
+      head = projectScreen(x, y + 2.0, z);
+    if (!chest || !feet || !head) continue;
+    const e = OVERLAY.plates.get(u),
+      r = e && e.style.display !== 'none' ? e.getBoundingClientRect() : null,
+      plate =
+        r && r.width > 0
+          ? { l: r.left - cr.left, t: r.top - cr.top, r: r.right - cr.left, b: r.bottom - cr.top }
+          : null;
+    items.push({ u, plate, feet, head, chest });
+  }
+  return pickUnitAt(sx, sy, items, MOBILE.enabled ? 90 : 62); // doigt moins précis que la souris
 }
 canvas.addEventListener('mousemove', e => {
   if (document.pointerLockElement) return;
