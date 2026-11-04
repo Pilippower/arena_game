@@ -333,9 +333,10 @@ run('src/ui/hud.js');
       .includes('body.lobby #status, body.lobby #top #restartBtn { display: none;'),
     'lobby épuré'
   );
-  // barre du haut en jeu : ni titre « Arena Ascendant » ni sous-titre « 1v1 to 3v3 · WebGL… » (le lobby garde le titre)
+  // barre du haut en jeu : icône + titre « Arena Ascendant » comme dans le lobby, jamais le sous-titre « 1v1 to 3v3 · WebGL… »
   assert.ok(!read('index.html').includes('1v1 to 3v3 · WebGL'), 'pas de sous-titre du jeu');
-  assert.ok(read('index.html').includes('body:not(.lobby) #top h1{display:none}'), 'titre masqué en jeu');
+  assert.ok(read('index.html').includes('<h1><i class="ico swords"></i>Arena Ascendant</h1>'), 'icône + titre du jeu');
+  assert.ok(!/#top h1\{display:none\}/.test(read('index.html').replace(/\s+/g, '')), 'titre visible en jeu');
   // mobile : icônes de la panoplie PC (pas de glyphes ⚙ ♫ ↻), centrées dans le bouton
   assert.ok(
     !/#(settingsBtn|musicBtn|restartBtn):after/.test(read('index.html')),
