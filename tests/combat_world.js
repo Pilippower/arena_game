@@ -16,6 +16,7 @@ const GAME_FILES = [
 ];
 
 function combatWorld() {
+  const views = [];
   const sounds = []; // bruitages demandés (SFX.<nom>, arguments), pour vérifier les cris et les nappes d'incantation
   const S = sandbox({
     Math: Object.create(Math), // propre au monde : un test peut fixer Math.random
@@ -33,6 +34,7 @@ function combatWorld() {
     setTimeout() {},
     clearTimeout() {},
     playerMove() {},
+    viewBehind: u => views.push(u), // caméra replacée derrière le joueur (player.js)
     SFX: new Proxy(
       {},
       {
@@ -68,7 +70,7 @@ function combatWorld() {
     S.ctx.state.units.push(u);
     return u;
   };
-  return { ctx: S.ctx, unit, sounds };
+  return { ctx: S.ctx, unit, sounds, views };
 }
 // emplacement d'un sort sur la barre de base d'une classe
 const spell = (ctx, cls, n) => ctx.CLASS[cls].skills.findIndex(s => s.n === n);

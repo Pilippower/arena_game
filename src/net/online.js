@@ -507,6 +507,7 @@ function netGuestUpdate(dt) {
         u.y += (s.y - u.y) * k;
       }
       u.yaw = s.yaw;
+      if (own && far) viewBehind(u); // téléporté par l'hôte (Shadowstep) : la caméra de l'invité suit
       u.moving = s.mv;
       u.movePhase = s.mp;
       u.grounded = s.gr;

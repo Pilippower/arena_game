@@ -218,12 +218,13 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-6, `${msg} (${a} au lieu de ${b})`);
   const SS = ctx => spell(ctx, 'shade', 'Shadowstep');
   {
-    const { ctx, unit } = combatWorld();
+    const { ctx, unit, views } = combatWorld();
     const rogue = unit('shade', 0, 0, 0),
       foe = unit('arcanist', 0, 10, 1);
     rogue.target = foe;
     foe.yaw = Math.PI; // la cible regarde le voleur : son dos est au-delà d'elle
     assert.ok(ctx.useSkill(rogue, SS(ctx)), 'Shadowstep lancé');
+    assert.deepEqual(views, [rogue], 'Shadowstep : caméra tournée vers la cible (derrière le lanceur)');
     near(rogue.z, 11.2, 'Shadowstep : 1,2 m dans le dos de la cible');
     near(rogue.x, 0, 'Shadowstep : dans l’axe de la cible');
     near(Math.cos(rogue.yaw), -1, 'Shadowstep : face à la cible');

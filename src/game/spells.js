@@ -324,6 +324,7 @@ const SPELL_CAST = {
       const { u, t, S } = c;
       if (!t || !c.range || c.d > S.range || !stepBehind(u, t)) return false;
       if (!u.stealth) damage(u, t, S.dmg);
+      viewBehind(u); // le joueur voit sa cible en arrivant (caméra et personnage tournés vers elle)
       action(u, 'dash');
       landed(c);
     },

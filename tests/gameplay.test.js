@@ -28,6 +28,31 @@ function playerWorld() {
   return { ...S, p, ended };
 }
 {
+  // Shadowstep : la caméra se replace derrière le joueur, tourné vers sa cible ; un glisser en cours suit ; rien
+  // pour une autre unité
+  const { ctx, p } = playerWorld();
+  p.yaw = 2.5;
+  ctx.viewBehind(p);
+  assert.equal(ctx.camera.yaw, 2.5, 'caméra derrière le joueur');
+  ctx.viewBehind({ yaw: -1 });
+  assert.equal(ctx.camera.yaw, 2.5, 'autre unité : caméra inchangée');
+  ctx.orbiting = true;
+  ctx.playerMove(1 / 120); // glisser au clic gauche : base de trajectoire figée sur 2,5
+  p.yaw = 1;
+  ctx.viewBehind(p);
+  ctx.state.keys = { z: true };
+  const x0 = p.x,
+    z0 = p.z,
+    want = GameLogic.moveVector({ z: true }, 1);
+  ctx.playerMove(0.1);
+  const len = Math.hypot(want.x, want.z),
+    dl = Math.hypot(p.x - x0, p.z - z0);
+  assert.ok(
+    near((p.x - x0) / dl, want.x / len, 1e-6) && near((p.z - z0) / dl, want.z / len, 1e-6),
+    'glisser en cours : Z avance vers la cible, pas dans l’ancienne direction'
+  );
+}
+{
   const { ctx } = playerWorld();
   // joystick mobile : au-delà de 35 % de déviation, vitesse pleine ; en dessous, vitesse réduite
   assert.ok(near(0.4 * ctx.mobileStickBoost(0.4, 0), 1), 'joystick : vitesse pleine à 40 %');

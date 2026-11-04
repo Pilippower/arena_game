@@ -30,6 +30,14 @@ function moveBaseYaw(dt) {
   camReturn = false;
   return camera.yaw;
 }
+// Sort qui tourne le personnage vers sa cible (Shadowstep) : la caméra se replace derrière lui, et la base de
+// trajectoire d'un glisser en cours suit (sinon Z partait dans l'ancienne direction). Joueur local seulement.
+function viewBehind(u) {
+  if (u !== state.player) return;
+  camera.yaw = u.yaw;
+  if (orbitBase !== null) orbitBase = u.yaw;
+  camReturn = false;
+}
 function playerMove(dt) {
   const p = state.player;
   if (p.poly > 0) return;
