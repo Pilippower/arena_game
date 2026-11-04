@@ -232,6 +232,11 @@ function closeSettings() {
   $('settingsPanel').classList.remove('open');
   canvas.focus();
 }
+// Échap ouvre / ferme Settings (pendant la saisie d'un raccourci, Échap annule seulement la saisie : controls.js)
+function toggleSettings() {
+  if (settingsOpen) closeSettings();
+  else openSettings();
+}
 for (const id of frameIds()) {
   $(id).addEventListener('pointerdown', e => {
     if (!uiEditMode) return;

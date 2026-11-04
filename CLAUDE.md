@@ -50,7 +50,7 @@ L'utilisateur communique en français : répondre en français.
 
 ```bash
 npm install        # une fois : playwright-core (pilote le Edge/Chrome installé), prettier
-npm test           # ~15 s : tests unitaires (combat.test.js, gameplay.test.js, game_logic.test.js), spécifications (spec.test.js), intégration + partie lancée dans le navigateur (tests/browser/smoke.test.js)
+npm test           # ~15 s : tests unitaires (combat.test.js, gameplay.test.js, keyboard.test.js, game_logic.test.js), spécifications (spec.test.js), intégration + partie lancée dans le navigateur (tests/browser/smoke.test.js)
 npm run test:all   # ~1 min 30 : + test navigateur complet (sélection, 35 kits, 7 classes, Polymorph/saut/pas chassé, mobile)
 ```
 
@@ -86,6 +86,7 @@ But : un code **maintenable**, où l'on sait **tout de suite où regarder et quo
 - Règle de jeu ou fonction pure = test unitaire Node qui vérifie le **résultat** (PV, durée, position, état) :
   - combat (contrôles, DR, dégâts, soins, sorts, incantations, IA) : `tests/combat.test.js` ; `combatWorld()` (`tests/combat_world.js`) = vrai code sur une arène vide ; `unit(classe, x, z, équipe)`, `run(ctx, secondes)` fait avancer `update`, `sounds` = bruitages demandés, `ctx.Math.random` fixable ;
   - déplacement, caméra, cibles : `tests/gameplay.test.js` ;
+  - clavier (préférences, raccourcis, touches en jeu, Échap / Settings) : `tests/keyboard.test.js` (`keyboardWorld()` = setup.js + controls.js sur un faux DOM, `press(code, mods)`) ;
   - outils : `sandbox(stubs)` de `tests/sources.js` (`load(fichier)`, `fn(fichier, nom)`), `code('src/<dossier>/')` pour lire un dossier.
 - Chaque règle nouvelle : une régression volontaire qui doit faire échouer son test, `node tools/mutate.js <test> <fichier> "<extrait>" "<remplacement>"` (fichier toujours restauré).
 - Navigateur (`tests/browser/`) : seulement démarrage, rendu, modèles, interface. Tests « texte du code » : seulement pour interdire une régression connue, ou quand le comportement dépend du hasard / du réseau.

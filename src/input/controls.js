@@ -43,6 +43,11 @@ window.addEventListener('keydown', e => {
     assignCapturedBind(captureBind.type === 'move' ? e.code : bindCombo(e));
     return;
   }
+  if (e.code === 'Escape') {
+    e.preventDefault();
+    toggleSettings();
+    return;
+  }
   if (settingsOpen) return;
   // une combinaison réglée (ex. Shift + W) passe avant le déplacement de la touche seule
   const comboSkill = e.ctrlKey || e.altKey || e.shiftKey ? PREFS.keybinds.skills.indexOf(bindCombo(e)) : -1,

@@ -5,7 +5,6 @@ validé dans `docs/SPEC.md`.
 
 ## Liste du 04/11/2026 (priorité, dans cet ordre : du plus simple au plus compliqué, un commit par tâche)
 
-5. Échap ouvre / ferme les Settings.
 6. Augmenter le volume des sons des sorts.
 7. Débuffs flottants (à droite de la barre de vie) : icônes des contrôles (CC) 30 % plus grandes que les autres
    débuffs (demandé deux fois : la tâche précédente n'était pas allée au bout).
