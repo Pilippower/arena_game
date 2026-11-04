@@ -406,5 +406,34 @@
     }
     bones.Head.attach(g);
   }
-  Object.assign(P, { headFeatures, headLandmarks, skullFace, dwarfBeard });
+  // Paupières fermées (étourdi) : une coque couleur de peau sur chaque œil, attachée à la tête, cachée par défaut ; le
+  // rendu l'affiche pendant l'étourdissement (hfCloseEyes, render/hero_anim.js). Mesurées sur le maillage des yeux.
+  function eyelids(THREE, root, body, bones, skinColor) {
+    let eyes = null;
+    root.traverse(o => {
+      if (o.isMesh && o.name === 'Eyes') eyes = o;
+    });
+    if (!eyes || !bones.Head) return;
+    root.updateMatrixWorld(true);
+    const toBody = new THREE.Matrix4().copy(body.matrixWorld).invert().multiply(eyes.matrixWorld),
+      pos = eyes.geometry.attributes.position,
+      sides = [[], []];
+    for (let i = 0; i < pos.count; i++) {
+      const v = new THREE.Vector3().fromBufferAttribute(pos, i).applyMatrix4(toBody);
+      sides[v.x < 0 ? 0 : 1].push(v);
+    }
+    const lid = new THREE.MeshStandardMaterial({ color: skinColor.clone().multiplyScalar(0.9), roughness: 0.85 });
+    for (const pts of sides) {
+      if (!pts.length) continue;
+      const cen = pts.reduce((a, b) => a.add(b), new THREE.Vector3()).multiplyScalar(1 / pts.length),
+        r = Math.max(...pts.map(p => p.distanceTo(cen))),
+        m = new THREE.Mesh(new THREE.SphereGeometry(r * 1.12, 16, 10), lid);
+      m.name = 'Eyelid';
+      m.scale.set(1.05, 0.95, 0.9);
+      m.position.copy(cen);
+      m.visible = false;
+      bones.Head.attach(m);
+    }
+  }
+  Object.assign(P, { headFeatures, headLandmarks, skullFace, dwarfBeard, eyelids });
 })(typeof globalThis !== 'undefined' ? globalThis : this);

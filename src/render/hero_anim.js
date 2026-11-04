@@ -27,7 +27,12 @@ function hfSetAnim(rec, u) {
     // joie du vainqueur : arme brandie (pose levée du coup d'épée, animée plus bas)
     key = 'cheer';
     names = ['Sword_Attack', 'Spell_Simple_Shoot'];
-  } else if (u.stun > 0 || u.mobility?.type === 'grip') {
+  } else if (u.stun > 0) {
+    // étourdi : repos, la tête penchée qui tourne doucement est posée par-dessus (hfStunPose) ; Hit_Chest en boucle
+    // rejetait la tête en arrière à chaque tour (« il bug »)
+    key = 'stun';
+    names = ['Idle_Loop', 'Idle'];
+  } else if (u.mobility?.type === 'grip') {
     key = 'cc';
     names = ['Hit_Chest', 'Hit_A', 'Hit', 'Idle'];
   } else if (!u.grounded && !u.mobility) {
@@ -69,6 +74,12 @@ function hfSetAnim(rec, u) {
   if (rec.animKey === key) return;
   const clip = hfFindClip(rec, names);
   if (!clip) return;
+  // même clip sous un autre nom (repos → étourdi, repos → garde sans Sword_Idle) : on le laisse jouer ; le relancer
+  // depuis le début faisait sauter la pose
+  if (rec.action?.getClip() === clip && key !== 'death' && key !== 'land') {
+    rec.animKey = key;
+    return;
+  }
   const next = rec.mixer.clipAction(clip);
   next.reset();
   if (key === 'death' || key === 'land') {
@@ -78,7 +89,7 @@ function hfSetAnim(rec, u) {
     next.setLoop(THREE.LoopRepeat, Infinity);
     next.clampWhenFinished = false;
   }
-  next.fadeIn(key === 'air' ? 0.08 : key === 'attack' ? 0.05 : 0.1).play();
+  next.fadeIn(key === 'air' ? 0.08 : key === 'attack' ? 0.05 : key === 'stun' ? 0.3 : 0.1).play();
   next.timeScale = key === 'run' ? 1.12 : key === 'attack' ? 1.08 : key === 'land' ? 1.6 : 1;
   // les dégâts tombent au début de l'action : on démarre le coup juste avant l'impact (lame au contact ≈ 80 ms après)
   const hit = key === 'attack' && ATTACK_HIT[clip.name];
@@ -157,37 +168,90 @@ function hfRotateLocal(bone, axisWorld, angle) {
   bone.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(axis, angle));
   bone.updateMatrixWorld(true);
 }
-function hfRaceStrike(rec, u) {
-  if (!STRIKE_CLASSES.has(u.cls) || u.form || !u.alive) return;
+// Surcouches du buste et de la tête (frappe par race, étourdissement) : une seule mémoire de la pose animée pour ces os
+// (deux corrections qui gardaient chacune la leur sur les mêmes os prenaient le résultat de l'autre pour la pose du
+// clip et s'accumulaient).
+function hfBodyPose(rec, u, dt) {
   const m = rec.model;
-  if (!rec.strike) {
-    const f = n => m.getObjectByName(n);
-    const spine = ['spine_01', 'spine_02', 'spine_03'].map(f).filter(Boolean);
-    rec.strike = spine.length ? { spine, head: f('Head'), bones: [...spine, f('Head')].filter(Boolean) } : false;
+  if (!rec.body) {
+    const f = n => m.getObjectByName(n),
+      spine = ['spine_01', 'spine_02', 'spine_03'].map(f).filter(Boolean),
+      neck = f('neck_01'),
+      head = f('Head');
+    rec.body = spine.length && head ? { spine, neck, head, bones: [...spine, neck, head].filter(Boolean) } : false;
   }
-  const S = rec.strike;
-  if (!S) return;
-  hfFromAnimPose(S, S.bones);
-  const t = performance.now() / 1000;
+  const B = rec.body;
+  if (!B) return;
+  hfFromAnimPose(B, B.bones);
+  m.updateMatrixWorld(true);
+  const mq = m.getWorldQuaternion(new THREE.Quaternion()),
+    axes = {
+      up: new THREE.Vector3(0, 1, 0).applyQuaternion(mq),
+      right: new THREE.Vector3(1, 0, 0).applyQuaternion(mq), // rotation positive = penché vers l'avant
+      fwd: new THREE.Vector3(0, 0, 1).applyQuaternion(mq)
+    };
+  hfRaceStrike(rec, u, B, axes);
+  hfStunPose(rec, u, dt, B, axes);
+  hfKeepOutput(B, B.bones);
+}
+function hfRaceStrike(rec, u, B, axes) {
+  if (!STRIKE_CLASSES.has(u.cls) || u.form || !u.alive) return;
+  const S = (rec.strike = rec.strike || {}),
+    t = performance.now() / 1000;
   if (rec.animKey === 'attack' && S.lastKey !== 'attack') S.t0 = t;
   S.lastKey = rec.animKey;
   const P = raceStrike(u),
     q = S.t0 != null ? ((t - S.t0) * P.speed) / STRIKE_DUR : 2;
-  if (q < 1) {
-    m.updateMatrixWorld(true);
-    const pose = strikePose(q, P),
-      mq = m.getWorldQuaternion(new THREE.Quaternion()),
-      side = u.cls === 'shade' && rec.leftHit ? -1 : 1, // voleur : coup de la main gauche = rotation inverse
-      up = new THREE.Vector3(0, 1, 0).applyQuaternion(mq),
-      right = new THREE.Vector3(1, 0, 0).applyQuaternion(mq),
-      fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(mq);
-    for (const b of S.spine) {
-      hfRotateLocal(b, up, (side * pose.twist) / S.spine.length);
-      hfRotateLocal(b, right, pose.lean / S.spine.length);
-    }
-    if (S.head && pose.tilt) hfRotateLocal(S.head, fwd, side * pose.tilt);
+  if (q >= 1) return;
+  const pose = strikePose(q, P),
+    side = u.cls === 'shade' && rec.leftHit ? -1 : 1; // voleur : coup de la main gauche = rotation inverse
+  for (const b of B.spine) {
+    hfRotateLocal(b, axes.up, (side * pose.twist) / B.spine.length);
+    hfRotateLocal(b, axes.right, pose.lean / B.spine.length);
   }
-  hfKeepOutput(S, S.bones);
+  if (pose.tilt) hfRotateLocal(B.head, axes.fwd, side * pose.tilt);
+}
+// Étourdi : tête et cou penchés vers l'avant, petits cercles lents de la tête, léger balancement du buste, yeux fermés.
+const STUN_IN = 0.45, // s : la tête s'incline en douceur au début de l'étourdissement
+  STUN_OUT = 0.5, // s : et se redresse à la fin (sans à-coup)
+  STUN_CIRCLE = 2.6; // s : durée d'un cercle de la tête
+// Courbe (fonction pure, testée) : t = temps depuis le début de l'étourdissement, w = poids 0..1 (entrée / sortie).
+// Angles en radians : neck / head = penché vers l'avant, roll = inclinaison sur le côté, sway* = balancement du buste.
+function stunPose(t, w) {
+  const a = (2 * Math.PI * t) / STUN_CIRCLE;
+  return {
+    neck: w * (0.1 + 0.03 * Math.sin(a)),
+    head: w * (0.15 + 0.05 * Math.sin(a)),
+    roll: w * 0.07 * Math.cos(a),
+    swayRoll: w * 0.035 * Math.sin(a - 0.8),
+    swayPitch: w * 0.04
+  };
+}
+function hfStunPose(rec, u, dt, B, axes) {
+  const St = (rec.stunned = rec.stunned || { s: 0, t: 0 }),
+    on = u.alive && u.stun > 0 && !u.form && !(u.poly > 0);
+  St.s = clamp(St.s + (on ? dt / STUN_IN : -dt / STUN_OUT), 0, 1);
+  St.t = St.s > 0 ? St.t + dt : 0;
+  hfCloseEyes(rec, on && St.s > 0.5);
+  if (!St.s || u.form) return;
+  const P = stunPose(St.t, smoothstep(0, 1, St.s)),
+    chest = B.spine[B.spine.length - 1];
+  hfRotateLocal(chest, axes.right, P.swayPitch);
+  hfRotateLocal(chest, axes.fwd, P.swayRoll);
+  if (B.neck) hfRotateLocal(B.neck, axes.right, P.neck);
+  hfRotateLocal(B.head, axes.right, P.head);
+  hfRotateLocal(B.head, axes.fwd, P.roll);
+}
+// Yeux fermés : paupières (couleur de peau, posées sur les yeux, `eyelids` dans characters/head.js) visibles, lueur
+// des yeux éteinte.
+function hfCloseEyes(rec, closed) {
+  if (rec.eyesClosed === closed) return;
+  rec.eyesClosed = closed;
+  if (!rec.lids) {
+    rec.lids = [];
+    rec.model.traverse(o => /^(Eyelid|EyeGlow)$/.test(o.name) && rec.lids.push(o));
+  }
+  for (const o of rec.lids) o.visible = (o.name === 'Eyelid') === closed;
 }
 // Arme à deux mains (chevalier de la mort) : la main gauche rejoint la poignée sous la main droite à chaque image
 // (cinématique inverse à deux os : bras, avant-bras ; le coude garde son côté), aussi pendant la frappe.

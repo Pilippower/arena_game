@@ -28,8 +28,6 @@ validé dans `docs/SPEC.md`.
 20. Bouclier d'absorption visible sur la barre de vie (flottante et cadres de groupe) : portion superposée, couleur
     distincte, style MMO sans copier.
 22. Les sorts des lanceurs suivent la cible en mouvement et frappent son corps.
-23. Étourdissement : la tête ne doit plus partir en arrière ; animation dédiée (tête légèrement penchée en avant, yeux
-    fermés, petits cercles lents).
 25. Sons des sorts plus expressifs (lanceurs et mêlée, ex. Cloak, Stealth) : son pendant l'incantation / la
     canalisation, son de libération à la fin d'une incantation, son d'échec quand une incantation est interrompue ou
     arrêtée ; esprit des sons de MMO sans les copier.
