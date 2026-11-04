@@ -61,8 +61,7 @@ body.lobby #score {
   font-size: 12px;
   line-height: 1.1;
 }
-/* lobby épuré : ni sous-titre du jeu, ni infos de partie en bas à gauche */
-body.lobby #top .sub,
+/* lobby épuré : pas d'infos de partie en bas à gauche */
 body.lobby #status {
   display: none;
 }

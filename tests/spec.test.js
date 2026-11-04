@@ -302,9 +302,12 @@ run('src/ui/hud.js');
   assert.match(read('src/game/match.js'), /function leaveMatch[\s\S]*?state = null/, 'quitter arrête le match');
   assert.ok(read('index.html').includes('id="leaveConfirm"'), 'confirmation avant de quitter');
   assert.ok(
-    read('src/ui/lobby.css').replace(/\s+/g, ' ').includes('body.lobby #top .sub, body.lobby #status { display: none;'),
+    read('src/ui/lobby.css').replace(/\s+/g, ' ').includes('body.lobby #status { display: none;'),
     'lobby épuré'
   );
+  // barre du haut en jeu : ni titre « Arena Ascendant » ni sous-titre « 1v1 to 3v3 · WebGL… » (le lobby garde le titre)
+  assert.ok(!read('index.html').includes('1v1 to 3v3 · WebGL'), 'pas de sous-titre du jeu');
+  assert.ok(read('index.html').includes('body:not(.lobby) #top h1{display:none}'), 'titre masqué en jeu');
 }
 assert.match(
   code('src/render/'),

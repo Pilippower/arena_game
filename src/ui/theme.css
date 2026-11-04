@@ -46,7 +46,6 @@ h1 {
     0 2px 3px #000 !important;
   letter-spacing: 0.04em;
 }
-.sub,
 .tiny {
   color: var(--muted) !important;
 }
