@@ -259,6 +259,26 @@ run('src/ui/hud.js');
     'Kidney Shot',
     'débuff : sort qui l’a posé, tant qu’il dure'
   );
+  // contrôles (étourdi, mouton / Sap, peur, silence, racines) : icône 30 % plus grande que les autres débuffs
+  const deb = ctx.aurasHTML(
+    ctx.debuffList({
+      stun: 2,
+      slow: 3,
+      root: 1,
+      debuffSpell: { stun: 'Kidney Shot', slow: 'Hamstring', root: 'Frost Nova' }
+    }),
+    'buffs debuffs'
+  );
+  assert.equal((deb.match(/class="buff cc"/g) || []).length, 2, 'étourdi et racines marqués CC');
+  assert.match(deb, /class="buff" title="Hamstring"/, 'ralentissement : taille normale');
+  const auraCss = read('index.html');
+  assert.ok(
+    auraCss.includes('.npAuras .buff{width:34px;height:34px}.npAuras .buff.cc{width:44px;height:44px}') &&
+      auraCss.includes(
+        'body.mobile-mode .npAuras .buff{width:26px;height:26px}body.mobile-mode .npAuras .buff.cc{width:34px;height:34px}'
+      ),
+    'CC : 44 px (34 × 1,3), mobile 34 px (26 × 1,3)'
+  );
   assert.ok(
     code('src/render/').includes("aurasHTML(debuffList(u), 'buffs debuffs')"),
     'auras au-dessus des personnages'

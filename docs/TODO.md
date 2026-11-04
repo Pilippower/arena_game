@@ -6,8 +6,6 @@ validé dans `docs/SPEC.md`.
 ## Liste du 04/11/2026 (priorité, dans cet ordre : du plus simple au plus compliqué, un commit par tâche)
 
 6. Augmenter le volume des sons des sorts.
-7. Débuffs flottants (à droite de la barre de vie) : icônes des contrôles (CC) 30 % plus grandes que les autres
-   débuffs (demandé deux fois : la tâche précédente n'était pas allée au bout).
 8. Voleur : Backstab ralentit la cible de 60 % pendant 6 s.
 9. Voleur : Shadowstep téléporte dans le dos de la cible, portée 20 m, utilisable aussi camouflé.
 10. Les racines (roots) ne cassent plus quand la cible subit des dégâts.
