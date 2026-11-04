@@ -394,6 +394,38 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   ctx.update(1);
   assert.equal(ctx.state.elapsed, 0, 'chargement : chrono arrêté');
 }
+// ---------- Son dédié de chaque sort (src/audio/spell_sounds.js) ----------
+{
+  const { sandbox } = require('./sources.js');
+  const calls = [];
+  const S = sandbox({
+    sfxSpatial: () => ({ level: 1, pan: 0 }),
+    sfxTone: (f, d, type, v, slide) => calls.push({ kind: 'tone', freqs: [f, slide || f], v }),
+    sfxSweep: (d, v, f0, f1) => calls.push({ kind: 'sweep', freqs: [f0, f1], v }),
+    sfxNoise: (d, v, f) => calls.push({ kind: 'noise', freqs: [f], v }),
+    sfxMetal: (v, p, delay, base = 420) => calls.push({ kind: 'metal', freqs: [base, base * 8.93], v })
+  });
+  S.load('src/audio/spell_sounds.js');
+  const { ctx } = combatWorld();
+  const spells = new Map();
+  for (const C of Object.values(ctx.CLASS))
+    for (const bar of [C.skills, ...Object.values(C.bars || {})]) for (const sp of bar) spells.set(sp.n, sp);
+  const signatures = new Set();
+  for (const [n, sp] of spells) {
+    calls.length = 0;
+    assert.ok(S.ctx.playSpellSound(S.ctx.SPELL_SOUND, {}, n), `son dédié : ${n}`);
+    assert.ok(calls.length > 0, `son audible : ${n}`);
+    signatures.add(JSON.stringify(calls));
+    if (sp.cast) assert.ok(S.ctx.SPELL_IMPACT[n], `son d'impact : ${n}`);
+    // pas d'aigu strident : fréquences dominantes sous 3,3 kHz (sauf partiels brefs du métal), volumes modérés
+    for (const c of calls) {
+      if (c.kind !== 'metal') assert.ok(Math.max(...c.freqs) <= 3300, `${n} : pas d'aigu strident (${c.freqs})`);
+      assert.ok(c.v <= 0.17, `${n} : volume modéré`);
+    }
+  }
+  assert.equal(signatures.size, spells.size, 'chaque sort a un son différent');
+  assert.ok(S.ctx.SPELL_SOUND.Trinket, 'trinket : son dédié');
+}
 console.log(
-  'OK - règles de combat (tests unitaires : DR, contrôles, dégâts, soins, sorts, incantations, auras, fin de manche)'
+  'OK - règles de combat (tests unitaires : DR, contrôles, dégâts, soins, sorts, incantations, auras, fin de manche, sons des sorts)'
 );

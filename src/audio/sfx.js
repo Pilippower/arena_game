@@ -196,23 +196,6 @@ const SFX = {
     });
     sfxSweep(big ? 1.2 : 0.8, 0.05 * L, 2500, 9000, 0, P, 'highpass', 0.7);
   },
-  shield(u) {
-    const a = sfxSpatial(u),
-      L = a.level,
-      P = a.pan;
-    sfxSweep(0.5, 0.07 * L, 400, 2400, 0, P, 'bandpass', 4);
-    [880, 1320, 1760].forEach((f, i) => sfxTone(f, 0.5, 'triangle', 0.035 * L, f * 1.5, i * 0.05, P, 0, 0.4));
-  },
-  castStart(u, school) {
-    const a = sfxSpatial(u),
-      L = a.level,
-      P = a.pan;
-    const base =
-      school === 'shadow' ? 110 : school === 'holy' ? 440 : school === 'nature' ? 220 : school === 'frost' ? 330 : 260;
-    sfxTone(base, 1.0, 'sawtooth', 0.03 * L, base * 2, 0, P, 900, 0.3);
-    sfxTone(base * 1.5, 1.0, 'sine', 0.035 * L, base * 3, 0, P, 0, 0.3);
-    sfxSweep(1.0, 0.035 * L, 300, 2000, 0, P, 'bandpass', 3);
-  },
   spellHit(u, school) {
     const a = sfxSpatial(u),
       L = a.level,
@@ -232,25 +215,6 @@ const SFX = {
       sfxNoise(0.06, 0.09 * L, 6000, 0.01, P, 'highpass');
     }
   },
-  frost(u) {
-    const a = sfxSpatial(u),
-      L = a.level,
-      P = a.pan;
-    sfxSweep(0.6, 0.13 * L, 6000, 1200, 0, P, 'highpass', 0.8);
-    for (let i = 0; i < 6; i++)
-      sfxTone(
-        1800 + Math.random() * 2400,
-        0.18,
-        'sine',
-        0.03 * L,
-        null,
-        0.05 + i * 0.04,
-        P + (Math.random() - 0.5) * 0.6,
-        0,
-        0.3
-      );
-    sfxTone(80, 0.35, 'sine', 0.12 * L, 40, 0, P);
-  },
   cc(u) {
     const a = sfxSpatial(u),
       L = a.level,
@@ -258,69 +222,29 @@ const SFX = {
     sfxTone(220, 0.5, 'triangle', 0.06 * L, 110, 0, P, 0, 0.4);
     sfxTone(330, 0.5, 'sine', 0.04 * L, 140, 0.05, P, 0, 0.4);
     sfxSweep(0.5, 0.06 * L, 1500, 300, 0, P, 'bandpass', 3);
-  },
-  kick(u) {
-    const a = sfxSpatial(u),
-      L = a.level,
-      P = a.pan;
-    sfxTone(1400, 0.12, 'square', 0.06 * L, 500, 0, P, 2500, 0.15);
-    sfxMetal(0.05 * L, P, 0, 700);
-    sfxNoise(0.08, 0.12 * L, 3000, 0, P);
-  },
-  whoosh(u) {
-    const a = sfxSpatial(u),
-      L = a.level,
-      P = a.pan;
-    sfxSweep(0.35, 0.13 * L, 300, 3000, 0, P, 'bandpass', 1.2);
-    sfxTone(200, 0.3, 'sine', 0.05 * L, 600, 0, P);
-  },
-  power(u) {
-    const a = sfxSpatial(u),
-      L = a.level,
-      P = a.pan;
-    [146.8, 220, 293.7, 440].forEach((f, i) => sfxTone(f, 0.9, 'sawtooth', 0.03 * L, f * 1.5, i * 0.06, P, 1800, 0.4));
-    sfxSweep(0.9, 0.06 * L, 200, 4000, 0, P, 'bandpass', 2);
-  },
-  charge(u) {
-    const a = sfxSpatial(u),
-      L = a.level,
-      P = a.pan;
-    sfxSweep(0.5, 0.15 * L, 200, 1500, 0, P, 'lowpass', 0.8);
-    sfxTone(70, 0.5, 'sawtooth', 0.08 * L, 45, 0, P, 400, 0.3);
   }
 };
-// Sort lancé : son choisi d'après ce que fait le sort (corps à corps, soin, incantation, contrôle…).
-function sfxForSkill(u, S, i) {
+// Sort lancé : son dédié du sort (SPELL_SOUND, audio/spell_sounds.js) ; les coups de mêlée gardent en plus le cri,
+// le souffle de l'arme et l'impact enregistrés. Sort sans son dédié : son générique de son école.
+function sfxForSkill(u, S) {
   if (!u || !S) return;
-  const n = S.n || '',
-    k = S.k;
-  if (S.kick) return SFX.kick(u);
-  if (/Heal|Hymn|Dispel|Rejuvenation|Regrowth/.test(n)) return SFX.holy(u, /Hymn/.test(n));
-  if (/Shield|Barrier|Cloak|Shield Wall/.test(n)) return SFX.shield(u);
-  if (/Charge/.test(n)) return SFX.charge(u);
-  if (/Frost Nova/.test(n)) return SFX.frost(u);
-  if (/Blink|Step|Advance|Gate|Shadowstep/.test(n) || k === 'stealth' || k === 'cat' || k === 'bear' || k === 'human')
-    return SFX.whoosh(u);
-  if (/Pillar|Vendetta|Roar/.test(n)) return SFX.power(u);
-  if (S.t === 'melee' || k === 'swipe') {
+  const melee = S.t === 'melee' || S.k === 'swipe';
+  if (melee) {
     SFX.effort(u);
     SFX.swing(u, true);
-    if (!/Sap/.test(n)) SFX.meleeHit(u, true);
-    return;
+    if (S.n !== 'Sap') SFX.meleeHit(u, true);
   }
-  if (/Sap|Maim|Kidney|Cheap|Asphyx|Silence|Terror|Roots|Grip/.test(n)) return SFX.cc(u);
-  if (/Moonfire|Swipe|Coil/.test(n)) return SFX.spellHit(u, 'arcane');
-  if (/Pain|Corruption|Drain/.test(n)) return SFX.cc(u);
-  if (u.cast) return SFX.castStart(u, S.s);
-  SFX.spellHit(u, S.s);
+  if (!playSpellSound(SPELL_SOUND, u, S.n) && !melee) SFX.spellHit(u, S.s);
 }
 function spellSfx(u, i) {
-  sfxForSkill(u, skillsOf(u)[i], i);
+  sfxForSkill(u, skillsOf(u)[i]);
 }
 function spellSfxKind(u, S) {
   sfxForSkill(u, S);
 }
-function spellImpactSfx(u, kind = 'damage') {
+// Impact d'un sort à incantation : son dédié (SPELL_IMPACT), sinon son générique selon l'effet.
+function spellImpactSfx(u, kind = 'damage', name = '') {
+  if (playSpellSound(SPELL_IMPACT, u, name)) return;
   if (kind === 'heal') return SFX.holy(u, false);
   if (kind === 'fear') return SFX.cc(u);
   const S = CLASS[u.cls].skills[0];

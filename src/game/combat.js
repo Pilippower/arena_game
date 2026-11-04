@@ -798,6 +798,7 @@ function useTrinket(u) {
     fx('ring', u.x, y + 0.15, u.z, gold, 0.8, 1.6);
     fx('shield', u.x, y + 1.1, u.z, gold, 0.9, 0.85);
     addFloat(u, 'Trinket !', '#ffe17d');
+    spellSfxKind(u, { n: 'Trinket' });
     updateUI();
   }
 }

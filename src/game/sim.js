@@ -120,12 +120,12 @@ function update(dt) {
           u.curSchool = CLASS[u.cls].skills[ca.i]?.s || 'magic';
           damage(u, ca.target, ca.value);
           if (ca.slow) applySlow(ca.target, ca.slow.pct, ca.slow.dur, true); // Frost Bolt : sans rendements décroissants
-          spellImpactSfx(u, 'damage');
+          spellImpactSfx(u, 'damage', ca.name);
         } else if (ca.type === 'poly') {
           for (const e of state.units) if (e !== ca.target && e.poly > 0 && e.polyOwner === u.id) endPoly(e, false);
           if (control(ca.target, 'poly', ca.value, u) && (ca.target.polyKind = 'sheep'))
             fx('blinkBurst', ca.target.x, (ca.target.y || 0) + 0.8, ca.target.z, [0.95, 0.85, 1], 0.7, 0.8);
-          spellImpactSfx(u, 'fear');
+          spellImpactSfx(u, 'fear', ca.name);
         } else if (ca.type === 'fear') {
           for (const e of state.units)
             if (e !== ca.target && e.fear > 0 && e.fearOwner === u.id) {
@@ -134,7 +134,7 @@ function update(dt) {
             }
           control(ca.target, 'fear', ca.value, u);
           fx('fear', ca.target.x, (ca.target.y || 0) + 1.15, ca.target.z, CLASS[u.cls].accent, 1.0, 1.05);
-          spellImpactSfx(u, 'fear');
+          spellImpactSfx(u, 'fear', ca.name);
         } else {
           fx('healBeam', u.x, (u.y || 0) + 1.45, u.z, CLASS[u.cls].accent, 0.34, 0.16, [
             ca.target.x,
@@ -143,7 +143,7 @@ function update(dt) {
           ]);
           heal(u, ca.target, ca.value);
           if (ca.hot) addAura(ca.target, u, ca.name, 'hot', ca.hot.total, ca.hot.dur, 'nature'); // Regrowth
-          spellImpactSfx(u, 'heal');
+          spellImpactSfx(u, 'heal', ca.name);
         }
       }
       u.cast = null;
