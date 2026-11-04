@@ -69,7 +69,7 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 - PV de base (+50 % le 02/11/2026) : guerrier 2400, chevalier de la mort 2175, druide 1875, voleur 1770, démoniste 1740, prêtre 1620, mage 1470 (ours ×1,4). Les effets dans la durée définis en % des PV de la classe (Pain, Rejuvenation, Regrowth, Corruption) suivent. 🧪
 - Armure plaque (guerrier, chevalier de la mort) > cuir (druide, voleur) > tissu (mage, prêtre, démoniste). 🧪
 - Voleur : techniques +40 % (04/11/2026, il ne tuait pas un soigneur) : Backstab 215, Ambush 465, Kidney Shot et Shadowstep 80 ; l'auto-attaque garde la règle « même DPS que le guerrier ». Mesuré avec `node tools/duel.js shade oracle` : 16 victoires sur 20 contre un prêtre (0 avant), en ~80 s. 🧪
-- Équilibrage validé (04/11/2026, mesuré avec `node tools/balance.js`) : **guerrier** Mortal Strike 210 dégâts, recharge 5 s (175 / 6 s avant) ; **démoniste** Shadow Bolt 215 (195 avant), son IA ne canalise Drain Life que sous 45 % de PV (70 % avant). À reprendre ensuite : des 1v1 plus équilibrés, où chaque classe a sa chance. 🧪
+- Équilibrage validé (04/11/2026, mesuré avec `node tools/balance.js`) : **guerrier** Mortal Strike 210 dégâts, recharge 5 s (175 / 6 s avant) ; **démoniste** Shadow Bolt 215 (195 avant), son IA ne canalise Drain Life que sous 45 % de PV (70 % avant). 🧪
 - Druide : félin = +30 % de vitesse ; ours = +40 % PV, -30 % dégâts subis. 🧪
 - Voleur camouflé : -30 % de vitesse. 🧪
 - **Icônes du druide : Cat Form = griffures, Bear Form = empreinte de patte.** 🧪

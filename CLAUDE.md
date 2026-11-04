@@ -2,6 +2,7 @@
 
 Prototype d'arène 3v3 fantasy (feeling MMO arena) jouable dans le navigateur. Projet démarré avec GPT, repris ici.
 **Spécifications validées (à respecter, source des régressions passées) : [docs/SPEC.md](docs/SPEC.md), testées par `tests/spec.test.js`.**
+Tâches en attente (demandées ou proposées, pas encore faites) : [docs/TODO.md](docs/TODO.md) ; une tâche terminée en sort et passe dans SPEC.md.
 Documentation complète (mécaniques, historique des régressions, décisions validées) : [docs/HANDOFF.md](docs/HANDOFF.md). **La lire avant toute modification non triviale.**
 
 L'utilisateur communique en français : répondre en français.
