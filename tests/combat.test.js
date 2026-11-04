@@ -567,6 +567,18 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   ctx.update(1);
   assert.equal(ctx.state.elapsed, 0, 'chargement : chrono arrêté');
 }
+// ---------- Drain Life : nappe douce (04/11/2026 : bourdonnement qui pompait, « très gênant ») ----------
+{
+  const { sandbox } = require('./sources.js');
+  const S = sandbox({ SFX: {} });
+  S.load('src/audio/spell_sounds.js');
+  const layers = [];
+  S.ctx.SPELL_LOOP['Drain Life']({ voice: (f, o) => layers.push(o), air: (f, o) => layers.push(o) }, 5);
+  assert.ok(layers.length >= 2, 'Drain Life : nappe à plusieurs couches');
+  assert.ok(!layers.some(o => o.type === 'sawtooth'), 'Drain Life : pas de scie (bourdonnement)');
+  assert.ok(!layers.some(o => (o.trem || 0) > 1.2 || (o.vib || 0) > 1.2 || (o.sweep || 0) > 1.2), 'Drain Life : rien de plus rapide que les tics');
+  assert.ok(layers.reduce((s, o) => s + o.vol, 0) <= 0.1, 'Drain Life : nappe discrète');
+}
 // ---------- Sons des sorts (src/audio/spell_sounds.js) : lancement, nappe, libération, échec ----------
 {
   const { sandbox } = require('./sources.js');

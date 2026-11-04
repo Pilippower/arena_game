@@ -8,8 +8,20 @@ validé dans `docs/SPEC.md`.
 Du plus simple au plus compliqué, un commit par tâche. Images de référence des épaules (planches de classe génériques
 fournies par l'utilisateur, à suivre au plus près) : `assets_src/ui/ref_shoulders_{mage,warlock,rogue,priest}.png`.
 
-9. Sons de sorts encore plats et fades : état des lieux du design sonore des sorts de World of Warcraft (sources
-   publiques, sans copier ni extraire leurs sons), puis propositions ; Drain Life du démoniste très gênant.
+9. Sons de sorts : **étude faite le 04/11/2026, Drain Life corrigé ; propositions à faire valider par l'utilisateur.**
+   Sources publiques : Blizzard, « Under the Hood: Anatomy of Sound Design » (créatures de WoW : voix + ours + tigre
+   superposés puis traités ; variations nombreuses) ; Brian Farr (Hearthstone, ex-WoW) : les sorts de Warcraft ont « un
+   élément musical atonal » qui les rend reconnaissables ; guides de design de sorts (Game Developer, RPG Magic 2) : 3 à
+   8 couches, découpe incantation / boucle / impact, impact = sub + corps + détail + queue, attaques alignées.
+   Constat chez nous : tout est synthétisé (oscillateurs purs + bruit filtré), sans texture enregistrée ni attaque
+   franche, d'où le côté plat. Propositions :
+   a. sous chaque sort, une texture enregistrée libre de droits par école (craquement de glace, souffle d'arcane,
+      grondement d'ombre, bois et feuilles…), comme le souffle et le choc d'arme de la mêlée ;
+   b. impact en 4 couches alignées (sub, corps, détail, queue réverbérée) avec une attaque nette ;
+   c. signature « atonale » propre à chaque école (intervalles dissonants reconnaissables) au lieu d'accords consonants ;
+   d. variations : hauteur aléatoire légère et 2 ou 3 variantes par sort fréquent (pas deux fois le même son) ;
+   e. mixage : ses propres sorts devant, ceux des autres plus doux et filtrés avec la distance ;
+   f. canalisations en vagues au rythme des tics plutôt qu'un bourdon continu (appliqué à Drain Life).
 11. Mobile, surtout le lobby, « complètement cassé » (ajoutée le 04/11/2026). Cause principale trouvée et corrigée le
     jour même (régression du commit 1880ec3 : la barre du bas recouvrait la moitié du lobby) ; reste à faire une revue
     complète du mobile (lobby en entier jusqu'au bouton PLAY, Settings, jeu, fin de match) sur plusieurs tailles. Vu le 04/11 : texte « Play » en double sur le bouton PLAY du lobby

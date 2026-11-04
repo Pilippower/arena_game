@@ -395,12 +395,14 @@ const BED = {
     l.voice(55, { vol: 0.07, trem: 3, tremDepth: 0.4 });
     l.air(450, { vol: 0.06, q: 0.8, kind: 'lowpass', sweep: 0.8, sweepDepth: 200 });
   },
-  // vol de vie : pulsation lente (au rythme des tics), aspiration qui va et vient
+  // vol de vie : souffle sombre qui aspire en une vague lente par tic (1 par seconde), note grave voilée, très bas.
+  // 04/11/2026, « très gênant » : l'ancienne nappe (scie à 98 Hz, sub pulsé deux fois par seconde, souffle qui balayait
+  // vite) bourdonnait et pompait pendant toute la canalisation de 5 s. Règle : pas de scie, rien de plus rapide que les
+  // tics, volume total ≤ 0,1 (tests/combat.test.js).
   drain: l => {
-    l.voice(98, { type: 'sawtooth', vol: 0.05, lp: 600, trem: 2, tremDepth: 0.7 });
-    l.voice(147, { vol: 0.035, vib: 2, vibDepth: 6 });
-    l.voice(49, { vol: 0.06, trem: 2, tremDepth: 0.6 });
-    l.air(900, { vol: 0.05, q: 2, sweep: 2, sweepDepth: 450 });
+    l.air(520, { vol: 0.04, q: 1, kind: 'lowpass', sweep: 1, sweepDepth: 180 });
+    l.voice(147, { vol: 0.022, vib: 0.5, vibDepth: 3, trem: 1, tremDepth: 0.5 });
+    l.voice(73.5, { type: 'triangle', vol: 0.025 });
   }
 };
 const SPELL_LOOP = {
