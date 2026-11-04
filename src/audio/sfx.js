@@ -111,22 +111,31 @@ function sfxMetal(vol, pan, delay = 0, base = 420) {
     )
   );
 }
+// Cris des formes du druide, couche par couche (jouées ensemble) : félin = vrai tigre ; ours = grognement grave de
+// grizzly + rugissement de tigre abaissé d'environ une octave et adouci, pour la taille (recette des créatures de jeu :
+// superposer, abaisser, couper les aigus nasillards ; 04/11/2026, l'ours sonnait comme un cochon).
+const BEAST_VOICE = {
+  cat: [{ kind: 'snarl_cat', vol: 0.5, rate: 1.02 }],
+  bear: [
+    { kind: 'roar_bear', vol: 0.65, rate: 0.92 },
+    { kind: 'snarl_cat', vol: 0.32, rate: 0.62, lowpass: 1500 }
+  ]
+};
 const SFX = {
   // Cri d'effort du personnage qui frappe (voix d'homme ou de femme selon le personnage, plus grave pour un orc ou
   // un mort-vivant, plus claire pour un elfe ; jamais étouffée : un filtre rendait le cri du mort-vivant
   // méconnaissable). Pas deux cris en moins de 1,2 s.
-  // Formes du druide : grognement de tigre (chat) ou grognement d'ours (ours) à la place du cri.
+  // Formes du druide : leur cri de bête (BEAST_VOICE) à la place du cri d'effort.
   effort(u) {
     if (!u || u.stealth) return;
     const t = performance.now();
     if (u.effortAt && t - u.effortAt < 1200) return;
     u.effortAt = t;
-    if (u.form === 'cat' || u.form === 'bear') {
+    const beast = BEAST_VOICE[u.form];
+    if (beast) {
       const a = sfxSpatial(u),
-        cat = u.form === 'cat';
-      sfxSample(cat ? 'snarl_cat' : 'roar_bear', (cat ? 0.5 : 0.65) * a.level, a.pan, {
-        rate: (cat ? 1.02 : 0.95) * (0.94 + Math.random() * 0.12)
-      });
+        pitch = 0.94 + Math.random() * 0.12; // même variation pour toutes les couches : un seul cri
+      for (const l of beast) sfxSample(l.kind, l.vol * a.level, a.pan, { rate: l.rate * pitch, lowpass: l.lowpass || 0 });
       return;
     }
     if (u.form) return;

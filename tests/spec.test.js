@@ -770,8 +770,16 @@ assert.ok(read('index.html').includes('animation:npTargetGlow'), 'cible : contou
   );
   assert.ok(read('src/ui/hud.js').includes("if (b.classList.contains('empty')) continue;"), 'emplacement vide');
 }
-// Druide : feulement en chat, grognement d'ours en ours ; licences documentées
-assert.ok(read('src/audio/sfx.js').includes("cat ? 'snarl_cat' : 'roar_bear'"), 'cris des formes du druide');
+// Druide : feulement en chat ; en ours, grognement grave de grizzly + couche de tigre abaissé et adouci (la taille),
+// toutes les couches jouées ensemble ; licences documentées
+{
+  const src = read('src/audio/sfx.js'),
+    V = vm.runInNewContext('(' + src.match(/const BEAST_VOICE = (\{[\s\S]*?\r?\n\});/)[1] + ')');
+  assert.equal(V.cat.map(l => l.kind).join(), 'snarl_cat', 'chat : tigre');
+  assert.equal(V.bear.map(l => l.kind).join(), 'roar_bear,snarl_cat', 'ours : grizzly + tigre');
+  assert.ok(V.bear[1].rate < 0.7 && V.bear[1].lowpass > 0, 'ours : tigre abaissé, aigus coupés');
+  assert.ok(src.includes('for (const l of beast) sfxSample('), 'toutes les couches jouées');
+}
 assert.ok(
   read('assets/audio/LICENSES.md').includes('roar_bear') && read('assets/audio/LICENSES.md').includes('snarl_cat'),
   'licences des cris de bêtes'
@@ -796,9 +804,26 @@ assert.ok(
   };
   for (const [k, max] of [
     ['snarl_cat', 50],
-    ['roar_bear', 400]
+    ['roar_bear', 50]
   ])
     PACK[k].forEach((u, i) => assert.ok(brightness(u) < max, `${k} n° ${i} trop aigu`));
+  // ours : grave avant tout. Part d'énergie sous 250 Hz (passe-bas du 1er ordre) ; les clips « de cochon » retirés le
+  // 04/11/2026 faisaient 19 à 36 %, les grognements de grizzly gardés 53 à 85 %
+  const lowShare = uri => {
+    const b = Buffer.from(uri.split(',')[1], 'base64'),
+      a = Math.exp((-2 * Math.PI * 250) / b.readUInt32LE(24));
+    let y = 0,
+      e = 0,
+      el = 0;
+    for (let i = 44; i + 1 < b.length; i += 2) {
+      const v = b.readInt16LE(i) / 32768;
+      y = (1 - a) * v + a * y;
+      e += v * v;
+      el += y * y;
+    }
+    return el / e;
+  };
+  PACK.roar_bear.forEach((u, i) => assert.ok(lowShare(u) > 0.45, `ours n° ${i} pas assez grave (« cochon »)`));
 }
 assert.ok(!read('index.html').includes('pointerHint'), 'pas d’aide « Click: target » en haut au centre');
 // bouclier visible dans les cadres de groupe : les règles des barres peintes ne visent que le remplissage de la vie

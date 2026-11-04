@@ -8,7 +8,6 @@ validé dans `docs/SPEC.md`.
 Du plus simple au plus compliqué, un commit par tâche. Images de référence des épaules (planches de classe génériques
 fournies par l'utilisateur, à suivre au plus près) : `assets_src/ui/ref_shoulders_{mage,warlock,rogue,priest}.png`.
 
-8. Ours : ses sons ressemblent encore à un cochon ; nouvelle étude des sons (enregistrements d'ours libres de droits).
 9. Sons de sorts encore plats et fades : état des lieux du design sonore des sorts de World of Warcraft (sources
    publiques, sans copier ni extraire leurs sons), puis propositions ; Drain Life du démoniste très gênant.
 11. Mobile, surtout le lobby, « complètement cassé » (ajoutée le 04/11/2026). Cause principale trouvée et corrigée le
