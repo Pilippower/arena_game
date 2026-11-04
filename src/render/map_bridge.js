@@ -159,7 +159,7 @@
     );
     const sp = sand.geometry.attributes.position;
     for (let i = 0; i < sp.count; i++) {
-      const out = Math.max(Math.abs(sp.getX(i)) - hx, Math.abs(sp.getY(i)) - hz, 0);
+      const out = ArenaEnv.outsideDist(arena, sp.getX(i), -sp.getY(i)); // sable plat dans l'arène et les salles
       sp.setZ(i, out > 0 ? noise2(sp.getX(i) * 0.08 + 9, sp.getY(i) * 0.08, 256, 3) * 0.5 * Math.min(1, out / 3) : 0);
     }
     sand.geometry.computeVertexNormals();
@@ -434,38 +434,55 @@
     for (const [x, z, w, d, vert] of sides) {
       const len2 = vert ? d : w,
         th = vert ? w : d, // épaisseur du rempart
-        inward = vert ? -Math.sign(x) : -Math.sign(z);
+        inward = vert ? -Math.sign(x) : -Math.sign(z),
+        // remparts est / ouest : ouverture de la porte de la salle de départ (poterne : start_rooms.js). Les tirages
+        // au hasard restent les mêmes (le reste du décor ne change pas)
+        gap = vert ? ArenaEnv.doorGap(arena, Math.sign(x)) : null,
+        free = (t, m) => !gap || t < gap[0] - m || t > gap[1] + m,
+        clip = (a, b) =>
+          (gap
+            ? [
+                [a, Math.min(b, gap[0])],
+                [Math.max(a, gap[1]), b]
+              ]
+            : [[a, b]]
+          ).filter(([p, q]) => q - p > 0.05);
       // blocs de falaise sur 2 rangées
       for (let t = -len2 / 2; t < len2 / 2;) {
         const bw = 2 + r() * 2.2;
         for (let row = 0; row < 2; row++) {
-          const bh = wallH / 2 + r() * 0.4,
-            cx = vert ? x : x + t + bw / 2,
-            cz = vert ? z + t + bw / 2 : z;
-          stoneBlock(vert ? th : bw, bh, vert ? bw : th, cx, row * (wallH / 2) + bh / 2, cz, rock, 0.18);
+          const bh = wallH / 2 + r() * 0.4;
+          for (const [a, b] of clip(t, t + bw)) {
+            const cx = vert ? x : x + (a + b) / 2,
+              cz = vert ? z + (a + b) / 2 : z;
+            stoneBlock(vert ? th : b - a, bh, vert ? b - a : th, cx, row * (wallH / 2) + bh / 2, cz, rock, 0.18);
+          }
         }
         t += bw;
       }
       // palissade
       for (let t = -len2 / 2 + 0.5; t < len2 / 2; t += 0.85) {
-        const lh = 2.4 + r() * 1.4,
-          lx = vert ? x - inward * 0.6 : x + t,
+        const lh = 2.4 + r() * 1.4;
+        if (!free(t, 0.4)) continue;
+        const lx = vert ? x - inward * 0.6 : x + t,
           lz = vert ? z + t : z - inward * 0.6;
         const lg = add(logG, darkWood, lx, wallH + lh / 2 - 0.3, lz);
         lg.scale.y = lh;
         add(logTipG, wood, lx, wallH + lh - 0.3 + 0.45, lz);
       }
       // ceinture de fer qui lie la palissade
-      add(
-        new THREE.BoxGeometry(vert ? 0.9 : len2, 0.18, vert ? len2 : 0.9),
-        iron,
-        vert ? x - inward * 0.6 : x,
-        wallH + 1.2,
-        vert ? z : z - inward * 0.6,
-        false
-      );
+      for (const [a, b] of clip(-len2 / 2, len2 / 2))
+        add(
+          new THREE.BoxGeometry(vert ? 0.9 : b - a, 0.18, vert ? b - a : 0.9),
+          iron,
+          vert ? x - inward * 0.6 : x + (a + b) / 2,
+          wallH + 1.2,
+          vert ? z + (a + b) / 2 : z - inward * 0.6,
+          false
+        );
       // défenses d'os inclinées vers l'arène
       for (let t = -len2 / 2 + 3; t < len2 / 2 - 2; t += 6) {
+        if (!free(t, 1)) continue;
         const sx = vert ? x + inward * 0.9 : x + t,
           sz = vert ? z + t : z + inward * 0.9,
           tusk = new THREE.ConeGeometry(0.42, 3, 10, 1, true);
@@ -499,7 +516,7 @@
       }
       // bannières vers l'arène
       for (let k = -2; k <= 2; k++) {
-        if (k === 0) continue;
+        if (k === 0 || !free(k * (len2 / 6), 1.2)) continue;
         const b = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 3.2, 4, 8), bannerMat);
         if (vert) {
           b.position.set(x + inward * (th / 2 + 0.05), wallH - 1.2, k * (len2 / 6));
@@ -512,6 +529,16 @@
         S.add(b);
       }
     }
+    // salles de départ derrière les remparts est / ouest : roche de falaise, sol de sable, herse de fer (aucun tirage
+    // au hasard ici : le reste du décor ne change pas)
+    ArenaEnv.startRooms(THREE, S, arena, E, {
+      floor: sand.material,
+      wall: rock,
+      cap: masonry,
+      iron,
+      wallH,
+      box: (w, h, d, x, y, z, mat) => add(new THREE.BoxGeometry(w, h, d), mat, x, y, z)
+    });
     // braseros
     const flame = flameTexture(THREE),
       glow = glowTexture(THREE);

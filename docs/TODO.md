@@ -3,13 +3,7 @@
 Tâches demandées ou proposées, pas encore faites. Quand une tâche est terminée : la retirer d'ici et décrire le résultat
 validé dans `docs/SPEC.md`.
 
-## Liste du 04/11/2026 (priorité, dans cet ordre : du plus simple au plus compliqué, un commit par tâche)
-
-22. Les sorts des lanceurs suivent la cible en mouvement et frappent son corps.
-26. Cartes : une salle de chaque côté, reliée à l'arène, où chaque équipe apparaît ; compte à rebours de 20 s affiché ;
-    à 0, les portes s'ouvrent avec un son qui marque le début de l'arène.
-
-## Liste n°2 du 04/11/2026 (après la liste ci-dessus ; gérée par le coordinateur seul, sans agents parallèles)
+## Liste n°2 du 04/11/2026 (gérée par le coordinateur seul, sans agents parallèles)
 
 Du plus simple au plus compliqué, un commit par tâche. Images de référence des épaules (planches de classe génériques
 fournies par l'utilisateur, à suivre au plus près) : `assets_src/ui/ref_shoulders_{mage,warlock,rogue,priest}.png`.

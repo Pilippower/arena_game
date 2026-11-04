@@ -27,9 +27,15 @@ function update(dt) {
     u.prevZ = u.z;
     u.prevYaw = u.yaw;
   }
-  state.t = Math.max(0, state.t - dt);
-  state.elapsed = (state.elapsed || 0) + dt;
-  state.dampening = dampeningAt(state.elapsed);
+  // préparation dans les salles de départ : chrono de manche et dampening arrêtés jusqu'à l'ouverture des portes
+  if (state.prep > 0) {
+    state.prep = Math.max(0, state.prep - dt);
+    if (!state.prep) openGates();
+  } else {
+    state.t = Math.max(0, state.t - dt);
+    state.elapsed = (state.elapsed || 0) + dt;
+    state.dampening = dampeningAt(state.elapsed);
+  }
   playerMove(dt);
   if (window.NET?.role === 'host') netHostUpdate(dt);
   for (const u of state.units) {
@@ -106,11 +112,17 @@ function update(dt) {
         u.res = Math.max(0, u.res - (ca.cost || 0)); // ressource prise à la fin de l'incantation
         if (ca.type === 'damage') {
           const proj = u.cls === 'warlock' ? 'shadowProjectile' : 'arcaneProjectile';
-          fx(proj, u.x, (u.y || 0) + 1.55, u.z, CLASS[u.cls].accent, 0.48, 0.24, [
-            ca.target.x,
-            (ca.target.y || 0) + 1.2,
-            ca.target.z
-          ]);
+          fx(
+            proj,
+            u.x,
+            (u.y || 0) + 1.55,
+            u.z,
+            CLASS[u.cls].accent,
+            0.48,
+            0.24,
+            [ca.target.x, (ca.target.y || 0) + FX_TORSO, ca.target.z],
+            fxFollow(ca.target)
+          );
           u.curSchool = CLASS[u.cls].skills[ca.i]?.s || 'magic';
           damage(u, ca.target, ca.value);
           if (ca.slow) applySlow(ca.target, ca.slow.pct, ca.slow.dur, true); // Frost Bolt : sans rendements décroissants
@@ -127,11 +139,17 @@ function update(dt) {
           control(ca.target, 'fear', ca.value, u);
           fx('fear', ca.target.x, (ca.target.y || 0) + 1.15, ca.target.z, CLASS[u.cls].accent, 1.0, 1.05);
         } else {
-          fx('healBeam', u.x, (u.y || 0) + 1.45, u.z, CLASS[u.cls].accent, 0.34, 0.16, [
-            ca.target.x,
-            (ca.target.y || 0) + 1.25,
-            ca.target.z
-          ]);
+          fx(
+            'healBeam',
+            u.x,
+            (u.y || 0) + 1.45,
+            u.z,
+            CLASS[u.cls].accent,
+            0.34,
+            0.16,
+            [ca.target.x, (ca.target.y || 0) + FX_TORSO, ca.target.z],
+            fxFollow(ca.target)
+          );
           heal(u, ca.target, ca.value);
           if (ca.hot) addAura(ca.target, u, ca.name, 'hot', ca.hot.total, ca.hot.dur, 'nature'); // Regrowth
         }
@@ -146,7 +164,7 @@ function update(dt) {
         useSkill(u, q.i);
       }
     }
-    if (u.ai) ai(u, dt);
+    if (u.ai && gatesOpen()) ai(u, dt); // l'IA attend l'ouverture des portes
   }
   updateHealthShrines(dt);
   updateVisualState(dt);
@@ -163,6 +181,12 @@ function update(dt) {
     state.uiTick = 0.08;
     updateUI();
   }
+}
+// Fin de la préparation : les portes s'ouvrent (décor : render/start_rooms.js, d'après state.gatesAt) avec le son
+// du début de l'arène.
+function openGates() {
+  state.gatesAt = now();
+  SFX.gates();
 }
 function updateVisualState(dt) {
   for (const f of state.fx) {

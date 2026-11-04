@@ -148,8 +148,19 @@ function setHTML(el) {
     el._shown = el._html;
   }
 }
+// Compte à rebours de la préparation (salles de départ) : secondes avant l'ouverture des portes, puis « Fight! ».
+const FIGHT_SHOWN = 1.4; // s
+function gateCountdownUI() {
+  const el = $('gateCountdown'),
+    fight = state.gatesAt != null && now() - state.gatesAt < FIGHT_SHOWN,
+    on = !state.loading && !state.ended && (state.prep > 0 || fight);
+  el.classList.toggle('on', on);
+  el.classList.toggle('fight', fight);
+  if (on) el.querySelector('b').textContent = fight ? 'Fight!' : Math.ceil(state.prep);
+}
 function updateUI() {
   if (!state) return;
+  gateCountdownUI();
   const p = state.player,
     t = p.target;
   $('timer').textContent =

@@ -145,6 +145,20 @@ const SFX = {
       sfxTone(f, big ? 1.1 : 0.8, 'sine', 0.045, null, 0.38, 0, 0, 0.45)
     );
   },
+  // Ouverture des portes, début de l'arène (synthèse originale, ~3 s) : grondement des herses qui montent et
+  // cliquetis des chaînes, coup de gong grave (partiels inharmoniques qui s'éteignent lentement), appel de cor en
+  // quinte montante.
+  gates() {
+    sfxSweep(1.9, 0.18, 220, 70, 0, 0, 'lowpass', 0.8);
+    for (let i = 0; i < 9; i++) sfxMetal(0.022, (i % 2 ? 0.4 : -0.4) * Math.random(), i * 0.13, 760 + i * 25);
+    [1, 2.41, 3.93, 5.62].forEach((k, i) =>
+      sfxTone(98 * k, 3.2 - i * 0.55, 'sine', 0.14 / (1 + i * 0.7), null, 0.08, 0, 0, 0.55)
+    );
+    sfxTone(146.83, 0.75, 'sawtooth', 0.06, 148, 0.3, 0, 900, 0.4);
+    sfxTone(73.42, 0.75, 'sine', 0.05, null, 0.3, 0, 0, 0.3);
+    sfxTone(220, 1.4, 'sawtooth', 0.065, 222, 1.0, 0, 1100, 0.45);
+    sfxTone(110, 1.4, 'sine', 0.05, null, 1.0, 0, 0, 0.35);
+  },
   defeat() {
     [392, 349.23, 311.13].forEach((f, i) => sfxTone(f, 0.35, 'triangle', 0.05, f * 0.97, i * 0.16, 0, 1800, 0.35));
   },

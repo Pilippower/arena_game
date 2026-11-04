@@ -114,6 +114,7 @@ for (const sx of [-1, 1])
 assert.equal(ctx.groundAt({ x: 0, z: 0, y: 0 }), 0, 'sous le pont : on reste au sol');
 assert.ok(ctx.blockedBySurface({ x: B.rampX, z: B.halfW + 1, y: 0 }), 'on ne traverse pas une rampe par le côté');
 // IA sur The Bridge : sable → tablier par une rampe (pied, puis haut), pas en dessous de la cible
+vm.runInContext('var state=null;var gatesOpen=()=>true;', ctx); // portes ouvertes (salles de départ : combat.test.js)
 vm.runInContext(read('src/game/combat.js').match(/function resolveWalls[\s\S]*?\n\}/)[0], ctx);
 run('src/game/ai.js');
 {
@@ -822,3 +823,8 @@ assert.ok(
 // IA de mêlée : suit un pas en arrière : tests/gameplay.test.js
 // Dispel : sans recharge, uniquement sur la cible actuelle amie
 assert.equal(skill('oracle', 'Dispel').cd, 0, 'Dispel sans recharge');
+// Projectiles des sorts : les deux moteurs d'effets visent la cible à chaque image (règle : tests/combat.test.js)
+assert.ok(
+  read('src/render/effects.js').includes('fxAim(o.f)') && read('src/render/fx_webgl.js').includes('fxAim(f)'),
+  'les projectiles suivent leur cible au rendu'
+);

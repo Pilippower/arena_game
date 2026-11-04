@@ -53,7 +53,8 @@ function autoAttack(u, dt) {
   u.swing = Math.max(0, (u.swing || 0) - dt);
   if (u.swing > 0 || u.stun > 0 || u.fear > 0 || u.poly > 0 || u.cast || u.mobility || u.action > 0) return;
   const t = hostileTarget(u, false);
-  if (!t || (u.ai && t.poly > 0) || d2(u, t) > 2.5) return;
+  // los : pas de coup à travers un mur (rempart d'une salle de départ)
+  if (!t || (u.ai && t.poly > 0) || d2(u, t) > 2.5 || !los(u, t)) return;
   if (!u.ai) {
     let rel = Math.atan2(t.x - u.x, t.z - u.z) - u.yaw;
     rel = Math.atan2(Math.sin(rel), Math.cos(rel));

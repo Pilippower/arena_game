@@ -424,15 +424,23 @@
       [hx + T / 2, 0, T, hz * 2, true]
     ];
     for (const [x, z, w, d, vert] of sides) {
-      box(w, H, d, x, H / 2, z);
-      box(vert ? w + 0.3 : w, 0.3, vert ? d : d + 0.3, x, H + 0.15, z, capMat);
-      const len = vert ? d : w;
+      // remparts est / ouest : ouverture de la porte de la salle de départ (poterne : start_rooms.js)
+      const len = vert ? d : w,
+        gap = vert ? ArenaEnv.doorGap(arena, Math.sign(x)) : null,
+        free = (t, m) => !gap || t < gap[0] - m || t > gap[1] + m;
+      for (const [a, b] of ArenaEnv.roomAround(-len / 2, len / 2, gap)) {
+        const c = (a + b) / 2;
+        box(vert ? w : b - a, H, vert ? b - a : d, vert ? x : x + c, H / 2, vert ? z + c : z);
+        box(vert ? w + 0.3 : b - a, 0.3, vert ? b - a : d + 0.3, vert ? x : x + c, H + 0.15, vert ? z + c : z, capMat);
+      }
       for (let t = -len / 2 + 0.8; t < len / 2; t += 1.6) {
+        if (!free(t, 0.8)) continue;
         const mx = vert ? x : x + t,
           mz = vert ? z + t : z;
         box(vert ? T * 0.9 : 0.8, 0.7, vert ? 0.8 : T * 0.9, mx, H + 0.65, mz, capMat);
       } // merlons
       for (let t = -len / 2 + 4; t < len / 2 - 2; t += 8) {
+        if (!free(t, 1.3)) continue;
         const bx = vert ? x - Math.sign(x) * 0.0 : x + t,
           bz = vert ? z + t : z;
         box(vert ? T + 1.0 : 1.1, H * 0.85, vert ? 1.1 : T + 1.0, bx, H * 0.425, bz);
@@ -453,6 +461,20 @@
         roof.castShadow = true;
         S.add(roof);
       }
+    // salles de départ derrière les remparts est / ouest : même maçonnerie, dallage, herse de fer
+    const paving = tex(
+      THREE,
+      stoneCanvas({ rows: 5, minW: 0.14, maxW: 0.3, base: [0.5, 0.46, 0.4], vary: 0.16, moss: 0.2, warp: 5, seed: 7 })
+    );
+    paving.repeat.set(4, 4);
+    ArenaEnv.startRooms(THREE, S, arena, E, {
+      floor: new THREE.MeshStandardMaterial({ map: paving, roughness: 0.9 }),
+      wall: wallMat,
+      cap: capMat,
+      iron: new THREE.MeshStandardMaterial({ color: 0x2b2c33, metalness: 0.75, roughness: 0.45 }),
+      wallH: H,
+      box
+    });
     // bannières d'équipe ondulantes (rouge à gauche, bleu à droite comme avant)
     const bannerMat = (col, emblem) => {
       const c = canvas(128, 256),
@@ -495,6 +517,8 @@
       blue = bannerMat('#143a7a', '✦');
     for (const side of [-1, 1])
       for (const z of [-18, -9, 0, 9, 18]) {
+        const gap = ArenaEnv.doorGap(arena, side);
+        if (gap && z > gap[0] - 1.2 && z < gap[1] + 1.2) continue; // porte de la salle de départ
         const b = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 3, 4, 8), side < 0 ? red : blue);
         b.position.set(side * (hx - 0.14), 2.1, z);
         b.rotation.y = (-side * Math.PI) / 2;
