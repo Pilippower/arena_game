@@ -357,6 +357,22 @@ function playerWorld() {
   const right = S.ctx.lobbyTorchSpot(Rt, 2560, 1129, 726);
   assert.ok(Math.abs(right.x - (2560 - (328 - 192) * (726 / 328))) < 1e-6, 'mur droit : sa propre largeur (328 px)');
 }
+// ---------- Bouclier d'absorption sur les barres de vie (src/ui/hud.js) ----------
+{
+  const S = sandbox({ clamp: (v, a, b) => Math.max(a, Math.min(b, v)) });
+  S.fn('src/ui/hud.js', 'shieldSpan');
+  const near = (a, b) => Math.abs(a - b) < 1e-9;
+  assert.equal(S.ctx.shieldSpan(500, 1000, 0), null, 'sans bouclier : rien');
+  // vie 50 %, bouclier 20 % : portion juste après la vie, dans la partie vide
+  const a = S.ctx.shieldSpan(500, 1000, 200);
+  assert.ok(near(a.left, 50) && near(a.width, 20) && !a.over, 'bouclier dans la vie manquante');
+  // vie 90 %, bouclier 30 % : 10 % dans le vide, 20 % de surplus posé sur la fin de la vie
+  const b = S.ctx.shieldSpan(900, 1000, 300);
+  assert.ok(near(b.left, 70) && near(b.width, 30) && b.over, 'surplus sur la fin de la barre de vie');
+  // pleine vie : tout le bouclier recouvre la fin de la vie ; jamais plus large que la barre
+  const c = S.ctx.shieldSpan(1000, 1000, 5000);
+  assert.ok(near(c.left, 0) && near(c.width, 100) && c.over, 'bouclier énorme : toute la barre, pas plus');
+}
 console.log(
-  'OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic, contrôles, IK, glaives, frappes par race, torches du lobby)'
+  'OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic, contrôles, IK, glaives, frappes par race, torches du lobby, bouclier sur les barres)'
 );

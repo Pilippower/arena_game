@@ -102,13 +102,30 @@ function ccPortraitHTML(u) {
   const icon = (c.spell && auraIcon(c.spell)) || `<span class="ccEmoji">${CC_FALLBACK[c.kind]}</span>`;
   return `<div class="ccOverlay">${icon}<span class="sweep" style="--p:${((100 * c.left) / c.total).toFixed(1)}%"></span><b>${c.left < 3 ? c.left.toFixed(1) : Math.ceil(c.left)}</b></div>`;
 }
+// Bouclier d'absorption sur une barre de vie (style MMO) : portion qui prolonge la vie dans la partie vide ; si le
+// bouclier dépasse la vie manquante, le surplus recouvre la fin de la barre de vie (over). Fonction pure, en % de la
+// barre ; null sans bouclier.
+function shieldSpan(hp, maxHp, shield) {
+  if (!(shield > 0) || !(maxHp > 0)) return null;
+  const h = clamp(hp / maxHp, 0, 1),
+    s = Math.min(shield / maxHp, 1),
+    after = Math.min(s, 1 - h),
+    over = s - after;
+  return { left: (h - over) * 100, width: s * 100, over: over > 0 };
+}
+function shieldHTML(u) {
+  const S = u.alive ? shieldSpan(u.hp, u.maxHp, u.shield) : null;
+  return S
+    ? `<div class="shieldSpan${S.over ? ' over' : ''}" style="left:${S.left.toFixed(1)}%;width:${S.width.toFixed(1)}%"></div>`
+    : '';
+}
 function unitRowHTML(u, enemy) {
   const p = state.player,
     C = CLASS[u.cls],
     hp = (100 * u.hp) / u.maxHp,
     col = enemy ? '#e65360' : hp > 50 ? '#3fcf6a' : hp > 25 ? '#e6c13f' : '#e65360';
   return `<div class="unitRow${enemy ? ' foe' : ''}${u === p.target ? ' sel' : ''}${u.alive ? '' : ' dead'}" data-uid="${state.units.indexOf(u)}">${portraitHTML(u)}${badgeHTML(u)}<div class="unitInfo"><div class="nm">${u === p ? 'You' : u.name}<span>${C.name}</span></div>
-  <div class="hpb"><div style="width:${hp.toFixed(1)}%;background:${col}"></div></div><div class="rsb"><div style="width:${u.res}%"></div></div>${castBarHTML(u)}<div class="dr">${drText(u)}</div></div></div>`;
+  <div class="hpb"><div style="width:${hp.toFixed(1)}%;background:${col}"></div>${shieldHTML(u)}</div><div class="rsb"><div style="width:${u.res}%"></div></div>${castBarHTML(u)}<div class="dr">${drText(u)}</div></div></div>`;
 }
 function castBarHTML(u) {
   const c = u.cast;
@@ -123,7 +140,7 @@ function badgeHTML(u) {
 // Cadre du joueur / de la cible. Portrait et emblème ne s'affichent que dans l'interface PC (hud.css).
 function frameHTML(u, enemy = false) {
   const C = CLASS[u.cls];
-  return `${portraitHTML(u)}${badgeHTML(u)}<div class="nameRow"><b>${u.name}</b><span>${Math.ceil(u.hp)} HP</span></div><div class="tiny fClass">${RACE[u.race]?.name || ''} ${C.name} · ${C.role} · ${ARMOR[C.armor]?.label || ''}</div><div class="bar fHp"><div class="fill ${enemy ? 'enemy' : ''}" style="width:${(100 * u.hp) / u.maxHp}%"></div></div><div class="bar resource fRes"><div class="fill" style="width:${u.res}%"></div></div><div class="tiny fInfo">${C.res} ${Math.round(u.res)}/100${u.shield > 0 ? ` · Shield ${Math.ceil(u.shield)}` : ''}</div>`;
+  return `${portraitHTML(u)}${badgeHTML(u)}<div class="nameRow"><b>${u.name}</b><span>${Math.ceil(u.hp)} HP</span></div><div class="tiny fClass">${RACE[u.race]?.name || ''} ${C.name} · ${C.role} · ${ARMOR[C.armor]?.label || ''}</div><div class="bar fHp"><div class="fill ${enemy ? 'enemy' : ''}" style="width:${(100 * u.hp) / u.maxHp}%"></div>${shieldHTML(u)}</div><div class="bar resource fRes"><div class="fill" style="width:${u.res}%"></div></div><div class="tiny fInfo">${C.res} ${Math.round(u.res)}/100${u.shield > 0 ? ` · Shield ${Math.ceil(u.shield)}` : ''}</div>`;
 }
 function setHTML(el) {
   if (el._html !== el._shown) {

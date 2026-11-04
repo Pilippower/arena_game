@@ -791,6 +791,8 @@ assert.ok(
     PACK[k].forEach((u, i) => assert.ok(brightness(u) < max, `${k} n° ${i} trop aigu`));
 }
 assert.ok(!read('index.html').includes('pointerHint'), 'pas d’aide « Click: target » en haut au centre');
+// bouclier visible dans les cadres de groupe : les règles des barres peintes ne visent que le remplissage de la vie
+assert.ok(read('src/ui/hud.css').includes('body .unitRow .hpb > div:not(.shieldSpan),'), 'bouclier visible dans les groupes');
 // Tourner au clavier : même rotation que le glisser au clic droit (convention validée)
 assert.ok(
   read('src/input/controls.js').includes('GameLogic.applyLook(camera.yaw, camera.pitch, dir * TURN_PX_PER_S * dt, 0)'),

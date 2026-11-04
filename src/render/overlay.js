@@ -22,11 +22,12 @@ function renderOverlayWorld() {
       e = document.createElement('div');
       e.className = 'nameplate';
       e.innerHTML =
-        '<div class="npName"></div><div class="npBar"><div class="npFill"></div></div><div class="npCast"><span class="npIcon"></span><div class="npTrack"><div></div><span></span><b></b></div></div><div class="npAuras"></div>';
+        '<div class="npName"></div><div class="npBar"><div class="npFill"></div><div class="shieldSpan"></div></div><div class="npCast"><span class="npIcon"></span><div class="npTrack"><div></div><span></span><b></b></div></div><div class="npAuras"></div>';
       e.style.left = e.style.top = '0';
       np.appendChild(e);
       e._name = e.firstChild;
       e._fill = e.children[1].firstChild;
+      e._shield = e.children[1].lastChild;
       e._cast = e.children[2];
       e._castIcon = e._cast.firstChild;
       e._castFill = e._cast.lastChild.firstChild;
@@ -56,6 +57,18 @@ function renderOverlayWorld() {
     if (e._k.w !== w) {
       e._fill.style.width = w + '%';
       e._k.w = w;
+    }
+    // bouclier d'absorption : portion hachurée qui prolonge la vie (shieldSpan, src/ui/hud.js)
+    const S = u.alive ? shieldSpan(u.hp, u.maxHp, u.shield) : null,
+      sk = S ? `${S.left.toFixed(1)},${S.width.toFixed(1)},${S.over}` : '';
+    if (e._k.sh !== sk) {
+      e._shield.style.display = S ? '' : 'none';
+      if (S) {
+        e._shield.style.left = S.left.toFixed(1) + '%';
+        e._shield.style.width = S.width.toFixed(1) + '%';
+        e._shield.classList.toggle('over', S.over);
+      }
+      e._k.sh = sk;
     }
     const c = u.team === state.player.team ? '#58c3ff' : '#ff6976';
     if (e._k.c !== c) {

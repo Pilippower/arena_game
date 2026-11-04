@@ -5,8 +5,6 @@ validé dans `docs/SPEC.md`.
 
 ## Liste du 04/11/2026 (priorité, dans cet ordre : du plus simple au plus compliqué, un commit par tâche)
 
-20. Bouclier d'absorption visible sur la barre de vie (flottante et cadres de groupe) : portion superposée, couleur
-    distincte, style MMO sans copier.
 21. Régression des glaives du voleur : il frappait en tranchant avec ses glaives, il frappe de nouveau comme des coups de
     poing. Corriger et ajouter un test de non-régression.
 22. Les sorts des lanceurs suivent la cible en mouvement et frappent son corps.

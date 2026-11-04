@@ -355,14 +355,14 @@ body .unitRow .rsb {
   overflow: hidden;
 }
 body .frame .bar .fill,
-body .unitRow .hpb > div,
+body .unitRow .hpb > div:not(.shieldSpan),
 body .unitRow .rsb > div {
   position: relative;
   background: none !important;
   transition: width 0.15s linear;
 }
 body .frame .bar .fill::after,
-body .unitRow .hpb > div::after,
+body .unitRow .hpb > div:not(.shieldSpan)::after,
 body .unitRow .rsb > div::after {
   content: '';
   position: absolute;
