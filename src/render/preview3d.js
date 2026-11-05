@@ -7,6 +7,7 @@ const PREVIEW = {
   loader: null,
   group: null,
   mixer: null,
+  life: null, // surcouche « vivant à l'arrêt » du modèle affiché (hfBodyPose)
   action: null,
   clips: [],
   canvas: null,
@@ -107,6 +108,8 @@ function previewEnsure() {
       PREVIEW.camera.updateProjectionMatrix();
       if (PREVIEW.group && PREVIEW.loaded) PREVIEW.group.rotation.y += 0.0045;
       if (PREVIEW.mixer) PREVIEW.mixer.update(1 / 60);
+      // personnage vivant à l'arrêt, comme en arène (respiration, regard, clignements : hfIdleLife)
+      if (PREVIEW.life && PREVIEW.mixer) hfBodyPose(PREVIEW.life, PREVIEW.life.unit, 1 / 60);
       PREVIEW.renderer.render(PREVIEW.scene, PREVIEW.camera);
       PREVIEW.animId = requestAnimationFrame(loop);
     };
@@ -130,6 +133,7 @@ function previewClearGroup() {
   if (PREVIEW.group && PREVIEW.scene) PREVIEW.scene.remove(PREVIEW.group);
   PREVIEW.group = null;
   PREVIEW.mixer = null;
+  PREVIEW.life = null;
   PREVIEW.action = null;
   PREVIEW.currentKey = '';
   PREVIEW.loaded = false;
@@ -302,6 +306,7 @@ function updateSelectPreview3D(rk, ck) {
         PREVIEW.clips = clips;
         PREVIEW.mixer = new THREE.AnimationMixer(model);
         previewSetAnim();
+        PREVIEW.life = { model, kit: true, animKey: 'idle', unit: { id: 'preview', alive: true, stun: 0 } };
         group.position.set(0, 0, 0);
         group.rotation.y = 0.2;
         PREVIEW.loaded = true;

@@ -1,5 +1,6 @@
 'use strict';
-// Animations des personnages : choix des clips (hfSetAnim), instant d'impact des attaques, pas, mains sur l'arme (IK), traînée de lame.
+// Animations des personnages : choix des clips (hfSetAnim), vivant à l'arrêt (hfIdleLife : respiration, regard,
+// clignements), instant d'impact des attaques, pas, mains sur l'arme (IK), traînée de lame.
 function hfFindClip(rec, names) {
   const clips = rec.clips || [];
   for (const n of names) {
@@ -192,8 +193,51 @@ function hfBodyPose(rec, u, dt) {
       fwd: new THREE.Vector3(0, 0, 1).applyQuaternion(mq)
     };
   hfRaceStrike(rec, u, B, axes);
+  const blink = hfIdleLife(rec, u, dt, B, axes);
   hfStunPose(rec, u, dt, B, axes);
+  hfCloseEyes(rec, rec.stunEyes || blink);
   hfKeepOutput(B, B.bones);
+}
+// Vivant à l'arrêt (05/11/2026) : respiration du buste, regard qui se promène, léger transfert du poids, clignements.
+// Au repos et en garde seulement (plus rapide et plus ample en garde, regard plus fixe) ; chaque personnage a sa phase.
+const LIFE_IN = 0.4, // s : la surcouche s'installe à l'arrêt
+  LIFE_OUT = 0.2, // s : et s'efface quand on repart (clip de course intact)
+  BREATH = { idle: 3.8, guard: 2.6 }, // s : durée d'une respiration
+  BLINK = 0.13; // s : durée d'un clignement
+const lifeSeed = id => {
+  let h = 7;
+  for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) % 9973;
+  return h / 9973;
+};
+// Courbe (fonction pure, testée) : t = temps (s), seed 0..1, w = poids 0..1, guard = garde de combat. Angles en rad.
+function idleLifePose(t, seed, w, guard) {
+  const s = seed * 2 * Math.PI,
+    b = Math.sin((2 * Math.PI * t) / (guard ? BREATH.guard : BREATH.idle) + s),
+    look = guard ? 0.35 : 1,
+    period = 3.2 + seed * 1.8; // clignements tous les 3,2 à 5 s selon le personnage
+  return {
+    chest: -w * (guard ? 0.032 : 0.024) * b, // inspiration : la poitrine se soulève (buste un peu en arrière)
+    spine: -w * (guard ? 0.016 : 0.012) * b,
+    sway: w * 0.02 * Math.sin(t * 0.29 + s), // poids d'une jambe sur l'autre
+    headYaw: w * look * (0.09 * Math.sin(t * 0.37 + 2 * s) + 0.05 * Math.sin(t * 0.83 + s)),
+    headPitch: w * (0.03 * Math.sin(t * 0.53 + 3 * s) + 0.012 * b),
+    blink: w > 0.5 && (t + seed * 7) % period < BLINK
+  };
+}
+function hfIdleLife(rec, u, dt, B, axes) {
+  const L = (rec.life = rec.life || { w: 0, t: 0, seed: lifeSeed(u.id) }),
+    on = u.alive && !u.form && !(u.stun > 0) && (rec.animKey === 'idle' || rec.animKey === 'guard');
+  L.w = clamp(L.w + (on ? dt / LIFE_IN : -dt / LIFE_OUT), 0, 1);
+  L.t += dt;
+  if (!L.w) return false;
+  const P = idleLifePose(L.t, L.seed, smoothstep(0, 1, L.w), rec.animKey === 'guard'),
+    chest = B.spine[B.spine.length - 1];
+  hfRotateLocal(B.spine[0], axes.fwd, P.sway);
+  if (B.spine.length > 1) hfRotateLocal(B.spine[1], axes.right, P.spine);
+  hfRotateLocal(chest, axes.right, P.chest);
+  hfRotateLocal(B.head, axes.up, P.headYaw);
+  hfRotateLocal(B.head, axes.right, P.headPitch);
+  return P.blink;
 }
 function hfRaceStrike(rec, u, B, axes) {
   if (!STRIKE_CLASSES.has(u.cls) || u.form || !u.alive) return;
@@ -233,7 +277,7 @@ function hfStunPose(rec, u, dt, B, axes) {
     on = u.alive && u.stun > 0 && !u.form && !(u.poly > 0);
   St.s = clamp(St.s + (on ? dt / STUN_IN : -dt / STUN_OUT), 0, 1);
   St.t = St.s > 0 ? St.t + dt : 0;
-  hfCloseEyes(rec, on && St.s > 0.5);
+  rec.stunEyes = on && St.s > 0.5;
   if (!St.s || u.form) return;
   const P = stunPose(St.t, smoothstep(0, 1, St.s)),
     chest = B.spine[B.spine.length - 1];

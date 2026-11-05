@@ -398,6 +398,64 @@ function playerWorld() {
   const c = S.ctx.shieldSpan(1000, 1000, 5000);
   assert.ok(near(c.left, 0) && near(c.width, 100) && c.over, 'bouclier énorme : toute la barre, pas plus');
 }
+// ---------- Vivant à l'arrêt : respiration, regard qui se promène, poids, clignements (src/render/hero_anim.js) ----------
+{
+  const THREE = require('three');
+  const S = sandbox({
+    THREE,
+    clamp: (v, a, b) => Math.max(a, Math.min(b, v)),
+    now: () => 0,
+    state: {},
+    performance: { now: () => 0 }
+  });
+  S.load('src/render/hero_anim.js');
+  const { idleLifePose, hfBodyPose, BREATH } = S.ctx;
+  const nums = p => Object.values(p).filter(v => typeof v === 'number');
+  assert.ok(nums(idleLifePose(2.3, 0.4, 0, false)).every(v => v === 0), 'poids nul : pose du clip');
+  const T = Array.from({ length: 2000 }, (_, i) => i / 100), // 20 s
+    P = T.map(t => idleLifePose(t, 0.4, 1, false)),
+    span = k => Math.max(...P.map(p => p[k])) - Math.min(...P.map(p => p[k]));
+  assert.ok(span('chest') > 0.03 && span('chest') < 0.08, `respiration visible mais discrète (${span('chest').toFixed(3)})`);
+  assert.ok(span('headYaw') > 0.1 && Math.max(...P.map(p => Math.abs(p.headYaw))) < 0.2, 'regard qui se promène, peu');
+  assert.ok(span('sway') > 0.02, 'transfert du poids');
+  const blinks = P.filter((p, i) => p.blink && !P[i - 1]?.blink).length;
+  assert.ok(blinks >= 4 && blinks <= 7, `clignements toutes les 3 à 5 s (${blinks} en 20 s)`);
+  // garde : respiration plus rapide, regard plus fixe ; deux personnages ne respirent pas ensemble
+  const crossings = (seed, guard) =>
+    T.filter((t, i) => i && Math.sign(idleLifePose(t, seed, 1, guard).chest) !== Math.sign(idleLifePose(T[i - 1], seed, 1, guard).chest)).length;
+  assert.ok(crossings(0.4, true) > crossings(0.4, false) && BREATH.guard < BREATH.idle, 'garde : souffle plus court');
+  assert.ok(Math.abs(idleLifePose(5, 0.1, 1, false).chest - idleLifePose(5, 0.6, 1, false).chest) > 0.005, 'phases propres');
+  // squelette : la tête bouge à l'arrêt, retour exact à la pose du clip en course ; paupières qui clignent
+  const model = new THREE.Group();
+  let parent = model;
+  for (const n of ['spine_01', 'spine_02', 'spine_03', 'neck_01', 'Head']) {
+    const b = Object.assign(new THREE.Bone(), { name: n });
+    b.position.y = n === 'spine_01' ? 1 : 0.15;
+    parent.add(b);
+    parent = b;
+  }
+  const head = parent,
+    lid = Object.assign(new THREE.Mesh(), { name: 'Eyelid', visible: false }),
+    glow = Object.assign(new THREE.Sprite(), { name: 'EyeGlow' });
+  head.add(lid, glow);
+  const rec = { model, kit: true, animKey: 'idle' },
+    u = { id: 3, cls: 'arcanist', race: 'human', alive: true, stun: 0 },
+    up = () => new THREE.Vector3(0, 1, 0).transformDirection(head.matrixWorld),
+    track = [];
+  for (let f = 0; f < 8 * 60; f++) {
+    rec.animKey = f < 6 * 60 ? 'idle' : 'run';
+    hfBodyPose(rec, u, 1 / 60);
+    model.updateMatrixWorld(true);
+    track.push({ up: up(), closed: lid.visible && !glow.visible });
+  }
+  const moved = track.slice(60, 360).map(x => x.up.distanceTo(new THREE.Vector3(0, 1, 0)));
+  assert.ok(Math.max(...moved) > 0.03, `à l'arrêt, la tête bouge (${Math.max(...moved).toFixed(3)})`);
+  assert.ok(track.slice(60, 360).some(x => x.closed), 'clignement des yeux à l’arrêt');
+  assert.ok(track[7 * 60].up.distanceTo(new THREE.Vector3(0, 1, 0)) < 1e-9 && !track[7 * 60].closed, 'en course : pose du clip');
+  const v = track.slice(1).map((x, i) => x.up.clone().sub(track[i].up)),
+    jerk = Math.max(...v.slice(1).map((x, i) => x.distanceTo(v[i])));
+  assert.ok(jerk < 0.004, `mouvements doux, sans à-coup (${jerk.toFixed(4)})`);
+}
 // ---------- Étourdi : tête penchée en avant qui tourne lentement, yeux fermés (src/render/hero_anim.js) ----------
 // Bug du 04/11/2026 : le clip Hit_Chest en boucle rejetait la tête en arrière à chaque tour (« on dirait qu'il bug »).
 {
@@ -442,7 +500,7 @@ function playerWorld() {
     lid = Object.assign(new THREE.Mesh(), { name: 'Eyelid', visible: false }),
     glow = Object.assign(new THREE.Sprite(), { name: 'EyeGlow' });
   head.add(lid, glow);
-  const rec = { model, kit: true, animKey: 'idle' },
+  const rec = { model, kit: true, animKey: 'stun' }, // clip de l'étourdi (pas la surcouche du repos)
     u = { cls: 'arcanist', race: 'human', alive: true, stun: 0 },
     face = () => new THREE.Vector3(0, 1, 0).transformDirection(head.matrixWorld), // haut de la tête
     track = [];
