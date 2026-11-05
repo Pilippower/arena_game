@@ -373,6 +373,11 @@
     R.shadowMap.enabled = true;
     R.shadowMap.type = THREE.PCFSoftShadowMap;
     E.camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1600);
+    // bloom + étalonnage (render/env_post.js) : PC seulement ; ?post=0 pour comparer
+    E.post =
+      !mobile && typeof createEnvPost === 'function' && !/[?&]post=0/.test(globalThis.location?.search || '')
+        ? createEnvPost(THREE, R)
+        : null;
     E.time = { value: 0 };
     E.ok = true;
     return setMap(E.mapId || 'castle', arena);
@@ -490,7 +495,8 @@
       b.scale.setScalar(k);
     });
     for (let i = (units || []).length; i < E.blobs.length; i++) E.blobs[i].visible = false;
-    R.render(E.scene, E.camera);
+    if (E.post) E.post.render(E.scene, E.camera);
+    else R.render(E.scene, E.camera);
   }
 
   const stats = () =>
@@ -522,6 +528,9 @@
     },
     get mapId() {
       return E.mapId;
+    },
+    get postFx() {
+      return !!E.post;
     },
     // diagnostic (programmes compilés, limites du GPU)
     get renderer() {

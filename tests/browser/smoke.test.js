@@ -26,6 +26,7 @@ const isNoise = t => /Failed to load resource|net::ERR_|Failed to fetch|CORS/i.t
     await page.waitForTimeout(1000);
     const r = await page.evaluate(() => ({
       env: ENV.ok,
+      post: ArenaEnv.postFx, // bloom + étalonnage du décor (PC)
       kits: state.units.filter(u => HF.records.get(u.id)?.kit).length,
       advanced: state.prep < GATE_TIME || state.elapsed > 0.5, // préparation dans les salles de départ, puis combat
       countdown: !(state.prep > 0) || $('gateCountdown').classList.contains('on'), // compte à rebours affiché
@@ -37,6 +38,7 @@ const isNoise = t => /Failed to load resource|net::ERR_|Failed to fetch|CORS/i.t
     }));
     assert.equal(r.mapOk, true, 'décor et obstacles de la même carte');
     assert.equal(r.env, true, 'décor 3D chargé');
+    assert.equal(r.post, true, 'bloom et étalonnage du décor actifs sur PC');
     assert.equal(r.kits, 6, '6 personnages assemblés');
     assert.ok(r.advanced, 'la simulation avance');
     assert.ok(r.countdown && r.inRooms, 'préparation : équipes dans leurs salles, compte à rebours affiché');
