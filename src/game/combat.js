@@ -218,7 +218,9 @@ function los(a, b) {
   // salles de départ : on ne voit l'arène (ou l'autre salle) que par la porte, et seulement ouverte
   if (!seesThroughDoors(a, b, gatesOpen())) return false;
   const low = Math.min(a.y || 0, b.y || 0) + 1.2;
-  return !arena.pillars.some(p => p.h > low && segmentCircle(a.x, a.z, b.x, b.z, p.x, p.z, p.r + 0.18));
+  return !arena.pillars.some(
+    p => p.los !== false && p.h > low && segmentCircle(a.x, a.z, b.x, b.z, p.x, p.z, p.r + 0.18)
+  );
 }
 // Murs : on reste dans sa zone (arène ou salle de départ, d'après la position au début du pas) et, porte ouverte, dans
 // son passage ; contre un mur on glisse le long.
@@ -239,7 +241,7 @@ function resolveWalls(u) {
     let dx = u.x - p.x,
       dz = u.z - p.z,
       d = Math.hypot(dx, dz),
-      m = p.r + 0.66;
+      m = pillarReach(p);
     if (d < m) {
       d = d || 0.01;
       u.x = p.x + (dx / d) * m;
@@ -580,7 +582,7 @@ function stepBehind(u, t, gap = 1.2) {
 function pointWalkable(x, z, margin = 0.68, y = 0) {
   if (!zoneRects(zoneOf(x), margin, gatesOpen()).some(R => inRect(R, x, z))) return false;
   // un obstacle plus bas que soi (sous le pont) ne gêne pas
-  return !arena.pillars.some(p => p.h > y && Math.hypot(x - p.x, z - p.z) < p.r + margin);
+  return !arena.pillars.some(p => p.h > y && Math.hypot(x - p.x, z - p.z) < pillarReach(p, margin - PILLAR_PAD));
 }
 // Téléportation vers l'avant (Blink, Demonic Gate…) : on avance pas à pas en suivant le sol (rampes, tablier du
 // pont) comme une marche ; on s'arrête devant un pilier, un mur, le flanc d'une rampe, un garde-corps ou un vide.

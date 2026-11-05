@@ -1,20 +1,20 @@
 'use strict';
 // Sons des sorts (esprit des MMO fantasy sans rien copier) : bruitages enregistrés sous licences libres (eau, glace,
-// bol chantant, cloches… : s.sample, pack assets/audio/sfx_pack.js, licences LICENSES.md) et synthèse originale. Un
+// énergie, sacré… : s.sample, pack assets/audio/sfx_pack.js, licences LICENSES.md) et synthèse originale. Un
 // sort = une entrée par table :
 //   SPELL_SOUND  : son au lancement (instantanés : tout le sort ; incantations : l'appel de l'énergie) ;
 //   SPELL_LOOP   : nappe tenue pendant l'incantation / la canalisation (SFX.castStart → SFX.castEnd) ;
 //   SPELL_IMPACT : libération à la fin d'une incantation réussie (pas pour les canalisations) ;
 //   SPELL_FIZZLE : échec (interrompu, annulé en bougeant / sautant, ligne de vue perdue), commun à tous les sorts.
-// Recette ponctuelle : s = { tone, sweep, noise, metal } déjà réglés sur la position du lanceur (volume, panoramique) :
+// Recette ponctuelle : s = { tone, sweep, noise, sample } déjà réglés sur la position du lanceur (volume, panoramique) :
 //   s.tone(fréq, durée, forme, volume, glissé vers, délai, filtre passe-bas, réverb, attaque)
 //   s.sweep(durée, volume, fréq départ, fréq arrivée, délai, type de filtre, Q)
 //   s.noise(durée, volume, fréq du filtre, délai, type de filtre)
-//   s.metal(volume, délai, fréquence de base)
 //   s.sample(sorte du pack, volume, { rate, delay, lowpass }) : bruitage enregistré, hauteur variée à chaque lancer
 // Nappe : (l, durée) avec l = { voice, air, sample } (voir sfxBed, sfx.js).
 // Les sorts de corps à corps gardent en plus le cri, le souffle de l'arme et l'impact enregistrés (sfx.js).
 // Règle d'écoute : pas d'aigu strident (fréquences dominantes sous ~3 kHz, aigus brefs et doux).
+// Jamais de cloche (05/11/2026) : ni bol, ni carillon, ni gong, ni tintement frappé (note aiguë à attaque sèche).
 // Couches communes : signature par école = accords (arcane / givre cristallins, sacré lumineux), souffles, sub grave.
 const chord = (
   s,
@@ -26,7 +26,7 @@ const chord = (
   fs.forEach((f, i) =>
     s.tone(f, d, type, v / (1 + i * 0.25), glide ? f * glide : null, delay + i * spread, lp, rev, attack)
   );
-// scintillement : petites notes brèves et douces, de f0 à f1 (montantes ou descendantes)
+// scintillement : petites notes brèves et douces (attaque lente : un tintement frappé sonne comme une cloche), de f0 à f1
 const sparkle = (s, f0, f1, n, v, delay = 0, gap = 0.04) => {
   for (let i = 0; i < n; i++)
     s.tone(
@@ -38,7 +38,7 @@ const sparkle = (s, f0, f1, n, v, delay = 0, gap = 0.04) => {
       delay + i * gap,
       0,
       0.55,
-      0.005
+      0.06
     );
 };
 // poids : sinus grave qui tombe
@@ -55,7 +55,7 @@ const SPELL_SOUND = {
   // ---------- Guerrier : coups lourds, métal, cor de guerre grave ----------
   'Mortal Strike': s => {
     sub(s, 62, 0.5, 0.16, 0.06);
-    s.metal(0.07, 0.07, 300);
+    s.sample('clash', 0.3, { rate: 0.8, delay: 0.07 });
     s.sweep(0.25, 0.08, 1800, 300, 0.05, 'lowpass', 1);
     s.tone(98, 0.45, 'sawtooth', 0.04, 73, 0.07, 500, 0.3);
   },
@@ -70,7 +70,8 @@ const SPELL_SOUND = {
     sub(s, 70, 0.25, 0.12, 0.01);
   },
   'Shield Wall': s => {
-    s.metal(0.08, 0, 220);
+    s.sample('thud', 0.35, { rate: 0.8 });
+    s.sample('clash', 0.2, { rate: 0.65 });
     swell(s, 98, 1.1, 0.06, { type: 'sawtooth', to: 131, lp: 700 });
     swell(s, 147, 1.1, 0.04, { type: 'sawtooth', to: 196, lp: 900, delay: 0.05 });
     s.sweep(0.7, 0.06, 300, 1400, 0.05, 'bandpass', 4);
@@ -102,9 +103,10 @@ const SPELL_SOUND = {
     sub(s, 90, 0.25, 0.1, 0.02);
   },
   'Arcane Barrier': s => {
-    // cristal qui chante : bol chantant frappé, plus aigu
-    s.sample('bowl_strike', 0.3, { rate: 1.5 });
-    s.sample('shimmer', 0.25);
+    // dôme d'énergie qui se forme autour du mage (05/11/2026 : « jamais de cloche dans le jeu », plus de bol chantant)
+    s.sample('arcane', 0.25, { rate: 1.15 });
+    s.sample('shimmer', 0.2, { rate: 0.85 });
+    s.sweep(0.6, 0.05, 300, 1500, 0, 'bandpass', 2);
     sub(s, 98, 0.5, 0.08);
   },
   Blink: s => {
@@ -139,7 +141,7 @@ const SPELL_SOUND = {
     s.sweep(0.6, 0.06, 300, 1200, 0, 'lowpass', 1);
   },
   Dispel: s => {
-    s.sample('chime', 0.15);
+    s.sample('shimmer', 0.14, { rate: 1.25 });
     s.sweep(0.4, 0.04, 800, 2200, 0, 'bandpass', 2);
     s.noise(0.15, 0.03, 1400, 0.05);
   },
@@ -159,13 +161,13 @@ const SPELL_SOUND = {
     s.sweep(0.3, 0.12, 2800, 600, 0.05, 'bandpass', 1.5);
     sub(s, 55, 0.5, 0.16, 0.06);
     sub(s, 50, 0.45, 0.13, 0.22);
-    s.metal(0.05, 0.22, 260);
+    s.sample('clash', 0.22, { rate: 0.75, delay: 0.22 });
     crackle(s, 3, 0.05, 1500, 0.08);
   },
   'Death Grip': s => {
     s.sweep(0.5, 0.1, 300, 1500, 0, 'lowpass', 1);
     s.tone(82, 0.6, 'sawtooth', 0.07, 165, 0, 600, 0.35);
-    for (let i = 0; i < 4; i++) s.metal(0.03, 0.05 + i * 0.07, 520 + i * 40); // chaîne qui file
+    for (let i = 0; i < 4; i++) s.sample('clink', 0.16, { rate: 0.8 + i * 0.06, delay: 0.05 + i * 0.07 }); // chaîne qui file
     s.noise(0.15, 0.06, 900, 0.38, 'lowpass');
     sub(s, 62, 0.4, 0.1, 0.36);
   },
@@ -206,8 +208,8 @@ const SPELL_SOUND = {
     swell(s, 392, 0.9, 0.035, { to: 440 });
   },
   Moonfire: s => {
-    s.tone(1175, 0.5, 'sine', 0.04, 587, 0, 0, 0.5);
-    s.tone(587, 0.6, 'sine', 0.05, 294, 0.05, 0, 0.5);
+    s.tone(1175, 0.5, 'sine', 0.04, 587, 0, 0, 0.5, 0.12);
+    s.tone(587, 0.6, 'sine', 0.05, 294, 0.05, 0, 0.5, 0.12);
     s.sweep(0.45, 0.08, 2600, 600, 0, 'bandpass', 2);
     sub(s, 73, 0.35, 0.11, 0.08);
     sparkle(s, 1319, 659, 4, 0.025, 0.08);
@@ -308,7 +310,7 @@ const SPELL_SOUND = {
   Ambush: s => {
     sub(s, 65, 0.4, 0.15, 0.05);
     s.sweep(0.2, 0.1, 2400, 600, 0.04, 'bandpass', 2);
-    s.metal(0.04, 0.06, 340);
+    s.sample('clash', 0.22, { rate: 1.15, delay: 0.06 });
   },
   Sap: s => {
     sub(s, 120, 0.2, 0.12, 0.04);
@@ -356,8 +358,8 @@ const SPELL_SOUND = {
   },
   // ---------- Commun ----------
   Trinket: s => {
-    s.metal(0.06, 0, 520);
-    chord(s, [523, 784, 1047], 0.6, 0.04, { spread: 0.05 });
+    s.sample('clink', 0.25, { rate: 0.75 });
+    chord(s, [523, 784, 1047], 0.6, 0.04, { spread: 0.05, attack: 0.15 });
     s.sweep(0.5, 0.06, 500, 2200, 0, 'bandpass', 3);
     sub(s, 82, 0.35, 0.09);
   }
@@ -490,7 +492,6 @@ function playRecipe(recipe, u) {
       sfxTone(f, d, type, v * L, slide, delay, P, filter, rev, attack),
     sweep: (d, v, f0, f1, delay = 0, kind = 'bandpass', q = 1.2) => sfxSweep(d, v * L, f0, f1, delay, P, kind, q),
     noise: (d, v, f, delay = 0, kind = 'bandpass') => sfxNoise(d, v * L, f, delay, P, kind),
-    metal: (v, delay = 0, base = 420) => sfxMetal(v * L, P, delay, base),
     sample: (kind, v, { rate = 1, delay = 0, lowpass = 0 } = {}) =>
       sfxSample(kind, v * L, P, { rate: rate * sfxVary(), delay, lowpass })
   });

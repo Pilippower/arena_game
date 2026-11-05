@@ -21,6 +21,13 @@ function detectMobileMode() {
 }
 MOBILE.enabled = detectMobileMode();
 if (MOBILE.enabled) document.body.classList.add('mobile-mode');
+// Interface verrouillée comme dans un jeu (05/11/2026) : on ne fait plus glisser une image ou une icône (souris, doigt),
+// ni sélection de texte, ni menu du navigateur (clic droit, appui long) ; les champs de saisie restent utilisables.
+const editableTarget = t => !!t?.closest?.('input, textarea, select, [contenteditable="true"]');
+for (const type of ['dragstart', 'selectstart', 'contextmenu'])
+  document.addEventListener(type, e => {
+    if (!editableTarget(e.target)) e.preventDefault();
+  });
 const PREF_KEY = 'arenaAscendantPrefs_v1';
 const DEFAULT_PREFS = {
   musicOn: true,

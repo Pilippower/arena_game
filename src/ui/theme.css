@@ -345,3 +345,19 @@ body.mobile-mode .skill .icon {
 .skill .skillName {
   display: none !important;
 }
+
+/* interface de jeu : rien ne se sélectionne ni ne se glisse (images, icônes), pas de menu d'appui long sur mobile ;
+   le glisser est aussi bloqué en JS (core/setup.js) pour Firefox */
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+img {
+  -webkit-user-drag: none;
+}
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}

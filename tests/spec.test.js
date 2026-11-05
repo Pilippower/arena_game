@@ -112,7 +112,12 @@ for (const sx of [-1, 1])
     assert.ok(ctx.surfaceAt(sx * B.rampX, sz * (B.halfW + B.rampLen)).h < 0.01, 'rampe au niveau du sable');
   }
 assert.equal(ctx.groundAt({ x: 0, z: 0, y: 0 }), 0, 'sous le pont : on reste au sol');
-assert.ok(ctx.blockedBySurface({ x: B.rampX, z: B.halfW + 1, y: 0 }), 'on ne traverse pas une rampe par le côté');
+// flanc d'une rampe : on bute là où la pente est basse, on passe sous son haut (05/11/2026 : tests/combat.test.js)
+assert.ok(
+  ctx.blockedBySurface({ x: B.rampX, z: B.halfW + 7, y: 0 }),
+  'on ne traverse pas le bas d’une rampe par le côté'
+);
+assert.ok(!ctx.blockedBySurface({ x: B.rampX, z: B.halfW + 1, y: 0 }), 'on passe sous le haut d’une rampe');
 // IA sur The Bridge : sable → tablier par une rampe (pied, puis haut), pas en dessous de la cible
 vm.runInContext('var state=null;var gatesOpen=()=>true;', ctx); // portes ouvertes (salles de départ : combat.test.js)
 vm.runInContext(read('src/game/combat.js').match(/function resolveWalls[\s\S]*?\n\}/)[0], ctx);
@@ -863,3 +868,52 @@ assert.ok(
   read('src/render/effects.js').includes('fxAim(o.f)') && read('src/render/fx_webgl.js').includes('fxAim(f)'),
   'les projectiles suivent leur cible au rendu'
 );
+// Poterne des salles de départ (05/11/2026, « les piliers de la porte tremblent ») : aucun bloc n'en recouvre un
+// autre (faces confondues qui scintillent) et le rempart s'arrête à l'intérieur des piédroits, pas sur leur face
+{
+  const { sandbox } = require('./sources.js');
+  const Obj = function () {
+    this.position = { set() {} };
+    this.rotation = {};
+    this.userData = {};
+    this.add = () => {};
+  };
+  const THREE = {
+    Group: Obj,
+    Mesh: Obj,
+    BoxGeometry: Obj,
+    CylinderGeometry: Obj,
+    ConeGeometry: Obj,
+    PlaneGeometry: Obj
+  };
+  const E = { registerMap() {} },
+    S = sandbox({ window: { ArenaEnv: E }, ArenaEnv: E });
+  S.load('src/render/start_rooms.js');
+  const r = { side: 1, z: 0, wall: 1, depth: 10, halfW: 6, door: 1.9 },
+    arena = { halfX: 30, halfZ: 20, rooms: [r] },
+    boxes = [];
+  E.startRooms(
+    THREE,
+    { add() {} },
+    arena,
+    { anim: [] },
+    {
+      wallH: 4.5,
+      box: (w, h, d, x, y, z) => boxes.push([x - w / 2, x + w / 2, y - h / 2, y + h / 2, z - d / 2, z + d / 2])
+    }
+  );
+  const overlap = (a, b) => [0, 2, 4].every(i => Math.min(a[i + 1], b[i + 1]) - Math.max(a[i], b[i]) > 1e-6);
+  // piédroits, linteau, chaperon de la porte (pas les murs de la salle)
+  const postern = boxes.filter(b => b[0] < arena.halfX + r.wall && Math.abs(b[4] + b[5]) / 2 < r.door + 1);
+  postern.forEach((a, i) =>
+    postern.slice(i + 1).forEach(b => assert.ok(!overlap(a, b), 'poterne : aucun bloc dans un autre'))
+  );
+  const gap = E.doorGap(arena, 1),
+    posts = postern.filter(b => b[3] - b[2] > 4).map(b => [b[4], b[5]]);
+  assert.equal(posts.length, 2, 'deux piédroits');
+  for (const g of gap)
+    assert.ok(
+      posts.some(([a, b]) => g > a + 0.05 && g < b - 0.05),
+      "le rempart s'arrête dans un piédroit"
+    );
+}

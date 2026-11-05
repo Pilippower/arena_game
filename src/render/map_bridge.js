@@ -266,7 +266,9 @@
           const a = r() * Math.PI * 2;
           boulder(p.x + Math.sin(a) * p.r * 1.2, p.z + Math.cos(a) * p.r * 1.2, 0.25 + r() * 0.35, 0.6 + r() * 0.5);
         }
-      } else post(p.x, p.z, p.r, p.h, false);
+      } else if (p.kind === 'rampPost')
+        add(new THREE.CylinderGeometry(p.r * 0.8, p.r, p.h, 8), darkWood, p.x, p.h / 2, p.z); // soutien d'une rampe
+      else post(p.x, p.z, p.r, p.h, false);
     }
     // le pont : deux longerons, planches individuelles, sangles de fer, garde-corps, chevalets sous le tablier
     const bridgeY = 4.8,
@@ -357,7 +359,8 @@
         br.rotation.x = s * Math.atan2(dz, bridgeY - 1.2);
       }
     }
-    // rampes : 2 à chaque extrémité, de part et d'autre du pont (pente de planches, limons, poteaux de soutien)
+    // rampes : 2 à chaque extrémité, de part et d'autre du pont (pente de planches, limons ; poteaux de soutien :
+    // obstacles de la carte, rampPosts de data/maps.js)
     if (RB) {
       const L = RB.rampLen,
         H = RB.y,
@@ -384,24 +387,6 @@
             lim.position.set((ex * RB.rampW) / 2, 0.15, 0);
             lim.castShadow = true;
             g.add(lim);
-          }
-          // poteaux de soutien sous la pente
-          for (const f of [0.25, 0.55, 0.85]) {
-            const h = H * f;
-            add(
-              new THREE.CylinderGeometry(0.16, 0.2, h, 8),
-              darkWood,
-              cx - (RB.rampW / 2 - 0.2),
-              h / 2,
-              sz * (RB.halfW + L * (1 - f))
-            );
-            add(
-              new THREE.CylinderGeometry(0.16, 0.2, h, 8),
-              darkWood,
-              cx + (RB.rampW / 2 - 0.2),
-              h / 2,
-              sz * (RB.halfW + L * (1 - f))
-            );
           }
         }
     }

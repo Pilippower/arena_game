@@ -1,5 +1,5 @@
 'use strict';
-// Bruitages : primitives de synthèse (sfxTone, sfxSweep, sfxNoise, sfxMetal, nappe tenue sfxBed), sons de mêlée
+// Bruitages : primitives de synthèse (sfxTone, sfxSweep, sfxNoise, nappe tenue sfxBed), sons de mêlée
 // enregistrés, SFX ; les recettes des sorts sont dans spell_sounds.js.
 // ---------- Original fantasy spell SFX (procedural; no Blizzard/WoW audio files) ----------
 function sfxCtx() {
@@ -9,7 +9,8 @@ function sfxCtx() {
   return ctx;
 }
 // ---------- Bruitages enregistrés : assets/audio/sfx_pack.js (tools/build_sfx_pack.js, licences LICENSES.md) ----------
-// Cris d'effort, lame qui fend l'air, impacts d'épée / de masse / de hache, textures des sorts (eau, glace, cloches…).
+// Cris d'effort, lame qui fend l'air, impacts d'épée / de masse / de hache, textures des sorts (eau, glace, énergie…).
+// Jamais de cloche dans le jeu (05/11/2026) : ni bol, carillon, gong, ni partiels inharmoniques de métal frappé.
 // Décodés une fois ; tant qu'ils ne sont pas prêts (ou si le pack manque), les sons procéduraux d'origine prennent le
 // relais.
 const SAMPLES = { buf: null, last: {} };
@@ -101,22 +102,6 @@ function sfxSweep(dur, vol, f0, f1, delay = 0, pan = 0, kind = 'bandpass', q = 1
   n.start(t);
   n.stop(t + dur + 0.05);
 }
-// Partiels inharmoniques qui décroissent vite : impact métallique.
-function sfxMetal(vol, pan, delay = 0, base = 420) {
-  [1, 2.76, 5.4, 8.93].forEach((k, i) =>
-    sfxTone(
-      base * k * (0.97 + Math.random() * 0.06),
-      0.22 - i * 0.035,
-      'sine',
-      vol / (1 + i * 0.6),
-      null,
-      delay,
-      pan,
-      0,
-      0.22
-    )
-  );
-}
 // Cris des formes du druide, couche par couche (jouées ensemble) : félin = vrai tigre ; ours = grognement grave de
 // grizzly + rugissement de tigre abaissé d'environ une octave et adouci, pour la taille (recette des créatures de jeu :
 // superposer, abaisser, couper les aigus nasillards ; 04/11/2026, l'ours sonnait comme un cochon).
@@ -161,15 +146,12 @@ const SFX = {
       sfxTone(f, big ? 1.1 : 0.8, 'sine', 0.045, null, 0.38, 0, 0, 0.45)
     );
   },
-  // Ouverture des portes, début de l'arène (synthèse originale, ~3 s) : grondement des herses qui montent et
-  // cliquetis des chaînes, coup de gong grave (partiels inharmoniques qui s'éteignent lentement), appel de cor en
-  // quinte montante.
+  // Ouverture des portes, début de l'arène (~3 s) : grondement des herses qui montent, cliquetis des chaînes
+  // (enregistré), appel de cor en quinte montante (plus de gong : jamais de cloche, 05/11/2026).
   gates() {
     sfxSweep(1.9, 0.18, 220, 70, 0, 0, 'lowpass', 0.8);
-    for (let i = 0; i < 9; i++) sfxMetal(0.022, (i % 2 ? 0.4 : -0.4) * Math.random(), i * 0.13, 760 + i * 25);
-    [1, 2.41, 3.93, 5.62].forEach((k, i) =>
-      sfxTone(98 * k, 3.2 - i * 0.55, 'sine', 0.14 / (1 + i * 0.7), null, 0.08, 0, 0, 0.55)
-    );
+    for (let i = 0; i < 9; i++)
+      sfxSample('clink', 0.12, (i % 2 ? 0.4 : -0.4) * Math.random(), { rate: 0.7 + (i % 3) * 0.08, delay: i * 0.13 });
     sfxTone(146.83, 0.75, 'sawtooth', 0.06, 148, 0.3, 0, 900, 0.4);
     sfxTone(73.42, 0.75, 'sine', 0.05, null, 0.3, 0, 0, 0.3);
     sfxTone(220, 1.4, 'sawtooth', 0.065, 222, 1.0, 0, 1100, 0.45);
@@ -187,7 +169,7 @@ const SFX = {
       return;
     sfxSweep(heavy ? 0.2 : 0.15, (heavy ? 0.16 : 0.12) * a.level, 600, 3200, 0, a.pan, 'bandpass', 1.5);
   },
-  // impact selon l'arme : épée = choc métallique, masse = coup sourd + résonance grave, hache = coup sourd tranchant,
+  // impact selon l'arme : épée = choc métallique, masse = double coup sourd, hache = coup sourd tranchant,
   // glaives = tintement vif, griffes (formes du druide) = coup sourd
   meleeHit(u, heavy) {
     const a = sfxSpatial(u),
@@ -199,7 +181,7 @@ const SFX = {
     let ok;
     if (w === 'hammer') {
       ok = sfxSample('thud', 0.7 * L, P, { rate: 0.82 * r, delay: d });
-      sfxSample('bong', 0.22 * L, P, { rate: 0.7 * r, delay: d, lowpass: 2600 });
+      sfxSample('thud', 0.3 * L, P, { rate: 0.6 * r, delay: d + 0.02 });
     } else if (w === 'axe') {
       ok = sfxSample('thud', 0.6 * L, P, { rate: r, delay: d });
       sfxSample('clash', 0.3 * L, P, { rate: 0.75 * r, delay: d });
@@ -212,7 +194,7 @@ const SFX = {
       sfxSample('thud', 0.25 * L, P, { rate: 1.1 * r, delay: d });
     }
     if (ok) return;
-    sfxMetal((heavy ? 0.09 : 0.065) * L, P, 0.06, heavy ? 360 : 470);
+    sfxNoise(0.08, (heavy ? 0.12 : 0.09) * L, heavy ? 900 : 1400, 0.06, P);
     sfxTone(heavy ? 95 : 120, 0.16, 'sine', (heavy ? 0.2 : 0.14) * L, 45, 0.06, P);
     sfxNoise(0.07, 0.16 * L, 2600, 0.06, P);
   },

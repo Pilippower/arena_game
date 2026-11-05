@@ -30,7 +30,10 @@ const isNoise = t => /Failed to load resource|net::ERR_|Failed to fetch|CORS/i.t
       advanced: state.prep < GATE_TIME || state.elapsed > 0.5, // préparation dans les salles de départ, puis combat
       countdown: !(state.prep > 0) || $('gateCountdown').classList.contains('on'), // compte à rebours affiché
       inRooms: !(state.prep > 0) || state.units.every(u => zoneOf(u.x) === (u.team ? 1 : -1)),
-      mapOk: ArenaEnv.mapId === MAP_ID && MAP_ID === 'bridge' && arena.pillars.length === MAPS.bridge.pillars.length
+      mapOk:
+        ArenaEnv.mapId === MAP_ID &&
+        MAP_ID === 'bridge' &&
+        arena.pillars.filter(p => p.kind !== 'rampPost').length === MAPS.bridge.pillars.length
     }));
     assert.equal(r.mapOk, true, 'décor et obstacles de la même carte');
     assert.equal(r.env, true, 'décor 3D chargé');

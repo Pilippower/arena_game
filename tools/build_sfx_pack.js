@@ -41,9 +41,8 @@ const PACK = {
     ['starninjas/sword_clash.8.ogg', 0.45],
     ['starninjas/sword_clash.10.ogg', 0.45]
   ],
-  // coup sourd (masse, hache, griffes) et résonance métallique grave
+  // coup sourd (masse, hache, griffes) ; plus de résonance métallique « bong » (jamais de cloche, 05/11/2026)
   thud: [['thud2.wav', 0.5]],
-  bong: [['bong1.wav', 0.9]],
   clink: [['clink1_0.wav', 0.3]],
   // druide en forme d'ours : seulement les grognements graves de grizzly (Yellowstone, NPS, domaine public). Retirés le
   // 04/11/2026 car nasillards, « de cochon » : les deux clips U.S. Fish & Wildlife (0 à 2 % d'énergie sous 250 Hz) et le
@@ -98,11 +97,9 @@ const PACK = {
   sheep: [['spells/Sheep_bleat.ogg', 0.5, null, null, 3000]],
   // déplacement d'air (Blink)
   teleport: [['spells/teleport.wav', 1.2, null, null, 3000]],
-  // bol chantant frappé (Arcane Barrier) ; prêtre : harpe brève (Flash Heal), carillon (Dispel). Cloches et bol tenu
-  // retirés le 04/11/2026 (« trop gênant, surtout les cloches »)
-  bowl_strike: [['spells/SingingBowl1.ogg', 2.2, null, null, 3000]],
-  harp: [['spells/health_restore.wav', 1.2, null, null, 3000]],
-  chime: ['Cure2.wav', 'Cure3.wav', 'Cure8.wav'].map(f => ['spells/curemagic/' + f, 1.2, null, null, 2800])
+  // prêtre : harpe brève (Flash Heal). Jamais de cloche dans le jeu (04 et 05/11/2026, « trop gênant ») : cloches, bols
+  // chantants et carillons retirés
+  harp: [['spells/health_restore.wav', 1.2, null, null, 3000]]
 };
 
 const wav = (pcm, sr) => {

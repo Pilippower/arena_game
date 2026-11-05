@@ -26,6 +26,7 @@ function keyboardWorld(stored = null) {
   const els = new Map(),
     $el = id => els.get(id) || (els.set(id, fakeEl()), els.get(id)),
     handlers = {},
+    docHandlers = {},
     storage = stored ? { arenaAscendantPrefs_v1: JSON.stringify(stored) } : {},
     cast = [],
     body = new Set();
@@ -35,7 +36,7 @@ function keyboardWorld(stored = null) {
     document: {
       getElementById: $el,
       body: { classList: { add: c => body.add(c), remove: c => body.delete(c), contains: c => body.has(c) } },
-      addEventListener() {}
+      addEventListener: (type, f) => (docHandlers[type] = docHandlers[type] || []).push(f)
     },
     location: { search: '' },
     URLSearchParams,
@@ -57,7 +58,10 @@ function keyboardWorld(stored = null) {
     CLASS: {
       warden: { name: 'Druid', skills: [] },
       sentinel: { name: 'Warrior', skills: [] },
-      arcanist: { name: 'Mage', skills: ['Frost Bolt', 'Frost Nova', 'Counterspell', 'Arcane Barrier', 'Blink', 'Polymorph'].map(n => ({ n })) }
+      arcanist: {
+        name: 'Mage',
+        skills: ['Frost Bolt', 'Frost Nova', 'Counterspell', 'Arcane Barrier', 'Blink', 'Polymorph'].map(n => ({ n }))
+      }
     },
     updateUI() {},
     endCast: (u, why) => (u.cast = null), // fin d'incantation (src/game/combat.js : saut = annulation)
@@ -109,7 +113,7 @@ function keyboardWorld(stored = null) {
       press(mods.shiftKey ? 'ShiftLeft' : mods.ctrlKey ? 'ControlLeft' : 'AltLeft', mods);
     press(code, mods);
   };
-  return { ...S, $el, press, inGame, inLobby, bind, cast, storage };
+  return { ...S, $el, press, inGame, inLobby, bind, cast, storage, docHandlers };
 }
 
 // ---------- Échap ouvre / ferme Settings ----------
@@ -270,6 +274,26 @@ for (const stored of [
   assert.equal(ctx.PREFS.ui?.order?.['warden:'], undefined, 'les autres classes ne changent pas');
   const again = keyboardWorld(JSON.parse(w.storage.arenaAscendantPrefs_v1));
   assert.equal(again.ctx.PREFS.ui.order['arcanist:'].join(), '4,1,2,3,0,5', 'ordre relu au prochain lancement');
+}
+
+// ---------- Interface verrouillée comme dans un jeu (05/11/2026) : pas de glisser d'image, de sélection, de menu ----------
+{
+  const w = keyboardWorld();
+  // cible : image / icône du lobby, ou champ de saisie (closest trouve le champ)
+  const target = editable => ({ closest: sel => (editable && /input/.test(sel) ? {} : null) });
+  for (const type of ['dragstart', 'selectstart', 'contextmenu']) {
+    const fire = editable => {
+      const e = {
+        target: target(editable),
+        defaultPrevented: false,
+        preventDefault: () => (e.defaultPrevented = true)
+      };
+      for (const f of w.docHandlers[type] || []) f(e);
+      return e.defaultPrevented;
+    };
+    assert.ok(fire(false), `${type} bloqué sur une image / un bouton`);
+    assert.ok(!fire(true), `${type} permis dans un champ de saisie`);
+  }
 }
 
 console.log('OK - clavier (tests unitaires : Échap / Settings, Shift + Espace, Ctrl + touche, raccourcis par classe)');

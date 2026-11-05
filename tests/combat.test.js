@@ -182,6 +182,49 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   assert.ok(Math.abs(m2.x - dist) < 0.2 && m2.y === B.y && m2.grounded, 'Blink en l’air sur le pont : sur le tablier');
 }
 {
+  // The Bridge (05/11/2026, « pas de zone invisible qui bloque ») : on passe sous le haut des rampes, entre leurs
+  // poteaux, on bute là où la pente est basse ; les poteaux du pont bloquent à leurs anneaux + le corps
+  const { ctx, unit } = combatWorld();
+  ctx.applyMap('bridge');
+  const B = ctx.arena.bridge,
+    zAt = along => B.halfW + along, // devant la rampe est-nord, à cette distance du tablier
+    free = (x, z) => {
+      const u = { x, z, y: 0, prevX: x, prevZ: z };
+      ctx.resolveWalls(u);
+      return Math.hypot(u.x - x, u.z - z) < 1e-6;
+    };
+  assert.ok(free(B.rampX, zAt(3)), 'sous le haut de la rampe : on passe');
+  assert.ok(ctx.blockedBySurface({ x: B.rampX, z: zAt(7), y: 0 }), 'bout bas de la rampe : flanc trop bas pour passer');
+  // traversée sous la rampe, d'un côté à l'autre, au pas
+  const w = unit('sentinel', B.rampX - 4, zAt(3), 0);
+  for (let x = B.rampX - 4; x <= B.rampX + 3.5; x += 0.05) {
+    [w.prevX, w.prevZ] = [w.x, w.z];
+    w.x = x;
+    ctx.resolveWalls(w);
+  }
+  assert.ok(w.x > B.rampX + 3 && Math.abs(w.z - zAt(3)) < 0.5, `traversée sous la rampe (${w.x.toFixed(2)})`);
+  // saut sous la rampe : la tête bute sous la pente, on retombe au sol (pas à travers, pas dessus)
+  const j = unit('sentinel', B.rampX, zAt(2.5), 0, { grounded: false, vy: 7.5 }),
+    ceil = B.y * (1 - 2.5 / B.rampLen) - ctx.HEADROOM;
+  unit('sentinel', -20, 0, 1); // un adversaire : la manche continue
+  let top = 0;
+  for (let k = 0; k < 120; k++) {
+    ctx.update(1 / 120);
+    top = Math.max(top, j.y);
+  }
+  assert.ok(
+    top <= ceil + 1e-9 && j.y === 0 && j.grounded,
+    `saut sous la rampe : plafond (${top.toFixed(2)} ≤ ${ceil.toFixed(2)})`
+  );
+  // poteaux de soutien des rampes : solides
+  const rp = ctx.arena.pillars.find(p => p.kind === 'rampPost');
+  assert.ok(!free(rp.x + 0.3, rp.z), 'poteau de soutien d’une rampe : solide');
+  // poteau du pont : anneaux de fer (r × 1,1) + corps (0,45 m), pas plus
+  const post = ctx.arena.pillars.find(p => p.kind === 'post');
+  assert.ok(free(post.x + post.r * 1.1 + 0.46, post.z), 'poteau du pont : pas de marge invisible');
+  assert.ok(!free(post.x + post.r * 1.1 + 0.3, post.z), 'poteau du pont : solide');
+}
+{
   // Dispel : effets magiques seulement ; joueur : uniquement sa cible actuelle amie (ou soi quand on se cible)
   const { ctx, unit } = combatWorld();
   const priest = unit('oracle', 0, 0, 0),
@@ -595,10 +638,10 @@ const { combatWorld, spell, run } = require('./combat_world.js');
       kinds.add(kind),
       calls.push({ kind: 'sample', name: kind, freqs: [], v, rate: o.rate })
     ),
-    sfxTone: (f, d, type, v, slide) => calls.push({ kind: 'tone', freqs: [f, slide || f], v }),
+    sfxTone: (f, d, type, v, slide, delay, pan, lp, rev, attack) =>
+      calls.push({ kind: 'tone', freqs: [f, slide || f], v, type, attack }),
     sfxSweep: (d, v, f0, f1) => calls.push({ kind: 'sweep', freqs: [f0, f1], v }),
     sfxNoise: (d, v, f) => calls.push({ kind: 'noise', freqs: [f], v }),
-    sfxMetal: (v, p, delay, base = 420) => calls.push({ kind: 'metal', freqs: [base, base * 8.93], v }),
     // nappe : couches (voix, souffle) et arrêt
     sfxBed: (pan, max) => {
       const bed = { layers: [], max, stopped: 0 };
@@ -617,10 +660,16 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   const spells = new Map();
   for (const C of Object.values(ctx.CLASS))
     for (const bar of [C.skills, ...Object.values(C.bars || {})]) for (const sp of bar) spells.set(sp.n, sp);
-  // pas d'aigu strident : fréquences dominantes sous 3,3 kHz (sauf partiels brefs du métal), volumes modérés
+  const BELL = /bell|bowl|chime|bong|gong/;
+  // pas d'aigu strident : fréquences dominantes sous 3,3 kHz, volumes modérés
   const gentle = (list, what) => {
     for (const c of list) {
-      if (c.kind !== 'metal') assert.ok(Math.max(...c.freqs) <= 3300, `${what} : pas d'aigu strident (${c.freqs})`);
+      assert.ok(Math.max(...c.freqs) <= 3300, `${what} : pas d'aigu strident (${c.freqs})`);
+      // jamais de cloche (05/11/2026) : ni bruitage de cloche / bol / carillon / gong, ni note aiguë frappée (attaque
+      // sèche puis décroissance = tintement)
+      if (c.kind === 'sample') assert.ok(!BELL.test(c.name), `${what} : pas de cloche (${c.name})`);
+      if (c.kind === 'tone' && /sine|triangle/.test(c.type) && c.freqs[0] >= 500)
+        assert.ok(c.attack >= 0.03, `${what} : pas de tintement frappé (${c.freqs[0]} Hz)`);
       // enregistrement : normalisé à 0,9 dans le pack, joué comme les coups de mêlée ; aigus vérifiés sur le pack
       assert.ok(c.v <= (c.kind === 'sample' ? 0.75 : 0.3), `${what} : volume modéré (${c.v})`);
     }
@@ -639,7 +688,6 @@ const { combatWorld, spell, run } = require('./combat_world.js');
       tone: (f, d, t, v) => rec(v),
       sweep: (d, v) => rec(v),
       noise: (d, v) => rec(v),
-      metal: v => rec(v),
       sample: (k, v) => rec(v)
     });
     raw.forEach(([v], k) => assert.ok(calls[k].v >= 1.6 * v, `${n} : volume relevé`));
@@ -696,7 +744,6 @@ const { combatWorld, spell, run } = require('./combat_world.js');
       calls.length = 0;
       A.playSpellSound(table, {}, sp.n);
       for (const c of calls.filter(c => c.kind === 'sample')) {
-        assert.ok(!/bell|bowl/.test(c.name), `${sp.n} : ni cloche ni bol chantant (${c.name})`);
         assert.ok(c.v <= 0.45, `${sp.n} : bruitage discret (${c.v})`);
       }
     }
@@ -735,7 +782,8 @@ const { combatWorld, spell, run } = require('./combat_world.js');
       }
     return hi / tot;
   };
-  const MELEE = new Set(['effort_m', 'effort_f', 'whoosh', 'clash', 'thud', 'bong', 'clink', 'roar_bear', 'snarl_cat']);
+  const MELEE = new Set(['effort_m', 'effort_f', 'whoosh', 'clash', 'thud', 'clink', 'roar_bear', 'snarl_cat']);
+  assert.ok(!Object.keys(PACK).some(k => BELL.test(k)), 'aucune cloche dans le pack');
   for (const k of kinds) {
     assert.ok(PACK[k]?.length, `bruitage ${k} dans le pack`);
     if (!MELEE.has(k)) PACK[k].forEach((u, i) => assert.ok(highShare(u) < 0.15, `${k} n°${i} : pas d'aigu strident`));

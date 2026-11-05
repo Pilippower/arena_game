@@ -8,14 +8,17 @@
   if (!window.ArenaEnv?.registerMap) return;
   const PASS_H = 2.9, // hauteur libre sous la herse levée / sous la poterne (m)
     LIFT = 2.7, // course de la herse (m)
-    ROOM_WALL = 0.8; // épaisseur des murs des salles
+    ROOM_WALL = 0.8, // épaisseur des murs des salles
+    POST = 0.7; // largeur d'un piédroit de la poterne
   let gates = [],
     open = 1;
 
-  // Ouverture de la porte dans le rempart est (side 1) ou ouest (-1) : [zMin, zMax], ou null sans salle.
+  // Ouverture à laisser dans le rempart est (side 1) ou ouest (-1) : [zMin, zMax], ou null sans salle. Le rempart
+  // s'arrête au milieu des piédroits : arrêté pile sur leur face intérieure, ses faces se confondaient avec elles et
+  // scintillaient (05/11/2026).
   function doorGap(arena, side) {
     const r = arena.rooms?.find(q => q.side === side);
-    return r ? [r.z - r.door, r.z + r.door] : null;
+    return r ? [r.z - r.door - POST / 2, r.z + r.door + POST / 2] : null;
   }
   // (x, z) dans l'emprise d'une salle et de ses murs, agrandie de pad : arbres, rochers, relief à écarter.
   function inRoomArea(arena, x, z, pad = 0) {
@@ -97,12 +100,14 @@
         box(len, wallH, T, s * (hx + len / 2), wallH / 2, z, wall);
         box(len + 0.3, 0.3, T + 0.3, s * (hx + len / 2), wallH + 0.15, z, cap);
       }
-      // poterne : piédroits et linteau qui dépassent du rempart ; la herse se lève dans le linteau
+      // poterne : piédroits et linteau qui dépassent du rempart ; la herse se lève dans le linteau. Le linteau tient
+      // entre les piédroits sans les recouvrir : deux blocs superposés ont des faces confondues qui scintillent
+      // (« les piliers tremblent », 05/11/2026).
       const top = wallH + 1.4,
         w = r.door * 2;
       for (const k of [-1, 1])
-        box(r.wall + 0.6, top, 0.7, s * (hx + r.wall / 2), top / 2, r.z + k * (r.door + 0.35), wall);
-      box(r.wall + 0.6, top - PASS_H, w + 1.4, s * (hx + r.wall / 2), (top + PASS_H) / 2, r.z, wall);
+        box(r.wall + 0.6, top, POST, s * (hx + r.wall / 2), top / 2, r.z + k * (r.door + POST / 2), wall);
+      box(r.wall + 0.6, top - PASS_H, w, s * (hx + r.wall / 2), (top + PASS_H) / 2, r.z, wall);
       box(r.wall + 0.9, 0.3, w + 1.7, s * (hx + r.wall / 2), top + 0.15, r.z, cap);
       const g = portcullis(THREE, w, PASS_H + 0.2, iron);
       g.position.set(s * (hx - 0.12), 0, r.z);

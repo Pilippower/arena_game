@@ -76,6 +76,12 @@ function update(dt) {
     if (!u.grounded) {
       u.vy -= 19 * dt;
       u.y += u.vy * dt;
+      // sous une rampe : la tête bute (on ne traverse pas la pente en sautant)
+      const ceil = ceilingAt(u);
+      if (u.y > ceil) {
+        u.y = ceil;
+        u.vy = Math.min(0, u.vy);
+      }
       if (u.y <= ground) {
         u.y = ground;
         u.vy = 0;

@@ -29,13 +29,14 @@ const MAPS = {
     desc: 'A sandy pit under a timber bridge.',
     halfX: 32,
     halfZ: 22,
-    // blocs de roche sous le pont, poteaux du pont, rochers latéraux
+    // blocs de roche sous le pont, poteaux du pont, rochers latéraux (+ poteaux de soutien des rampes : rampPosts).
+    // pad des poteaux : leurs anneaux de fer (r × 1,1) + le corps, sans marge invisible (05/11/2026)
     pillars: [
       { x: 0, z: 0, r: 2.3, h: 3.2, kind: 'rock' },
-      { x: -9, z: 2.6, r: 0.7, h: 4.6, kind: 'post' },
-      { x: -9, z: -2.6, r: 0.7, h: 4.6, kind: 'post' },
-      { x: 9, z: 2.6, r: 0.7, h: 4.6, kind: 'post' },
-      { x: 9, z: -2.6, r: 0.7, h: 4.6, kind: 'post' },
+      { x: -9, z: 2.6, r: 0.7, h: 4.6, kind: 'post', pad: 0.52 },
+      { x: -9, z: -2.6, r: 0.7, h: 4.6, kind: 'post', pad: 0.52 },
+      { x: 9, z: 2.6, r: 0.7, h: 4.6, kind: 'post', pad: 0.52 },
+      { x: 9, z: -2.6, r: 0.7, h: 4.6, kind: 'post', pad: 0.52 },
       { x: -15, z: 11, r: 1.7, h: 2.6, kind: 'rock' },
       { x: 15, z: -11, r: 1.7, h: 2.6, kind: 'rock' },
       { x: -15, z: -12, r: 1.3, h: 2.2, kind: 'rock' },
@@ -56,6 +57,30 @@ const MAPS = {
 // le centre de chaque salle / porte (z : [ouest, est]). depth = profondeur de la salle, halfW = demi-largeur,
 // door = demi-largeur de la porte (m).
 const START_ROOM = { depth: 10, halfW: 6, door: 1.9 };
+// Obstacles (cercles) : un corps reste à r + pad du centre (pad par défaut : socles des piliers du château).
+const PILLAR_PAD = 0.66;
+const pillarReach = (p, extra = 0) => p.r + (p.pad ?? PILLAR_PAD) + extra;
+// Poteaux de soutien sous les rampes du pont (2 rangées, aux fractions RAMP_POSTS de la hauteur) : de vrais obstacles,
+// car on passe sous le haut des rampes ; minces, ils ne coupent pas la ligne de vue (los: false).
+const RAMP_POSTS = [0.25, 0.55, 0.85];
+function rampPosts(B) {
+  const out = [];
+  if (!B) return out;
+  for (const sx of [-1, 1])
+    for (const sz of [-1, 1])
+      for (const f of RAMP_POSTS)
+        for (const ex of [-1, 1])
+          out.push({
+            x: sx * B.rampX + ex * (B.rampW / 2 - 0.2),
+            z: sz * (B.halfW + B.rampLen * (1 - f)),
+            r: 0.2,
+            h: B.y * f,
+            kind: 'rampPost',
+            pad: 0.45,
+            los: false
+          });
+  return out;
+}
 let MAP_ID = (() => {
   try {
     return MAPS[localStorage.getItem('arenaMap')] ? localStorage.getItem('arenaMap') : 'castle';
@@ -69,7 +94,7 @@ function applyMap(id) {
   const M = MAPS[id];
   arena.halfX = M.halfX;
   arena.halfZ = M.halfZ;
-  arena.pillars = M.pillars.map(p => ({ ...p }));
+  arena.pillars = [...M.pillars.map(p => ({ ...p })), ...rampPosts(M.bridge)];
   arena.bridge = M.bridge || null;
   arena.rooms = M.rooms ? [-1, 1].map((side, i) => ({ side, z: M.rooms.z[i], wall: M.rooms.wall, ...START_ROOM })) : [];
   HEALTH_SPOTS.length = 0;
@@ -104,15 +129,25 @@ function surfaceAt(x, z) {
   return null;
 }
 const STEP = 0.75; // hauteur franchissable d'un pas
+// Hauteur libre à garder au-dessus de soi sous une rampe (tête + épaisseur de la rampe) : on passe sous le haut des
+// rampes, entre leurs poteaux (05/11/2026, plus de mur invisible sous la pente), on bute là où elle est trop basse.
+const HEADROOM = 2.45;
 // Sol sous une unité : la surface si l'unité est dessus (ou presque), sinon le sable (0).
 function groundAt(u) {
   const s = surfaceAt(u.x, u.z);
   return s && s.h <= (u.y || 0) + STEP ? s.h : 0;
 }
-// Rampe pleine : on ne peut pas y entrer par le côté ou par-dessous si elle est plus haute qu'un pas.
+// Flanc d'une rampe : on n'y entre pas par le côté s'il est plus haut qu'un pas, sauf en passant dessous (assez haut).
 function blockedBySurface(u) {
-  const s = surfaceAt(u.x, u.z);
-  return !!s && !s.deck && s.h > (u.y || 0) + STEP;
+  const s = surfaceAt(u.x, u.z),
+    y = u.y || 0;
+  return !!s && !s.deck && s.h > y + STEP && s.h < y + HEADROOM;
+}
+// Plafond d'une unité sous une rampe ou sous le tablier (saut), ou Infinity à découvert.
+function ceilingAt(u) {
+  const s = surfaceAt(u.x, u.z),
+    y = u.y || 0;
+  return s && s.h > y + STEP ? s.h - HEADROOM : Infinity;
 }
 // Garde-corps du pont : sur le tablier, on ne tombe pas sur les côtés, sauf aux ouvertures des rampes.
 function bridgeRail(u) {

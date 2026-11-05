@@ -1,15 +1,6 @@
 'use strict';
 // Le son ne doit jamais arrêter le jeu : toute erreur audio est ignorée (avertissement console).
-for (const name of [
-  'footstepSfx',
-  'spellSfx',
-  'spellSfxKind',
-  'sfxTone',
-  'sfxNoise',
-  'sfxSweep',
-  'sfxBed',
-  'sfxMetal'
-]) {
+for (const name of ['footstepSfx', 'spellSfx', 'spellSfxKind', 'sfxTone', 'sfxNoise', 'sfxSweep', 'sfxBed']) {
   const fn = window[name];
   if (typeof fn !== 'function') continue;
   window[name] = function (...args) {
