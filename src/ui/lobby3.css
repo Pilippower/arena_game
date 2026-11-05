@@ -1,0 +1,388 @@
+/* Lobby, 3e design de l'utilisateur (05/11/2026) : maquettes assets_src/ui/lobby3_solo.png, lobby3_party.png et
+   panoplie lobby3_kit.png. PC seulement (body.lobby:not(.mobile-mode)) ; chargé après lobby.css, le mobile garde sa
+   mise en page. Boutons en biseau dessinés en CSS (le fond de la panoplie n'est pas uni : pas de détourage propre) :
+   bleu nuit cerclé d'or, survol plus clair, choisi = or lumineux. Illustrations des cartes (races, classes, arènes) :
+   celles du jeu (« garder les images existantes »). */
+:root {
+  --l3-gold: #ffd56a;
+  --l3-gold-lo: #b8893c;
+  --l3-skew: -20deg;
+  /* filet doré qui s'éclaire vers un losange (titres, Start Match) */
+  --l3-rule: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 14' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='g'%3E%3Cstop offset='0' stop-color='%23b8893c' stop-opacity='0'/%3E%3Cstop offset='1' stop-color='%23ffd56a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='0' y='6.2' width='186' height='1.6' fill='url(%23g)'/%3E%3Cpath d='M193 1l6 6-6 6-6-6z' fill='%23ffd56a'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+
+/* ---------- forme en biseau commune : onglets, boutons de réglage, places d'équipe ---------- */
+body.lobby:not(.mobile-mode) #overlay .lobbyTabs button,
+body.lobby:not(.mobile-mode) #overlay .pOpt:not(.pArena .pOpt),
+body.lobby:not(.mobile-mode) #overlay .pSlot {
+  position: relative;
+  z-index: 0;
+  background: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+body.lobby:not(.mobile-mode) #overlay .lobbyTabs button::before,
+body.lobby:not(.mobile-mode) #overlay .pOpt:not(.pArena .pOpt)::before,
+body.lobby:not(.mobile-mode) #overlay .pSlot::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0 0.45em; /* l'inclinaison reste dans la boîte du bouton (pas de débordement) */
+  transform: skewX(var(--l3-skew));
+  border: 0.12em solid var(--l3-gold-lo);
+  border-radius: 0.3em;
+  background: linear-gradient(180deg, #24407e 0%, #142554 48%, #0b1638 100%);
+  box-shadow:
+    inset 0 0.08em #ffffff33,
+    inset 0 -0.3em 0.6em #00000055,
+    0 0.2em 0.5em #000a;
+  transition:
+    filter 0.15s,
+    box-shadow 0.15s;
+}
+body.lobby:not(.mobile-mode) #overlay .lobbyTabs button:hover::before,
+body.lobby:not(.mobile-mode) #overlay .pOpt:not(.pArena .pOpt):not(:disabled):hover::before {
+  border-color: #8fd0ff;
+  background: linear-gradient(180deg, #3563b8 0%, #1d3c84 50%, #10225a 100%);
+  box-shadow:
+    inset 0 0.08em #ffffff44,
+    0 0 0.7em #5ab4ffaa;
+}
+body.lobby:not(.mobile-mode) #overlay .lobbyTabs button.selected::before,
+body.lobby:not(.mobile-mode) #overlay .pOpt.selected:not(.pArena .pOpt)::before {
+  border-color: #ffd36a;
+  background: linear-gradient(180deg, #7a4a12 0%, #4a2a08 55%, #2c1704 100%);
+  box-shadow:
+    inset 0 0.08em #fff3c855,
+    inset 0 0 0.8em #ffb43a55,
+    0 0 0 0.06em #ff9d2a,
+    0 0 0.9em #ffb43acc;
+}
+body.lobby:not(.mobile-mode) #overlay .lobbyTabs button,
+body.lobby:not(.mobile-mode) #overlay .pOpt:not(.pArena .pOpt) {
+  color: #f3ead2 !important;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  text-shadow: 0 0.08em 0.15em #000;
+}
+body.lobby:not(.mobile-mode) #overlay .lobbyTabs button.selected,
+body.lobby:not(.mobile-mode) #overlay .pOpt.selected:not(.pArena .pOpt) {
+  color: #fff4d6 !important;
+}
+
+/* ---------- en-tête : onglets Solo / Multiplayer ---------- */
+body.lobby:not(.mobile-mode) #overlay .lobbyTabs {
+  gap: 1.4em;
+  font-size: clamp(14px, 1.25vw, 22px);
+}
+body.lobby:not(.mobile-mode) #overlay .lobbyTabs button {
+  min-width: 10.5em;
+  padding: 0.35em 1.6em;
+  font-size: 1em;
+}
+body.lobby:not(.mobile-mode) #overlay .lobbyTabs button svg {
+  color: var(--l3-gold);
+}
+
+/* ---------- onglet Solo : même bandeau Mode / Arena / AI Difficulty que l'onglet Multiplayer ---------- */
+#overlay .soloSettings {
+  display: none;
+}
+body.lobby:not(.mobile-mode) #overlay .modal {
+  container-type: size;
+}
+body.lobby:not(.mobile-mode) #overlay .modal:not(.partyMode) .soloSettings {
+  display: block;
+  flex: none;
+  margin: 0.3em 0 0.2em;
+  font-size: min(2.25cqh, 1.45cqw);
+}
+body.lobby:not(.mobile-mode) #overlay .modal:not(.partyMode) .lobbyOpts,
+body.lobby:not(.mobile-mode) #overlay .tag-arena,
+body.lobby:not(.mobile-mode) #overlay #mapChoices,
+body.lobby:not(.mobile-mode) #overlay .tag-preview,
+body.lobby:not(.mobile-mode) #overlay #lobbyChips {
+  display: none !important;
+}
+/* bandeau commun (deux onglets) : toute la largeur, trois sections */
+body.lobby:not(.mobile-mode) #overlay .pSettings {
+  width: 100%;
+  margin: 0;
+  flex-wrap: nowrap;
+  justify-content: space-evenly;
+  align-items: center;
+  border-color: #c99a4a;
+  border-radius: 0.6em;
+}
+body.lobby:not(.mobile-mode) #overlay .pSet {
+  min-width: 0;
+  padding: 0 1em;
+}
+body.lobby:not(.mobile-mode) #overlay .pSet.pArena {
+  flex: 1;
+}
+body.lobby:not(.mobile-mode) #overlay .pSet h4 {
+  font-size: 0.8em;
+}
+body.lobby:not(.mobile-mode) #overlay .pSet h4::before,
+body.lobby:not(.mobile-mode) #overlay .pSet h4::after {
+  content: '◆';
+  margin: 0 0.6em;
+  font-size: 0.6em;
+  vertical-align: 0.25em;
+  color: var(--l3-gold-lo);
+}
+body.lobby:not(.mobile-mode) #overlay .pOpts {
+  gap: 0.5em;
+}
+body.lobby:not(.mobile-mode) #overlay .pOpt:not(.pArena .pOpt) {
+  min-width: 4.6em;
+  padding: 0.45em 1.1em;
+  font-size: 1.1em;
+}
+/* arènes : illustration du jeu dans une carte en biseau, cadre doré (lumineux si choisie) */
+body.lobby:not(.mobile-mode) #overlay .pArena .pOpts {
+  flex-wrap: nowrap;
+}
+body.lobby:not(.mobile-mode) #overlay .pArena .pOpt {
+  --cut: 1.4em; /* décalage du biseau sur la hauteur de la carte */
+  flex: 0 1 9.5em;
+  width: 9.5em;
+  min-width: 5em;
+  height: 4.2em;
+  overflow: visible;
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  filter: brightness(0.82) saturate(0.85);
+  transition: filter 0.15s;
+}
+body.lobby:not(.mobile-mode) #overlay .pArena .pOpt img,
+body.lobby:not(.mobile-mode) #overlay .pArena .pOpt::after {
+  clip-path: polygon(var(--cut) 0, 100% 0, calc(100% - var(--cut)) 100%, 0 100%);
+}
+body.lobby:not(.mobile-mode) #overlay .pArena .pOpt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(transparent 55%, #000c),
+    linear-gradient(90deg, transparent, transparent);
+}
+body.lobby:not(.mobile-mode) #overlay .pArena .pOpt::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  inset: 0 calc(var(--cut) / 2);
+  transform: skewX(-18.4deg);
+  border: 0.12em solid #9a6a2a;
+  border-radius: 0.25em;
+  pointer-events: none;
+}
+body.lobby:not(.mobile-mode) #overlay .pArena .pOpt span {
+  z-index: 3;
+  background: none;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  color: #fff4d6;
+  text-shadow: 0 0.1em 0.2em #000;
+}
+body.lobby:not(.mobile-mode) #overlay .pArena .pOpt:not(:disabled):hover {
+  filter: brightness(1) saturate(1);
+}
+body.lobby:not(.mobile-mode) #overlay .pArena .pOpt.selected {
+  filter: brightness(1.05) drop-shadow(0 0 0.5em #ffb43acc);
+}
+body.lobby:not(.mobile-mode) #overlay .pArena .pOpt.selected::before {
+  border-color: #ffd36a;
+  box-shadow:
+    0 0 0 0.05em #ff9d2a,
+    inset 0 0 0.6em #ffb43a77;
+}
+
+/* ---------- onglet Solo : race, classe, aperçu, Start Match ---------- */
+body.lobby:not(.mobile-mode) #overlay .modal:not(.partyMode) .pickerLayout {
+  display: grid;
+  flex: 1 0 0;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) min(29%, 46cqh);
+  grid-template-rows: repeat(5, auto);
+  align-content: center; /* écran haut : les rangées restent groupées, la marge va en haut et en bas */
+  grid-template-areas:
+    'rt pv'
+    'rc pv'
+    'ct pv'
+    'cc pv'
+    'go go';
+  gap: 2.4cqh 2cqw;
+  margin-top: 0.6cqh;
+}
+body.lobby:not(.mobile-mode) #overlay .pickLeft,
+body.lobby:not(.mobile-mode) #overlay .pickRight {
+  display: contents;
+}
+body.lobby:not(.mobile-mode) #overlay .tag-race {
+  grid-area: rt;
+}
+body.lobby:not(.mobile-mode) #overlay #raceChoices {
+  grid-area: rc;
+}
+body.lobby:not(.mobile-mode) #overlay .tag-class {
+  grid-area: ct;
+}
+body.lobby:not(.mobile-mode) #overlay #classChoices {
+  grid-area: cc;
+}
+body.lobby:not(.mobile-mode) #overlay #selectPreview {
+  grid-area: pv;
+  min-height: 0;
+  height: 100%;
+}
+body.lobby:not(.mobile-mode) #overlay .playRow {
+  grid-area: go;
+}
+body.lobby:not(.mobile-mode) #overlay #bootError:empty {
+  display: none;
+}
+/* titres « Choose your race / class » : texte doré entre deux filets à losange */
+body.lobby:not(.mobile-mode) #overlay .tag-race,
+body.lobby:not(.mobile-mode) #overlay .tag-class {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8em;
+  justify-self: stretch;
+  align-self: end;
+  height: auto;
+  aspect-ratio: auto;
+  margin: 0;
+  padding: 0;
+  line-height: 1.4;
+  clip-path: none;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: min(2.3cqh, 1.35cqw);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--l3-gold) !important;
+  text-shadow: 0 0.1em 0.2em #000;
+  background: none !important;
+}
+body.lobby:not(.mobile-mode) #overlay .tag-race::before,
+body.lobby:not(.mobile-mode) #overlay .tag-race::after,
+body.lobby:not(.mobile-mode) #overlay .tag-class::before,
+body.lobby:not(.mobile-mode) #overlay .tag-class::after {
+  content: '';
+  position: static;
+  display: block;
+  width: 9em;
+  height: 0.8em;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+  clip-path: none;
+  background: var(--l3-rule);
+}
+body.lobby:not(.mobile-mode) #overlay .tag-race::after,
+body.lobby:not(.mobile-mode) #overlay .tag-class::after {
+  transform: scaleX(-1);
+}
+/* cartes : 5 races, 7 classes sur une ligne ; taille d'après la place de la rangée (hauteur) et de la colonne */
+body.lobby:not(.mobile-mode) #overlay .modal:not(.partyMode) .races,
+body.lobby:not(.mobile-mode) #overlay .modal:not(.partyMode) .classes {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 1.1cqw;
+  max-width: none;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+}
+body.lobby:not(.mobile-mode) #overlay .modal:not(.partyMode) .racePick {
+  --band: min(3.3cqh, 1.8cqw);
+  width: min(12.6cqw, 30cqh);
+  aspect-ratio: 1.12;
+}
+body.lobby:not(.mobile-mode) #overlay .modal:not(.partyMode) .classPick {
+  --band: min(2.9cqh, 1.5cqw);
+  width: min(8.9cqw, 24cqh);
+  aspect-ratio: 1.2;
+}
+body.lobby:not(.mobile-mode) #overlay .racePick,
+body.lobby:not(.mobile-mode) #overlay .classPick {
+  border-radius: 0.6em;
+}
+/* Start Match : bouton peint de l'onglet Multiplayer, entre deux filets dorés */
+body.lobby:not(.mobile-mode) #overlay .playRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5cqw;
+  padding: 0.4cqh 0 0.2cqh;
+}
+body.lobby:not(.mobile-mode) #overlay .playRow::before,
+body.lobby:not(.mobile-mode) #overlay .playRow::after {
+  content: '';
+  width: 16cqw;
+  height: 1.6cqh;
+  background: var(--l3-rule);
+}
+body.lobby:not(.mobile-mode) #overlay .playRow::after {
+  transform: scaleX(-1);
+}
+body.lobby:not(.mobile-mode) #overlay #playBtn {
+  width: min(30cqw, 52cqh);
+  max-width: none;
+  aspect-ratio: 288 / 60;
+  background-image: url(../../assets/ui/party/start.webp) !important;
+}
+
+/* ---------- onglet Multiplayer : places en biseau, VS sur un trait doré ---------- */
+body.lobby:not(.mobile-mode) #overlay .pSlot {
+  margin: 0 0.3em;
+  overflow: visible;
+}
+body.lobby:not(.mobile-mode) #overlay .pSlot::before {
+  inset: 0 0.6em;
+  transform: skewX(-14deg);
+  border-color: #5f8fd8;
+  background: linear-gradient(180deg, #1f3c86 0%, #12275e 55%, #0a173d 100%);
+}
+body.lobby:not(.mobile-mode) #overlay .pTeam.foe .pSlot::before {
+  border-color: #d0585a;
+  background: linear-gradient(180deg, #7c1e26 0%, #561219 55%, #330a0e 100%);
+}
+body.lobby:not(.mobile-mode) #overlay .pSlot.me::before {
+  border-color: #ffd36a;
+  box-shadow:
+    inset 0 0.08em #fff3c855,
+    0 0 0 0.05em #ff9d2a,
+    0 0 0.8em #ffb43aaa;
+}
+body.lobby:not(.mobile-mode) #overlay .pVs {
+  position: relative;
+}
+body.lobby:not(.mobile-mode) #overlay .pVs::before {
+  background: linear-gradient(180deg, transparent, #ffd56a 30%, #ffd56a 70%, transparent);
+  box-shadow: 0 0 0.6em #ffb43a;
+}
+
+/* ---------- plaque du bas, au lobby : file d'attente (« Queue (Solo) », « Queue in : 3v3 ») ---------- */
+#queueLabel {
+  display: none;
+}
+body.lobby #queueLabel {
+  display: block;
+  font-size: 13px;
+  line-height: 1.1;
+  color: #f3ead2;
+}
+body.lobby #round,
+body.lobby #score {
+  display: none !important;
+}

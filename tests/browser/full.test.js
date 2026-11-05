@@ -86,6 +86,24 @@ async function run() {
       });
       assert.ok(fit.lobby, 'body.lobby pendant la sélection');
       assert.ok(fit.scroll <= 1, `lobby : défilement inattendu (${fit.scroll}px)`);
+      // onglet Solo, 3e design (05/11/2026) : bandeau Mode / Arena / AI Difficulty de l'onglet Multiplayer (ses boutons
+      // actionnent les réglages d'origine), 5 races puis 7 classes chacune sur une ligne, aperçu à droite
+      const solo = await page.evaluate(() => {
+        const banner = document.querySelector('#soloSettings .pSettings')?.getBoundingClientRect().height > 0,
+          tops = sel =>
+            new Set([...document.querySelectorAll(sel)].map(e => Math.round(e.getBoundingClientRect().top))),
+          R = s => document.querySelector(s).getBoundingClientRect();
+        document.querySelector('#soloSettings [data-size="2"]').click();
+        const two = TEAM_SIZE === 2 && !!document.querySelector('#soloSettings .pOpt.selected[data-size="2"]');
+        document.querySelector('#soloSettings [data-size="3"]').click();
+        return {
+          banner,
+          two,
+          rows: tops('#raceChoices button').size + tops('#classChoices button').size,
+          right: R('#selectPreview').left > R('#classChoices').right
+        };
+      });
+      assert.deepEqual(solo, { banner: true, two: true, rows: 2, right: true }, 'Solo : bandeau, rangées, aperçu');
       // onglet Multiplayer (groupe simulé, sans réseau) : chaque réglage tient dans son bouton (bug du 04/11/2026 :
       // « Medium » sortait de son cadre)
       const overflow = await page.evaluate(() => {

@@ -85,7 +85,8 @@ body.lobby #overlay {
    « cadre dans le cadre ») ; il s'élargit sans se déformer (rogné en haut et en bas). --mw = largeur du cadre ;
    hauteur du lobby = 100vh - 142px (barres du haut et du bas) ; murs 330 × 690. */
 body.lobby:not(.mobile-mode) #overlay {
-  --mw: min(1140px, calc(100vw - 2 * clamp(110px, 14vw, 330px)));
+  /* 3e design (05/11/2026) : cadre aussi large que le permet la hauteur (1,6 × la hauteur du lobby), comme la maquette */
+  --mw: min(calc((100vh - 142px) * 1.6), calc(100vw - 2 * clamp(110px, 14vw, 330px)));
   /* largeur affichée des murs, source unique : le fond et la sonde .wallProbe (lue par lobby.js pour placer le feu
      des torches) l'utilisent ; 100 % = largeur du lobby dans les deux cas */
   --wallw: max(calc((100vh - 142px) * 330 / 690), calc((100% - var(--mw)) / 2 + 16px));
@@ -784,22 +785,7 @@ body.lobby:not(.mobile-mode) #overlay #partyBox {
   gap: 0.6em;
   font-size: min(2.7cqh, 1.75cqw);
 }
-/* PC : bandeau des réglages sur toute la largeur (arènes illustrées plus grandes), équipes qui prennent la hauteur
-   restante (places étirées) */
-body.lobby:not(.mobile-mode) #overlay #partyBox .pSettings {
-  width: 100%;
-  margin: 0;
-  flex-wrap: nowrap;
-  justify-content: space-evenly;
-  align-items: center;
-}
-body.lobby:not(.mobile-mode) #overlay #partyBox .pSet {
-  min-width: 0;
-  padding: 0 1em;
-}
-body.lobby:not(.mobile-mode) #overlay #partyBox .pArena .pOpts {
-  flex-wrap: nowrap;
-}
+/* PC : équipes qui prennent la hauteur restante (places étirées) ; bandeau des réglages : lobby3.css */
 body.lobby:not(.mobile-mode) #overlay #partyBox .pActions {
   margin: 0;
   font-size: 1.25em;
@@ -809,22 +795,6 @@ body.lobby:not(.mobile-mode) #overlay #partyBox .pArt {
 }
 body.lobby:not(.mobile-mode) #overlay #partyBox .pPick select {
   font-size: 0.85em;
-}
-body.lobby:not(.mobile-mode) #overlay #partyBox .pSet.pArena {
-  flex: 1;
-}
-body.lobby:not(.mobile-mode) #overlay #partyBox .pArena .pOpt {
-  flex: 0 1 9em; /* les arènes rétrécissent plutôt que de faire déborder le bandeau */
-  width: 9em;
-  min-width: 5em;
-  height: 4.2em;
-}
-body.lobby:not(.mobile-mode) #overlay #partyBox .pArena .pOpt span {
-  font-size: 0.95em;
-}
-body.lobby:not(.mobile-mode) #overlay #partyBox .pOpt {
-  padding: 0.5em 1em;
-  font-size: 1.1em;
 }
 body.lobby:not(.mobile-mode) #overlay #partyBox .pTeams {
   flex: 1;
