@@ -16,6 +16,17 @@
     COOL = [0.82, 0.9, 1.12],
     WARM = [1.16, 1.0, 0.8];
 
+  // Ombre de contact au pied des murs d'une salle de départ (repère de la salle : roomFrame, data/maps.js).
+  function roomShade(arena, x, z) {
+    for (const r of arena.rooms || []) {
+      const { a, b } = roomFrame(r, x, z),
+        sa = r.side * a,
+        front = r.half + r.wall,
+        d = Math.min(front + r.depth - sa, r.halfW - Math.abs(b - r.at), sa - front);
+      if (d > 0 && sa > front) return 1 - WALL_AO * Math.exp(-d / WALL_FALL);
+    }
+    return 1;
+  }
   // Multiplicateur [r, g, b] du sol en (x, z) (1 = couleur de la texture). opt.lights : [{ x, z, r, c: [r,g,b], k }],
   // opt.shade(x, z) : ombre propre à la carte (0..1, 1 = rien).
   function groundShadeAt(arena, x, z, opt = {}) {
@@ -25,6 +36,7 @@
       const d = Math.max(0, Math.hypot(x - p.x, z - p.z) - p.r);
       ao *= 1 - (p.los === false ? POST_AO : PILLAR_AO) * Math.exp(-d / (0.8 + 0.6 * p.r));
     }
+    ao *= roomShade(arena, x, z);
     if (opt.shade) ao *= opt.shade(x, z);
     const t = smooth(0.32, 0.68, noise2(x * 0.045 + 3, z * 0.045 + 7, 256, 3)),
       v = 0.86 + 0.28 * noise2(x * 0.18 + 1, z * 0.18 + 2, 256, 2),

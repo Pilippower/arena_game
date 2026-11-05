@@ -208,6 +208,9 @@ assert.match(h3, /if \(!groups\.size\) return;/, 'silhouettes : pas de passe inu
 // direction de course (06/11/2026, gauche ↔ droite « pas naturel » : hfBodyTurn, tests/gameplay.test.js)
 assert.match(code('src/render/'), /const dist = camera\.dist,/, 'zoom immédiat');
 assert.doesNotMatch(code('src/render/'), /CAM_VIEW|dispYaw|rec\.lean/, 'pas de caméra ni de pivot lissés');
+// sable de The Bridge sans couture ni bandes (06/11/2026) : nombre entier de rides par tuile, texture en position monde
+assert.match(read('src/render/map_bridge.js'), /Math\.PI \* 2 \* RIPPLES/, 'sable : rides qui se raccordent');
+assert.match(read('src/render/map_bridge.js'), /SAND_WORLD \+/, 'sable : position monde (arène et salles)');
 assert.match(h3, /ryaw = py \+ da \* a;[\s\S]*ryaw \+= rec\.moveOff;/, 'regard immédiat, corps qui pivote en plus');
 assert.match(h3, /ATTACK_HIT = \{\s*Sword_Attack/, 'frappe synchronisée avec les dégâts');
 assert.ok(read('index.html').includes('.nameplate.enemy .npCast'), "barre d'incantation ennemie lisible");

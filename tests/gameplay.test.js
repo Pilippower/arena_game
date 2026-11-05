@@ -535,6 +535,7 @@ function playerWorld() {
 {
   const env = require('../src/render/environment.js'),
     S = sandbox({ ArenaEnv: env, window: { ArenaEnv: env } });
+  S.ctx.roomFrame = (r, x, z) => (r.axis === 'z' ? { a: z, b: x } : { a: x, b: z }); // data/maps.js
   S.load('src/render/ground_paint.js');
   const shade = env.helpers.groundShadeAt,
     lum = c => (c[0] + c[1] + c[2]) / 3,
@@ -553,6 +554,11 @@ function playerWorld() {
     dim = shade(open, 10.5, 5);
   assert.ok(lit[0] - dim[0] > 0.4 && lit[0] - dim[0] > 2 * (lit[2] - dim[2]), 'halo chaud d’un brasero');
   assert.ok(at(open, 0, 0, { shade: () => 0.5 }) / at(open, 0, 0) === 0.5, 'ombre propre à la carte (shade)');
+  // salle de départ (06/11/2026, sol de la salle « trop fake ») : ombre au pied de ses murs, pas au milieu
+  const room = { ...open, rooms: [{ side: 1, axis: 'z', half: 20, at: 0, wall: 3, depth: 10, halfW: 6 }] };
+  assert.ok(at(room, 0, 32.8) / at(open, 0, 32.8) < 0.6, 'salle : ombre au pied du mur du fond');
+  assert.ok(at(room, 5.8, 28) / at(open, 5.8, 28) < 0.6, 'salle : ombre au pied d’un mur de côté');
+  assert.ok(at(room, 0, 28) / at(open, 0, 28) > 0.9, 'salle : milieu clair');
 }
 // ---------- Pas chassé : le corps pivote vite mais pas d'un coup (render/heroes3d.js hfBodyTurn) ----------
 // Demande du 06/11/2026 : « quand je change de gauche à droite ça change directement » ; déplacement et regard restent

@@ -19,6 +19,7 @@
     groundPaint
   } = ArenaEnv.helpers;
 
+  const RIPPLES = 10; // rides du vent par tuile de sable
   function sandCanvas(size = 512) {
     const c = canvas(size),
       g = c.getContext('2d'),
@@ -27,7 +28,8 @@
     // sable peint : grandes plaques chaudes / claires, rides du vent (face éclairée puis face d'ombre), grain doux
     for (let y = 0; y < size; y++)
       for (let x = 0; x < size; x++) {
-        const ph = ((x + noise((x / size) * 4, (y / size) * 4, 4, 2) * 90) / size) * 60,
+        // nombre entier de rides par tuile : la texture se raccorde sans couture (06/11/2026 : « des bandes »)
+        const ph = ((x + noise((x / size) * 4, (y / size) * 4, 4, 2) * 90) / size) * Math.PI * 2 * RIPPLES,
           ripple = Math.sin(ph),
           slope = Math.cos(ph);
         const n = noise((x / size) * 16, (y / size) * 16, 16, 4),
@@ -43,17 +45,23 @@
     g.putImageData(id, 0, 0);
     const r = rng(5); // cailloux : ombre portée puis face éclairée
     for (let i = 0; i < 260; i++) {
-      const x = r() * size,
-        y = r() * size,
-        s = 0.8 + r() * 2.2;
-      g.fillStyle = 'rgba(70,40,24,.45)';
-      g.beginPath();
-      g.ellipse(x + s * 0.4, y + s * 0.4, s, s * 0.7, 0, 0, 7);
-      g.fill();
-      g.fillStyle = `rgba(${(210 + r() * 30) | 0},${(170 + r() * 30) | 0},${(130 + r() * 30) | 0},.8)`;
-      g.beginPath();
-      g.ellipse(x, y, s * 0.8, s * 0.55, 0, 0, 7);
-      g.fill();
+      const x0 = r() * size,
+        y0 = r() * size,
+        s = 0.8 + r() * 2.2,
+        lit = `rgba(${(210 + r() * 30) | 0},${(170 + r() * 30) | 0},${(130 + r() * 30) | 0},.8)`;
+      // caillou au bord : redessiné de l'autre côté (texture qui se répète sans coupure)
+      for (const x of [x0, x0 - size, x0 + size])
+        for (const y of [y0, y0 - size, y0 + size]) {
+          if (x < -4 || x > size + 4 || y < -4 || y > size + 4) continue;
+          g.fillStyle = 'rgba(70,40,24,.45)';
+          g.beginPath();
+          g.ellipse(x + s * 0.4, y + s * 0.4, s, s * 0.7, 0, 0, 7);
+          g.fill();
+          g.fillStyle = lit;
+          g.beginPath();
+          g.ellipse(x, y, s * 0.8, s * 0.55, 0, 0, 7);
+          g.fill();
+        }
     }
     return c;
   }
@@ -154,6 +162,14 @@
     [-6, -hz + 1.6],
     [6, hz - 1.6]
   ];
+  // Sable en position monde (même grain dans l'arène et les salles de départ, quelle que soit la taille du sol) : deux
+  // échelles / orientations de la texture mêlées par grandes zones, les rides ne forment plus de bandes répétées.
+  const SAND_WORLD = `
+    vec4 sa=mapTexelToLinear(texture2D(map,vWXZ/10.5));
+    vec4 sb=mapTexelToLinear(texture2D(map,mat2(.8,-.6,.6,.8)*vWXZ/13.7+.37));
+    float sm=smoothstep(.25,.75,.5+.5*sin(vWXZ.x*.085+2.*sin(vWXZ.y*.061))*cos(vWXZ.y*.047-1.3*sin(vWXZ.x*.05)));
+    diffuseColor*=mix(sa,sb,sm);
+  `;
   ArenaEnv.registerMap('bridge', (THREE, S, arena, E) => {
     const hx = arena.halfX,
       hz = arena.halfZ,
@@ -193,7 +209,6 @@
     S.add(fill);
 
     const sandT = tex(THREE, sandCanvas());
-    sandT.repeat.set(9, 7);
     const sandMat = new THREE.MeshStandardMaterial({ map: sandT, roughness: 1 }),
       deck = arena.bridge,
       // sol peint (ground_paint.js) : ombres de contact, halos des braseros, ombre douce sous le pont, sable plus
@@ -218,7 +233,7 @@
         );
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', '#include <common>\nvarying vec2 vWXZ;' + paint.decl)
-        .replace('#include <map_fragment>', '#include <map_fragment>\n' + paint.apply);
+        .replace('#include <map_fragment>', SAND_WORLD + '\n' + paint.apply);
     };
     const sand = new THREE.Mesh(new THREE.PlaneGeometry(hx * 2 + 30, hz * 2 + 30, 40, 30), sandMat);
     const sp = sand.geometry.attributes.position;
