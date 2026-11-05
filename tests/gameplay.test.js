@@ -434,6 +434,13 @@ function playerWorld() {
   assert.ok(scene.children.includes(dark[0]) && dark[0].material.opacity > 0.45, 'trace encore bien visible à 0,85 s');
   for (let i = 0; i < 60; i++) FX.update(1 / 60);
   assert.ok(!scene.children.includes(dark[0]), 'trace retirée après 1,6 s');
+  // pas de bulle éphémère au lancement d'un bouclier ou d'un camouflage (jugée moche, 05/11/2026) : seuls les éclats
+  // de lumière (points) ; la bulle qui dure est render/shield_aura.js
+  for (const type of ['shield', 'cloak']) {
+    const n0 = scene.children.length;
+    assert.ok(FX.spawn({ type, x: 0, y: 1, z: 0, color: [1, 0.8, 0.4], life: 0.9, size: 0.85 }));
+    assert.equal(scene.children.length, n0, `${type} : pas de bulle éphémère`);
+  }
 }
 // ---------- Caméra contre un mur : recul continu, sans à-coups (src/render/world.js) ----------
 // Bug du 05/11/2026 : en salle de préparation, caméra reculée contre le mur, elle vibrait (point de contact cherché par

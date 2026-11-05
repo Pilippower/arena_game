@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
   // Effets de sorts lumineux (three.js, dans la scène des personnages) : particules additives en un seul
-  // appel de dessin, anneaux au sol, bulles, éclairs de lumière. Reçoit les mêmes appels que fx() du jeu.
+  // appel de dessin, anneaux au sol, éclairs de lumière. Reçoit les mêmes appels que fx() du jeu.
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v)),
     lerp = (a, b, t) => a + (b - a) * t,
     rnd = (a = 1) => (Math.random() * 2 - 1) * a;
@@ -236,25 +236,6 @@
     X.scene.add(m);
     X.meshes.push({ m, r0, r1, life, max: life, spin: rot, kind: 'ring', fade: dark ? 0.6 : 1.3 });
   }
-  function bubble(x, y, z, c, size, life, ref = null) {
-    const T = X.THREE,
-      mat = new T.ShaderMaterial({
-        transparent: true,
-        depthWrite: false,
-        blending: T.AdditiveBlending,
-        uniforms: { c: { value: new T.Color(c[0], c[1], c[2]) }, a: { value: 1 } },
-        vertexShader:
-          'varying vec3 vN;varying vec3 vV;void main(){vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}',
-        fragmentShader:
-          'uniform vec3 c;uniform float a;varying vec3 vN;varying vec3 vV;void main(){float f=pow(1.-abs(dot(vN,vV)),2.2);gl_FragColor=vec4(c*(f*1.5+.08)*a,1.);}'
-      });
-    const m = new T.Mesh(new T.SphereGeometry(1, 24, 16), mat);
-    m.scale.set(size, size * 1.25, size);
-    m.position.set(x, y, z);
-    m.renderOrder = 18;
-    X.scene.add(m);
-    X.meshes.push({ m, life, max: life, kind: 'bubble', ref, size });
-  }
   // Impact (05/11/2026, effets plus travaillés) : éclair, onde de choc au sol, étincelles à traînée, éclats et trace
   // sombre au sol qui s'efface. power ≈ 1 (coup simple) à 2 (gros sort).
   function impact(x, y, z, c, power = 1) {
@@ -352,12 +333,10 @@
           return true;
         }
         return false;
-      case 'shield':
-        bubble(x, y, z, c, Math.max(0.7, s * 1.1), L * 1.4);
+      case 'shield': // la bulle elle-même reste tant que le bouclier tient : render/shield_aura.js
         burst(x, y, z, c, 24, 2, 0.2, 0.6);
         return true;
       case 'cloak':
-        bubble(x, y, z, c, 0.85, L * 1.2);
         burst(x, y, z, [0.3, 0.3, 0.35], 30, 1.6, 0.3, 0.8, { up: 0.6, g: 0.2 });
         return true;
       case 'blinkBurst':
@@ -497,8 +476,6 @@
         o.m.scale.set(r * 2, r * 2, 1);
         o.m.rotation.z += o.spin * dt;
         o.m.material.opacity = Math.pow(1 - k, o.fade);
-      } else if (o.kind === 'bubble') {
-        o.m.material.uniforms.a.value = Math.min(1, o.life * 3) * (0.8 + Math.sin(k * 20) * 0.08);
       } else if (o.kind === 'orb') {
         if (o.f) fxAim(o.f);
         const q = k,
