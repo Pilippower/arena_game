@@ -14,10 +14,11 @@ function hfFindClip(rec, names) {
 }
 function hfSetAnim(rec, u) {
   if (!rec.mixer || !rec.clips?.length || u.poly > 0) return;
-  // course « tenue » 0,18 s après l'arrêt : pas de bascule course/repos à chaque pas de simulation
+  // IA : course « tenue » 0,18 s après l'arrêt (pas de bascule course/repos à chaque pas de son pilotage) ;
+  // joueur : arrêt immédiat (05/11/2026, « délai gênant »)
   const t = now();
   if (u.moving) rec.lastMove = t;
-  const moving = u.moving || t - (rec.lastMove || 0) < 0.18;
+  const moving = u.moving || (u !== state?.player && t - (rec.lastMove || 0) < 0.18);
   let key = 'idle',
     names = ['Idle_Loop', 'Idle'];
   if (!u.alive) {

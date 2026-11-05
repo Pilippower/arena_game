@@ -204,8 +204,10 @@ assert.match(
 );
 assert.ok(code('src/render/').includes('b.position.set(u.rx ?? u.x'), 'ombre au sol interpolée');
 assert.match(h3, /if \(!groups\.size\) return;/, 'silhouettes : pas de passe inutile');
-assert.match(code('src/render/'), /CAM_VIEW\.dist = [^;]*camera\.dist/, 'zoom lissé');
-assert.match(h3, /rotation\.set\(castLean, ryaw, deathTilt \|\| rec\.lean\)/, 'inclinaison dans les virages');
+// aucun délai d'affichage (05/11/2026) : caméra et orientation du personnage immédiates
+assert.match(code('src/render/'), /const dist = camera\.dist,/, 'zoom immédiat');
+assert.doesNotMatch(code('src/render/'), /CAM_VIEW|dispYaw|rec\.lean/, 'pas de caméra ni de pivot lissés');
+assert.match(h3, /rec\.moveOff = off;/, 'pas chassé : orientation immédiate');
 assert.match(h3, /ATTACK_HIT = \{\s*Sword_Attack/, 'frappe synchronisée avec les dégâts');
 assert.ok(read('index.html').includes('.nameplate.enemy .npCast'), "barre d'incantation ennemie lisible");
 const aiSrc = read('src/game/ai.js');

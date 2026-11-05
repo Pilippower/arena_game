@@ -1,5 +1,5 @@
 'use strict';
-// Rendu du monde à chaque image : taille des canevas, caméra (zoom lissé, anti-mur), interpolation des unités, ordre
+// Rendu du monde à chaque image : taille des canevas, caméra (immédiate, anti-mur), interpolation des unités, ordre
 // de dessin (render). Le reste est dans : arena_fallback.js, units_fallback.js, cc_marks.js, fx_webgl.js, overlay.js.
 // ---------- 3D renderer ----------
 function resize() {
@@ -32,15 +32,9 @@ function cameraSafe(target, desired) {
   }
   return safe;
 }
-// Caméra affichée : le zoom glisse vers camera.dist (molette par crans) ; derrière un pilier elle se rapproche
-// tout de suite (jamais de mur entre elle et le joueur) et ne se recule ensuite qu'en douceur.
-const CAM_VIEW = { dist: null, safe: 1, t: 0 };
+// Caméra immédiate (05/11/2026, « délai gênant ») : zoom, rotation et recul après un pilier sans aucun lissage.
 function setupCamera() {
-  const t = now(),
-    dt = clamp(t - CAM_VIEW.t, 0, 0.1);
-  CAM_VIEW.t = t;
-  CAM_VIEW.dist = CAM_VIEW.dist == null ? camera.dist : lerp(CAM_VIEW.dist, camera.dist, 1 - Math.exp(-14 * dt));
-  const dist = CAM_VIEW.dist,
+  const dist = camera.dist,
     p = state?.player || { x: 0, y: 0, z: 0 },
     target = [p.rx ?? p.x, (p.ry ?? p.y ?? 0) + 1.25, p.rz ?? p.z],
     cp = Math.cos(camera.pitch),
@@ -48,8 +42,7 @@ function setupCamera() {
     h = cp * dist,
     desired = [target[0] - Math.sin(camera.yaw) * h, target[1] + sp * dist + 1.0, target[2] - Math.cos(camera.yaw) * h],
     safe = cameraSafe(target, desired);
-  CAM_VIEW.safe = safe < CAM_VIEW.safe ? safe : lerp(CAM_VIEW.safe, safe, 1 - Math.exp(-6 * dt));
-  camPos = [0, 1, 2].map(i => lerp(target[i], desired[i], CAM_VIEW.safe));
+  camPos = [0, 1, 2].map(i => lerp(target[i], desired[i], safe));
   viewProj = mul(perspective(Math.PI / 3, canvas.width / canvas.height, 0.08, 130), lookAt(camPos, target));
   gl.uniformMatrix4fv(loc.vp, false, viewProj);
   gl.uniform3fv(loc.cam, camPos);

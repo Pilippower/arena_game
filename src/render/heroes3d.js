@@ -243,7 +243,6 @@ function hfRender() {
     if (!rec?.loaded) continue;
     const sc = hfRaceScale(u.race, rec.kit);
     let rx, rz, ryaw;
-    const snapped = !!u.visualSnap;
     if (u.visualSnap) {
       rx = u.x;
       rz = u.z;
@@ -282,33 +281,18 @@ function hfRender() {
           off = clamp(rel, -1.57, 1.57);
         }
       }
-      rec.moveOff = (rec.moveOff || 0) + (off - (rec.moveOff || 0)) * Math.min(1, dt * 12);
+      // orientation affichée immédiate (05/11/2026, « délai gênant » : plus de pivot lissé ni d'inclinaison)
+      rec.moveOff = off;
       rec.back = back;
-      ryaw += rec.moveOff;
+      ryaw += off;
     }
-    // orientation affichée lissée (vitesse de rotation max) : plus de demi-tour instantané quand l'unité se tourne pour frapper
-    let turn = 0;
-    if (rec.dispYaw == null || snapped) rec.dispYaw = ryaw;
-    else {
-      const dy = Math.atan2(Math.sin(ryaw - rec.dispYaw), Math.cos(ryaw - rec.dispYaw)),
-        mx = 18 * dt;
-      turn = clamp(dy, -mx, mx);
-      rec.dispYaw += turn;
-    }
-    // inclinaison du corps dans les virages en courant (visuel seulement)
-    const leanTo =
-      u.alive && u.moving && u.grounded && !u.mobility && !(u.poly > 0) && dt > 0
-        ? clamp((-turn / dt) * 0.018, -0.13, 0.13)
-        : 0;
-    rec.lean = (rec.lean || 0) + (leanTo - (rec.lean || 0)) * Math.min(1, dt * 10);
-    ryaw = rec.dispYaw;
     rec.vx = rx;
     rec.vz = rz;
     rec.vyaw = ryaw;
     rec.group.position.set(rx, (u.y || 0) + (rec.hdRace && !u.alive ? 0.05 : 0), rz);
     const deathTilt = rec.hdRace && !u.alive ? 1.18 : 0,
       castLean = rec.hdRace && u.alive && (u.cast || u.actionType === 'cast') ? Math.sin(now() * 8) * 0.025 : 0;
-    rec.group.rotation.set(castLean, ryaw, deathTilt || rec.lean);
+    rec.group.rotation.set(castLean, ryaw, deathTilt);
     rec.group.scale.set(sc[0], sc[1], sc[2]);
     if (rec.aura) {
       rec.aura.material.opacity = u === state.player?.target ? 0.95 : 0.38;
