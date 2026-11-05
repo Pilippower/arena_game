@@ -32,7 +32,13 @@ function createEnvPost(THREE, renderer) {
   qScene.add(quad);
   const vert = 'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
     pass = (frag, uniforms) =>
-      new THREE.ShaderMaterial({ vertexShader: vert, fragmentShader: frag, uniforms, depthTest: false, depthWrite: false });
+      new THREE.ShaderMaterial({
+        vertexShader: vert,
+        fragmentShader: frag,
+        uniforms,
+        depthTest: false,
+        depthWrite: false
+      });
   const bright = pass(
       `uniform sampler2D src;uniform float th;varying vec2 vUv;
       void main(){vec3 c=texture2D(src,vUv).rgb;float l=dot(c,vec3(.299,.587,.114));

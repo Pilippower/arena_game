@@ -4,7 +4,7 @@
 // Les obstacles de jeu (cercles) sont dans MAPS.castle (src/data/maps.js) ; ce fichier ne fait que les habiller.
 (function () {
   if (!window.ArenaEnv?.registerMap) return;
-  const { clamp, rng, canvas, tex, stoneCanvas, grassCanvas, glowTexture, flameTexture, grassAmount } =
+  const { clamp, rng, canvas, tex, stoneCanvas, grassCanvas, glowTexture, flameTexture, grassAmount, ambientMotes } =
     ArenaEnv.helpers;
   let E = null; // état du décor (environment.js), reçu à chaque construction de la carte
 
@@ -394,6 +394,93 @@
     }
   }
 
+  // ---- Lierre : tiges feuillues qui pendent du chaperon, face intérieure des remparts (05/11/2026, décor vivant) ----
+  // Un seul maillage instancié (une feuille = une instance), qui ondule doucement ; évite portes et bannières.
+  const IVY = { leaf: 0.3, step: 0.13, vines: 60 },
+    BANNER_Z = [-18, -9, 0, 9, 18]; // bannières d'équipe sur les remparts est / ouest
+  function ivyLeafTexture(THREE) {
+    const c = canvas(64),
+      g = c.getContext('2d');
+    for (const [a, r] of [
+      [0, 1],
+      [-1.1, 0.8],
+      [1.1, 0.8]
+    ]) {
+      g.save();
+      g.translate(32, 54);
+      g.rotate(a * 0.55);
+      g.fillStyle = `rgb(${52 + r * 20},${100 + r * 30},${40 + r * 10})`;
+      g.beginPath();
+      g.ellipse(0, -22 * r, 11 * r, 22 * r, 0, 0, 7);
+      g.fill();
+      g.strokeStyle = 'rgba(190,230,140,.5)'; // nervure claire peinte
+      g.lineWidth = 1.5;
+      g.beginPath();
+      g.moveTo(0, 0);
+      g.lineTo(0, -40 * r);
+      g.stroke();
+      g.restore();
+    }
+    return tex(THREE, c, false);
+  }
+  function buildIvy(THREE, S, arena, H, banners) {
+    const r = rng(41),
+      hx = arena.halfX,
+      hz = arena.halfZ,
+      spots = [];
+    for (let i = 0; i < IVY.vines * 4 && spots.length < IVY.vines; i++) {
+      const side = Math.floor(r() * 4),
+        vert = side >= 2,
+        s = side % 2 ? 1 : -1,
+        t = (r() * 2 - 1) * ((vert ? hz : hx) - 1.5),
+        gap = vert ? ArenaEnv.doorGap(arena, s) : null;
+      if (gap && t > gap[0] - 1 && t < gap[1] + 1) continue;
+      if (vert && banners.some(z => Math.abs(z - t) < 1.1)) continue;
+      spots.push(
+        vert
+          ? { x: s * (hx - 0.04), z: t, ry: (-s * Math.PI) / 2 }
+          : { x: t, z: s * (hz - 0.04), ry: s > 0 ? Math.PI : 0 }
+      );
+    }
+    const leaves = [];
+    for (const p of spots) {
+      const len = 0.8 + r() * 2.2;
+      for (let y = 0; y < len; y += IVY.step * (0.8 + r() * 0.4)) {
+        const side = (r() - 0.5) * 0.6 * Math.min(1, y + 0.3); // la tige s'évase en descendant
+        leaves.push({ p, y: H - 0.05 - y, side, rot: (r() - 0.5) * 1.6, s: 0.7 + r() * 0.6 });
+      }
+    }
+    const mat = new THREE.MeshStandardMaterial({
+      map: ivyLeafTexture(THREE),
+      alphaTest: 0.5,
+      side: THREE.DoubleSide,
+      roughness: 0.75
+    });
+    mat.onBeforeCompile = sh => {
+      sh.uniforms.time = E.time;
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nuniform float time;')
+        .replace(
+          '#include <begin_vertex>',
+          '#include <begin_vertex>\nvec3 ip=vec3(instanceMatrix[3]);transformed.x+=sin(time*1.6+ip.x*1.3+ip.y*2.+ip.z)*.03*(1.+position.y*4.);'
+        );
+    };
+    const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(IVY.leaf, IVY.leaf), mat, leaves.length),
+      o = new THREE.Object3D();
+    leaves.forEach((L, i) => {
+      const { p } = L,
+        dx = Math.cos(p.ry),
+        dz = -Math.sin(p.ry);
+      o.position.set(p.x + dx * L.side, L.y, p.z + dz * L.side);
+      o.rotation.set(0, p.ry, L.rot);
+      o.scale.setScalar(L.s);
+      o.updateMatrix();
+      mesh.setMatrixAt(i, o.matrix);
+    });
+    mesh.receiveShadow = true;
+    S.add(mesh);
+  }
+
   // ---- Remparts : maçonnerie crénelée, contreforts, bannières d'équipe, braseros ----
   function buildWalls(THREE, S, arena) {
     const hx = arena.halfX,
@@ -516,7 +603,7 @@
     const red = bannerMat('#7a1418', '⚔'),
       blue = bannerMat('#143a7a', '✦');
     for (const side of [-1, 1])
-      for (const z of [-18, -9, 0, 9, 18]) {
+      for (const z of BANNER_Z) {
         const gap = ArenaEnv.doorGap(arena, side);
         if (gap && z > gap[0] - 1.2 && z < gap[1] + 1.2) continue; // porte de la salle de départ
         const b = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 3, 4, 8), side < 0 ? red : blue);
@@ -525,6 +612,7 @@
         b.castShadow = true;
         S.add(b);
       }
+    buildIvy(THREE, S, arena, H, BANNER_Z);
     // braseros
     const flame = flameTexture(THREE),
       glow = glowTexture(THREE);
@@ -580,5 +668,16 @@
   ArenaEnv.registerMap('castle', (THREE, S, arena, env) => {
     E = env;
     buildCastleMap(THREE, S, arena);
+    // lucioles magiques bleu-violet qui scintillent au clair de lune (render/env_ambient.js)
+    ambientMotes(THREE, S, E, {
+      area: { hx: arena.halfX, hz: arena.halfZ, y0: 0.3, y1: 4.5 },
+      count: E.mobile ? 60 : 140,
+      color: 0x9fb8ff,
+      size: 0.11,
+      sway: 0.8,
+      twinkle: 0.9,
+      alpha: 0.9,
+      seed: 23
+    });
   });
 })();

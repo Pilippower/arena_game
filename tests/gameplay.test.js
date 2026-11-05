@@ -435,6 +435,34 @@ function playerWorld() {
   for (let i = 0; i < 60; i++) FX.update(1 / 60);
   assert.ok(!scene.children.includes(dark[0]), 'trace retirée après 1,6 s');
 }
+// ---------- Décor vivant : particules d'ambiance et braises des flammes (src/render/env_ambient.js) ----------
+{
+  const THREE = require('three');
+  const hooks = [],
+    helpers = { rng: s => () => (s = (s * 16807) % 2147483647) / 2147483647, glowTexture: () => new THREE.Texture() },
+    S = sandbox({ THREE, window: { ArenaEnv: { helpers, afterBuild: fn => hooks.push(fn) } } });
+  S.ctx.ArenaEnv = S.ctx.window.ArenaEnv;
+  S.load('src/render/env_ambient.js');
+  const E = { time: { value: 0 }, px: { value: 600 }, mobile: false, flames: [] },
+    scene = new THREE.Scene();
+  helpers.ambientMotes(THREE, scene, E, { area: { hx: 10, hz: 8, y0: 0.5, y1: 4 }, count: 50, color: 0xffffff });
+  const pts = scene.children[0];
+  assert.ok(pts.isPoints && pts.geometry.attributes.position.count === 50, 'une nuée = un seul appel de dessin');
+  assert.equal(pts.material.uniforms.time, E.time, 'animée par la carte graphique (horloge du décor)');
+  // braises : ajoutées à chaque carte, au-dessus de chaque flamme du décor
+  for (const x of [0, 5, 9]) {
+    const s = new THREE.Sprite();
+    s.position.set(x, 3, 0);
+    E.flames.push({ s });
+  }
+  E.flames.push({ light: {} }); // lumière de brasero sans flamme dessinée : pas d'émetteur
+  assert.equal(hooks.length, 1, 'braises ajoutées à toutes les cartes (afterBuild)');
+  hooks[0](THREE, scene, {}, E);
+  const embers = scene.children[1],
+    P = embers.geometry.attributes.position;
+  assert.equal(P.count, 3 * 7, '7 braises par flamme');
+  assert.ok(Array.from({ length: P.count }, (_, i) => P.getY(i)).every(y => y === 3), 'les braises partent des flammes');
+}
 // ---------- Vivant à l'arrêt : respiration, regard qui se promène, poids, clignements (src/render/hero_anim.js) ----------
 {
   const THREE = require('three');

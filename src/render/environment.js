@@ -379,6 +379,7 @@
         ? createEnvPost(THREE, R)
         : null;
     E.time = { value: 0 };
+    E.px = { value: 600 }; // pixels par unité à 1 m de la caméra (taille des particules d'ambiance)
     E.ok = true;
     return setMap(E.mapId || 'castle', arena);
   }
@@ -386,6 +387,12 @@
   const MAP_BUILDERS = {};
   function registerMap(id, fn) {
     MAP_BUILDERS[id] = fn;
+  }
+  // Ajouts communs à toutes les cartes, après leur constructeur (même contrat : (THREE, S, arena, E)) : braises des
+  // flammes (render/env_ambient.js).
+  const AFTER_BUILD = [];
+  function afterBuild(fn) {
+    AFTER_BUILD.push(fn);
   }
   function disposeScene(S) {
     S.traverse(o => {
@@ -412,6 +419,7 @@
     E.anim = [];
     const S = (E.scene = new E.THREE.Scene());
     (MAP_BUILDERS[id] || MAP_BUILDERS.castle)(E.THREE, S, arena, E);
+    for (const fn of AFTER_BUILD) fn(E.THREE, S, arena, E);
     buildShadows(E.THREE, S);
     mergeStatic(E.THREE, S);
     paintScene(E.THREE, S);
@@ -465,6 +473,7 @@
       R.setSize(cw, ch, false);
       E.camera.aspect = cw / ch;
       E.camera.updateProjectionMatrix();
+      E.px.value = (ch * R.getPixelRatio()) / (2 * Math.tan((E.camera.fov * Math.PI) / 360));
       E.w = cw;
       E.h = ch;
     }
@@ -505,6 +514,7 @@
     init,
     setMap,
     registerMap,
+    afterBuild,
     helpers: {
       clamp,
       smooth,

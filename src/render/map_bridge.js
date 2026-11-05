@@ -4,7 +4,8 @@
 // Les obstacles de jeu (cercles) sont dans MAPS.bridge (src/data/maps.js) ; ce fichier ne fait que les habiller.
 (function () {
   if (!window.ArenaEnv?.registerMap) return;
-  const { rng, noise, noise2, canvas, tex, glowTexture, flameTexture, clamp, stoneCanvas } = ArenaEnv.helpers;
+  const { rng, noise, noise2, canvas, tex, glowTexture, flameTexture, clamp, stoneCanvas, ambientMotes } =
+    ArenaEnv.helpers;
 
   function sandCanvas(size = 512) {
     const c = canvas(size),
@@ -623,22 +624,15 @@
         ph = r() * 6;
       E.anim.push(t => (m.position.y = y0 + Math.sin(t * 0.3 + ph) * 2));
     }
-    // poussière qui flotte dans la lumière
-    const N = mobile ? 120 : 300,
-      pos = new Float32Array(N * 3);
-    for (let i = 0; i < N; i++) {
-      pos[i * 3] = (r() * 2 - 1) * hx;
-      pos[i * 3 + 1] = 0.5 + r() * 6;
-      pos[i * 3 + 2] = (r() * 2 - 1) * hz;
-    }
-    const dg = new THREE.BufferGeometry();
-    dg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    const dust = new THREE.Points(
-      dg,
-      new THREE.PointsMaterial({ color: 0xffd9a0, size: 0.08, transparent: true, opacity: 0.6, depthWrite: false })
-    );
-    dust.userData.dynamic = true;
-    S.add(dust);
-    E.anim.push(t => (dust.rotation.y = t * 0.01));
+    // poussière dorée qui dérive dans la lumière du couchant (render/env_ambient.js)
+    ambientMotes(THREE, S, E, {
+      area: { hx, hz, y0: 0.4, y1: 6 },
+      count: mobile ? 120 : 320,
+      color: 0xffd9a0,
+      size: 0.09,
+      sway: 0.6,
+      twinkle: 0.5,
+      alpha: 0.55
+    });
   });
 })();
