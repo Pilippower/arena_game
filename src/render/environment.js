@@ -123,11 +123,18 @@
           e = Math.min(dx, dy);
         const grain = noise((x / size) * 24, (y / size) * 24, 24, 4),
           big = noise2((x / size) * 4, (y / size) * 4, 4, 3);
-        const k = 1 - vary + vary * 2 * s.t;
-        let col = base.map((v, i) => v * k * (0.72 + 0.5 * grain) * (0.85 + 0.3 * big));
-        if (e < 10) {
-          const bev = e < 3 ? 0 : (e - 3) / 7;
-          const light = (yy < rowH / 2 && dy === e) || xx - s.x0 === e ? 1.18 : 0.78;
+        // style peint : grain doux, chaque pierre a sa nuance chaude ou froide et un volume (claire en haut à gauche)
+        const k = 1 - vary + vary * 2 * s.t,
+          hue = (((s.t * 7.3 + s.m * 3.1) % 1) - 0.5) * 0.16,
+          volume = 1 + 0.14 * (0.5 - yy / rowH) + 0.08 * (0.5 - (xx - s.x0) / (s.x1 - s.x0)),
+          tint = [1 + hue, 1, 1 - hue];
+        let col = base.map((v, i) => v * k * tint[i] * volume * (0.84 + 0.26 * grain) * (0.85 + 0.3 * big));
+        const bevW = Math.max(6, (14 * size) / 1024);
+        if (e < bevW) {
+          const bev = e < 3 ? 0 : (e - 3) / (bevW - 3),
+            lit = (yy < rowH / 2 && dy === e) || xx - s.x0 === e,
+            chip = noise((x / size) * 60, (y / size) * 60, 60, 2) > 0.66; // arêtes ébréchées
+          const light = chip ? 0.62 : lit ? 1.3 : 0.72;
           col = col.map(v => v * (bev + (1 - bev) * light));
         }
         if (moss && s.m < moss) {

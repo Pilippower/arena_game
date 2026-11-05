@@ -11,18 +11,37 @@
       g = c.getContext('2d'),
       id = g.createImageData(size, size),
       d = id.data;
+    // sable peint : grandes plaques chaudes / claires, rides du vent (face éclairée puis face d'ombre), grain doux
     for (let y = 0; y < size; y++)
       for (let x = 0; x < size; x++) {
-        const ripple = Math.sin(((x + noise((x / size) * 4, (y / size) * 4, 4, 2) * 90) / size) * 60) * 0.5 + 0.5;
+        const ph = ((x + noise((x / size) * 4, (y / size) * 4, 4, 2) * 90) / size) * 60,
+          ripple = Math.sin(ph),
+          slope = Math.cos(ph);
         const n = noise((x / size) * 16, (y / size) * 16, 16, 4),
-          k = 0.78 + 0.18 * n + 0.08 * ripple;
+          patch = noise2((x / size) * 3, (y / size) * 3, 3, 3),
+          k = 0.8 + 0.1 * n + 0.07 * ripple + 0.06 * Math.max(0, slope) - 0.05 * Math.max(0, -slope),
+          warm = (patch - 0.5) * 0.22;
         const o = (y * size + x) * 4;
-        d[o] = clamp(178 * k, 0, 255);
-        d[o + 1] = clamp(128 * k, 0, 255);
-        d[o + 2] = clamp(84 * k, 0, 255);
+        d[o] = clamp(184 * k * (1 + warm * 0.4), 0, 255);
+        d[o + 1] = clamp(132 * k, 0, 255);
+        d[o + 2] = clamp(86 * k * (1 - warm), 0, 255);
         d[o + 3] = 255;
       }
     g.putImageData(id, 0, 0);
+    const r = rng(5); // cailloux : ombre portée puis face éclairée
+    for (let i = 0; i < 260; i++) {
+      const x = r() * size,
+        y = r() * size,
+        s = 0.8 + r() * 2.2;
+      g.fillStyle = 'rgba(70,40,24,.45)';
+      g.beginPath();
+      g.ellipse(x + s * 0.4, y + s * 0.4, s, s * 0.7, 0, 0, 7);
+      g.fill();
+      g.fillStyle = `rgba(${(210 + r() * 30) | 0},${(170 + r() * 30) | 0},${(130 + r() * 30) | 0},.8)`;
+      g.beginPath();
+      g.ellipse(x, y, s * 0.8, s * 0.55, 0, 0, 7);
+      g.fill();
+    }
     return c;
   }
   // Bois « fantasy » peint à la main : planches séparées par des joints sombres, arêtes éclairées, fil du bois
