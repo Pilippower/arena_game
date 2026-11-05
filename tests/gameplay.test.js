@@ -554,6 +554,20 @@ function playerWorld() {
   assert.ok(lit[0] - dim[0] > 0.4 && lit[0] - dim[0] > 2 * (lit[2] - dim[2]), 'halo chaud d’un brasero');
   assert.ok(at(open, 0, 0, { shade: () => 0.5 }) / at(open, 0, 0) === 0.5, 'ombre propre à la carte (shade)');
 }
+// ---------- Pas chassé : le corps pivote vite mais pas d'un coup (render/heroes3d.js hfBodyTurn) ----------
+// Demande du 06/11/2026 : « quand je change de gauche à droite ça change directement » ; déplacement et regard restent
+// immédiats, seul l'angle du corps par rapport au regard suit en ~0,15 s.
+{
+  const S = sandbox({ BODY_TURN: 20 });
+  S.fn('src/render/heroes3d.js', 'hfBodyTurn');
+  const turn = S.ctx.hfBodyTurn,
+    L = Math.PI / 2;
+  let a = turn(L, -L, 1 / 60);
+  assert.ok(a < L - 0.3 && a > 0, `gauche → droite : le corps commence à pivoter (${a.toFixed(2)})`);
+  for (let i = 0; i < 9; i++) a = turn(a, -L, 1 / 60);
+  assert.ok(Math.abs(a + L) < 0.15 * L, `gauche → droite : pivot fini en 0,17 s (${a.toFixed(2)})`);
+  assert.equal(turn(0.4, 0.4, 1 / 60), 0.4, 'direction inchangée : rien ne bouge');
+}
 // ---------- Rendu peint : un programme par retouche de shader (environment.js, builder.js) ----------
 // Bug du 05/11/2026 : three r128 partage un programme compilé entre matériaux au même texte de onBeforeCompile ; la
 // retouche peinte, identique pour tous, donnait aux remparts du château le shader du sol (texture en bandes verticales).

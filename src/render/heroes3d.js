@@ -282,10 +282,11 @@ function hfRender() {
           off = clamp(rel, -1.57, 1.57);
         }
       }
-      // orientation affichée immédiate (05/11/2026, « délai gênant » : plus de pivot lissé ni d'inclinaison)
-      rec.moveOff = off;
+      // regard (u.yaw) et déplacement immédiats (05/11/2026, « délai gênant ») ; seul le corps pivote en douceur quand
+      // la direction de course change par rapport au regard (06/11/2026, gauche ↔ droite « pas naturel »)
+      rec.moveOff = hfBodyTurn(rec.moveOff ?? off, off, dt);
       rec.back = back;
-      ryaw += off;
+      ryaw += rec.moveOff;
     }
     rec.vx = rx;
     rec.vz = rz;
@@ -382,6 +383,11 @@ function hfRender() {
     ShieldAura.update(dt, state.units, u => HF.records.get(u.id)?.group || null, state.player, now());
   HF.renderer.render(HF.scene, HF.camera);
   hfRenderGhosts();
+}
+// Pivot du corps vers l'angle de course off (radians, relatif au regard) : rapide (95 % en ~0,15 s) mais pas instantané.
+const BODY_TURN = 20; // 1/s
+function hfBodyTurn(cur, off, dt) {
+  return off + (cur - off) * Math.exp(-BODY_TURN * dt);
 }
 function hfSetOpacity(root, op) {
   root.traverse(o => {

@@ -204,10 +204,11 @@ assert.match(
 );
 assert.ok(code('src/render/').includes('b.position.set(u.rx ?? u.x'), 'ombre au sol interpolée');
 assert.match(h3, /if \(!groups\.size\) return;/, 'silhouettes : pas de passe inutile');
-// aucun délai d'affichage (05/11/2026) : caméra et orientation du personnage immédiates
+// aucun délai d'affichage (05/11/2026) : caméra et regard du personnage immédiats ; seul le corps pivote vers la
+// direction de course (06/11/2026, gauche ↔ droite « pas naturel » : hfBodyTurn, tests/gameplay.test.js)
 assert.match(code('src/render/'), /const dist = camera\.dist,/, 'zoom immédiat');
 assert.doesNotMatch(code('src/render/'), /CAM_VIEW|dispYaw|rec\.lean/, 'pas de caméra ni de pivot lissés');
-assert.match(h3, /rec\.moveOff = off;/, 'pas chassé : orientation immédiate');
+assert.match(h3, /ryaw = py \+ da \* a;[\s\S]*ryaw \+= rec\.moveOff;/, 'regard immédiat, corps qui pivote en plus');
 assert.match(h3, /ATTACK_HIT = \{\s*Sword_Attack/, 'frappe synchronisée avec les dégâts');
 assert.ok(read('index.html').includes('.nameplate.enemy .npCast'), "barre d'incantation ennemie lisible");
 const aiSrc = read('src/game/ai.js');
