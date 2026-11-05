@@ -137,6 +137,8 @@ async function prepareMatch() {
         shown.push(rec.sheep);
         rec.model?.traverse(o => o.name === 'Eyelid' && shown.push(o)); // yeux fermés de l'étourdissement
       }
+      const bubble = window.ShieldAura?.warm(); // bulle de bouclier (render/shield_aura.js)
+      if (bubble) shown.push(bubble);
       const vis = shown.map(o => o.visible);
       shown.forEach(o => (o.visible = true));
       HF.renderer.compile(HF.scene, HF.camera);

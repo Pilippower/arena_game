@@ -65,6 +65,7 @@ function hfInit() {
     HF.loader = new THREE.GLTFLoader();
     try {
       window.SpellFX && SpellFX.init(THREE, HF.scene, HF.renderer, HF.camera);
+      window.ShieldAura?.init(THREE, HF.scene);
     } catch (e) {
       console.warn('Effets 3D indisponibles', e);
     }
@@ -377,6 +378,8 @@ function hfRender() {
   }
   hfMakePortraits();
   if (window.SpellFX?.ok) SpellFX.update(dt, state.units, hfHandPos);
+  if (window.ShieldAura?.ok)
+    ShieldAura.update(dt, state.units, u => HF.records.get(u.id)?.group || null, state.player, now());
   HF.renderer.render(HF.scene, HF.camera);
   hfRenderGhosts();
 }

@@ -489,6 +489,40 @@ function playerWorld() {
     assert.ok(Math.abs(span(j => uv.getY(j)) - sv / tile) < 1e-6, `face ${f} : hauteur de texture = hauteur de la face`);
   }
 }
+// ---------- Bulle de bouclier : visible tant que le bouclier tient (render/shield_aura.js) ----------
+// Demande du 05/11/2026 : Power Shield / Arcane Barrier / Shield Wall gardent une bulle autour de l'unité jusqu'à la fin.
+{
+  const THREE = require('three'),
+    A = require('../src/render/shield_aura.js'),
+    added = [];
+  A.init(THREE, { add: m => added.push(m) });
+  const me = { id: 1, team: 'ally', alive: true, shield: 300, shieldName: 'Arcane Barrier' },
+    foe = { id: 2, team: 'enemy', alive: true, shield: 300, shieldName: 'Power Shield', stealth: true },
+    body = { position: { x: 2, y: 0, z: 3 }, scale: { y: 1 } },
+    step = (s, t = 0.05) => {
+      for (let k = 0; k < s / t; k++) A.update(t, [me, foe], () => body, me, 0);
+    },
+    bub = id => added[id - 1],
+    U = id => bub(id).material.uniforms;
+  step(0.3);
+  assert.ok(bub(1).visible && bub(1).position.x === 2 && bub(1).position.z === 3, "bulle autour de l'unité protégée");
+  assert.deepEqual(U(1).c.value.toArray(), A.SHIELD_LOOK['Arcane Barrier'].c, 'aspect du sort qui protège');
+  assert.ok(U(1).a.value > 0.9, 'bouclier entier : bulle pleine');
+  assert.equal(U(2).a.value, 0, 'ennemi camouflé : la bulle ne le trahit pas');
+  me.shield = 100;
+  step(0.05);
+  assert.ok(U(1).hit.value > 0.5, "coup absorbé : la bulle s'éclaire");
+  step(1);
+  assert.ok(bub(1).visible && U(1).a.value < 0.9, 'bouclier usé : bulle plus pâle, toujours là');
+  me.shield = 0;
+  step(0.1);
+  assert.ok(bub(1).visible, 'bouclier cassé : la bulle éclate (visible un instant)');
+  step(0.5);
+  assert.ok(!bub(1).visible, 'bouclier disparu : plus de bulle');
+  foe.alive = false;
+  step(0.6);
+  assert.ok(!bub(2).visible, 'unité morte : plus de bulle');
+}
 // ---------- Rendu peint : un programme par retouche de shader (environment.js, builder.js) ----------
 // Bug du 05/11/2026 : three r128 partage un programme compilé entre matériaux au même texte de onBeforeCompile ; la
 // retouche peinte, identique pour tous, donnait aux remparts du château le shader du sol (texture en bandes verticales).
