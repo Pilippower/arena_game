@@ -530,6 +530,30 @@ function playerWorld() {
   step(0.6);
   assert.ok(!bub(2).visible, 'unité morte : plus de bulle');
 }
+// ---------- Sol peint : ombres de contact, halos des braseros (render/ground_paint.js groundShadeAt) ----------
+// Demande du 06/11/2026 (graphismes « peints à la main ») : la lumière et l'ombre sont peintes une fois dans le sol.
+{
+  const env = require('../src/render/environment.js'),
+    S = sandbox({ ArenaEnv: env, window: { ArenaEnv: env } });
+  S.load('src/render/ground_paint.js');
+  const shade = env.helpers.groundShadeAt,
+    lum = c => (c[0] + c[1] + c[2]) / 3,
+    open = { halfX: 30, halfZ: 20, pillars: [] },
+    at = (arena, x, z, opt) => lum(shade(arena, x, z, opt));
+  // même point, même bruit : seul l'obstacle change
+  const pil = { ...open, pillars: [{ x: 5, z: 0, r: 1.5 }] },
+    post = { ...open, pillars: [{ x: 5, z: 0, r: 1.5, los: false }] };
+  assert.ok(at(pil, 6.7, 0) / at(open, 6.7, 0) < 0.6, 'ombre de contact au pied d’un pilier');
+  assert.ok(at(post, 6.7, 0) > at(pil, 6.7, 0), 'obstacle mince (los: false) : ombre plus légère');
+  assert.ok(at(pil, 14, 9) / at(open, 14, 9) > 0.97, 'loin du pilier : pas d’ombre');
+  const wide = { ...open, halfX: 40 };
+  assert.ok(at(open, 29.9, 3) / at(wide, 29.9, 3) < 0.6, 'ombre de contact au pied d’un rempart');
+  const fire = { lights: [{ x: 10, z: 5, r: 5, c: [1, 0.5, 0.2], k: 0.6 }] },
+    lit = shade(open, 10.5, 5, fire),
+    dim = shade(open, 10.5, 5);
+  assert.ok(lit[0] - dim[0] > 0.4 && lit[0] - dim[0] > 2 * (lit[2] - dim[2]), 'halo chaud d’un brasero');
+  assert.ok(at(open, 0, 0, { shade: () => 0.5 }) / at(open, 0, 0) === 0.5, 'ombre propre à la carte (shade)');
+}
 // ---------- Rendu peint : un programme par retouche de shader (environment.js, builder.js) ----------
 // Bug du 05/11/2026 : three r128 partage un programme compilé entre matériaux au même texte de onBeforeCompile ; la
 // retouche peinte, identique pour tous, donnait aux remparts du château le shader du sol (texture en bandes verticales).

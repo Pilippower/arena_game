@@ -4,8 +4,20 @@
 // Les obstacles de jeu (cercles) sont dans MAPS.bridge (src/data/maps.js) ; ce fichier ne fait que les habiller.
 (function () {
   if (!window.ArenaEnv?.registerMap) return;
-  const { rng, noise, noise2, canvas, tex, glowTexture, flameTexture, clamp, stoneCanvas, ambientMotes, boxUV } =
-    ArenaEnv.helpers;
+  const {
+    rng,
+    noise,
+    noise2,
+    canvas,
+    tex,
+    glowTexture,
+    flameTexture,
+    clamp,
+    stoneCanvas,
+    ambientMotes,
+    boxUV,
+    groundPaint
+  } = ArenaEnv.helpers;
 
   function sandCanvas(size = 512) {
     const c = canvas(size),
@@ -133,6 +145,15 @@
     return c;
   }
 
+  // Braseros : coins et bord des remparts sud / nord (aussi leur halo peint au sol).
+  const BRAZIERS = (hx, hz) => [
+    [-hx + 2, -hz + 2],
+    [hx - 2, -hz + 2],
+    [-hx + 2, hz - 2],
+    [hx - 2, hz - 2],
+    [-6, -hz + 1.6],
+    [6, hz - 1.6]
+  ];
   ArenaEnv.registerMap('bridge', (THREE, S, arena, E) => {
     const hx = arena.halfX,
       hz = arena.halfZ,
@@ -173,10 +194,33 @@
 
     const sandT = tex(THREE, sandCanvas());
     sandT.repeat.set(9, 7);
-    const sand = new THREE.Mesh(
-      new THREE.PlaneGeometry(hx * 2 + 30, hz * 2 + 30, 40, 30),
-      new THREE.MeshStandardMaterial({ map: sandT, roughness: 1 })
-    );
+    const sandMat = new THREE.MeshStandardMaterial({ map: sandT, roughness: 1 }),
+      deck = arena.bridge,
+      // sol peint (ground_paint.js) : ombres de contact, halos des braseros, ombre douce sous le pont, sable plus
+      // sombre en traînées
+      paint = groundPaint(THREE, arena, {
+        size: mobile ? 512 : 1024,
+        lights: BRAZIERS(hx, hz).map(([x, z]) => ({ x, z, r: 5.5, c: [1, 0.5, 0.18], k: 0.55 })),
+        shade: (x, z) =>
+          1 -
+          0.3 * clamp((deck.halfW + 1.2 - Math.abs(z)) / 1.2, 0, 1) * clamp((deck.rampX + 1 - Math.abs(x)) / 2, 0, 1),
+        stains: 60,
+        stainColors: ['rgba(120,76,48,0.5)', 'rgba(170,130,80,0.4)', 'rgba(96,66,60,0.4)'],
+        seed: 17
+      });
+    sandMat.onBeforeCompile = sh => {
+      Object.assign(sh.uniforms, paint.uniforms);
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying vec2 vWXZ;')
+        .replace(
+          '#include <worldpos_vertex>',
+          '#include <worldpos_vertex>\nvWXZ=(modelMatrix*vec4(transformed,1.)).xz;'
+        );
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying vec2 vWXZ;' + paint.decl)
+        .replace('#include <map_fragment>', '#include <map_fragment>\n' + paint.apply);
+    };
+    const sand = new THREE.Mesh(new THREE.PlaneGeometry(hx * 2 + 30, hz * 2 + 30, 40, 30), sandMat);
     const sp = sand.geometry.attributes.position;
     for (let i = 0; i < sp.count; i++) {
       const out = ArenaEnv.outsideDist(arena, sp.getX(i), -sp.getY(i)); // sable plat dans l'arène et les salles
@@ -531,14 +575,7 @@
     // braseros
     const flame = flameTexture(THREE),
       glow = glowTexture(THREE);
-    for (const [x, z] of [
-      [-hx + 2, -hz + 2],
-      [hx - 2, -hz + 2],
-      [-hx + 2, hz - 2],
-      [hx - 2, hz - 2],
-      [-6, -hz + 1.6],
-      [6, hz - 1.6]
-    ]) {
+    for (const [x, z] of BRAZIERS(hx, hz)) {
       const g = new THREE.Group();
       g.position.set(x, 0, z);
       const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.35, 0.45, 10), iron);

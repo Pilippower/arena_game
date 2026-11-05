@@ -15,9 +15,12 @@
     flameTexture,
     grassAmount,
     ambientMotes,
-    boxUV
+    boxUV,
+    groundPaint
   } = ArenaEnv.helpers;
   let E = null; // état du décor (environment.js), reçu à chaque construction de la carte
+  // Braseros au pied des remparts est / ouest (aussi leur halo peint au sol : buildGround).
+  const brazierSpots = arena => [-1, 1].flatMap(sx => [-13.5, 13.5].map(z => [sx * (arena.halfX - 1.6), z]));
 
   // Cercle runique au centre de l'arène (or + arcane), avec carte émissive.
   function runeCircle(THREE) {
@@ -172,8 +175,24 @@
       }
     mg.putImageData(mid, 0, 0);
     const mask = tex(THREE, mc, false, false);
+    // sol peint : ombres de contact, taches, halos des braseros, lueur bleutée du cercle runique, fissures sur les
+    // dalles, mousse et terre (ground_paint.js)
+    const paint = groundPaint(THREE, arena, {
+      size: E.mobile ? 512 : 1024,
+      lights: [
+        ...brazierSpots(arena).map(([x, z]) => ({ x, z, r: 5.5, c: [1, 0.55, 0.2], k: 0.6 })),
+        { x: 0, z: 0, r: 10, c: [0.35, 0.45, 1], k: 0.1 }
+      ],
+      cracks: 45,
+      crackOK: (x, z) => grassAmount(arena, x, z) < 0.2 && Math.hypot(x, z) > 13.5,
+      stains: 70,
+      stainOK: (x, z) => Math.hypot(x, z) > 13.5,
+      stainColors: ['rgba(70,100,56,0.5)', 'rgba(90,72,56,0.45)', 'rgba(58,60,84,0.4)'],
+      seed: 31
+    });
     const mat = new THREE.MeshStandardMaterial({ map: stone, roughness: 0.88, metalness: 0 });
     mat.onBeforeCompile = sh => {
+      Object.assign(sh.uniforms, paint.uniforms);
       sh.uniforms.grassMap = { value: grass };
       sh.uniforms.maskMap = { value: mask };
       sh.uniforms.uHalf = { value: new THREE.Vector2(hx, hz) };
@@ -186,7 +205,7 @@
       sh.fragmentShader = sh.fragmentShader
         .replace(
           '#include <common>',
-          '#include <common>\nvarying vec2 vWXZ;uniform sampler2D grassMap,maskMap;uniform vec2 uHalf;'
+          '#include <common>\nvarying vec2 vWXZ;uniform sampler2D grassMap,maskMap;uniform vec2 uHalf;' + paint.decl
         )
         .replace(
           '#include <map_fragment>',
@@ -195,7 +214,8 @@
           vec4 gr=mapTexelToLinear(texture2D(grassMap,vWXZ/4.5));
           vec2 muv=(vWXZ+uHalf)/(2.*uHalf);float m=texture2D(maskMap,clamp(muv,0.,1.)).r;
           if(muv.x<0.||muv.x>1.||muv.y<0.||muv.y>1.)m=1.;
-          diffuseColor*=mix(st,gr,smoothstep(.15,.85,m));`
+          diffuseColor*=mix(st,gr,smoothstep(.15,.85,m));
+          ${paint.apply}`
         );
     };
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(hx * 2 + 6, hz * 2 + 6), mat);
@@ -626,51 +646,49 @@
       glow = glowTexture(THREE);
     E.flames = [];
     const bowl = new THREE.MeshStandardMaterial({ color: 0x2e2a26, metalness: 0.6, roughness: 0.5 });
-    for (const sx of [-1, 1])
-      for (const z of [-13.5, 13.5]) {
-        const x = sx * (arena.halfX - 1.6),
-          g = new THREE.Group();
-        g.position.set(x, 0, z);
-        const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.32, 1.3, 8), capMat);
-        ped.position.y = 0.65;
-        ped.castShadow = true;
-        g.add(ped);
-        const b = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.3, 0.35, 12), bowl);
-        b.position.y = 1.45;
-        b.castShadow = true;
-        g.add(b);
-        for (let k = 0; k < 3; k++) {
-          const f = new THREE.Sprite(
-            new THREE.SpriteMaterial({
-              map: flame,
-              blending: THREE.AdditiveBlending,
-              transparent: true,
-              depthWrite: false
-            })
-          );
-          f.position.set((k - 1) * 0.12, 1.95, 0);
-          g.add(f);
-          E.flames.push({ s: f, k: k + x });
-        }
-        const gl = new THREE.Sprite(
+    for (const [x, z] of brazierSpots(arena)) {
+      const g = new THREE.Group();
+      g.position.set(x, 0, z);
+      const ped = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.32, 1.3, 8), capMat);
+      ped.position.y = 0.65;
+      ped.castShadow = true;
+      g.add(ped);
+      const b = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.3, 0.35, 12), bowl);
+      b.position.y = 1.45;
+      b.castShadow = true;
+      g.add(b);
+      for (let k = 0; k < 3; k++) {
+        const f = new THREE.Sprite(
           new THREE.SpriteMaterial({
-            map: glow,
-            color: 0xff9a40,
+            map: flame,
             blending: THREE.AdditiveBlending,
             transparent: true,
-            depthWrite: false,
-            opacity: 0.55
+            depthWrite: false
           })
         );
-        gl.scale.setScalar(4);
-        gl.position.y = 1.9;
-        g.add(gl);
-        const light = new THREE.PointLight(0xff8a3c, 1.2, 9, 2);
-        light.position.y = 2.1;
-        g.add(light);
-        E.flames.push({ light, k: x + z });
-        S.add(g);
+        f.position.set((k - 1) * 0.12, 1.95, 0);
+        g.add(f);
+        E.flames.push({ s: f, k: k + x });
       }
+      const gl = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: glow,
+          color: 0xff9a40,
+          blending: THREE.AdditiveBlending,
+          transparent: true,
+          depthWrite: false,
+          opacity: 0.55
+        })
+      );
+      gl.scale.setScalar(4);
+      gl.position.y = 1.9;
+      g.add(gl);
+      const light = new THREE.PointLight(0xff8a3c, 1.2, 9, 2);
+      light.position.y = 2.1;
+      g.add(light);
+      E.flames.push({ light, k: x + z });
+      S.add(g);
+    }
   }
 
   ArenaEnv.registerMap('castle', (THREE, S, arena, env) => {
