@@ -4,7 +4,7 @@
 // Les obstacles de jeu (cercles) sont dans MAPS.bridge (src/data/maps.js) ; ce fichier ne fait que les habiller.
 (function () {
   if (!window.ArenaEnv?.registerMap) return;
-  const { rng, noise, noise2, canvas, tex, glowTexture, flameTexture, clamp, stoneCanvas, ambientMotes } =
+  const { rng, noise, noise2, canvas, tex, glowTexture, flameTexture, clamp, stoneCanvas, ambientMotes, boxUV } =
     ArenaEnv.helpers;
 
   function sandCanvas(size = 512) {
@@ -526,7 +526,7 @@
       cap: masonry,
       iron,
       wallH,
-      box: (w, h, d, x, y, z, mat) => add(new THREE.BoxGeometry(w, h, d), mat, x, y, z)
+      box: (w, h, d, x, y, z, mat) => add(boxUV(new THREE.BoxGeometry(w, h, d), w, h, d, 3), mat, x, y, z)
     });
     // braseros
     const flame = flameTexture(THREE),

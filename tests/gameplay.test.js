@@ -470,6 +470,25 @@ function playerWorld() {
     assert.ok(worst < 0.03, `${map} : caméra continue (saut max ${worst.toFixed(3)} m pour 5 mm)`);
   }
 }
+// ---------- Blocs maçonnés : texture à l'échelle de chaque face (environment.js boxUV) ----------
+// Bug du 05/11/2026 : murs des salles de départ en « barres verticales » (pierres étirées sur 12 m à The Bridge,
+// écrasées sur les faces étroites au château).
+{
+  const THREE = require('three'),
+    { boxUV } = require('../src/render/environment.js').helpers,
+    [w, h, d, tile] = [12, 4, 0.8, 3],
+    geo = boxUV(new THREE.BoxGeometry(w, h, d), w, h, d, tile),
+    uv = geo.attributes.uv,
+    n = geo.attributes.normal;
+  for (let f = 0; f < 6; f++) {
+    const idx = [0, 1, 2, 3].map(k => f * 4 + k),
+      span = get => Math.max(...idx.map(get)) - Math.min(...idx.map(get)),
+      i = idx[0],
+      [su, sv] = n.getX(i) ? [d, h] : n.getY(i) ? [w, d] : [w, h];
+    assert.ok(Math.abs(span(j => uv.getX(j)) - su / tile) < 1e-6, `face ${f} : largeur de texture = largeur de la face`);
+    assert.ok(Math.abs(span(j => uv.getY(j)) - sv / tile) < 1e-6, `face ${f} : hauteur de texture = hauteur de la face`);
+  }
+}
 // ---------- Rendu peint : un programme par retouche de shader (environment.js, builder.js) ----------
 // Bug du 05/11/2026 : three r128 partage un programme compilé entre matériaux au même texte de onBeforeCompile ; la
 // retouche peinte, identique pour tous, donnait aux remparts du château le shader du sol (texture en bandes verticales).

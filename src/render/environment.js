@@ -512,6 +512,19 @@
     else R.render(E.scene, E.camera);
   }
 
+  // UV d'un bloc maçonné (BoxGeometry w × h × d) : chaque face reçoit la texture à l'échelle de ses propres côtés
+  // (tile m par répétition). Une échelle commune écrasait les pierres en bandes sur les faces étroites : chaperons,
+  // piédroits des poternes (« murs en barres verticales », 05/11/2026).
+  function boxUV(geo, w, h, d, tile) {
+    const uv = geo.attributes.uv,
+      n = geo.attributes.normal;
+    for (let i = 0; i < uv.count; i++) {
+      const [su, sv] = n.getX(i) ? [d, h] : n.getY(i) ? [w, d] : [w, h];
+      uv.setXY(i, (uv.getX(i) * su) / tile, (uv.getY(i) * sv) / tile);
+    }
+    return geo;
+  }
+
   const stats = () =>
     E.renderer ? { calls: E.renderer.info.render.calls, triangles: E.renderer.info.render.triangles } : null;
   return {
@@ -532,7 +545,8 @@
       flameTexture,
       mergeMeshes,
       grassAmount,
-      grassCanvas
+      grassCanvas,
+      boxUV
     },
     render,
     stats,

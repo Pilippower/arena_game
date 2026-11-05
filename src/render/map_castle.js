@@ -4,8 +4,19 @@
 // Les obstacles de jeu (cercles) sont dans MAPS.castle (src/data/maps.js) ; ce fichier ne fait que les habiller.
 (function () {
   if (!window.ArenaEnv?.registerMap) return;
-  const { clamp, rng, canvas, tex, stoneCanvas, grassCanvas, glowTexture, flameTexture, grassAmount, ambientMotes } =
-    ArenaEnv.helpers;
+  const {
+    clamp,
+    rng,
+    canvas,
+    tex,
+    stoneCanvas,
+    grassCanvas,
+    glowTexture,
+    flameTexture,
+    grassAmount,
+    ambientMotes,
+    boxUV
+  } = ArenaEnv.helpers;
   let E = null; // état du décor (environment.js), reçu à chaque construction de la carte
 
   // Cercle runique au centre de l'arène (or + arcane), avec carte émissive.
@@ -493,11 +504,8 @@
     );
     const wallMat = new THREE.MeshStandardMaterial({ map: masonry, roughness: 0.88 });
     const capMat = new THREE.MeshStandardMaterial({ map: masonry, color: 0xb8b2a6, roughness: 0.85 });
-    const box = (w, h, d, x, y, z, mat = wallMat, uvScale = 1) => {
-      const geo = new THREE.BoxGeometry(w, h, d),
-        uv = geo.attributes.uv;
-      for (let i = 0; i < uv.count; i++)
-        uv.setXY(i, ((uv.getX(i) * Math.max(w, d)) / 3) * uvScale, ((uv.getY(i) * h) / 3) * uvScale);
+    const box = (w, h, d, x, y, z, mat = wallMat) => {
+      const geo = boxUV(new THREE.BoxGeometry(w, h, d), w, h, d, 3);
       const m = new THREE.Mesh(geo, mat);
       m.position.set(x, y, z);
       m.castShadow = m.receiveShadow = true;
