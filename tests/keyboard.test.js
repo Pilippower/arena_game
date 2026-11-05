@@ -7,13 +7,15 @@ const { sandbox } = require('./sources.js');
 
 // faux élément DOM : juste ce que lisent ces fichiers
 function fakeEl() {
-  const cls = new Set();
+  const cls = new Set(),
+    on = {};
   return {
+    on, // écouteurs posés sur l'élément (le canevas : souris)
     style: {},
     textContent: '',
     innerHTML: '',
     classList: { add: c => cls.add(c), remove: c => cls.delete(c), contains: c => cls.has(c) },
-    addEventListener() {},
+    addEventListener: (type, f) => (on[type] = on[type] || []).push(f),
     querySelectorAll: () => [],
     getContext: () => null,
     getBoundingClientRect: () => ({ left: 0, top: 0 }),
@@ -39,6 +41,7 @@ function keyboardWorld(stored = null) {
       addEventListener: (type, f) => (docHandlers[type] = docHandlers[type] || []).push(f)
     },
     location: { search: '' },
+    GameLogic: require('../game_logic.js'),
     URLSearchParams,
     matchMedia: () => ({ matches: false }),
     navigator: { maxTouchPoints: 0 },
@@ -88,6 +91,7 @@ function keyboardWorld(stored = null) {
     'resetBindings'
   ])
     S.fn('src/ui/settings.js', f);
+  S.fn('src/game/player.js', 'keepsHeading');
   S.load('src/input/controls.js');
   // touche pressée : { code, shiftKey, ctrlKey, altKey } ; renvoie l'événement (defaultPrevented lisible)
   const press = (code, mods = {}) => {
@@ -113,7 +117,7 @@ function keyboardWorld(stored = null) {
       press(mods.shiftKey ? 'ShiftLeft' : mods.ctrlKey ? 'ControlLeft' : 'AltLeft', mods);
     press(code, mods);
   };
-  return { ...S, $el, press, inGame, inLobby, bind, cast, storage, docHandlers };
+  return { ...S, $el, press, inGame, inLobby, bind, cast, storage, docHandlers, handlers };
 }
 
 // ---------- Échap ouvre / ferme Settings ----------
@@ -274,6 +278,41 @@ for (const stored of [
   assert.equal(ctx.PREFS.ui?.order?.['warden:'], undefined, 'les autres classes ne changent pas');
   const again = keyboardWorld(JSON.parse(w.storage.arenaAscendantPrefs_v1));
   assert.equal(again.ctx.PREFS.ui.order['arcanist:'].join(), '4,1,2,3,0,5', 'ordre relu au prochain lancement');
+}
+
+// ---------- Clic droit, caméra laissée de côté (« Camera returns behind you » désactivé, 05/11/2026) ----------
+// le personnage garde sa trajectoire : seul un vrai glisser au clic droit le réaligne sur la caméra, pas l'appui
+{
+  const w = keyboardWorld(),
+    { ctx } = w;
+  w.inGame();
+  Object.assign(ctx.state.player, { yaw: 1 });
+  ctx.camera.yaw = 2;
+  ctx.orbitBase = 1; // après un glisser au clic gauche
+  const mouse = (target, type, e) => {
+    const ev = { button: 0, clientX: 0, clientY: 0, movementX: 0, movementY: 0, preventDefault() {}, ...e };
+    for (const f of target[type] || []) f(ev);
+  };
+  const canvas = w.$el('c').on,
+    win = w.handlers;
+  for (const ret of [false, true]) {
+    ctx.PREFS.cameraReturn = ret;
+    ctx.state.player.yaw = 1;
+    mouse(canvas, 'mousedown', { button: 0 }); // gauche puis droit = avancer
+    mouse(canvas, 'mousedown', { button: 2 });
+    if (!ret) {
+      assert.ok(!ctx.looking && ctx.state.player.yaw === 1, 'gauche + droit : le personnage garde sa trajectoire');
+      mouse(w.docHandlers, 'mousemove', { movementX: 3 });
+      assert.ok(!ctx.looking, 'petit tremblement de souris : toujours pas réaligné');
+      mouse(w.docHandlers, 'mousemove', { movementX: 6 });
+      assert.ok(ctx.looking && ctx.state.player.yaw === ctx.camera.yaw, 'vrai glisser au clic droit : réaligné');
+    } else assert.ok(ctx.looking && ctx.state.player.yaw === 2, 'retour activé : clic droit = caméra + personnage');
+    mouse(win, 'mouseup', { button: 2 });
+    mouse(win, 'mouseup', { button: 0 });
+    assert.ok(!ctx.looking, 'clic droit relâché');
+    ctx.orbitBase = 1;
+    ctx.camera.yaw = 2;
+  }
 }
 
 // ---------- Interface verrouillée comme dans un jeu (05/11/2026) : pas de glisser d'image, de sélection, de menu ----------

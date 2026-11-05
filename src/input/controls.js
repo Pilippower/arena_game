@@ -156,7 +156,15 @@ function pickTargetAt(sx, sy) {
 //  - glisser au clic gauche = tourner la caméra seule ; glisser au clic droit = caméra + personnage ;
 //  - gauche + droit enfoncés (dans n'importe quel ordre) = avancer (voir playerMove, MOUSE_BTN).
 const DRAG_PX = 5;
-const MOUSE = { down: 0, x: 0, y: 0, moved: 0, dragging: false, both: false };
+const MOUSE = { down: 0, x: 0, y: 0, moved: 0, dragging: false, both: false, lookAt: null };
+// clic droit : caméra + personnage (réaligne le personnage sur la caméra) ; trajectoire gardée (keepsHeading, player.js) :
+// seulement une fois que la souris a vraiment glissé depuis l'appui (MOUSE.lookAt = déplacement cumulé à l'appui)
+function startLook() {
+  looking = true;
+  orbiting = false;
+  MOUSE.lookAt = null;
+  if (state?.player?.alive) state.player.yaw = camera.yaw;
+}
 const fromTouch = e => e.sourceCapabilities?.firesTouchEvents;
 function lockPointer() {
   if (document.pointerLockElement !== canvas && canvas.requestPointerLock)
@@ -174,9 +182,8 @@ canvas.addEventListener('mousedown', e => {
   MOUSE.down |= e.button === 0 ? 1 : 2;
   if (MOUSE.down === 3) MOUSE.both = true;
   if (e.button === 2) {
-    looking = true;
-    orbiting = false;
-    if (state?.player?.alive) state.player.yaw = camera.yaw;
+    if (keepsHeading()) MOUSE.lookAt = MOUSE.moved;
+    else startLook();
   }
   e.preventDefault();
 });
@@ -185,6 +192,7 @@ document.addEventListener('mousemove', e => {
   const dx = e.movementX || 0,
     dy = e.movementY || 0;
   MOUSE.moved += Math.abs(dx) + Math.abs(dy);
+  if (MOUSE.lookAt !== null && MOUSE.down & 2 && MOUSE.moved - MOUSE.lookAt > DRAG_PX) startLook();
   if (!MOUSE.dragging && MOUSE.moved > DRAG_PX) {
     MOUSE.dragging = true;
     if (MOUSE.down & 1 && !looking) {
@@ -199,7 +207,10 @@ window.addEventListener('mouseup', e => {
   const bit = e.button === 0 ? 1 : e.button === 2 ? 2 : 0;
   if (!bit || !(MOUSE.down & bit)) return;
   MOUSE.down &= ~bit;
-  if (bit === 2) looking = false;
+  if (bit === 2) {
+    looking = false;
+    MOUSE.lookAt = null;
+  }
   if (bit === 1) orbiting = false;
   if (!MOUSE.down) {
     // clic simple (sans glisser, sans combinaison gauche+droit) : ciblage
@@ -213,6 +224,7 @@ window.addEventListener('mouseup', e => {
 });
 window.addEventListener('blur', () => {
   MOUSE.down = 0;
+  MOUSE.lookAt = null;
   looking = orbiting = false;
   unlockPointer();
 });

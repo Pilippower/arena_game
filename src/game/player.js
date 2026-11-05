@@ -30,6 +30,11 @@ function moveBaseYaw(dt) {
   camReturn = false;
   return camera.yaw;
 }
+// Caméra laissée de côté avec le réglage « Camera returns behind you » désactivé : le personnage garde sa trajectoire ;
+// seul un vrai glisser au clic droit le réaligne (pas un clic pour cibler, ni gauche + droit pour avancer : 05/11/2026).
+function keepsHeading() {
+  return PREFS.cameraReturn === false && orbitBase !== null;
+}
 // Sort qui tourne le personnage vers sa cible (Shadowstep) : la caméra se replace derrière lui, et la base de
 // trajectoire d'un glisser en cours suit (sinon Z partait dans l'ancienne direction). Joueur local seulement.
 function viewBehind(u) {
