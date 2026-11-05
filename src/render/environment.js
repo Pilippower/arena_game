@@ -346,6 +346,10 @@
         )
         .replace(PAINT.out, PAINT.grade + PAINT.out);
     };
+    // three r128 réutilise un programme compilé quand le texte de onBeforeCompile est le même : sans cette clé, tous
+    // les matériaux peints partageaient le shader du premier compilé (bug 05/11/2026 : remparts du château texturés
+    // comme le sol, en bandes verticales).
+    m.customProgramCacheKey = () => 'paint|' + prev.toString();
     m.needsUpdate = true;
   }
   function paintScene(THREE, S) {
@@ -533,6 +537,7 @@
     render,
     stats,
     mergeMeshes,
+    paintMaterial,
     get ok() {
       return E.ok;
     },

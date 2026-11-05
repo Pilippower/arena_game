@@ -66,6 +66,8 @@
           ${TOON.out}`
         );
     };
+    // programme propre à chaque retouche d'origine (three r128 partage les programmes au même texte de onBeforeCompile)
+    m.customProgramCacheKey = () => 'toon|' + String(prev);
     m.needsUpdate = true;
   }
   const OUTLINE_MAT = new Map();
@@ -408,6 +410,7 @@
     buildManifest,
     assetName,
     keepOnlyBones,
-    recolorTexture
+    recolorTexture,
+    stylizeMaterial
   };
 });

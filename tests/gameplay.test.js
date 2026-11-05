@@ -435,6 +435,68 @@ function playerWorld() {
   for (let i = 0; i < 60; i++) FX.update(1 / 60);
   assert.ok(!scene.children.includes(dark[0]), 'trace retirée après 1,6 s');
 }
+// ---------- Caméra contre un mur : recul continu, sans à-coups (src/render/world.js) ----------
+// Bug du 05/11/2026 : en salle de préparation, caméra reculée contre le mur, elle vibrait (point de contact cherché par
+// pas fixes de 1/30 : jusqu'à 0,5 m de saut pour 5 mm de déplacement).
+{
+  const { combatWorld } = require('./combat_world.js');
+  const { read } = require('./sources.js');
+  const { ctx } = combatWorld();
+  const src = read('src/render/world.js').match(/^const CAM_DOOR_H[\s\S]*?^function cameraSafe[\s\S]*?\n\}/m)[0];
+  require('node:vm').runInContext(src.replace(/^const /gm, 'var '), ctx);
+  ctx.lerp = (a, b, t) => a + (b - a) * t;
+  for (const map of ['castle', 'bridge']) {
+    ctx.applyMap(map);
+    const R = ctx.roomOf(-1);
+    let prev = null,
+      worst = 0,
+      cut = false;
+    for (let k = 0; k < 300; k++) {
+      // dans la salle ouest, recul de 16 m en biais : la caméra bute sur un mur de la salle
+      const target = [R.side * (ctx.arena.halfX + R.wall + 4 + k * 0.005), 1.25, R.z],
+        yaw = Math.PI / 2 + 0.4,
+        h = Math.cos(0.3) * 16,
+        desired = [target[0] - Math.sin(yaw) * h, target[1] + Math.sin(0.3) * 16 + 1, target[2] - Math.cos(yaw) * h],
+        s = ctx.cameraSafe(target, desired),
+        cam = [0, 1, 2].map(i => target[i] + (desired[i] - target[i]) * s);
+      if (s < 1) cut = true;
+      if (prev) worst = Math.max(worst, Math.hypot(cam[0] - prev[0], cam[2] - prev[2]));
+      prev = cam;
+      assert.ok(ctx.insideWalls(cam[0], cam[2], 0.25), `${map} : caméra devant le mur, pas dedans`);
+    }
+    assert.ok(cut, `${map} : le mur arrête bien la caméra`);
+    assert.ok(worst < 0.03, `${map} : caméra continue (saut max ${worst.toFixed(3)} m pour 5 mm)`);
+  }
+}
+// ---------- Rendu peint : un programme par retouche de shader (environment.js, builder.js) ----------
+// Bug du 05/11/2026 : three r128 partage un programme compilé entre matériaux au même texte de onBeforeCompile ; la
+// retouche peinte, identique pour tous, donnait aux remparts du château le shader du sol (texture en bandes verticales).
+{
+  const THREE = require('three');
+  const S = sandbox({ THREE });
+  S.ctx.globalThis = S.ctx;
+  for (const f of ['rig', 'glow', 'weapons', 'cloth', 'armor', 'shoulders', 'head', 'kits', 'builder'])
+    S.load(`src/characters/${f}.js`);
+  const env = require('../src/render/environment.js'),
+    paints = {
+      décor: m => env.paintMaterial(THREE, m),
+      personnages: m => S.ctx.CharacterKit.stylizeMaterial(THREE, m, [0.5, 0.5, 0.5])
+    };
+  for (const [who, paint] of Object.entries(paints)) {
+    const plain = new THREE.MeshStandardMaterial(),
+      floor = new THREE.MeshStandardMaterial();
+    floor.onBeforeCompile = sh => {
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vWXZ;');
+    };
+    paint(plain);
+    paint(floor);
+    // three r128 (WebGLPrograms.getProgramCacheKey) : la clé du programme est customProgramCacheKey()
+    assert.notEqual(plain.customProgramCacheKey(), floor.customProgramCacheKey(), `${who} : programmes distincts`);
+    const twin = new THREE.MeshStandardMaterial();
+    paint(twin);
+    assert.equal(plain.customProgramCacheKey(), twin.customProgramCacheKey(), `${who} : même retouche, même programme`);
+  }
+}
 // ---------- Décor vivant : particules d'ambiance et braises des flammes (src/render/env_ambient.js) ----------
 {
   const THREE = require('three');

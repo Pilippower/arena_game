@@ -15,22 +15,33 @@ function resize() {
   gl.viewport(0, 0, w, h);
 }
 const CAM_DOOR_H = 2.5; // m : la caméra passe sous la poterne d'une salle de départ, pas à travers son linteau
+// Recul de la caméra : premier obstacle cherché en CAM_STEPS pas, puis point de contact affiné par dichotomie
+// (05/11/2026 : en pas fixes, la caméra sautait d'un cran à l'autre, jusqu'à 0,5 m pour 5 mm de déplacement, et
+// vibrait contre les murs des salles de départ). Elle reste à CAM_WALL m devant un mur (sinon le plan proche le coupe).
+const CAM_STEPS = 30,
+  CAM_REFINE = 10,
+  CAM_WALL = 0.3;
+function cameraHits(target, desired, t) {
+  const x = lerp(target[0], desired[0], t),
+    y = lerp(target[1], desired[1], t),
+    z = lerp(target[2], desired[2], t);
+  // remparts de l'arène et murs des salles de départ ; le passage d'une porte seulement sous sa poterne
+  if (!insideWalls(x, z, CAM_WALL, y < CAM_DOOR_H) || y < 0.32) return true;
+  return arena.pillars.some(p => Math.hypot(x - p.x, z - p.z) < p.r + 0.28 && y < p.h + 0.25);
+}
 function cameraSafe(target, desired) {
-  let safe = 1;
-  for (let i = 1; i <= 30; i++) {
-    const t = i / 30,
-      x = lerp(target[0], desired[0], t),
-      y = lerp(target[1], desired[1], t),
-      z = lerp(target[2], desired[2], t);
-    // remparts de l'arène et murs des salles de départ ; le passage d'une porte seulement sous sa poterne
-    let hit = !insideWalls(x, z, -0.05, y < CAM_DOOR_H) || y < 0.32;
-    for (const p of arena.pillars) if (Math.hypot(x - p.x, z - p.z) < p.r + 0.28 && y < p.h + 0.25) hit = true;
-    if (hit) {
-      safe = (i - 1) / 30;
-      break;
+  for (let i = 1; i <= CAM_STEPS; i++) {
+    if (!cameraHits(target, desired, i / CAM_STEPS)) continue;
+    let lo = (i - 1) / CAM_STEPS,
+      hi = i / CAM_STEPS;
+    for (let k = 0; k < CAM_REFINE; k++) {
+      const mid = (lo + hi) / 2;
+      if (cameraHits(target, desired, mid)) hi = mid;
+      else lo = mid;
     }
+    return lo;
   }
-  return safe;
+  return 1;
 }
 // Caméra immédiate (05/11/2026, « délai gênant ») : zoom, rotation et recul après un pilier sans aucun lissage.
 function setupCamera() {

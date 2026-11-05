@@ -118,6 +118,7 @@ But : un code **maintenable**, où l'on sait **tout de suite où regarder et quo
 - Fichiers en CRLF et en LF mélangés : les scripts d'édition doivent conserver les fins de ligne (`newline=''` en Python).
 - Heredoc bash : pas d'apostrophes ni de `$(` non échappés ; pour un gros script, l'écrire dans un fichier.
 - `tests/spec.test.js` lit encore souvent le texte du code : un renommage peut casser un test sans casser le jeu ; mettre le test à jour en gardant la règle (ou le convertir en test de comportement).
+- three r128 partage un programme compilé entre matériaux au même texte de `onBeforeCompile` : toute retouche de shader commune (enveloppe `prev`) doit poser `customProgramCacheKey` (voir `paintMaterial`, `stylizeMaterial`).
 - three.js : ne jamais changer le nombre de lumières d'une scène (recompilation de tous les shaders, saccade en combat) ; mettre l'intensité à 0 à la place.
 - `NET` doit rester un `var` (lu comme `window.NET`).
 - `docs/HANDOFF.md` est historique (démarrage du projet) : `CLAUDE.md` et `docs/SPEC.md` font foi.
