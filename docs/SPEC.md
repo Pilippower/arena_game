@@ -158,6 +158,7 @@ Ajouter une ligne ici (et un test si c'est vérifiable à bas coût) à chaque n
 ## Cartes — `src/data/maps.js`, `src/render/environment.js`, `src/render/map_*.js`
 - « The Castle » : ne pas modifier sans demande. Le décor suit toujours la carte de gameplay (test dans `smoke.test.js`).
 - « The Bridge » : pont accessible par deux rampes à chaque extrémité (de part et d'autre, perpendiculaires au pont) ; on peut lancer des sorts depuis le tablier ; pas de ligne de vue entre le tablier et le dessous du pont. 🧪
+- **On traverse toujours les autres personnages** (alliés comme ennemis, joueurs comme IA, 05/11/2026) : aucune collision entre personnages. 🧪
 - « The Bridge », **pas de zone invisible qui bloque** (05/11/2026) : les poteaux du pont bloquent à leurs anneaux de fer + le corps, sans marge en plus ; on passe sous le haut de chaque rampe, entre ses poteaux de soutien (solides, sans couper la ligne de vue), on bute contre la pente là où elle est trop basse, et en sautant dessous la tête bute (on ne traverse pas la rampe). 🧪
 - « The Bridge » : bois « fantasy » (planches peintes, joints, nœuds, clous, chapeaux de bronze, lanternes). Un personnage caché par le pont (vu du dessus ou du dessous) apparaît en **silhouette translucide**, jamais en clair par-dessus le tablier ; pas de silhouette pour un camouflé. 🧪 (`hfRenderGhosts` dans `heroes3d.js`) (`surfaceAt`, `groundAt`, `blockedBySurface`, `bridgeRail` dans `maps.js`)
 

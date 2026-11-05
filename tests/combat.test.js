@@ -225,6 +225,26 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   assert.ok(!free(post.x + post.r * 1.1 + 0.3, post.z), 'poteau du pont : solide');
 }
 {
+  // On traverse toujours les autres personnages, alliés comme ennemis (règle validée 05/11/2026) : aucun blocage
+  // pendant le déplacement, et deux personnages superposés ne sont pas écartés par la simulation
+  const { ctx, unit } = combatWorld();
+  const foe = unit('sentinel', 0, 0, 1),
+    ally = unit('oracle', 0, 1, 0),
+    w = unit('sentinel', 0, -3, 0);
+  for (let z = -3; z <= 3; z += 0.05) {
+    [w.prevX, w.prevZ] = [w.x, w.z];
+    w.z = z;
+    ctx.resolveWalls(w);
+    assert.ok(Math.abs(w.z - z) < 1e-6 && Math.abs(w.x) < 1e-6, `traversée d’un personnage bloquée en z = ${z}`);
+  }
+  for (const u of [foe, ally, w]) Object.assign(u, { x: 5, z: 5, stun: 2 });
+  for (let k = 0; k < 60; k++) ctx.update(1 / 120);
+  assert.ok(
+    [foe, ally, w].every(u => u.x === 5 && u.z === 5),
+    'personnages superposés : pas écartés les uns des autres'
+  );
+}
+{
   // Dispel : effets magiques seulement ; joueur : uniquement sa cible actuelle amie (ou soi quand on se cible)
   const { ctx, unit } = combatWorld();
   const priest = unit('oracle', 0, 0, 0),
