@@ -919,3 +919,19 @@ assert.ok(
       "le rempart s'arrête dans un piédroit"
     );
 }
+{
+  // Rendu peint (05/11/2026) : les shaders des personnages (builder.js) et du décor (environment.js) se greffent sur
+  // des lignes exactes de three r128 ; si elles n'existent pas, le style ne s'applique pas, sans erreur (bug : le liseré
+  // des personnages visait un include <output_fragment> absent de r128 et ne s'est jamais affiché).
+  const THREE = require('three');
+  const lights = THREE.ShaderChunk.lights_physical_pars_fragment,
+    frag = THREE.ShaderLib.physical.fragmentShader;
+  for (const f of ['src/characters/builder.js', 'src/render/environment.js']) {
+    const src = read(f),
+      nl = src.match(/ nl: '([^']+)'/)[1],
+      out = src.match(/ out: '([^']+)'/)[1];
+    assert.ok(lights.includes(nl), `${f} : ancrage de la lumière douce présent dans three r128`);
+    assert.ok(frag.includes(out) && frag.includes('#include <lights_physical_pars_fragment>'), `${f} : ancrage final`);
+  }
+  assert.ok(!read('src/characters/builder.js').includes('#include <output_fragment>'), 'pas d’ancrage absent de r128');
+}

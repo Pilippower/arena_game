@@ -314,6 +314,39 @@
     for (const m of mergeMeshes(THREE, list, new THREE.Matrix4())) S.add(m);
   }
 
+  // Lumière « peinte » du décor (05/11/2026, style des MMO peints à la main) : lumière directe en plages douces,
+  // ombres teintées bleu-violet, lumières chaudes, couleurs plus saturées. Appliquée à chaque matériau standard de la
+  // carte après mergeStatic (qui lit le texte de onBeforeCompile). Ancrages three r128 : dotNL et la ligne gl_FragColor.
+  const PAINT = {
+    nl: 'float dotNL = saturate( dot( geometry.normal, directLight.direction ) );',
+    softNL:
+      'float nlRaw = dot( geometry.normal, directLight.direction ); float dotNL = mix( saturate( nlRaw ), smoothstep( -0.05, 0.4, nlRaw ), 0.6 );',
+    out: 'gl_FragColor = vec4( outgoingLight, diffuseColor.a );',
+    grade: `{float pl=dot(outgoingLight,vec3(.299,.587,.114));
+      outgoingLight*=mix(vec3(.9,.92,1.05),vec3(1.05,1.01,.95),smoothstep(.03,.4,pl));
+      outgoingLight=mix(vec3(pl),outgoingLight,1.15);}`
+  };
+  function paintMaterial(THREE, m) {
+    if (!m?.isMeshStandardMaterial || m.userData.painted) return;
+    m.userData.painted = true;
+    const prev = m.onBeforeCompile;
+    m.onBeforeCompile = (sh, r) => {
+      prev.call(m, sh, r);
+      sh.fragmentShader = sh.fragmentShader
+        .replace(
+          '#include <lights_physical_pars_fragment>',
+          THREE.ShaderChunk.lights_physical_pars_fragment.replace(PAINT.nl, PAINT.softNL)
+        )
+        .replace(PAINT.out, PAINT.grade + PAINT.out);
+    };
+    m.needsUpdate = true;
+  }
+  function paintScene(THREE, S) {
+    S.traverse(o => {
+      for (const m of [].concat(o.material || [])) paintMaterial(THREE, m);
+    });
+  }
+
   const E = { ok: false, THREE: null };
 
   function init(THREE, canvasEl, arena, { mobile = false, map = 'castle' } = {}) {
@@ -369,6 +402,7 @@
     (MAP_BUILDERS[id] || MAP_BUILDERS.castle)(E.THREE, S, arena, E);
     buildShadows(E.THREE, S);
     mergeStatic(E.THREE, S);
+    paintScene(E.THREE, S);
     // décor immobile : la carte d'ombres est calculée une fois, pas à chaque image
     E.renderer.shadowMap.autoUpdate = false;
     E.renderer.shadowMap.needsUpdate = true;

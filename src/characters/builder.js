@@ -31,26 +31,39 @@
   const D = root.CharacterKits;
   const { ANIMS, CLASSES, RACES, KITS, resolveKit, buildManifest, assetName, kitFor } = D;
 
-  // ---- Rendu « illustration » : liseré de lumière, couleurs saturées, contour sombre ----
-  // Chaque matériau du personnage reçoit un éclairage de bord (fresnel) teinté et un léger gain de saturation/contraste ;
-  // un contour (coque inversée) dessine la silhouette comme un trait d'encre.
+  // ---- Rendu « illustration peinte » : ombrage en aplats doux, ombres teintées, liseré de lumière, contour ----
+  // Lumière directe en plages douces (au lieu d'un dégradé réaliste), ombres tirées vers le bleu-violet froid et
+  // lumières vers le chaud, éclairage de bord (fresnel) teinté, couleurs saturées ; un contour (coque inversée)
+  // dessine la silhouette comme un trait d'encre. Ancrage : la ligne gl_FragColor de three r128, qui n'a pas
+  // d'include <output_fragment> (avant le 05/11/2026 le liseré et la saturation ne s'appliquaient jamais).
+  const TOON = {
+    nl: 'float dotNL = saturate( dot( geometry.normal, directLight.direction ) );',
+    softNL:
+      'float nlRaw = dot( geometry.normal, directLight.direction ); float dotNL = mix( saturate( nlRaw ), smoothstep( -0.08, 0.32, nlRaw ), 0.7 );',
+    out: 'gl_FragColor = vec4( outgoingLight, diffuseColor.a );'
+  };
   function stylizeMaterial(THREE, m, rim) {
     if (!m || m.userData.stylized || !m.isMeshStandardMaterial) return;
     m.userData.stylized = true;
     const prev = m.onBeforeCompile,
-      u = { rimColor: { value: new THREE.Color(...rim) }, rimStr: { value: 1.7 } };
+      u = { rimColor: { value: new THREE.Color(...rim) }, rimStr: { value: 0.32 } };
     m.onBeforeCompile = (sh, r) => {
       if (prev) prev(sh, r);
       Object.assign(sh.uniforms, u);
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', '#include <common>\nuniform vec3 rimColor;uniform float rimStr;')
         .replace(
-          '#include <output_fragment>',
-          `{float fr=pow(1.-clamp(dot(normalize(normal),normalize(vViewPosition)),0.,1.),2.2);
+          '#include <lights_physical_pars_fragment>',
+          THREE.ShaderChunk.lights_physical_pars_fragment.replace(TOON.nl, TOON.softNL)
+        )
+        .replace(
+          TOON.out,
+          `{float fr=pow(1.-clamp(dot(normalize(normal),normalize(vViewPosition)),0.,1.),2.4);
           outgoingLight+=rimColor*fr*rimStr;
-          float l=dot(outgoingLight,vec3(.299,.587,.114));outgoingLight=mix(vec3(l),outgoingLight,1.4);
-          outgoingLight=(outgoingLight-.5*l)*1.06+.5*l*.94;}
-          #include <output_fragment>`
+          float l=dot(outgoingLight,vec3(.299,.587,.114));
+          outgoingLight*=mix(vec3(.84,.86,1.08),vec3(1.04,1.,.96),smoothstep(.04,.45,l));
+          outgoingLight=mix(vec3(l),outgoingLight,1.25);}
+          ${TOON.out}`
         );
     };
     m.needsUpdate = true;
