@@ -72,6 +72,42 @@
     return new THREE.CanvasTexture(c);
   }
 
+  // Onde de choc : anneau fin et vif sur son bord extérieur ; trace d'impact : tache sombre aux bords irréguliers.
+  function waveTex(THREE) {
+    const S = 256,
+      c = document.createElement('canvas');
+    c.width = c.height = S;
+    const g = c.getContext('2d'),
+      C = S / 2,
+      gr = g.createRadialGradient(C, C, 0, C, C, C);
+    gr.addColorStop(0, 'rgba(255,255,255,0)');
+    gr.addColorStop(0.7, 'rgba(255,255,255,.08)');
+    gr.addColorStop(0.9, 'rgba(255,255,255,1)');
+    gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr;
+    g.fillRect(0, 0, S, S);
+    return new THREE.CanvasTexture(c);
+  }
+  function scorchTex(THREE) {
+    const S = 128,
+      c = document.createElement('canvas');
+    c.width = c.height = S;
+    const g = c.getContext('2d'),
+      C = S / 2;
+    for (let i = 0; i < 26; i++) {
+      const a = (i / 26) * Math.PI * 2,
+        r = C * (0.35 + Math.random() * 0.4),
+        gr = g.createRadialGradient(C, C, 0, C, C, r);
+      gr.addColorStop(0, 'rgba(20,10,5,.75)');
+      gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr;
+      g.beginPath();
+      g.moveTo(C, C);
+      g.arc(C, C, r, a, a + 0.5);
+      g.fill();
+    }
+    return new THREE.CanvasTexture(c);
+  }
   function init(THREE, scene, renderer, camera) {
     X.THREE = THREE;
     X.scene = scene;
@@ -108,6 +144,8 @@
     X.glow = glowTex(THREE);
     X.ringT = ringTex(THREE, false);
     X.runeT = ringTex(THREE, true);
+    X.waveT = waveTex(THREE);
+    X.scorchT = scorchTex(THREE);
     for (let i = 0; i < 3; i++) {
       // toujours visibles (éteintes à intensité 0) : changer le nombre de lumières recompile tous les matériaux
       const l = new THREE.PointLight(0xffffff, 0, 7, 2);
@@ -179,7 +217,7 @@
     L.l.visible = true;
     emit({ x, y, z, size: (2.2 * power) / 2.5, size1: (3.2 * power) / 2.5, life: life * 0.8, ...C3(c), a: 0.55 });
   }
-  function ring(x, y, z, c, r0, r1, life, { runes = false, flat = true, rot = 0, tex = null } = {}) {
+  function ring(x, y, z, c, r0, r1, life, { runes = false, flat = true, rot = 0, tex = null, dark = false } = {}) {
     const T = X.THREE,
       m = new T.Mesh(
         new T.PlaneGeometry(1, 1),
@@ -188,7 +226,7 @@
           color: new T.Color(c[0], c[1], c[2]),
           transparent: true,
           depthWrite: false,
-          blending: T.AdditiveBlending,
+          blending: dark ? T.NormalBlending : T.AdditiveBlending,
           side: T.DoubleSide
         })
       );
@@ -196,7 +234,7 @@
     m.position.set(x, y, z);
     m.renderOrder = 19;
     X.scene.add(m);
-    X.meshes.push({ m, r0, r1, life, max: life, spin: rot, kind: 'ring' });
+    X.meshes.push({ m, r0, r1, life, max: life, spin: rot, kind: 'ring', fade: dark ? 0.6 : 1.3 });
   }
   function bubble(x, y, z, c, size, life, ref = null) {
     const T = X.THREE,
@@ -216,6 +254,36 @@
     m.renderOrder = 18;
     X.scene.add(m);
     X.meshes.push({ m, life, max: life, kind: 'bubble', ref, size });
+  }
+  // Impact (05/11/2026, effets plus travaillés) : éclair, onde de choc au sol, étincelles à traînée, éclats et trace
+  // sombre au sol qui s'efface. power ≈ 1 (coup simple) à 2 (gros sort).
+  function impact(x, y, z, c, power = 1) {
+    const gy = 0.05;
+    flash(x, y, z, c, 1.5 + power, 0.25 + 0.1 * power);
+    ring(x, gy, z, c, 0.2, 1.1 + 0.9 * power, 0.32 + 0.08 * power, { tex: X.waveT });
+    ring(x, gy - 0.01, z, [1, 1, 1], 0.6 * power, 0.85 * power, 1.6, { tex: X.scorchT, dark: true });
+    burst(x, y, z, c, 8 * power, 3.2 + power, 0.24, 0.5, { g: -1, white: 0.1 });
+    for (let i = 0; i < Math.round(7 * power); i++) {
+      const a = Math.random() * Math.PI * 2,
+        s = 5 + Math.random() * 4;
+      emit({
+        x,
+        y,
+        z,
+        vx: Math.sin(a) * s,
+        vy: 2 + Math.random() * 3,
+        vz: Math.cos(a) * s,
+        g: -9,
+        drag: 2.5,
+        size: 0.12,
+        size1: 0.03,
+        life: 0.4 + Math.random() * 0.2,
+        trail: 1,
+        r: 0.55 + c[0] * 0.45,
+        gg: 0.55 + c[1] * 0.45,
+        b: 0.55 + c[2] * 0.45
+      });
+    }
   }
   // f : effet du jeu, quand l'orbe suit sa cible (fxAim met à jour `to` à chaque image)
   function orb(from, to, c, size, life, f = null) {
@@ -244,19 +312,22 @@
       case 'arcaneImpact':
       case 'shadowImpact':
       case 'burst':
-        burst(x, y, z, c, t === 'burst' ? 14 : 34, t === 'burst' ? 2.2 : 4.2, t === 'burst' ? 0.22 : 0.32, 0.55, {
-          g: -1
-        });
-        if (t !== 'burst') flash(x, y, z, c, 4, 0.45);
+        if (t === 'burst') burst(x, y, z, c, 14, 2.2, 0.22, 0.55, { g: -1 });
+        else {
+          burst(x, y, z, c, 16, 4.2, 0.3, 0.55, { g: -1 });
+          impact(x, y, z, c, 1.4);
+        }
         return true;
       case 'nova':
       case 'frostAura':
         ring(x, 0.06, z, c, 0.4, s * 4.2, L * 1.1, { runes: true, rot: 0.8 });
+        ring(x, 0.05, z, c, 0.3, s * 5, 0.45, { tex: X.waveT });
         burst(x, 0.3, z, c, 60, 6, 0.3, 0.7, { up: 1.5, spread: 1.3, g: -3 });
         flash(x, 1, z, c, 3, 0.45);
         return true;
       case 'holyBurst':
         ring(x, 0.06, z, c, 0.3, s * 3.6, L, { runes: true, rot: -0.6 });
+        ring(x, 0.05, z, c, 0.3, s * 4.4, 0.45, { tex: X.waveT });
         burst(x, 0.5, z, c, 50, 3.5, 0.3, 1, { up: 3, g: 0.5, white: 0.4 });
         flash(x, 1.2, z, c, 3, 0.5);
         return true;
@@ -319,7 +390,7 @@
       case 'chargeImpact':
         burst(x, 0.3, z, [0.75, 0.65, 0.5], 30, 3.5, 0.32, 0.6, { up: 1, g: -4, spread: 1.4, white: 0.1 });
         burst(x, y, z, c, 20, 3, 0.25, 0.45);
-        if (t === 'chargeImpact') flash(x, y, z, c, 2, 0.3);
+        if (t === 'chargeImpact') impact(x, 0.6, z, c, 1.6);
         return true;
       case 'silence':
       case 'fear':
@@ -425,7 +496,7 @@
         const r = lerp(o.r0, o.r1, 1 - Math.pow(1 - k, 2.2));
         o.m.scale.set(r * 2, r * 2, 1);
         o.m.rotation.z += o.spin * dt;
-        o.m.material.opacity = Math.pow(1 - k, 1.3);
+        o.m.material.opacity = Math.pow(1 - k, o.fade);
       } else if (o.kind === 'bubble') {
         o.m.material.uniforms.a.value = Math.min(1, o.life * 3) * (0.8 + Math.sin(k * 20) * 0.08);
       } else if (o.kind === 'orb') {
@@ -434,8 +505,11 @@
           px = lerp(o.from[0], o.to[0], q),
           py = lerp(o.from[1], o.to[1], q) + Math.sin(q * Math.PI) * 0.35,
           pz = lerp(o.from[2], o.to[2], q);
-        emit({ x: px, y: py, z: pz, size: o.size * 2.4, size1: o.size * 2.4, life: 0.03, ...C3(o.c), a: 0.8 });
-        emit({ x: px, y: py, z: pz, size: o.size * 0.9, size1: o.size * 0.9, life: 0.03, r: 1, gg: 1, b: 1 });
+        const pulse = 1 + Math.sin(k * 40) * 0.12; // noyau qui palpite
+        emit({ x: px, y: py, z: pz, size: o.size * 2.6 * pulse, size1: o.size * 2.6, life: 0.03, ...C3(o.c), a: 0.8 });
+        emit({ x: px, y: py, z: pz, size: o.size * 1.1, size1: o.size * 1.1, life: 0.03, r: 1, gg: 1, b: 1 });
+        // traînée : halo coloré qui s'élargit et s'éteint derrière l'orbe
+        emit({ x: px, y: py, z: pz, size: o.size * 1.6, size1: o.size * 2.4, life: 0.22, ...C3(o.c), a: 0.35 });
         if (!o.light) {
           o.light = X.lights.reduce((a, b) => (a.life < b.life ? a : b));
           o.light.l.color.setRGB(o.c[0], o.c[1], o.c[2]);
@@ -456,10 +530,7 @@
             life: 0.35,
             ...C3(o.c)
           });
-        if (o.life <= 0) {
-          burst(o.to[0], o.to[1], o.to[2], o.c, 30, 3.8, 0.3, 0.5, { g: -1 });
-          flash(o.to[0], o.to[1], o.to[2], o.c, 2.2, 0.3);
-        }
+        if (o.life <= 0) impact(o.to[0], o.to[1], o.to[2], o.c, 1.2);
       }
     }
     X.meshes = X.meshes.filter(o => {
@@ -493,6 +564,11 @@
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.z += p.vz * dt;
+      // étincelle : laisse une traînée de points qui s'éteignent (lue comme un trait de lumière)
+      if (p.trail && P.length < MAXP)
+        P.push(
+          Object.assign({}, p, { trail: 0, age: 0, life: 0.12, vx: 0, vy: 0, vz: 0, g: 0, size1: 0, a: p.a * 0.7 })
+        );
       const k = p.age / p.life,
         a = p.a * (k < 0.15 ? k / 0.15 : 1 - (k - 0.15) / 0.85);
       X.pos[n * 3] = p.x;

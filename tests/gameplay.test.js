@@ -398,6 +398,43 @@ function playerWorld() {
   const c = S.ctx.shieldSpan(1000, 1000, 5000);
   assert.ok(near(c.left, 0) && near(c.width, 100) && c.over, 'bouclier énorme : toute la barre, pas plus');
 }
+// ---------- Effets de sorts : impacts travaillés (src/render/effects.js, 05/11/2026) ----------
+// Un impact = éclair, onde de choc au sol, trace sombre qui s'efface lentement, étincelles qui laissent une traînée.
+{
+  const THREE = require('three');
+  const ctx2d = new Proxy({}, { get: (o, k) => (k === 'createRadialGradient' ? () => ({ addColorStop() {} }) : () => {}) });
+  const S = sandbox({
+    THREE,
+    performance: { now: () => 0 },
+    fxAim() {},
+    document: { createElement: () => ({ getContext: () => ctx2d }) }
+  });
+  S.ctx.globalThis = S.ctx;
+  S.load('src/render/effects.js');
+  const FX = S.ctx.SpellFX,
+    scene = new THREE.Scene(),
+    renderer = { getDrawingBufferSize: v => v.set(800, 600) };
+  FX.init(THREE, scene, renderer, new THREE.PerspectiveCamera(60, 1, 0.1, 100));
+  const before = scene.children.length;
+  assert.ok(FX.spawn({ type: 'shadowImpact', x: 0, y: 1.2, z: 0, color: [0.6, 0.3, 1], life: 0.6, size: 0.4 }));
+  const added = scene.children.slice(before),
+    dark = added.filter(m => m.material.blending === THREE.NormalBlending),
+    glow = added.filter(m => m.material.blending === THREE.AdditiveBlending);
+  assert.ok(dark.length === 1 && dark[0].position.y < 0.1, 'impact : une trace sombre au sol');
+  assert.ok(glow.some(m => m.position.y < 0.1), 'impact : onde de choc au sol');
+  // étincelles à traînée : le nombre de points visibles grandit pendant qu'elles volent
+  const pts = scene.children.find(o => o.isPoints),
+    count = () => pts.geometry.drawRange.count;
+  FX.update(1 / 60);
+  const n1 = count();
+  FX.update(1 / 60);
+  assert.ok(count() > n1, `traînées des étincelles (${n1} → ${count()})`);
+  // la trace reste après l'éclair et l'onde (lisible après le coup), puis disparaît
+  for (let i = 0; i < 50; i++) FX.update(1 / 60);
+  assert.ok(scene.children.includes(dark[0]) && dark[0].material.opacity > 0.45, 'trace encore bien visible à 0,85 s');
+  for (let i = 0; i < 60; i++) FX.update(1 / 60);
+  assert.ok(!scene.children.includes(dark[0]), 'trace retirée après 1,6 s');
+}
 // ---------- Vivant à l'arrêt : respiration, regard qui se promène, poids, clignements (src/render/hero_anim.js) ----------
 {
   const THREE = require('three');
