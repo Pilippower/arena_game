@@ -433,7 +433,7 @@
         vert = side >= 2,
         s = side % 2 ? 1 : -1,
         t = (r() * 2 - 1) * ((vert ? hz : hx) - 1.5),
-        gap = vert ? ArenaEnv.doorGap(arena, s) : null;
+        gap = ArenaEnv.doorGap(arena, vert ? 'x' : 'z', s);
       if (gap && t > gap[0] - 1 && t < gap[1] + 1) continue;
       if (vert && banners.some(z => Math.abs(z - t) < 1.1)) continue;
       spots.push(
@@ -511,9 +511,9 @@
       [hx + T / 2, 0, T, hz * 2, true]
     ];
     for (const [x, z, w, d, vert] of sides) {
-      // remparts est / ouest : ouverture de la porte de la salle de départ (poterne : start_rooms.js)
+      // ouverture de la porte d'une salle de départ (poterne : start_rooms.js)
       const len = vert ? d : w,
-        gap = vert ? ArenaEnv.doorGap(arena, Math.sign(x)) : null,
+        gap = ArenaEnv.doorGap(arena, vert ? 'x' : 'z', Math.sign(vert ? x : z)),
         free = (t, m) => !gap || t < gap[0] - m || t > gap[1] + m;
       for (const [a, b] of ArenaEnv.roomAround(-len / 2, len / 2, gap)) {
         const c = (a + b) / 2;
@@ -604,7 +604,7 @@
       blue = bannerMat('#143a7a', '✦');
     for (const side of [-1, 1])
       for (const z of BANNER_Z) {
-        const gap = ArenaEnv.doorGap(arena, side);
+        const gap = ArenaEnv.doorGap(arena, 'x', side);
         if (gap && z > gap[0] - 1.2 && z < gap[1] + 1.2) continue; // porte de la salle de départ
         const b = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 3, 4, 8), side < 0 ? red : blue);
         b.position.set(side * (hx - 0.14), 2.1, z);

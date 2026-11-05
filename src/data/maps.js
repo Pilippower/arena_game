@@ -22,7 +22,7 @@ const MAPS = {
       { x: 0, z: -20 },
       { x: 0, z: 20 }
     ],
-    rooms: { wall: 1, z: [0, 0] }
+    rooms: { wall: 1, axis: 'x', at: [0, 0] }
   },
   bridge: {
     name: 'The Bridge',
@@ -48,14 +48,16 @@ const MAPS = {
     ],
     // surfaces praticables en hauteur : le pont (tablier) et 4 rampes (2 à chaque extrémité, de part et d'autre)
     bridge: { y: 5.0, halfW: 2.2, rampX: 27.5, rampW: 3, rampLen: 11 },
-    // portes à l'écart du pont (son tablier rejoint le rempart au centre), en symétrie centrale comme la carte
-    rooms: { wall: 3.2, z: [9, -9] }
+    // salles au milieu des grands côtés (nord / sud), à la place des portes grillagées : le tablier du pont rejoint les
+    // remparts est / ouest et leurs rampes encombraient les anciennes portes (05/11/2026)
+    rooms: { wall: 3.2, axis: 'z', at: [0, 0] }
   }
 };
-// Salles de départ : une de chaque côté, au-delà du rempart ouest (équipe 0) et est (équipe 1), reliée à l'arène
-// par une porte percée dans le rempart. Chaque carte donne l'épaisseur de son rempart (wall, la porte le traverse) et
-// le centre de chaque salle / porte (z : [ouest, est]). depth = profondeur de la salle, halfW = demi-largeur,
-// door = demi-largeur de la porte (m).
+// Salles de départ : une de chaque côté, au-delà d'un rempart (équipe 0 du côté négatif de l'axe, équipe 1 du côté
+// positif), reliée à l'arène par une porte percée dans le rempart. Chaque carte donne l'épaisseur de son rempart (wall,
+// la porte le traverse), l'axe des salles (axis 'x' : remparts ouest / est, 'z' : remparts sud / nord) et la position
+// de chaque salle / porte le long de son rempart (at : [équipe 0, équipe 1]). depth = profondeur de la salle,
+// halfW = demi-largeur, door = demi-largeur de la porte (m).
 const START_ROOM = { depth: 10, halfW: 6, door: 1.9 };
 // Obstacles (cercles) : un corps reste à r + pad du centre (pad par défaut : socles des piliers du château).
 const PILLAR_PAD = 0.66;
@@ -96,7 +98,16 @@ function applyMap(id) {
   arena.halfZ = M.halfZ;
   arena.pillars = [...M.pillars.map(p => ({ ...p })), ...rampPosts(M.bridge)];
   arena.bridge = M.bridge || null;
-  arena.rooms = M.rooms ? [-1, 1].map((side, i) => ({ side, z: M.rooms.z[i], wall: M.rooms.wall, ...START_ROOM })) : [];
+  arena.rooms = M.rooms
+    ? [-1, 1].map((side, i) => ({
+        side,
+        axis: M.rooms.axis,
+        half: M.rooms.axis === 'z' ? M.halfZ : M.halfX, // demi-côté de l'arène jusqu'au rempart de la salle
+        at: M.rooms.at[i],
+        wall: M.rooms.wall,
+        ...START_ROOM
+      }))
+    : [];
   HEALTH_SPOTS.length = 0;
   HEALTH_SPOTS.push(...M.health);
   try {
@@ -158,8 +169,17 @@ function bridgeRail(u) {
 }
 
 // ---------- Salles de départ (géométrie) ----------
-// Zone d'un point : 0 = arène, -1 / 1 = salle ouest / est (au-delà du rempart).
-const zoneOf = x => (arena.rooms?.length && Math.abs(x) > arena.halfX ? Math.sign(x) : 0);
+// Repère d'une salle : a = le long de son axe (vers la salle : side × a > 0), b = le long de son rempart. Toute la
+// géométrie des salles s'écrit dans ce repère ; roomFrame / roomWorld passent du monde (x, z) au repère et retour.
+const roomFrame = (r, x, z) => (r.axis === 'z' ? { a: z, b: x } : { a: x, b: z });
+const roomWorld = (r, a, b) => (r.axis === 'z' ? { x: b, z: a } : { x: a, z: b });
+// rectangle [aMin, aMax, bMin, bMax] du repère d'une salle → [xMin, xMax, zMin, zMax]
+const roomRect = (r, R) => (r.axis === 'z' ? [R[2], R[3], R[0], R[1]] : R);
+// Zone d'un point : 0 = arène, sinon side de la salle (au-delà de son rempart).
+function zoneOf(x, z) {
+  for (const r of arena.rooms || []) if (r.side * roomFrame(r, x, z).a > r.half) return r.side;
+  return 0;
+}
 const roomOf = side => arena.rooms?.find(r => r.side === side) || null;
 // Rectangles praticables d'une zone [xMin, xMax, zMin, zMax], à la marge m des murs : l'arène ou la salle, et le
 // passage de la porte quand elle est ouverte (il chevauche l'arène et la salle : on passe de l'une à l'autre).
@@ -169,10 +189,12 @@ function zoneRects(zone, m, open) {
     out = zone ? [] : [[-hx + m, hx - m, -hz + m, hz - m]];
   const span = (s, a, b) => (s > 0 ? [a, b] : [-b, -a]);
   for (const r of arena.rooms || []) {
-    const back = hx + r.wall + r.depth;
-    if (zone === r.side) out.push([...span(r.side, hx + r.wall + m, back - m), r.z - r.halfW + m, r.z + r.halfW - m]);
+    const h = r.half,
+      back = h + r.wall + r.depth;
+    if (zone === r.side)
+      out.push(roomRect(r, [...span(r.side, h + r.wall + m, back - m), r.at - r.halfW + m, r.at + r.halfW - m]));
     if (open && (zone === 0 || zone === r.side))
-      out.push([...span(r.side, hx - m - 0.05, hx + r.wall + m + 0.05), r.z - r.door + m, r.z + r.door - m]);
+      out.push(roomRect(r, [...span(r.side, h - m - 0.05, h + r.wall + m + 0.05), r.at - r.door + m, r.at + r.door - m]));
   }
   return out;
 }
@@ -192,17 +214,20 @@ function nearestInRects(rects, x, z) {
 }
 // Ligne de vue entre deux zones : le segment doit passer par la porte (ouverte) de chaque salle qu'il quitte.
 function seesThroughDoors(a, b, open) {
-  const za = zoneOf(a.x),
-    zb = zoneOf(b.x);
+  const za = zoneOf(a.x, a.z),
+    zb = zoneOf(b.x, b.z);
   if (za === zb) return true;
   if (!open) return false;
   for (const side of [za, zb]) {
     const r = side && roomOf(side);
     if (!r) continue;
-    for (const px of [side * arena.halfX, side * (arena.halfX + r.wall)]) {
-      const k = (px - a.x) / (b.x - a.x || 1e-9),
-        z = a.z + (b.z - a.z) * k;
-      if (Math.abs(z - r.z) > r.door - 0.1) return false;
+    const A = roomFrame(r, a.x, a.z),
+      B = roomFrame(r, b.x, b.z),
+      h = r.half;
+    for (const pa of [side * h, side * (h + r.wall)]) {
+      const k = (pa - A.a) / (B.a - A.a || 1e-9),
+        pb = A.b + (B.b - A.b) * k;
+      if (Math.abs(pb - r.at) > r.door - 0.1) return false;
     }
   }
   return true;
@@ -212,6 +237,7 @@ function spawnPoint(team, i, n) {
   const r = roomOf(team ? 1 : -1),
     spot = (i - (n - 1) / 2) * (r ? 2.6 : team ? 6 : 5);
   if (!r) return { x: team ? 26 : -26, z: spot, yaw: team ? Math.PI : 0 };
-  const x = r.side * (arena.halfX + r.wall + r.depth * 0.55);
-  return { x, z: r.z + spot, yaw: Math.atan2(-r.side, 0) };
+  const p = roomWorld(r, r.side * (r.half + r.wall + r.depth * 0.55), r.at + spot),
+    face = roomWorld(r, -r.side, 0); // vers la porte
+  return { x: p.x, z: p.z, yaw: Math.atan2(face.x, face.z) };
 }

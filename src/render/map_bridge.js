@@ -440,9 +440,9 @@
       const len2 = vert ? d : w,
         th = vert ? w : d, // épaisseur du rempart
         inward = vert ? -Math.sign(x) : -Math.sign(z),
-        // remparts est / ouest : ouverture de la porte de la salle de départ (poterne : start_rooms.js). Les tirages
-        // au hasard restent les mêmes (le reste du décor ne change pas)
-        gap = vert ? ArenaEnv.doorGap(arena, Math.sign(x)) : null,
+        // ouverture de la porte d'une salle de départ (poterne : start_rooms.js). Les tirages au hasard restent les
+        // mêmes (le reste du décor ne change pas)
+        gap = ArenaEnv.doorGap(arena, vert ? 'x' : 'z', Math.sign(vert ? x : z)),
         free = (t, m) => !gap || t < gap[0] - m || t > gap[1] + m,
         clip = (a, b) =>
           (gap
@@ -503,22 +503,6 @@
         );
         collar.rotation.copy(s.rotation);
       }
-      // porte grillagée au milieu des grands côtés
-      if (!vert) {
-        const gz = z + inward * (th / 2 + 0.02);
-        add(
-          new THREE.BoxGeometry(4.2, 3.4, 0.2),
-          new THREE.MeshStandardMaterial({ color: 0x0c0806, roughness: 1 }),
-          0,
-          1.7,
-          gz,
-          false
-        );
-        for (let k = -1.8; k <= 1.8; k += 0.45)
-          add(new THREE.BoxGeometry(0.1, 3.3, 0.1), iron, k, 1.65, gz + inward * 0.12, false);
-        for (const y of [0.9, 2.2]) add(new THREE.BoxGeometry(4, 0.1, 0.1), iron, 0, y, gz + inward * 0.12, false);
-        stoneBlock(5.4, 0.9, 1.2, 0, 3.8, gz - inward * 0.3, masonry);
-      }
       // bannières vers l'arène
       for (let k = -2; k <= 2; k++) {
         if (k === 0 || !free(k * (len2 / 6), 1.2)) continue;
@@ -534,8 +518,8 @@
         S.add(b);
       }
     }
-    // salles de départ derrière les remparts est / ouest : roche de falaise, sol de sable, herse de fer (aucun tirage
-    // au hasard ici : le reste du décor ne change pas)
+    // salles de départ derrière les remparts sud / nord, à la place des anciennes portes grillagées : roche de falaise,
+    // sol de sable, herse de fer (aucun tirage au hasard ici : le reste du décor ne change pas)
     ArenaEnv.startRooms(THREE, S, arena, E, {
       floor: sand.material,
       wall: rock,

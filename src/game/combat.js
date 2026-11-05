@@ -173,7 +173,7 @@ function resetRound() {
   state.player = state.units[0];
   setTarget(state.player, state.units[size]);
   applyDifficulty();
-  camera.yaw = Math.PI / 2;
+  camera.yaw = state.player.yaw; // face à la porte de sa salle
   camera.pitch = 0.2;
   showSplash(`Round ${state.round}`);
   if (HF.enabled) hfSyncUnits();
@@ -225,7 +225,7 @@ function los(a, b) {
 // Murs : on reste dans sa zone (arène ou salle de départ, d'après la position au début du pas) et, porte ouverte, dans
 // son passage ; contre un mur on glisse le long.
 function resolveWalls(u) {
-  const rects = zoneRects(zoneOf(u.prevX ?? u.x), 0.72, gatesOpen());
+  const rects = zoneRects(zoneOf(u.prevX ?? u.x, u.prevZ ?? u.z), 0.72, gatesOpen());
   if (!rects.some(R => inRect(R, u.x, u.z))) {
     const p = nearestInRects(rects, u.x, u.z);
     u.x = p.x;
@@ -580,7 +580,7 @@ function stepBehind(u, t, gap = 1.2) {
   return false;
 }
 function pointWalkable(x, z, margin = 0.68, y = 0) {
-  if (!zoneRects(zoneOf(x), margin, gatesOpen()).some(R => inRect(R, x, z))) return false;
+  if (!zoneRects(zoneOf(x, z), margin, gatesOpen()).some(R => inRect(R, x, z))) return false;
   // un obstacle plus bas que soi (sous le pont) ne gêne pas
   return !arena.pillars.some(p => p.h > y && Math.hypot(x - p.x, z - p.z) < pillarReach(p, margin - PILLAR_PAD));
 }

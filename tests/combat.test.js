@@ -849,24 +849,35 @@ for (const map of ['castle', 'bridge']) {
   const { ctx, unit, sounds } = combatWorld();
   ctx.applyMap(map);
   ctx.arena.pillars = [];
-  const A = ctx.arena,
-    hx = A.halfX,
-    W = ctx.roomOf(-1),
-    E = ctx.roomOf(1);
+  // tout s'écrit dans le repère des salles (a vers la salle de l'équipe 1, b le long du rempart) : castle = salles
+  // ouest / est, bridge = salles sud / nord
+  const W = ctx.roomOf(-1),
+    E = ctx.roomOf(1),
+    h = W.half,
+    at = (a, b) => ctx.roomWorld(W, a, b),
+    frame = u => ctx.roomFrame(W, u.x, u.z),
+    yawTo = a => Math.atan2(at(a, 0).x, at(a, 0).z),
+    zone = u => ctx.zoneOf(u.x, u.z);
   assert.ok(ctx.GATE_TIME === 20, 'préparation : 20 s');
+  assert.equal(W.axis, map === 'bridge' ? 'z' : 'x', `${map} : axe des salles`);
   // chaque équipe apparaît dans sa salle, face à la porte
   const p0 = ctx.spawnPoint(0, 0, 3),
     p1 = ctx.spawnPoint(1, 2, 3);
-  assert.ok(ctx.zoneOf(p0.x) === -1 && ctx.zoneOf(p1.x) === 1, `${map} : équipes dans leur salle`);
-  assert.ok(Math.abs(Math.sin(p0.yaw) - 1) < 1e-9, `${map} : face à la porte`);
-  const me = unit('sentinel', p0.x, W.z, 0),
-    foe = unit('arcanist', p1.x, E.z, 1),
-    guard = unit('sentinel', -hx + 0.72, W.z + W.door + 2, 1); // dans l'arène, collé au rempart, à côté de la porte
+  assert.ok(zone(p0) === -1 && zone(p1) === 1, `${map} : équipes dans leur salle`);
+  assert.ok(Math.abs(Math.cos(p0.yaw - yawTo(1)) - 1) < 1e-9, `${map} : face à la porte`);
+  const unitAt = (cls, a, b, team, o) => {
+      const q = at(a, b);
+      return unit(cls, q.x, q.z, team, o);
+    },
+    me = unitAt('sentinel', frame(p0).a, W.at, 0),
+    foe = unitAt('arcanist', frame(p1).a, E.at, 1),
+    guard = unitAt('sentinel', -h + 0.72, W.at + W.door + 2, 1); // dans l'arène, collé au rempart, à côté de la porte
   ctx.state.player = me;
   ctx.state.prep = ctx.GATE_TIME;
   const t0 = ctx.state.t;
   // porte fermée : on bute contre elle ; pas de ligne de vue entre les salles et l'arène
-  const walk = (u, x, z, sec) => {
+  const walk = (u, a, b, sec) => {
+    const { x, z } = at(a, b);
     for (let k = 0; k < sec * 120; k++) {
       u.prevX = u.x;
       u.prevZ = u.z;
@@ -876,27 +887,27 @@ for (const map of ['castle', 'bridge']) {
       ctx.resolveWalls(u);
     }
   };
-  walk(me, -hx + 5, W.z, 3);
-  assert.equal(ctx.zoneOf(me.x), -1, `${map} : porte fermée, on reste dans la salle`);
-  assert.ok(me.x <= -(hx + W.wall + 0.7), `${map} : arrêté devant la porte`);
+  walk(me, -h + 5, W.at, 3);
+  assert.equal(zone(me), -1, `${map} : porte fermée, on reste dans la salle`);
+  assert.ok(frame(me).a <= -(h + W.wall + 0.7), `${map} : arrêté devant la porte`);
   assert.ok(!ctx.los(me, guard) && !ctx.los(me, foe), `${map} : porte fermée, aucune ligne de vue`);
   // contre le rempart, à 2 m d'un adversaire de l'autre côté : pas de coup à travers le mur
-  const wallFoe = unit('arcanist', -(hx + W.wall + 0.72), W.z + W.door + 2, 0),
+  const wallFoe = unitAt('arcanist', -(h + W.wall + 0.72), W.at + W.door + 2, 0),
     h0 = wallFoe.hp;
   guard.target = wallFoe;
   guard.swing = 0;
-  guard.yaw = -Math.PI / 2; // face au mur (et à l'adversaire derrière)
+  guard.yaw = yawTo(-1); // face au mur (et à l'adversaire derrière)
   ctx.autoAttack(guard, 0.1);
   assert.equal(wallFoe.hp, h0, `${map} : pas d'auto-attaque à travers le rempart`);
   // l'IA attend ; chrono de manche et dampening arrêtés pendant la préparation
-  // l'IA (salle est, au nord de la porte) vise une cible de l'arène plus au nord : tout droit, elle buterait dans le
-  // rempart
-  const bot = unit('sentinel', p1.x, E.z + 3, 1, { ai: true }),
-    prey = unit('arcanist', hx - 8, E.z + 15, 0);
+  // l'IA (salle de l'équipe 1, à côté de la porte) vise une cible de l'arène plus loin le long du rempart : tout
+  // droit, elle buterait dans le rempart
+  const bot = unitAt('sentinel', frame(p1).a, E.at + 3, 1, { ai: true }),
+    prey = unitAt('arcanist', h - 8, E.at + 15, 0);
   bot.target = prey;
-  const bx = bot.x;
+  const b0 = { x: bot.x, z: bot.z };
   run(ctx, 5);
-  assert.equal(bot.x, bx, `${map} : l'IA attend dans sa salle`);
+  assert.ok(bot.x === b0.x && bot.z === b0.z, `${map} : l'IA attend dans sa salle`);
   assert.ok(ctx.state.t === t0 && !ctx.state.elapsed && !ctx.state.dampening, `${map} : chrono arrêté`);
   assert.ok(ctx.state.prep > 14 && ctx.state.prep < 16, `${map} : compte à rebours`);
   assert.ok(!sounds.some(s => s.name === 'gates'), `${map} : portes encore fermées`);
@@ -910,15 +921,36 @@ for (const map of ['castle', 'bridge']) {
     `${map} : chrono lancé à l'ouverture`
   );
   // porte ouverte : ligne de vue par la porte seulement, passage vers l'arène
-  const inDoor = unit('arcanist', -hx + 6, W.z, 1);
+  const inDoor = unitAt('arcanist', -h + 6, W.at, 1);
   assert.ok(ctx.los(me, inDoor), `${map} : on voit l'arène par la porte`);
   assert.ok(!ctx.los(me, guard), `${map} : le rempart cache toujours ce qui est à côté de la porte`);
-  walk(me, -hx + 5, W.z, 4);
-  assert.equal(ctx.zoneOf(me.x), 0, `${map} : on entre dans l'arène par la porte`);
+  walk(me, -h + 5, W.at, 4);
+  assert.equal(zone(me), 0, `${map} : on entre dans l'arène par la porte`);
   // l'IA sort de sa salle par la porte pour rejoindre sa cible
   run(ctx, 6);
-  assert.equal(ctx.zoneOf(bot.x), 0, `${map} : l'IA passe la porte`);
+  assert.equal(zone(bot), 0, `${map} : l'IA passe la porte`);
   ctx.state.units.length = 0;
+}
+// The Bridge (05/11/2026, « l'ennemi sort mais il bloque sur la rampe ») : en 3v3, portes ouvertes, chaque IA sort de
+// sa salle et va au combat (salles est / ouest d'avant : toutes collées au flanc d'une rampe, à 60 m de l'ennemi).
+{
+  const { ctx, unit } = combatWorld();
+  ctx.applyMap('bridge');
+  const team = (list, t) =>
+    list.map((c, i) => {
+      const p = ctx.spawnPoint(t, i, 3);
+      return Object.assign(unit(c, p.x, p.z, t, { ai: true }), { yaw: p.yaw });
+    });
+  const all = [...team(['sentinel', 'oracle', 'arcanist'], 0), ...team(['shade', 'warlock', 'warden'], 1)];
+  ctx.state.player = all[0];
+  ctx.applyDifficulty();
+  ctx.state.t = 180;
+  run(ctx, 8);
+  for (const u of all) {
+    const foe = Math.min(...all.filter(v => v.team !== u.team).map(v => Math.hypot(v.x - u.x, v.z - u.z)));
+    assert.equal(ctx.zoneOf(u.x, u.z), 0, `bridge : ${u.cls} est sorti de sa salle`);
+    assert.ok(foe < 35, `bridge : ${u.cls} va au combat (ennemi le plus proche à ${foe.toFixed(0)} m)`);
+  }
 }
 console.log(
   'OK - règles de combat (tests unitaires : DR, contrôles, dégâts, soins, sorts, incantations, auras, fin de manche, sons des sorts, salles de départ)'

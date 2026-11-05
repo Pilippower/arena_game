@@ -889,35 +889,46 @@ assert.ok(
     PlaneGeometry: Obj
   };
   const E = { registerMap() {} },
-    S = sandbox({ window: { ArenaEnv: E }, ArenaEnv: E });
+    S = sandbox({ window: { ArenaEnv: E }, ArenaEnv: E, arena: {}, HEALTH_SPOTS: [] });
+  S.load('src/data/maps.js'); // repère des salles : roomFrame / roomWorld
   S.load('src/render/start_rooms.js');
-  const r = { side: 1, z: 0, wall: 1, depth: 10, halfW: 6, door: 1.9 },
-    arena = { halfX: 30, halfZ: 20, rooms: [r] },
-    boxes = [];
-  E.startRooms(
-    THREE,
-    { add() {} },
-    arena,
-    { anim: [] },
-    {
-      wallH: 4.5,
-      box: (w, h, d, x, y, z) => boxes.push([x - w / 2, x + w / 2, y - h / 2, y + h / 2, z - d / 2, z + d / 2])
-    }
-  );
-  const overlap = (a, b) => [0, 2, 4].every(i => Math.min(a[i + 1], b[i + 1]) - Math.max(a[i], b[i]) > 1e-6);
-  // piédroits, linteau, chaperon de la porte (pas les murs de la salle)
-  const postern = boxes.filter(b => b[0] < arena.halfX + r.wall && Math.abs(b[4] + b[5]) / 2 < r.door + 1);
-  postern.forEach((a, i) =>
-    postern.slice(i + 1).forEach(b => assert.ok(!overlap(a, b), 'poterne : aucun bloc dans un autre'))
-  );
-  const gap = E.doorGap(arena, 1),
-    posts = postern.filter(b => b[3] - b[2] > 4).map(b => [b[4], b[5]]);
-  assert.equal(posts.length, 2, 'deux piédroits');
-  for (const g of gap)
-    assert.ok(
-      posts.some(([a, b]) => g > a + 0.05 && g < b - 0.05),
-      "le rempart s'arrête dans un piédroit"
+  // salle est (axe x) et salle nord (axe z, The Bridge) : mêmes règles dans le repère de la salle
+  for (const axis of ['x', 'z']) {
+    const r = { side: 1, axis, half: 30, at: 0, wall: 1, depth: 10, halfW: 6, door: 1.9 },
+      arena = { halfX: 30, halfZ: 30, rooms: [r] },
+      boxes = [];
+    E.startRooms(
+      THREE,
+      { add() {} },
+      arena,
+      { anim: [] },
+      {
+        wallH: 4.5,
+        // bloc ramené dans le repère de la salle : [a0, a1, y0, y1, b0, b1]
+        box: (w, h, d, x, y, z) => {
+          const [wa, wb, a, b] = axis === 'x' ? [w, d, x, z] : [d, w, z, x];
+          boxes.push([a - wa / 2, a + wa / 2, y - h / 2, y + h / 2, b - wb / 2, b + wb / 2]);
+        }
+      }
     );
+    const overlap = (p, q) => [0, 2, 4].every(i => Math.min(p[i + 1], q[i + 1]) - Math.max(p[i], q[i]) > 1e-6);
+    // piédroits, linteau, chaperon de la porte (pas les murs de la salle)
+    const postern = boxes.filter(b => b[0] < r.half + r.wall && Math.abs(b[4] + b[5]) / 2 < r.door + 1);
+    postern.forEach((p, i) =>
+      postern.slice(i + 1).forEach(q => assert.ok(!overlap(p, q), `axe ${axis} : poterne, aucun bloc dans un autre`))
+    );
+    const gap = E.doorGap(arena, axis, 1),
+      posts = postern.filter(b => b[3] - b[2] > 4).map(b => [b[4], b[5]]);
+    assert.equal(posts.length, 2, `axe ${axis} : deux piédroits`);
+    for (const b of postern.filter(q => q[3] - q[2] > 4))
+      assert.ok(b[0] <= r.half && b[1] >= r.half + r.wall, `axe ${axis} : piédroit à travers tout le rempart`);
+    for (const g of gap)
+      assert.ok(
+        posts.some(([p, q]) => g > p + 0.05 && g < q - 0.05),
+        `axe ${axis} : le rempart s'arrête dans un piédroit`
+      );
+    assert.equal(E.doorGap(arena, axis === 'x' ? 'z' : 'x', 1), null, `axe ${axis} : pas de porte dans l'autre rempart`);
+  }
 }
 {
   // Rendu peint (05/11/2026) : les shaders des personnages (builder.js) et du décor (environment.js) se greffent sur

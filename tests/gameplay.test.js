@@ -453,8 +453,10 @@ function playerWorld() {
       cut = false;
     for (let k = 0; k < 300; k++) {
       // dans la salle ouest, recul de 16 m en biais : la caméra bute sur un mur de la salle
-      const target = [R.side * (ctx.arena.halfX + R.wall + 4 + k * 0.005), 1.25, R.z],
-        yaw = Math.PI / 2 + 0.4,
+      const T = ctx.roomWorld(R, R.side * (R.half + R.wall + 4 + k * 0.005), R.at),
+        fwd = ctx.roomWorld(R, -R.side * Math.cos(0.4), -Math.sin(0.4)),
+        target = [T.x, 1.25, T.z],
+        yaw = Math.atan2(fwd.x, fwd.z),
         h = Math.cos(0.3) * 16,
         desired = [target[0] - Math.sin(yaw) * h, target[1] + Math.sin(0.3) * 16 + 1, target[2] - Math.cos(yaw) * h],
         s = ctx.cameraSafe(target, desired),

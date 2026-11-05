@@ -493,7 +493,7 @@ function netGuestBuild(m) {
   NET.lastEnded = false;
   hideResults();
   $('overlay').style.display = 'none';
-  camera.yaw = state.player.team ? -Math.PI / 2 : Math.PI / 2;
+  camera.yaw = spawnPoint(state.player.team, 0, 1).yaw; // face à la porte de sa salle
   camera.pitch = 0.2;
   showSplash(`Round ${state.round}`);
   if (HF.enabled) hfSyncUnits();

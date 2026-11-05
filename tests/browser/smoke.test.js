@@ -30,7 +30,7 @@ const isNoise = t => /Failed to load resource|net::ERR_|Failed to fetch|CORS/i.t
       kits: state.units.filter(u => HF.records.get(u.id)?.kit).length,
       advanced: state.prep < GATE_TIME || state.elapsed > 0.5, // préparation dans les salles de départ, puis combat
       countdown: !(state.prep > 0) || $('gateCountdown').classList.contains('on'), // compte à rebours affiché
-      inRooms: !(state.prep > 0) || state.units.every(u => zoneOf(u.x) === (u.team ? 1 : -1)),
+      inRooms: !(state.prep > 0) || state.units.every(u => zoneOf(u.x, u.z) === (u.team ? 1 : -1)),
       mapOk:
         ArenaEnv.mapId === MAP_ID &&
         MAP_ID === 'bridge' &&
