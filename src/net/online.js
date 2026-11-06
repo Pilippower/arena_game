@@ -26,7 +26,9 @@ var NET = {
   snap: null,
   lastEnded: false
 };
-const NET_PREFIX = 'arena-ascendant-';
+const NET_PREFIX = 'arena-ascendant-',
+  NET_FOLLOW = 20, // 1/s : vitesse à laquelle l'hôte rejoint la position envoyée par un ami (~50 ms)
+  NET_SNAP_DIST = 3; // m : au-delà, placé directement
 const netIdx = u => (state?.units ? state.units.indexOf(u) : -1);
 const r2 = v => Math.round(v * 100) / 100;
 // invité : vers l'hôte ; hôte : à tous les amis
@@ -38,6 +40,8 @@ function netSendTo(g, m) {
   if (g?.conn?.open) g.conn.send(m);
 }
 const netGuestOf = u => (u?.remoteId != null ? NET.guests.get(u.remoteId) : null);
+// Déplacement imposé par l'hôte (ruée, peur, étourdissement, mouton) : l'ami ne se déplace pas lui-même.
+const netForced = s => !!(s.mob || s.mobility) || s.fear > 0 || s.stun > 0 || s.poly > 0;
 // code de son groupe (hôte) et dernier code rejoint (invité), gardés dans le navigateur : pas de nouveau code à donner
 const netStored = k => {
   try {
@@ -410,6 +414,7 @@ function netUnitState(u) {
     at: u.actionType,
     mob: u.mobility?.type || (u.mobility ? 'move' : null),
     tg: netIdx(u.target),
+    tp: u.tpN || 0, // téléportations et fins de déplacement imposé : l'ami se recale sur l'hôte
     au: (u.auras || []).map(a => ({ n: a.n, k: a.kind, r: r2(a.rem), s: netIdx(a.src) })),
     ds: u.debuffSpell || null,
     cct: u.ccTotal || null,
@@ -423,14 +428,22 @@ function netUnitState(u) {
 }
 // Chaque pas de simulation de l'hôte (appelé par update) : position de chaque ami, envoi de l'état 20 fois/s.
 function netHostUpdate(dt) {
+  // Position d'un ami : la sienne, toujours (06/11/2026, « mes amis lag énormément » : un écart de plus de 3 m dû au
+  // retard du réseau était refusé, puis l'ami ramené en arrière, en boucle). Sauf pendant un déplacement imposé, et
+  // tant que l'ami n'a pas vu la dernière téléportation (tp) : ses positions d'avant le ramèneraient en arrière.
   for (const u of state.units) {
-    const m = netGuestOf(u)?.input;
-    if (!u.remote || !m || !u.alive) continue;
-    const forced = u.mobility || u.fear > 0 || u.stun > 0 || u.poly > 0 || u.root > 0;
-    if (!forced && Math.hypot(m.x - u.x, m.z - u.z) < 3) {
-      u.x = m.x;
-      u.z = m.z;
-      u.y = m.y;
+    if (!u.remote || !u.alive) continue;
+    const m = netGuestOf(u)?.input,
+      forced = netForced(u);
+    if (u.netWasForced && !forced) u.tpN = (u.tpN || 0) + 1; // fin du déplacement imposé : l'ami se recale une fois
+    u.netWasForced = forced;
+    if (!m) continue;
+    if (!forced && (m.tp || 0) === (u.tpN || 0)) {
+      // glisse vers la position reçue (messages irréguliers sur Internet : pas d'à-coups chez l'hôte), sauf grand écart
+      const k = Math.hypot(m.x - u.x, m.z - u.z) > NET_SNAP_DIST ? 1 : 1 - Math.exp(-dt * NET_FOLLOW);
+      u.x += (m.x - u.x) * k;
+      u.z += (m.z - u.z) * k;
+      u.y += (m.y - u.y) * k;
       u.vy = m.vy;
       u.grounded = m.gr;
       u.yaw = m.yaw;
@@ -573,8 +586,11 @@ function netGuestUpdate(dt) {
       if (!s) return;
       NET_COPY(u)(s);
       const own = u === P,
-        forced = s.mob || s.fear > 0 || s.stun > 0 || s.poly > 0,
-        far = Math.hypot(s.x - u.x, s.z - u.z) > (own ? 3 : 4);
+        forced = netForced(s),
+        // soi : recalé seulement sur une téléportation de l'hôte (tp), jamais pour un simple retard du réseau
+        tele = own && u.netTp !== undefined && s.tp !== u.netTp,
+        far = own ? tele : Math.hypot(s.x - u.x, s.z - u.z) > 4;
+      if (own) u.netTp = s.tp;
       if (own && !forced && !far) return; // l'invité se déplace lui-même
       if (far) {
         u.x = s.x;
@@ -623,7 +639,8 @@ function netGuestUpdate(dt) {
       gr: !!P.grounded,
       yaw: r2(P.yaw),
       mv: !!P.moving,
-      mp: r2(P.movePhase)
+      mp: r2(P.movePhase),
+      tp: P.netTp || 0 // dernière téléportation vue : l'hôte ignore les positions d'avant
     });
   }
   if (state.splash > 0) state.splash -= dt;

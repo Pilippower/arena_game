@@ -308,3 +308,64 @@ function partyTests() {
     'OK - groupe en ligne (tests unitaires : membres, équipes, places, exclure, groupe gardé entre les matchs, code gardé, onglet Multiplayer)'
   );
 }
+// ---------- Fluidité en ligne (06/11/2026, « mes amis lag énormément ») ----------
+// L'hôte suit la position envoyée par l'ami même avec un gros retard du réseau (avant : refusée au-delà de 3 m, puis
+// l'ami ramené en arrière, en boucle) ; après une téléportation, il ignore les positions d'avant ; l'ami ne se recale
+// que sur une téléportation, jamais pour un simple retard.
+{
+  const w = netWorld();
+  const { g } = join(w, 'Bob'),
+    friend = { remote: true, remoteId: g.id, alive: true, x: 0, y: 0, z: 0, cd: [], auras: [] };
+  w.ctx.state = { units: [friend], t: 0 };
+  w.ctx.endCast = () => {};
+  w.ctx.now = () => 0;
+  const step = (s = 0.5) => {
+    for (let t = 0; t < s; t += 1 / 120) w.ctx.netHostUpdate(1 / 120);
+  };
+  g.input = { t: 'in', x: 5, y: 0, z: 0, tp: 0, mv: true };
+  step();
+  assert.ok(Math.abs(friend.x - 5) < 0.01, `hôte : position de l'ami suivie malgré 5 m de retard (${friend.x})`);
+  g.input = { t: 'in', x: 5.6, y: 0, z: 0, tp: 0, mv: true };
+  w.ctx.netHostUpdate(1 / 120);
+  assert.ok(friend.x > 5 && friend.x < 5.6, "hôte : l'ami glisse vers sa position (pas d'à-coup)");
+  // téléportation par l'hôte (Blink) : la position d'avant, encore en route, est ignorée
+  step();
+  friend.x = 12;
+  friend.tpN = 1;
+  g.input = { t: 'in', x: 5.6, y: 0, z: 0, tp: 0, mv: true };
+  step();
+  assert.equal(friend.x, 12, 'hôte : position d’avant la téléportation ignorée');
+  g.input = { t: 'in', x: 12.4, y: 0, z: 0, tp: 1, mv: true };
+  step();
+  assert.ok(Math.abs(friend.x - 12.4) < 0.01, "hôte : l'ami suivi de nouveau une fois la téléportation vue");
+  // fin d'un déplacement imposé (étourdissement) : l'ami se recale une fois
+  friend.stun = 1;
+  step(0.1);
+  friend.stun = 0;
+  step(0.1);
+  assert.equal(friend.tpN, 2, 'fin du déplacement imposé : un recalage');
+}
+// invité : 4 m d'écart avec l'hôte (retard) → il garde sa position ; téléportation (tp) → recalé une fois
+{
+  const w = netWorld({ role: 'guest' });
+  const me = { team: 0, x: 10, y: 0, z: 0, cd: [], auras: [], alive: true, grounded: true };
+  Object.assign(w.ctx, {
+    playerMove() {},
+    groundAt: () => 0,
+    updateVisualState() {},
+    updateUI() {},
+    viewBehind() {},
+    showSplash() {},
+    netSend() {}
+  });
+  w.ctx.state = { units: [me], player: me, shrines: [], uiTick: 1, splash: 0 };
+  const snap = (x, tp) => (w.ctx.NET.snap = { u: [{ x, y: 0, z: 0, yaw: 0, tp, cd: [], au: [] }], ev: [] });
+  snap(6, 0);
+  w.ctx.netGuestUpdate(1 / 60);
+  snap(6, 0);
+  w.ctx.netGuestUpdate(1 / 60);
+  assert.equal(me.x, 10, 'invité : pas ramené en arrière par le retard du réseau');
+  snap(20, 1);
+  w.ctx.netGuestUpdate(1 / 60);
+  assert.equal(me.x, 20, 'invité : recalé sur une téléportation de l’hôte');
+}

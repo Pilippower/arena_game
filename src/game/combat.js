@@ -617,6 +617,7 @@ function blinkForward(u, distance = 7.0, keepRoot = false, yaw = u.yaw) {
   resolveWalls(u);
   if (!keepRoot) u.root = 0;
   u.visualSnap = true;
+  u.tpN = (u.tpN || 0) + 1; // téléportation : l'ami en ligne qui joue cette unité se recale (net/online.js)
   return {
     from: [ox, oy + 0.75, oz],
     to: [u.x, (u.y || 0) + 0.75, u.z],
