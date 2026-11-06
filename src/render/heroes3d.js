@@ -95,12 +95,23 @@ function hfLoadKit(kitId, loader, onModel, onFail) {
   CharacterKit.build(THREE, kitId, { loader, outline: !document.body.classList.contains('mobile-mode') })
     .then(k => {
       k.root.scale.setScalar(2.18 / k.height);
+      CharacterKit.toonBind(THREE, k.root); // valeurs propres au personnage : hfToonSync
       onModel(k.root, k.clips);
     })
     .catch(e => {
       console.warn('Personnage indisponible, modèle de secours :', kitId, e);
       onFail();
     });
+}
+// Figurine peinte et liseré d'équipe (06/11/2026, characters/builder.js toonBind) : pieds, taille et équipe du
+// personnage, à chaque image. Alliés (soi compris) bleutés, ennemis rougeâtres ; viewer null = aucun liseré (lobby).
+const TEAM_RIM = { ally: [0.3, 0.6, 1], enemy: [1, 0.32, 0.25] };
+function hfToonSync(t, footY, height, u, viewer) {
+  if (!t) return;
+  t.toonFoot.value = footY;
+  t.toonH.value = height;
+  const c = viewer ? TEAM_RIM[u.team === viewer.team ? 'ally' : 'enemy'] : [0, 0, 0];
+  t.teamRim.value.setRGB(c[0], c[1], c[2]);
 }
 function hfNormalizeModel(root, u) {
   const maxAniso = HF.renderer?.capabilities?.getMaxAnisotropy
@@ -296,6 +307,7 @@ function hfRender() {
       castLean = rec.hdRace && u.alive && (u.cast || u.actionType === 'cast') ? Math.sin(now() * 8) * 0.025 : 0;
     rec.group.rotation.set(castLean, ryaw, deathTilt);
     rec.group.scale.set(sc[0], sc[1], sc[2]);
+    hfToonSync(rec.model?.userData.toon, rec.group.position.y, 2.18 * sc[1], u, state.player);
     if (rec.aura) {
       rec.aura.material.opacity = u === state.player?.target ? 0.95 : 0.38;
       rec.aura.scale.setScalar(u === state.player?.target ? 1.35 : 1);

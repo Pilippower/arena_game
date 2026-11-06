@@ -308,6 +308,7 @@ function updateSelectPreview3D(rk, ck) {
         previewSetAnim();
         PREVIEW.life = { model, kit: true, animKey: 'idle', unit: { id: 'preview', alive: true, stun: 0 } };
         group.position.set(0, 0, 0);
+        hfToonSync(model.userData.toon, 0, 2.18 * rs[1], fake, null); // figurine peinte, sans liseré d'équipe
         group.rotation.y = 0.2;
         PREVIEW.loaded = true;
         if (PREVIEW.loadTimer) {

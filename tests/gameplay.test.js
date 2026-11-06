@@ -612,6 +612,47 @@ function playerWorld() {
     paint(twin);
     assert.equal(plain.customProgramCacheKey(), twin.customProgramCacheKey(), `${who} : même retouche, même programme`);
   }
+  // figurine peinte et liseré d'équipe (06/11/2026) : chaque personnage a ses propres valeurs (pieds, taille, équipe),
+  // partagées par tous ses matériaux, même si deux personnages ont le même programme compilé
+  const K = S.ctx.CharacterKit,
+    model = () => {
+      const g = new THREE.Group();
+      for (let i = 0; i < 2; i++) {
+        const m = new THREE.MeshStandardMaterial();
+        K.stylizeMaterial(THREE, m, [0.5, 0.5, 0.5]);
+        g.add(new THREE.Mesh(new THREE.BufferGeometry(), m));
+      }
+      return g;
+    },
+    compiled = m => {
+      const sh = { uniforms: {}, vertexShader: THREE.ShaderLib.standard.vertexShader, fragmentShader: THREE.ShaderLib.standard.fragmentShader };
+      m.onBeforeCompile(sh);
+      return sh;
+    };
+  const a = model(),
+    b = model(),
+    ta = K.toonBind(THREE, a),
+    tb = K.toonBind(THREE, b),
+    [a0, a1] = a.children.map(o => compiled(o.material)),
+    b0 = compiled(b.children[0].material);
+  assert.ok(a0.uniforms.toonFoot === ta.toonFoot && a1.uniforms.teamRim === ta.teamRim, 'un personnage : valeurs partagées');
+  assert.ok(b0.uniforms.toonFoot === tb.toonFoot && tb.toonFoot !== ta.toonFoot, 'deux personnages : valeurs distinctes');
+  assert.match(a0.vertexShader, /vToonY=\(modelMatrix\*vec4\(transformed,1\.\)\)\.y;/, 'hauteur de chaque point (monde)');
+  assert.match(a0.fragmentShader, /\(vToonY-toonFoot\)\/toonH/, 'dégradé des pieds vers le haut');
+  assert.match(a0.fragmentShader, /teamRim\*fr\*fr/, "liseré de l'équipe");
+  const sync = (() => {
+    const T = sandbox({ THREE });
+    T.fn('src/render/heroes3d.js', 'hfToonSync');
+    require('node:vm').runInContext("var TEAM_RIM = { ally: [0.3, 0.6, 1], enemy: [1, 0.32, 0.25] };", T.ctx);
+    return T.ctx.hfToonSync;
+  })();
+  sync(ta, 5, 2.4, { team: 'red' }, { team: 'blue' });
+  assert.ok(ta.toonFoot.value === 5 && ta.toonH.value === 2.4, 'pieds et taille du personnage (pont : y = 5)');
+  assert.ok(ta.teamRim.value.r > ta.teamRim.value.b, 'ennemi : liseré rougeâtre');
+  sync(ta, 0, 2.18, { team: 'blue' }, { team: 'blue' });
+  assert.ok(ta.teamRim.value.b > ta.teamRim.value.r, 'allié (soi compris) : liseré bleuté');
+  sync(ta, 0, 2.18, { team: 'blue' }, null);
+  assert.equal(ta.teamRim.value.getHex(), 0, 'lobby : pas de liseré');
 }
 // ---------- Décor vivant : particules d'ambiance et braises des flammes (src/render/env_ambient.js) ----------
 {

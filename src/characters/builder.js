@@ -42,24 +42,50 @@
       'float nlRaw = dot( geometry.normal, directLight.direction ); float dotNL = mix( saturate( nlRaw ), smoothstep( -0.08, 0.32, nlRaw ), 0.7 );',
     out: 'gl_FragColor = vec4( outgoingLight, diffuseColor.a );'
   };
+  // Valeurs propres à un personnage (06/11/2026, « figurine peinte » et équipe) : hauteur des pieds et taille en
+  // mètres (dégradé du haut éclairé vers les pieds dans l'ombre ; taille 0 = pas de dégradé), liseré de son équipe
+  // (noir = aucun). Partagées par tous les matériaux d'un modèle (toonBind), mises à jour par le rendu (heroes3d.js).
+  function toonUniforms(THREE) {
+    return { toonFoot: { value: 0 }, toonH: { value: 0 }, teamRim: { value: new THREE.Color(0, 0, 0) } };
+  }
+  function toonBind(THREE, root) {
+    const t = toonUniforms(THREE);
+    root.traverse(o => {
+      if (o.isMesh) for (const m of [].concat(o.material)) if (m?.userData?.stylized) m.userData.toon = t;
+    });
+    root.userData.toon = t;
+    return t;
+  }
   function stylizeMaterial(THREE, m, rim) {
     if (!m || m.userData.stylized || !m.isMeshStandardMaterial) return;
     m.userData.stylized = true;
     const prev = m.onBeforeCompile,
       u = { rimColor: { value: new THREE.Color(...rim) }, rimStr: { value: 0.32 } };
-    m.onBeforeCompile = (sh, r) => {
-      if (prev) prev(sh, r);
-      Object.assign(sh.uniforms, u);
+    // fonction (pas flèche) : this = le matériau compilé, qui porte les valeurs de son personnage (toonBind)
+    m.onBeforeCompile = function (sh, r) {
+      if (prev) prev.call(this, sh, r);
+      Object.assign(sh.uniforms, u, this.userData.toon || (this.userData.toon = toonUniforms(THREE)));
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying float vToonY;')
+        .replace(
+          '#include <project_vertex>',
+          '#include <project_vertex>\nvToonY=(modelMatrix*vec4(transformed,1.)).y;'
+        );
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nuniform vec3 rimColor;uniform float rimStr;')
+        .replace(
+          '#include <common>',
+          '#include <common>\nuniform vec3 rimColor,teamRim;uniform float rimStr,toonFoot,toonH;varying float vToonY;'
+        )
         .replace(
           '#include <lights_physical_pars_fragment>',
           THREE.ShaderChunk.lights_physical_pars_fragment.replace(TOON.nl, TOON.softNL)
         )
         .replace(
           TOON.out,
-          `{float fr=pow(1.-clamp(dot(normalize(normal),normalize(vViewPosition)),0.,1.),2.4);
-          outgoingLight+=rimColor*fr*rimStr;
+          `{float th=toonH>0.?clamp((vToonY-toonFoot)/toonH,0.,1.):.6;
+          outgoingLight*=mix(vec3(.72,.75,.9),vec3(1.07,1.04,.98),smoothstep(.02,.78,th));
+          float fr=pow(1.-clamp(dot(normalize(normal),normalize(vViewPosition)),0.,1.),2.4);
+          outgoingLight+=rimColor*fr*rimStr+teamRim*fr*fr*.6;
           float l=dot(outgoingLight,vec3(.299,.587,.114));
           outgoingLight*=mix(vec3(.84,.86,1.08),vec3(1.04,1.,.96),smoothstep(.04,.45,l));
           outgoingLight=mix(vec3(l),outgoingLight,1.25);}
@@ -411,6 +437,7 @@
     assetName,
     keepOnlyBones,
     recolorTexture,
-    stylizeMaterial
+    stylizeMaterial,
+    toonBind
   };
 });
