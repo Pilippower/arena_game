@@ -51,7 +51,7 @@ const CLASS = {
       { n: 'Flash Heal', cd: 1.3, c: 28 },
       { n: 'Power Shield', cd: 8, c: 24 },
       { n: 'Holy Terror', cd: 24, c: 22 },
-      { n: 'Dispel', cd: 0, c: 20 },
+      { n: 'Dispel', cd: 6, c: 20 },
       { n: 'Smite', cd: 0, c: 10 },
       { n: 'Pain', cd: 0, c: 15 }
     ],
@@ -378,7 +378,7 @@ const SPELLS = {
   // remplace Divine Hymn ; icône de l'utilisateur
   Dispel: {
     text: () =>
-      `Instant, no cooldown: removes all magic effects from your current friendly target (target yourself to dispel you): Polymorph, fears, magic roots and slows (Frost Nova, Entangling Roots, Frost Bolt) and damage over time. Melee slows and stuns stay.`
+      `Instant, 6 s cooldown: removes all magic effects from your current friendly target (target yourself to dispel you): Polymorph, fears, magic roots and slows (Frost Nova, Entangling Roots, Frost Bolt) and damage over time. Melee slows and stuns stay.`
   },
   Smite: {
     cast: 1.5,

@@ -259,7 +259,9 @@ const { combatWorld, spell, run } = require('./combat_world.js');
   // racines magiques + ralentissement de mêlée (Hamstring) : seules les racines partent
   Object.assign(ally, { root: 4, rootSchool: 'magic', slow: 5, slowPct: 0.5, slowMagic: false });
   priest.gcd = 0;
-  assert.ok(ctx.useSkill(priest, D), 'Dispel relancé');
+  assert.equal(ctx.useSkill(priest, D), false, 'Dispel : 6 s de recharge');
+  priest.cd[D] = 0;
+  assert.ok(ctx.useSkill(priest, D), 'Dispel relancé après sa recharge');
   assert.equal(ally.root, 0, 'Dispel : racines magiques retirées');
   assert.equal(ally.slow, 5, 'Dispel : ralentissement de mêlée (Hamstring) gardé');
 }
