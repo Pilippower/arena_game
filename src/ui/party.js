@@ -7,8 +7,7 @@
 // netAutoBalance, netSetAI, netClose, netPartyMembers, netSetName) ; mise en page : maquette de l'utilisateur
 // assets_src/ui/party_interface.png (pièces peintes : node tools/build_party_assets.js → assets/ui/party/) ; héros et
 // réglages en solo : onglet Solo (settings.js, dont les boutons
-// restent la seule source des réglages : ceux de l'onglet Multiplayer les actionnent). Styles : fin de ui/lobby.css, PC : ui/lobby3.css. Le bandeau des réglages
-// sert aussi en haut de l'onglet Solo sur PC (renderSoloSettings).
+// restent la seule source des réglages : ceux de l'onglet Multiplayer les actionnent). Styles : fin de ui/lobby.css.
 const PARTY_ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 // les noms viennent des autres navigateurs : jamais de HTML
 const partyEsc = s => String(s ?? '').replace(/[&<>"']/g, c => PARTY_ESC[c]);
@@ -35,8 +34,7 @@ function partyView() {
   if (NET.role === 'guest' && NET.party) return { ...NET.party, lead: false };
   return null;
 }
-// réglages du match : boutons de l'hôte (actionnent ceux de l'onglet Solo), lecture seule chez les amis. Même bandeau
-// en haut de l'onglet Solo sur PC (maquette lobby3_solo.png, renderSoloSettings) ; mobile : boutons d'origine.
+// réglages du match : boutons de l'hôte (actionnent ceux de l'onglet Solo), lecture seule chez les amis
 function partySettingsHTML(v) {
   const opt = (kind, val, label, on, art = '') =>
     `<button class="pOpt${on ? ' selected' : ''}" data-${kind}="${val}"${v.lead ? '' : ' disabled'}>${art}<span>${label}</span></button>`;
@@ -105,30 +103,7 @@ function partyJoinHTML() {
 <div class="pRow"><button id="partyCreate">Create a party</button></div>
 <div class="pRow"><input id="partyCode" maxlength="6" placeholder="CODE" autocomplete="off" spellcheck="false"><button id="partyJoin">Join</button></div>`;
 }
-// boutons du bandeau : on actionne ceux de l'onglet Solo (même effet, même sauvegarde, groupe synchronisé)
-function wireMatchSettings(box) {
-  const relay = (attr, list, key) =>
-    box
-      .querySelectorAll(`[data-${attr}]`)
-      .forEach(b => (b.onclick = () => $(list).querySelector(`[data-${key}="${b.dataset[attr]}"]`)?.click()));
-  relay('size', 'sizeChoices', 's');
-  relay('map', 'mapChoices', 'map');
-  relay('diff', 'diffChoices', 'd');
-}
-function renderSoloSettings() {
-  const box = $('soloSettings');
-  if (!box) return;
-  box.innerHTML = partySettingsHTML({ size: TEAM_SIZE, map: MAP_ID, diff: DIFFICULTY, lead: true });
-  wireMatchSettings(box);
-  lobbyQueueLabel();
-}
-// plaque du bas, au lobby : file d'attente du mode joué (« Queue (Solo) », « Queue in : 3v3 » en groupe)
-function lobbyQueueLabel() {
-  const el = $('queueLabel');
-  if (el) el.textContent = partyView() ? `Queue in : ${TEAM_SIZE}v${TEAM_SIZE}` : 'Queue (Solo)';
-}
 function partyRender() {
-  lobbyQueueLabel();
   const box = $('partyBox'),
     tab = $('tabMultiN');
   if (!box) return;
@@ -158,7 +133,16 @@ ${partyTeamsHTML(v)}
   if (v.lead) {
     $('partyStart').onclick = () => $('playBtn').click();
     $('partyBalance').onclick = () => netAutoBalance();
-    wireMatchSettings(box);
+    // réglages : on actionne les boutons de l'onglet Solo (même effet, même sauvegarde, groupe synchronisé)
+    box
+      .querySelectorAll('[data-size]')
+      .forEach(b => (b.onclick = () => $('sizeChoices').querySelector(`[data-s="${b.dataset.size}"]`)?.click()));
+    box
+      .querySelectorAll('[data-map]')
+      .forEach(b => (b.onclick = () => $('mapChoices').querySelector(`[data-map="${b.dataset.map}"]`)?.click()));
+    box
+      .querySelectorAll('[data-diff]')
+      .forEach(b => (b.onclick = () => $('diffChoices').querySelector(`[data-d="${b.dataset.diff}"]`)?.click()));
   }
   box.querySelectorAll('[data-move]').forEach(b => {
     const m = v.members.find(x => x.id === +b.dataset.move);
@@ -178,4 +162,3 @@ ${partyTeamsHTML(v)}
 $('tabSolo').onclick = () => lobbyTab('solo');
 $('tabMulti').onclick = () => lobbyTab('party');
 partyRender();
-renderSoloSettings();

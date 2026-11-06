@@ -325,7 +325,6 @@ let LOBBY_UNIT = null,
 // mode, arène ou difficulté changés : récapitulatif, et groupe en ligne (places, réglages vus par les amis)
 function lobbyOptsChanged() {
   LOBBY_CHIPS?.();
-  if (typeof renderSoloSettings === 'function') renderSoloSettings();
   if (typeof netPartySync === 'function') netPartySync();
 }
 // Récapitulatif sous l'aperçu : race, classe, mode, difficulté, arène
