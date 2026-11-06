@@ -361,40 +361,35 @@ textarea {
   -webkit-user-select: text;
   user-select: text;
 }
-/* placement des cadres (ui/frame_layout.js) : le panneau Settings se range pour libérer l'écran, une barre d'outils
-   en haut le remplace ; cadre choisi (taille réglée par le curseur) en trait plein */
-body.uiEditing #settingsPanel {
-  display: none !important;
-}
-#uiEditBar {
+/* placement des cadres (ui/frame_layout.js) : rappel en haut de l'écran, poignée d'angle (bas-droit) de chaque cadre
+   pour sa taille */
+#uiEditHint {
   position: absolute;
   z-index: 25;
   top: 1%;
   left: 50%;
   transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 0.8em;
-  padding: 0.5em 0.9em;
-  font-size: clamp(11px, 0.9vw, 15px);
-  color: #f3ead2;
-  background: linear-gradient(180deg, #2d2015f2, #15100cf2);
-  border: 1px solid #9b7740;
-  border-radius: 0.8em;
-  box-shadow: 0 0.6em 1.6em #000c;
+  padding: 0.4em 0.9em;
+  font-size: clamp(11px, 0.85vw, 14px);
+  color: #ffe094;
+  background: #1b130de8;
+  border: 1px solid #75562f;
+  border-radius: 0.6em;
+  pointer-events: none;
   white-space: nowrap;
 }
-#uiEditBar .ueHint {
-  opacity: 0.8;
-}
-#uiEditBar b {
-  color: #ffd56a;
-}
-#uiEditBar input {
-  width: 9em;
-  vertical-align: middle;
-}
-.hud.uiEdit .uiMovable.uiSelected {
-  outline-style: solid;
-  outline-color: #ffd56a;
+.uiResize {
+  position: absolute;
+  z-index: 26;
+  width: 1.4em;
+  height: 1.4em;
+  margin: -1em 0 0 -1em;
+  font-size: clamp(12px, 1vw, 16px);
+  cursor: nwse-resize;
+  border-right: 0.25em solid #ffd56a;
+  border-bottom: 0.25em solid #ffd56a;
+  border-radius: 0 0 0.3em 0;
+  background: linear-gradient(135deg, transparent 50%, #ffd56a66 50%);
+  box-shadow: 0.1em 0.1em 0.4em #000a;
+  touch-action: none;
 }
