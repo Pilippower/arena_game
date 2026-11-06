@@ -52,6 +52,23 @@ async function hollow(img, name) {
   await save(fromRaw(r), name);
 }
 
+// Cadre d'unité : le fond de cuir sombre à l'intérieur devient semi-transparent (on voit le jeu à travers ; demande du
+// 06/11/2026 « le rectangle opaque cache trop le jeu »). box = [x0, y0, x1, y1] en fractions de l'image : seuls les
+// pixels sombres et non dorés de cette zone (le fond) ; bordure dorée, barres peintes et contours restent opaques.
+const FRAME_FILL_ALPHA = 0.5;
+async function seeThrough(img, name, [x0, y0, x1, y1]) {
+  const r = await rawOf(img),
+    { data, w, h } = r;
+  for (let y = Math.round(y0 * h); y < y1 * h; y++)
+    for (let x = Math.round(x0 * w); x < x1 * w; x++) {
+      const i = (y * w + x) * 4,
+        [R, G, B] = [data[i], data[i + 1], data[i + 2]],
+        gold = R > 110 && R - B > 45;
+      if (!gold && Math.max(R, G, B) < 80) data[i + 3] = Math.round(data[i + 3] * FRAME_FILL_ALPHA);
+    }
+  await save(fromRaw(r), name);
+}
+
 (async () => {
   // barres du haut et du bas
   await joinEnds(1, 46, 95, [14, 416], [1020, 414], 'top_bar');
@@ -60,10 +77,10 @@ async function hollow(img, name) {
   await save(crop(1, 487, 238, 473, 155), 'plaque');
   await save(crop(1, 618, 447, 707, 245), 'panel');
   // cadres d'unité (cercle du portrait transparent, barres peintes recouvertes par les vraies valeurs)
-  await save(crop(2, 46, 20, 643, 243), 'frame_self');
-  await save(crop(2, 760, 20, 642, 243), 'frame_target');
-  await save(crop(2, 36, 299, 433, 129), 'frame_party');
-  await save(crop(2, 981, 299, 432, 129), 'frame_enemy');
+  await seeThrough(crop(2, 46, 20, 643, 243), 'frame_self', [0.06, 0.08, 0.97, 0.92]);
+  await seeThrough(crop(2, 760, 20, 642, 243), 'frame_target', [0.03, 0.08, 0.94, 0.92]);
+  await seeThrough(crop(2, 36, 299, 433, 129), 'frame_party', [0.06, 0.08, 0.97, 0.92]);
+  await seeThrough(crop(2, 981, 299, 432, 129), 'frame_enemy', [0.03, 0.08, 0.94, 0.92]);
   // case de sort, bouton, pastille
   await hollow(crop(3, 45, 85, 228, 220), 'slot');
   await save(crop(4, 31, 72, 296, 100), 'button');

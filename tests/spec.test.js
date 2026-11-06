@@ -956,3 +956,18 @@ assert.ok(
   }
   assert.ok(!read('src/characters/builder.js').includes('#include <output_fragment>'), 'pas d’ancrage absent de r128');
 }
+// Cadres d'unité semi-transparents (06/11/2026, « le rectangle opaque cache trop le jeu ») : le fond sombre des
+// cadres laisse voir le jeu à 50 %, la bordure dorée reste opaque (tools/build_hud_assets.js seeThrough)
+require('sharp')('assets/ui/hud/frame_party.webp')
+  .ensureAlpha()
+  .raw()
+  .toBuffer({ resolveWithObject: true })
+  .then(({ data, info }) => {
+    const a = (fx, fy) => data[(Math.round(fy * info.height) * info.width + Math.round(fx * info.width)) * 4 + 3];
+    assert.ok(Math.abs(a(0.6, 0.15) - 128) < 30, `fond du cadre à moitié transparent (alpha ${a(0.6, 0.15)})`);
+    assert.ok(a(0.6, 0.02) > 240, 'bordure dorée opaque');
+  })
+  .catch(e => {
+    console.error(e.message);
+    process.exitCode = 1;
+  });
