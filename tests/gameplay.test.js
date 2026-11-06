@@ -382,6 +382,16 @@ function playerWorld() {
   const right = S.ctx.lobbyTorchSpot(Rt, 2560, 1129, 726);
   assert.ok(Math.abs(right.x - (2560 - (328 - 192) * (726 / 328))) < 1e-6, 'mur droit : sa propre largeur (328 px)');
 }
+// ---------- Lobby : fenêtre peu haute, contenu réduit d'un même facteur (src/ui/lobby.js lobbyZoom) ----------
+// Bug du 06/11/2026 (chez un ami, fenêtre large et basse) : les arènes devenaient une bande, les classes sortaient.
+{
+  const S = sandbox({ LOBBY_REF_H: 860, LOBBY_MIN_ZOOM: 0.6 });
+  S.fn('src/ui/lobby.js', 'lobbyZoom');
+  const z = S.ctx.lobbyZoom;
+  assert.equal(z(900), 1, 'grand écran : taille naturelle');
+  assert.ok(Math.abs(z(690) - 690 / 860) < 1e-9, 'fenêtre basse : réduit en proportion de la hauteur');
+  assert.equal(z(300), 0.6, 'jamais illisible');
+}
 // ---------- Bouclier d'absorption sur les barres de vie (src/ui/hud.js) ----------
 {
   const S = sandbox({ clamp: (v, a, b) => Math.max(a, Math.min(b, v)) });

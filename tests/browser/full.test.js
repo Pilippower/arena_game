@@ -98,6 +98,22 @@ async function run() {
         await page.evaluate(() => !!document.querySelector('#mapChoices .mapCard, #mapChoices button')?.offsetHeight),
         'lobby : arènes illustrées (2e design)'
       );
+      // fenêtre large et basse (06/11/2026, chez un ami) : tout tient dans le cadre et les arènes ne sont pas rognées en
+      // bande (largeur ≤ 2,35 × hauteur)
+      await page.setViewportSize({ width: 1530, height: 650 });
+      await page.waitForTimeout(150);
+      const low = await page.evaluate(() => {
+        const m = document.querySelector('#overlay .modal'),
+          c = document.querySelector('#mapChoices .mapCard').getBoundingClientRect();
+        return { scroll: m.scrollHeight - m.clientHeight, ratio: c.width / c.height };
+      });
+      assert.ok(low.scroll <= 1, `fenêtre basse : défilement (${low.scroll}px)`);
+      assert.ok(
+        low.ratio > 1.8 && low.ratio < 2.45,
+        `fenêtre basse : arène rognée ou écrasée (${low.ratio.toFixed(2)})`
+      );
+      await page.setViewportSize({ width: 1366, height: 768 });
+      await page.waitForTimeout(150);
       // onglet Multiplayer (groupe simulé, sans réseau) : chaque réglage tient dans son bouton (bug du 04/11/2026 :
       // « Medium » sortait de son cadre)
       const overflow = await page.evaluate(() => {

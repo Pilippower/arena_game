@@ -126,9 +126,20 @@ function lobbyTorches(ov) {
   place();
   requestAnimationFrame(frame);
 }
+// Fenêtre peu haute (PC) : tout le contenu du cadre est réduit d'un même facteur, comme sur un écran plus grand (bug
+// du 06/11/2026, chez un ami : fenêtre large mais basse, la rangée des arènes absorbait le manque de hauteur et leurs
+// illustrations devenaient une bande ; à 650 px les classes et PLAY sortaient du cadre). Fonction pure, testée.
+const LOBBY_REF_H = 860, // hauteur de fenêtre (px) où le lobby est à sa taille naturelle
+  LOBBY_MIN_ZOOM = 0.6;
+function lobbyZoom(h) {
+  return Math.min(1, Math.max(LOBBY_MIN_ZOOM, h / LOBBY_REF_H));
+}
 (() => {
   const ov = document.getElementById('overlay');
   if (!ov) return;
+  const fit = () => document.documentElement.style.setProperty('--lobby-zoom', lobbyZoom(window.innerHeight));
+  window.addEventListener('resize', fit);
+  fit();
   const sync = () => document.body.classList.toggle('lobby', ov.style.display !== 'none');
   new MutationObserver(sync).observe(ov, { attributes: true, attributeFilter: ['style'] });
   sync();

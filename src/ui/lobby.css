@@ -116,6 +116,11 @@ body.lobby:not(.mobile-mode) #overlay > .wallProbe {
 #overlay .modal:before {
   display: none;
 }
+/* fenêtre peu haute : contenu du cadre réduit d'un même facteur (--lobby-zoom, lobbyZoom de lobby.js) ; le cadre
+   doré garde sa taille et le contenu y trouve la place d'un écran plus haut */
+body.lobby:not(.mobile-mode) #overlay .modal > * {
+  zoom: var(--lobby-zoom, 1);
+}
 body.lobby:not(.mobile-mode) #overlay .modal {
   width: var(--mw);
   height: calc(100% - 34px);
@@ -743,6 +748,14 @@ body.lobby:not(.mobile-mode) .pickRight {
   inset: 0;
   overflow: hidden;
   border-radius: 6px;
+}
+/* PC, rangée des arènes peu haute : la carte garde au plus le cadrage du plein écran (largeur ≤ 2,35 × hauteur,
+   bandeau + haut de l'illustration) et devient plus étroite au lieu d'être rognée en bande (06/11/2026) */
+body.lobby:not(.mobile-mode) #overlay .mapCard {
+  justify-self: center;
+  width: auto;
+  max-width: 100%;
+  aspect-ratio: 2.35;
 }
 #overlay .mapCard.selected::after {
   bottom: -6px;
