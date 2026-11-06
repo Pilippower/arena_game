@@ -749,10 +749,11 @@ body.lobby:not(.mobile-mode) .pickRight {
   overflow: hidden;
   border-radius: 6px;
 }
-/* PC, rangée des arènes peu haute : la carte garde au plus le cadrage du plein écran (largeur ≤ 2,35 × hauteur,
+/* PC, rangée des arènes peu haute : la carte garde au plus le cadrage du plein écran 1600 × 900 (largeur ≤ 2,35 × hauteur,
    bandeau + haut de l'illustration) et devient plus étroite au lieu d'être rognée en bande (06/11/2026) */
 body.lobby:not(.mobile-mode) #overlay .mapCard {
   justify-self: center;
+  height: 100%; /* remplit sa rangée (écran haut : comme avant, la largeur plafonne à 100 %) */
   width: auto;
   max-width: 100%;
   aspect-ratio: 2.35;

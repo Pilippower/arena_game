@@ -112,6 +112,16 @@ async function run() {
         low.ratio > 1.8 && low.ratio < 2.45,
         `fenêtre basse : arène rognée ou écrasée (${low.ratio.toFixed(2)})`
       );
+      // plein écran haut (F11 en 1920 × 1080, 06/11/2026 : un vide sous des arènes trop basses) : les cartes
+      // remplissent leur rangée jusqu'au titre Race
+      await page.setViewportSize({ width: 1920, height: 1080 });
+      await page.waitForTimeout(150);
+      const tall = await page.evaluate(
+        () =>
+          document.querySelector('#overlay .tag-race').getBoundingClientRect().top -
+          document.querySelector('#mapChoices .mapCard').getBoundingClientRect().bottom
+      );
+      assert.ok(tall < 40, `plein écran : vide sous les arènes (${Math.round(tall)} px)`);
       await page.setViewportSize({ width: 1366, height: 768 });
       await page.waitForTimeout(150);
       // onglet Multiplayer (groupe simulé, sans réseau) : chaque réglage tient dans son bouton (bug du 04/11/2026 :
