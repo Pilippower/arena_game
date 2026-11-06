@@ -266,38 +266,30 @@ async function run() {
       await page.waitForTimeout(500);
       const anim = await page.evaluate(() => HF.records.get(state.player.id).action?.getClip().name);
       assert.equal(anim, 'Idle_Loop', 'animation de repos Quaternius attendue');
-      // placement des cadres (06/11/2026, ui/frame_layout.js) : « Move frames » ferme Settings ; le groupe ennemi
-      // entier se déplace d'un bloc et grandit par sa poignée d'angle ; Settings rouvert, « Done moving » termine
+      // placement des cadres (06/11/2026, ui/frame_layout.js) : le panneau Settings se range, le groupe ennemi entier
+      // se déplace d'un bloc et se redimensionne à la molette
       {
-        await page.evaluate(() => openSettings());
-        await page.click('#editUiBtn');
+        await page.evaluate(() => {
+          openSettings();
+          setUiEditMode(true);
+        });
         const R = () => page.evaluate(() => document.getElementById('arenaFrames').getBoundingClientRect().toJSON()),
           a = await R();
-        const panel = await page.evaluate(() => document.getElementById('settingsPanel').classList.contains('open'));
+        const panel = await page.evaluate(() => getComputedStyle(document.getElementById('settingsPanel')).display);
         await page.mouse.move(a.x + a.width / 2, a.y + 20);
         await page.mouse.down();
         await page.mouse.move(a.x + a.width / 2 - 200, a.y + 80, { steps: 5 });
         await page.mouse.up();
+        await page.mouse.wheel(0, -100);
         await page.waitForTimeout(100);
-        const h = await page.evaluate(() =>
-          document.querySelector('.uiResize[data-for="arenaFrames"]').getBoundingClientRect().toJSON()
-        );
-        await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
-        await page.mouse.down();
-        await page.mouse.move(h.x + h.width / 2 + 80, h.y + h.height / 2 + 40, { steps: 5 });
-        await page.mouse.up();
         const b = await R();
-        await page.evaluate(() => openSettings());
-        await page.click('#editUiBtn');
-        const done = await page.evaluate(() => !uiEditMode);
         await page.evaluate(() => {
           resetFramePositions();
           closeSettings();
         });
-        assert.equal(panel, false, 'Move frames : Settings fermé');
+        assert.equal(panel, 'none', 'placement : panneau Settings rangé');
         assert.ok(Math.abs(b.x - (a.x - 200)) < 2, `groupe ennemi déplacé d'un bloc (${a.x} → ${b.x})`);
-        assert.ok(b.width > a.width * 1.2, `groupe ennemi agrandi par sa poignée (${a.width} → ${b.width})`);
-        assert.ok(done, 'Done moving termine le placement');
+        assert.ok(b.width > a.width * 1.04, 'groupe ennemi agrandi à la molette');
       }
       // Métamorphose : mouton qui erre dans 1 m de rayon, ne peut rien faire, brisée au premier coup
       const poly = await page.evaluate(async () => {

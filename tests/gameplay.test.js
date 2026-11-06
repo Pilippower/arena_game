@@ -398,10 +398,7 @@ function playerWorld() {
   const S = sandbox({ clamp: (v, a, b) => Math.max(a, Math.min(b, v)), FRAME_SCALE: { min: 0.6, max: 1.6, step: 0.05 } });
   S.fn('src/ui/frame_layout.js', 'frameScale');
   S.fn('src/ui/frame_layout.js', 'framePlace');
-  S.fn('src/ui/frame_layout.js', 'frameDragScale');
-  const { frameScale, framePlace, frameDragScale } = S.ctx;
-  assert.equal(frameDragScale(1, 200, 100), 1.5, 'poignée d’angle tirée de 100 px sur 200 : 150 %');
-  assert.equal(frameDragScale(1.2, 240, -120), 0.6, 'poignée repoussée : taille minimale');
+  const { frameScale, framePlace } = S.ctx;
   assert.equal(frameScale(1.23), 1.25, 'taille arrondie au pas du curseur');
   assert.equal(frameScale(3), 1.6, 'taille maximale');
   assert.equal(frameScale(0.1), 0.6, 'taille minimale');

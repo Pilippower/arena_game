@@ -199,7 +199,8 @@ function openSettings() {
 }
 function closeSettings() {
   settingsOpen = false;
-  captureBind = null; // le mode placement continue : il se termine par « Done moving » (frame_layout.js)
+  captureBind = null;
+  setUiEditMode(false);
   $('settingsPanel').classList.remove('open');
   canvas.focus();
 }
@@ -424,11 +425,7 @@ updateMusicButton();
 $('musicBtn').onclick = musicToggle;
 $('settingsBtn').onclick = openSettings;
 $('closeSettingsBtn').onclick = closeSettings;
-// Move frames : Settings se ferme pour libérer l'écran ; rouvert, le même bouton (« Done moving ») termine
-$('editUiBtn').onclick = () => {
-  setUiEditMode(!uiEditMode);
-  if (uiEditMode) closeSettings();
-};
+$('editUiBtn').onclick = () => setUiEditMode(!uiEditMode);
 $('resetUiBtn').onclick = resetFramePositions;
 $('resetBindsBtn').onclick = resetBindings;
 $('musicVolume').oninput = e => setMusicVolume(e.target.value / 100);
