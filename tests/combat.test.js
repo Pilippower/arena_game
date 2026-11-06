@@ -955,3 +955,26 @@ for (const map of ['castle', 'bridge']) {
 console.log(
   'OK - règles de combat (tests unitaires : DR, contrôles, dégâts, soins, sorts, incantations, auras, fin de manche, sons des sorts, salles de départ)'
 );
+// ---------- Match en 2 manches gagnantes sur 3 (src/game/match.js matchOver, 06/11/2026) ----------
+// « si une team perd 2 rounds de suite, il ne faut pas jouer le 3e » : résultats dès 2-0, 3e manche à 1-1.
+{
+  const { ctx } = combatWorld();
+  const calls = [];
+  ctx.setTimeout = f => f();
+  ctx.showResults = () => calls.push('results');
+  ctx.resetRound = () => (calls.push('next'), ctx.state.round++);
+  ctx.state.round = 1;
+  ctx.state.player = ctx.state.player || { team: 0 };
+  ctx.state.scoreA = ctx.state.scoreB = 0;
+  ctx.endRound(false);
+  ctx.endRound(false);
+  assert.deepEqual(calls, ['next', 'results'], '0-2 : pas de 3e manche');
+  calls.length = 0;
+  ctx.state.round = 1;
+  ctx.state.player = ctx.state.player || { team: 0 };
+  ctx.state.scoreA = ctx.state.scoreB = 0;
+  ctx.endRound(true);
+  ctx.endRound(false);
+  ctx.endRound(true);
+  assert.deepEqual(calls, ['next', 'next', 'results'], '1-1 : 3e manche décisive');
+}

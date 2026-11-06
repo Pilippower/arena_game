@@ -23,7 +23,12 @@ function recordKill(src, t) {
     if (s) s.kills++;
   }
 }
-// Fin de manche : point au vainqueur, puis manche suivante ou résultats après la 3e.
+// Match en 2 manches gagnantes sur 3 (06/11/2026) : fini dès qu'une équipe a la majorité (2-0 : pas de 3e manche).
+// Chaque manche donne un point (pas de nul) : la dernière manche donne toujours une majorité.
+function matchOver(scoreA, scoreB) {
+  return Math.max(scoreA, scoreB) > MATCH_ROUNDS / 2;
+}
+// Fin de manche : point au vainqueur, puis manche suivante ou résultats (matchOver).
 function endRound(win) {
   state.ended = true;
   state.winTeam = win ? state.player.team : 1 - state.player.team;
@@ -35,7 +40,7 @@ function endRound(win) {
   const match = state;
   setTimeout(() => {
     if (state !== match) return; // match quitté entre-temps (Return to Lobby)
-    if (state.round >= MATCH_ROUNDS) showResults();
+    if (matchOver(state.scoreA, state.scoreB)) showResults();
     else resetRound();
   }, 1500);
 }
