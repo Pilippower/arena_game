@@ -39,7 +39,7 @@
   const TOON = {
     nl: 'float dotNL = saturate( dot( geometry.normal, directLight.direction ) );',
     softNL:
-      'float nlRaw = dot( geometry.normal, directLight.direction ); float dotNL = mix( saturate( nlRaw ), smoothstep( -0.08, 0.32, nlRaw ), 0.7 );',
+      'float nlRaw = dot( geometry.normal, directLight.direction ); float dotNL = mix( saturate( nlRaw * 0.6 + 0.4 ), smoothstep( -0.55, 0.45, nlRaw ), 0.6 );',
     out: 'gl_FragColor = vec4( outgoingLight, diffuseColor.a );'
   };
   // Valeurs propres à un personnage (06/11/2026, « figurine peinte » et équipe) : hauteur des pieds et taille en
@@ -83,7 +83,7 @@
         .replace(
           TOON.out,
           `{float th=toonH>0.?clamp((vToonY-toonFoot)/toonH,0.,1.):.6;
-          outgoingLight*=mix(vec3(.72,.75,.9),vec3(1.07,1.04,.98),smoothstep(.02,.78,th));
+          outgoingLight*=mix(vec3(.84,.86,.95),vec3(1.05,1.03,.99),smoothstep(.02,.78,th));
           float fr=pow(1.-clamp(dot(normalize(normal),normalize(vViewPosition)),0.,1.),2.4);
           outgoingLight+=rimColor*fr*rimStr+teamRim*fr*fr*.6;
           float l=dot(outgoingLight,vec3(.299,.587,.114));
@@ -96,16 +96,26 @@
     m.customProgramCacheKey = () => 'toon|' + String(prev);
     m.needsUpdate = true;
   }
-  const OUTLINE_MAT = new Map();
+  const OUTLINE_MAT = new Map(),
+    OUTLINE_PUSH = 0.05; // m
   function outlineMaterial(THREE, skinned, thick) {
     const k = skinned + ':' + thick;
     if (OUTLINE_MAT.has(k)) return OUTLINE_MAT.get(k);
     const m = new THREE.MeshBasicMaterial({ color: 0x0b0710, side: THREE.BackSide, skinning: skinned });
+    // coque reculée de OUTLINE_PUSH (vue) : elle borde la silhouette sans ressortir dans les creux du visage et du
+    // corps (06/11/2026 : « les femmes ont une moustache », trait d'encre sous le nez et autour de la bouche)
     m.onBeforeCompile = sh => {
-      sh.vertexShader = sh.vertexShader.replace(
-        '#include <begin_vertex>',
-        '#include <begin_vertex>\ntransformed+=normalize(normal)*' + thick.toFixed(4) + ';'
-      );
+      sh.vertexShader = sh.vertexShader
+        .replace(
+          '#include <begin_vertex>',
+          '#include <begin_vertex>\ntransformed+=normalize(normal)*' + thick.toFixed(4) + ';'
+        )
+        .replace(
+          '#include <project_vertex>',
+          '#include <project_vertex>\nmvPosition.z-=' +
+            OUTLINE_PUSH.toFixed(3) +
+            ';gl_Position=projectionMatrix*mvPosition;'
+        );
     };
     OUTLINE_MAT.set(k, m);
     return m;

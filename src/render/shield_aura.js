@@ -21,7 +21,8 @@
     RADIUS = 0.95, // m, rayon horizontal ; hauteur × VSTRETCH
     VSTRETCH = 1.2,
     CENTER_Y = 1.1;
-  const S = { ok: false, rec: new Map() };
+  const S = { ok: false, rec: new Map() },
+    WARM_ID = 'warm'; // bulle compilée au chargement (warm), hors des unités
 
   const VERT = `varying vec3 vN;varying vec3 vV;varying vec3 vP;
     void main(){vP=position;vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.);
@@ -40,14 +41,20 @@
       float band=smoothstep(.07,.02,abs(n.y-.12*sin(ang*2.+t*1.3)))*step(.45,fract(ang*3.82+t*.35));
       float sweep=smoothstep(.12,0.,abs(n.y-(fract(t*.4)*2.4-1.2)));
       float l=f*1.3+.015+e*hex*(.05+f*.55)+band*runes*.55*(.3+f)+sweep*.1+hit*(.25+e*.6+f);
-      gl_FragColor=vec4((c*l+vec3(hit*f*.6))*a,1.);}`;
+      vec3 g=min((c*l+vec3(hit*f*.6))*a,vec3(1.));gl_FragColor=vec4(g,max(g.r,max(g.g,g.b)));}`;
 
   function material(THREE) {
     return new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
       side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending,
+      // lueur en couleur prémultipliée (opacité = intensité) : le calque des personnages est un canevas transparent posé
+      // sur le décor ; en mélange additif, l'opacité 1 rendait la bulle noire et opaque (06/11/2026, « orbes noires »)
+      blending: THREE.CustomBlending,
+      blendSrc: THREE.OneFactor,
+      blendDst: THREE.OneMinusSrcAlphaFactor,
+      blendSrcAlpha: THREE.OneFactor,
+      blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
       uniforms: {
         c: { value: new THREE.Color() },
         a: { value: 0 },
@@ -80,7 +87,7 @@
   // Une bulle à compiler pendant le chargement (même shader pour toutes) : renvoyée pour être montrée le temps de
   // renderer.compile.
   function warm() {
-    return S.ok ? bubbleOf('warm').m : null;
+    return S.ok ? bubbleOf(WARM_ID).m : null;
   }
   // Opacité selon le camouflage : alliés à demi visibles, ennemis camouflés invisibles (la bulle ne les trahit pas).
   function stealthAlpha(u, viewer) {
@@ -129,6 +136,18 @@
       U.hit.value = b.hit;
       U.t.value = time;
       U.a.value = (breaking ? 1 - k : Math.min(1, b.show * 2)) * wear * stealthAlpha(u, viewer);
+    }
+    dropGone(units);
+  }
+  // Bulles des unités disparues (nouvelle manche ou nouveau match : unités recréées avec un autre id) : retirées. Bug
+  // du 06/11/2026 : un bouclier encore actif en fin de manche laissait sa bulle figée « au hasard » dans la carte.
+  function dropGone(units) {
+    const live = new Set((units || []).map(u => u.id));
+    for (const [id, b] of S.rec) {
+      if (id === WARM_ID || live.has(id)) continue;
+      S.scene.remove(b.m);
+      b.m.material.dispose();
+      S.rec.delete(id);
     }
   }
   return {

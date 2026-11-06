@@ -512,7 +512,8 @@ function playerWorld() {
   const THREE = require('three'),
     A = require('../src/render/shield_aura.js'),
     added = [];
-  A.init(THREE, { add: m => added.push(m) });
+  const inScene = new Set();
+  A.init(THREE, { add: m => (added.push(m), inScene.add(m)), remove: m => inScene.delete(m) });
   const me = { id: 1, team: 'ally', alive: true, shield: 300, shieldName: 'Arcane Barrier' },
     foe = { id: 2, team: 'enemy', alive: true, shield: 300, shieldName: 'Power Shield', stealth: true },
     body = { position: { x: 2, y: 0, z: 3 }, scale: { y: 1 } },
@@ -539,6 +540,13 @@ function playerWorld() {
   foe.alive = false;
   step(0.6);
   assert.ok(!bub(2).visible, 'unité morte : plus de bulle');
+  // nouvelle manche (06/11/2026, « des boucliers au hasard dans la carte ») : les unités sont recréées avec d'autres id ;
+  // la bulle d'une unité disparue avec un bouclier actif ne reste pas figée à sa place
+  me.shield = 300;
+  step(0.3);
+  assert.ok(inScene.has(bub(1)) && bub(1).visible, 'bouclier actif en fin de manche');
+  A.update(0.05, [{ id: 3, team: 'ally', alive: true, shield: 0 }], () => body, me, 0);
+  assert.ok(!inScene.has(bub(1)) && !inScene.has(bub(2)), 'unités disparues : leurs bulles retirées');
 }
 // ---------- Sol peint : ombres de contact, halos des braseros (render/ground_paint.js groundShadeAt) ----------
 // Demande du 06/11/2026 (graphismes « peints à la main ») : la lumière et l'ombre sont peintes une fois dans le sol.

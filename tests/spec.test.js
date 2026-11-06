@@ -208,6 +208,12 @@ assert.match(h3, /if \(!groups\.size\) return;/, 'silhouettes : pas de passe inu
 // direction de course (06/11/2026, gauche ↔ droite « pas naturel » : hfBodyTurn, tests/gameplay.test.js)
 assert.match(code('src/render/'), /const dist = camera\.dist,/, 'zoom immédiat');
 assert.doesNotMatch(code('src/render/'), /CAM_VIEW|dispYaw|rec\.lean/, 'pas de caméra ni de pivot lissés');
+// visages sans « moustache » (06/11/2026) : la coque du contour d'encre est reculée et ne ressort pas dans les creux
+{
+  const b = read('src/characters/builder.js'),
+    push = +b.match(/OUTLINE_PUSH = ([\d.]+)/)[1];
+  assert.ok(push >= 0.03 && /mvPosition\.z-='\s*\+\s*OUTLINE_PUSH/.test(b), 'contour reculé derrière le visage');
+}
 // sable de The Bridge sans couture ni bandes (06/11/2026) : nombre entier de rides par tuile, texture en position monde
 assert.match(read('src/render/map_bridge.js'), /Math\.PI \* 2 \* RIPPLES/, 'sable : rides qui se raccordent');
 assert.match(read('src/render/map_bridge.js'), /SAND_WORLD \+/, 'sable : position monde (arène et salles)');
