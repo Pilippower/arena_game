@@ -266,6 +266,31 @@ async function run() {
       await page.waitForTimeout(500);
       const anim = await page.evaluate(() => HF.records.get(state.player.id).action?.getClip().name);
       assert.equal(anim, 'Idle_Loop', 'animation de repos Quaternius attendue');
+      // placement des cadres (06/11/2026, ui/frame_layout.js) : le panneau Settings se range, le groupe ennemi entier
+      // se déplace d'un bloc et se redimensionne à la molette
+      {
+        await page.evaluate(() => {
+          openSettings();
+          setUiEditMode(true);
+        });
+        const R = () => page.evaluate(() => document.getElementById('arenaFrames').getBoundingClientRect().toJSON()),
+          a = await R();
+        const panel = await page.evaluate(() => getComputedStyle(document.getElementById('settingsPanel')).display);
+        await page.mouse.move(a.x + a.width / 2, a.y + 20);
+        await page.mouse.down();
+        await page.mouse.move(a.x + a.width / 2 - 200, a.y + 80, { steps: 5 });
+        await page.mouse.up();
+        await page.mouse.wheel(0, -100);
+        await page.waitForTimeout(100);
+        const b = await R();
+        await page.evaluate(() => {
+          resetFramePositions();
+          closeSettings();
+        });
+        assert.equal(panel, 'none', 'placement : panneau Settings rangé');
+        assert.ok(Math.abs(b.x - (a.x - 200)) < 2, `groupe ennemi déplacé d'un bloc (${a.x} → ${b.x})`);
+        assert.ok(b.width > a.width * 1.04, 'groupe ennemi agrandi à la molette');
+      }
       // Métamorphose : mouton qui erre dans 1 m de rayon, ne peut rien faire, brisée au premier coup
       const poly = await page.evaluate(async () => {
         for (const u of state.units) if (u !== state.player) u.ai = false;

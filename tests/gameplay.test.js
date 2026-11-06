@@ -392,6 +392,21 @@ function playerWorld() {
   assert.ok(Math.abs(z(690) - 690 / 860) < 1e-9, 'fenêtre basse : réduit en proportion de la hauteur');
   assert.equal(z(300), 0.6, 'jamais illisible');
 }
+// ---------- Cadres en jeu : position et taille réglables (src/ui/frame_layout.js) ----------
+// Demande du 06/11/2026 : bouger son cadre, sa cible, son groupe entier, le groupe ennemi entier, et changer leur taille.
+{
+  const S = sandbox({ clamp: (v, a, b) => Math.max(a, Math.min(b, v)), FRAME_SCALE: { min: 0.6, max: 1.6, step: 0.05 } });
+  S.fn('src/ui/frame_layout.js', 'frameScale');
+  S.fn('src/ui/frame_layout.js', 'framePlace');
+  const { frameScale, framePlace } = S.ctx;
+  assert.equal(frameScale(1.23), 1.25, 'taille arrondie au pas du curseur');
+  assert.equal(frameScale(3), 1.6, 'taille maximale');
+  assert.equal(frameScale(0.1), 0.6, 'taille minimale');
+  // cadre agrandi en bas à droite : il reste entier dans l'écran
+  const p = framePlace({ x: 1, y: 1 }, 300 * 1.5, 100 * 1.5, 1280, 720);
+  assert.ok(p.x + 450 === 1280 && p.y + 150 === 720, 'cadre agrandi : toujours dans la zone de jeu');
+  assert.deepEqual(JSON.parse(JSON.stringify(framePlace({ x: 0.5, y: 0 }, 200, 100, 1200, 700))), { x: 500, y: 0 }, 'position relative');
+}
 // ---------- Bouclier d'absorption sur les barres de vie (src/ui/hud.js) ----------
 {
   const S = sandbox({ clamp: (v, a, b) => Math.max(a, Math.min(b, v)) });

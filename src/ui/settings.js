@@ -2,9 +2,7 @@
 // Interface : raccourcis, déplacement des cadres, sélection race/classe/difficulté.
 // ---------- Persistent UI customization ----------
 let settingsOpen = false,
-  captureBind = null,
-  uiEditMode = false,
-  dragFrame = null;
+  captureBind = null;
 // Classe dont on règle les raccourcis : celle de la barre de sorts affichée (jouée, ou choisie au lobby) ; aucune =
 // réglages communs, suivis par les classes jamais réglées.
 function bindClass() {
@@ -86,53 +84,6 @@ function resetBindings() {
   renderBindGrid();
   refreshKeyLabels();
   $('bindStatus').textContent = 'Default keybinds restored.';
-}
-function frameIds() {
-  return ['selfFrame', 'targetFrame', 'arenaFrames', 'partyFrames'];
-}
-function applyFramePositions() {
-  const game = $('game'),
-    gr = game.getBoundingClientRect();
-  for (const id of frameIds()) {
-    const el = $(id),
-      v = PREFS.ui[id];
-    if (!el || !v) continue;
-    const maxX = Math.max(0, gr.width - el.offsetWidth),
-      maxY = Math.max(0, gr.height - el.offsetHeight);
-    el.style.left = `${clamp(v.x, 0, 1) * maxX}px`;
-    el.style.top = `${clamp(v.y, 0, 1) * maxY}px`;
-    el.style.right = 'auto';
-    el.style.bottom = 'auto';
-  }
-}
-function saveFramePosition(el) {
-  const gr = $('game').getBoundingClientRect(),
-    er = el.getBoundingClientRect(),
-    maxX = Math.max(1, gr.width - er.width),
-    maxY = Math.max(1, gr.height - er.height);
-  PREFS.ui[el.id] = { x: clamp((er.left - gr.left) / maxX, 0, 1), y: clamp((er.top - gr.top) / maxY, 0, 1) };
-  savePrefs();
-}
-function resetFramePositions() {
-  PREFS.ui = {};
-  savePrefs();
-  for (const id of frameIds()) {
-    const el = $(id);
-    el.style.left = '';
-    el.style.top = '';
-    el.style.right = '';
-    el.style.bottom = '';
-  }
-  $('bindStatus').textContent = 'Frame positions restored.';
-}
-function setUiEditMode(on) {
-  uiEditMode = !!on;
-  $('game').querySelector('.hud').classList.toggle('uiEdit', uiEditMode);
-  $('editUiBtn').textContent = uiEditMode ? '✓ Terminer le placement' : 'Move frames';
-  if (!uiEditMode && dragFrame) {
-    dragFrame.el.classList.remove('dragging');
-    dragFrame = null;
-  }
 }
 // Pas : les siens bien présents ; ceux des autres selon la distance (inaudibles au-delà de FOOT_HEAR m, de plus en
 // plus forts en approchant) et placés à gauche / droite par rapport à la caméra.
@@ -258,36 +209,6 @@ function toggleSettings() {
   if (settingsOpen) closeSettings();
   else openSettings();
 }
-for (const id of frameIds()) {
-  $(id).addEventListener('pointerdown', e => {
-    if (!uiEditMode) return;
-    e.preventDefault();
-    const el = e.currentTarget,
-      gr = $('game').getBoundingClientRect(),
-      er = el.getBoundingClientRect();
-    dragFrame = { el, dx: e.clientX - er.left, dy: e.clientY - er.top };
-    el.classList.add('dragging');
-    el.setPointerCapture?.(e.pointerId);
-  });
-}
-window.addEventListener('pointermove', e => {
-  if (!dragFrame) return;
-  const { el, dx, dy } = dragFrame,
-    gr = $('game').getBoundingClientRect();
-  const x = clamp(e.clientX - gr.left - dx, 0, Math.max(0, gr.width - el.offsetWidth)),
-    y = clamp(e.clientY - gr.top - dy, 0, Math.max(0, gr.height - el.offsetHeight));
-  el.style.left = x + 'px';
-  el.style.top = y + 'px';
-  el.style.right = 'auto';
-  el.style.bottom = 'auto';
-});
-window.addEventListener('pointerup', () => {
-  if (!dragFrame) return;
-  saveFramePosition(dragFrame.el);
-  dragFrame.el.classList.remove('dragging');
-  dragFrame = null;
-});
-window.addEventListener('resize', () => requestAnimationFrame(applyFramePositions));
 function updateSelectPreview(selectedRace, selectedClass) {
   const box = $('selectPreview');
   if (!box) return;
