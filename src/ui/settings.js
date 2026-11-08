@@ -397,7 +397,7 @@ function chooseClass() {
   refresh();
   play.onclick = () => {
     if (!selectedClass || !selectedRace) return;
-    if (MOBILE.enabled) mobileRequestFullscreen();
+    if (MOBILE.enabled) mobileEnterFullscreen();
     // en ligne (hôte avec un ami prêt) : 1v1 contre lui
     // en ligne (hôte) : le mode du lobby, amis placés avec / contre lui, IA pour les places libres
     const online = window.NET?.role === 'host' ? netOnlineTeams() : null;

@@ -9,24 +9,27 @@ function mobileViewportSync() {
   if (h) document.documentElement.style.setProperty('--mobile-vh', h + 'px');
   if (w) document.documentElement.style.setProperty('--mobile-vw', w + 'px');
 }
-async function mobileRequestFullscreen() {
+// Entrer en plein écran (Play) : jamais en sortir (08/11/2026 : Play basculait, et sortait du plein écran choisi).
+async function mobileEnterFullscreen() {
+  if (!MOBILE.enabled || document.fullscreenElement) return false;
+  return mobileFullscreen(true);
+}
+// Bouton plein écran du haut : bascule.
+async function mobileToggleFullscreen() {
   if (!MOBILE.enabled) return false;
-  const el = document.documentElement;
+  return mobileFullscreen(!document.fullscreenElement);
+}
+async function mobileFullscreen(on) {
   try {
-    if (!document.fullscreenElement && el.requestFullscreen) {
-      await el.requestFullscreen({ navigationUI: 'hide' });
-      mobileViewportSync();
-      return true;
-    }
-    if (document.fullscreenElement && document.exitFullscreen) {
-      await document.exitFullscreen();
-      mobileViewportSync();
-      return true;
-    }
+    if (on && document.documentElement.requestFullscreen)
+      await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+    else if (!on && document.exitFullscreen) await document.exitFullscreen();
+    else return false;
+    mobileViewportSync();
+    return true;
   } catch (_) {
-    /* Browser may refuse fullscreen for local/download pages. */
+    return false; // le navigateur peut refuser le plein écran (pages locales ou téléchargées)
   }
-  return false;
 }
 mobileViewportSync();
 window.addEventListener('resize', mobileViewportSync);
@@ -34,7 +37,7 @@ window.visualViewport?.addEventListener('resize', mobileViewportSync);
 window.addEventListener('orientationchange', () => setTimeout(mobileViewportSync, 80));
 $('fullscreenBtn')?.addEventListener('click', e => {
   e.preventDefault();
-  mobileRequestFullscreen();
+  mobileToggleFullscreen();
 });
 
 // ---------- mobile touch controls (desktop controls remain unchanged) ----------

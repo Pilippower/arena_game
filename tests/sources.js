@@ -34,7 +34,7 @@ function sandbox(globals = {}) {
     ctx,
     load: f => exec(read(f), f),
     fn(f, name) {
-      const src = read(f).match(new RegExp(`^function ${name}\\([\\s\\S]*?\\n\\}`, 'm'));
+      const src = read(f).match(new RegExp(`^(?:async )?function ${name}\\([\\s\\S]*?\\n\\}`, 'm'));
       if (!src) throw new Error(`${f} : function ${name} introuvable`);
       exec(src[0], f);
     }

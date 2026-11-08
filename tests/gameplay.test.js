@@ -1068,3 +1068,27 @@ function playerWorld() {
 console.log(
   'OK - règles de jeu (tests unitaires : déplacement, IA, cibles, sanctuaires, fear, ciblage au clic, contrôles, IK, glaives, frappe des glaives en arc, frappes par race, étourdi, barbe, torches du lobby, bouclier sur les barres)'
 );
+// ---------- Mobile : Play garde le plein écran (src/ui/mobile.js, 08/11/2026) ----------
+// « en plein écran, Play m'enlève le plein écran » : Play entre en plein écran, il n'en sort jamais ; le bouton du
+// haut bascule.
+{
+  const calls = [];
+  const doc = {
+    fullscreenElement: null,
+    documentElement: { requestFullscreen: async () => (calls.push('enter'), (doc.fullscreenElement = {})) },
+    exitFullscreen: async () => (calls.push('exit'), (doc.fullscreenElement = null))
+  };
+  const S = sandbox({ MOBILE: { enabled: true }, document: doc, mobileViewportSync() {} });
+  for (const f of ['mobileEnterFullscreen', 'mobileToggleFullscreen', 'mobileFullscreen'])
+    S.fn('src/ui/mobile.js', f);
+  (async () => {
+    await S.ctx.mobileEnterFullscreen();
+    await S.ctx.mobileEnterFullscreen();
+    assert.deepEqual(calls, ['enter'], 'Play en plein écran : on y reste');
+    await S.ctx.mobileToggleFullscreen();
+    assert.deepEqual(calls, ['enter', 'exit'], 'bouton plein écran : bascule');
+  })().catch(e => {
+    console.error(e.message);
+    process.exitCode = 1;
+  });
+}
