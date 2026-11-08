@@ -423,7 +423,7 @@ function chooseClass() {
 $('restartBtn').onclick = () => requestChangeClass();
 updateMusicButton();
 $('musicBtn').onclick = musicToggle;
-$('settingsBtn').onclick = openSettings;
+$('settingsBtn').onclick = toggleSettings; // un clic ouvre, un second ferme (08/11/2026)
 $('closeSettingsBtn').onclick = closeSettings;
 $('editUiBtn').onclick = () => setUiEditMode(!uiEditMode);
 $('resetUiBtn').onclick = resetFramePositions;

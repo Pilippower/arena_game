@@ -291,6 +291,14 @@ async function run() {
         assert.ok(Math.abs(b.x - (a.x - 200)) < 2, `groupe ennemi déplacé d'un bloc (${a.x} → ${b.x})`);
         assert.ok(b.width > a.width * 1.04, 'groupe ennemi agrandi à la molette');
       }
+      // bouton Settings (08/11/2026) : un clic ouvre, un second clic ferme
+      {
+        const open = () => page.evaluate(() => document.getElementById('settingsPanel').classList.contains('open'));
+        await page.click('#settingsBtn');
+        const first = await open();
+        await page.click('#settingsBtn');
+        assert.deepEqual([first, await open()], [true, false], 'Settings : ouvre puis ferme au second clic');
+      }
       // Métamorphose : mouton qui erre dans 1 m de rayon, ne peut rien faire, brisée au premier coup
       const poly = await page.evaluate(async () => {
         for (const u of state.units) if (u !== state.player) u.ai = false;
