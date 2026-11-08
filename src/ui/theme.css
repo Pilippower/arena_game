@@ -204,8 +204,11 @@ button:active:not(:disabled) {
   background: radial-gradient(circle at 50% 110%, #6fb8ff33, transparent 55%);
   pointer-events: none;
 }
+/* toute la surface du cadre d'aperçu (mobile, 08/11/2026 : cadre dimensionné par sa hauteur minimale, « height: 100 % »
+   ne s'appliquait pas, le canevas gardait sa forme 2:1 collée en haut : socle et personnage trop hauts) */
 #preview3d {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
 }
 @keyframes pvRune {

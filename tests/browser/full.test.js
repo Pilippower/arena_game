@@ -490,6 +490,14 @@ async function run() {
           };
         });
       assert.deepEqual(await lobbyFits(), { playText: '0px', inside: true }, 'lobby mobile 844 × 390');
+      // aperçu du personnage (08/11/2026 : canevas en bande 2:1 collée en haut du cadre, socle trop haut) : il remplit
+      // tout le cadre d'aperçu
+      const pv = await page.evaluate(() => {
+        const c = document.getElementById('preview3d').getBoundingClientRect(),
+          a = document.querySelector('.pvArt').getBoundingClientRect();
+        return { c: c.height, a: a.height };
+      });
+      assert.ok(pv.c > pv.a * 0.9, `mobile : aperçu sur toute la hauteur du cadre (${pv.c} / ${pv.a})`);
       await page.setViewportSize({ width: 568, height: 320 });
       await page.waitForTimeout(300);
       assert.equal((await lobbyFits()).inside, true, 'lobby mobile 568 × 320 : options dans le cadre');
