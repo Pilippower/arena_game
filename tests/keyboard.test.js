@@ -75,7 +75,7 @@ function keyboardWorld(stored = null) {
     slotOrder: () => [0, 1, 2, 3, 4, 5, 6],
     tryPlayerSkill: i => cast.push(i),
     useTrinket: () => cast.push('trinket'),
-    enemies: () => [],
+    tabTargets: () => [], // cibles de TAB (src/game/rules.js)
     setTarget() {}
   });
   S.load('src/core/setup.js');

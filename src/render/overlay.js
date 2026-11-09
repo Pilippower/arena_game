@@ -39,7 +39,7 @@ function renderOverlayWorld() {
     }
     seen.add(u);
     const p =
-        u.alive && !(u.stealth && u.team !== state.player.team)
+        u.alive && !(u.stealth && u.team !== state.player.team) && !pvePlateHidden(u)
           ? projectScreen(u.rx ?? u.x, (u.ry ?? u.y ?? 0) + 2.65, u.rz ?? u.z)
           : null,
       vis = !!p && p.x > -60 && p.x < W + 60 && p.y > -30 && p.y < H + 30;

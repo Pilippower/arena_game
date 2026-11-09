@@ -163,10 +163,14 @@ function updateUI() {
   gateCountdownUI();
   const p = state.player,
     t = p.target;
-  $('timer').textContent =
-    `${String(Math.floor(state.t / 60)).padStart(2, '0')}:${String(Math.floor(state.t % 60)).padStart(2, '0')}`;
-  $('score').textContent = `${state.scoreA} - ${state.scoreB}`;
-  $('round').textContent = `Round ${state.round} / ${MATCH_ROUNDS}`;
+  if (state.pve)
+    pveCenterHUD(p); // aventure : prochain but et distance (src/pve/pve_ui.js)
+  else {
+    $('timer').textContent =
+      `${String(Math.floor(state.t / 60)).padStart(2, '0')}:${String(Math.floor(state.t % 60)).padStart(2, '0')}`;
+    $('score').textContent = `${state.scoreA} - ${state.scoreB}`;
+    $('round').textContent = `Round ${state.round} / ${MATCH_ROUNDS}`;
+  }
   $('selfFrame')._html = frameHTML(p, false);
   $('targetFrame')._html = t
     ? frameHTML(t, true) +
@@ -174,7 +178,7 @@ function updateUI() {
     : '<b>No target</b>';
   $('targetFrame').classList.toggle('noTarget', !t);
   $('arenaFrames')._html = state.units
-    .filter(u => u.team !== p.team)
+    .filter(u => u.team !== p.team && !u.monster) // PVE : pas de cadres d'arène pour les monstres
     .map(u => unitRowHTML(u, true))
     .join('');
   $('partyFrames')._html = state.units

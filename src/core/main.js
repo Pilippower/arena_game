@@ -75,6 +75,13 @@ try {
     $('overlay').style.display = 'none';
     resetRound();
   }
+  // ?pve=<classe>&race=<race> : aventure PVE lancée directement (tests, captures)
+  const qpve = new URLSearchParams(location.search).get('pve');
+  if (qpve && CLASS[qpve]) {
+    const ar = new URLSearchParams(location.search).get('race');
+    $('overlay').style.display = 'none';
+    pveStart(qpve, RACE[ar] ? ar : raceForClass(qpve));
+  }
 } catch (err) {
   console.error(err);
   $('bootError').style.display = 'block';

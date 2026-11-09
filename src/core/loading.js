@@ -97,10 +97,10 @@ async function prepareMatch() {
   // début du match : écran affiché tout de suite (avant la moindre image du jeu) et gardé au moins 3 s ;
   // manche suivante (tout est en cache) : écran seulement si la préparation dépasse 150 ms
   const tStart = performance.now();
-  if (first) loadingShow('Entering the arena');
+  if (first) loadingShow(S.pve ? 'Entering the Mistvale' : 'Entering the arena');
   const showT = first ? 0 : setTimeout(() => token === LOADING.token && loadingShow(`Round ${S.round}`), 150);
   const stale = () => token !== LOADING.token || state !== S;
-  loadingProgress(0.05, 'Building the arena');
+  loadingProgress(0.05, S.pve ? 'Building the world' : 'Building the arena');
   await nextFrame();
   if (ENV.pendingMap && ENV.ok && window.ArenaEnv?.setMap) {
     ArenaEnv.setMap(ENV.pendingMap, arena);

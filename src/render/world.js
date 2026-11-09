@@ -26,7 +26,7 @@ function cameraHits(target, desired, t) {
     y = lerp(target[1], desired[1], t),
     z = lerp(target[2], desired[2], t);
   // remparts de l'arène et murs des salles de départ ; le passage d'une porte seulement sous sa poterne
-  if (!insideWalls(x, z, CAM_WALL, y < CAM_DOOR_H) || y < 0.32) return true;
+  if (!insideWalls(x, z, CAM_WALL, y < CAM_DOOR_H) || y < terrainY(x, z) + 0.32) return true; // sol, relief PVE
   return arena.pillars.some(p => Math.hypot(x - p.x, z - p.z) < p.r + 0.28 && y < p.h + 0.25);
 }
 function cameraSafe(target, desired) {

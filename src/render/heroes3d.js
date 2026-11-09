@@ -253,7 +253,9 @@ function hfRender() {
   for (const u of state.units) {
     const rec = HF.records.get(u.id);
     if (!rec?.loaded) continue;
-    const sc = hfRaceScale(u.race, rec.kit);
+    rec.group.visible = !pveOutOfSight(u);
+    if (!rec.group.visible) continue; // monstre PVE au-delà de la brume : ni animation ni dessin (src/pve/pve_ui.js)
+    const sc = hfRaceScale(u.race, rec.kit).map(v => v * (u.scale || 1)); // u.scale : gardien PVE plus grand
     let rx, rz, ryaw;
     if (u.visualSnap) {
       rx = u.x;

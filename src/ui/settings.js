@@ -259,9 +259,9 @@ function lobbyChipsHTML(race, cls) {
   return [
     race && `<span><img src="assets/ui/lobby/race_${race}.webp" alt="">${RACE[race].name}</span>`,
     cls && `<span><img src="assets/ui/lobby/class_${cls}.webp" alt="">${CLASS[cls].name}</span>`,
-    `<span>${CHIP_ICON.mode}${TEAM_SIZE}v${TEAM_SIZE}</span>`,
+    `<span>${CHIP_ICON.mode}${lobbyIsPve() ? 'PvE' : `${TEAM_SIZE}v${TEAM_SIZE}`}</span>`, // onglet PvE : src/pve/pve_ui.js
     `<span>${CHIP_ICON.diff}${diff}</span>`,
-    `<span>${CHIP_ICON.map}${MAPS[MAP_ID]?.name || ''}</span>`
+    `<span>${CHIP_ICON.map}${lobbyIsPve() ? PVE_WORLD.name : MAPS[MAP_ID]?.name || ''}</span>`
   ]
     .filter(Boolean)
     .join('');
@@ -398,6 +398,7 @@ function chooseClass() {
   play.onclick = () => {
     if (!selectedClass || !selectedRace) return;
     if (MOBILE.enabled) mobileEnterFullscreen();
+    if (lobbyIsPve()) return pveLaunch(selectedClass, selectedRace); // onglet PvE : aventure solo (src/pve/pve_ui.js)
     // en ligne (hôte avec un ami prêt) : 1v1 contre lui
     // en ligne (hôte) : le mode du lobby, amis placés avec / contre lui, IA pour les places libres
     const online = window.NET?.role === 'host' ? netOnlineTeams() : null;

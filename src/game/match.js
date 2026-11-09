@@ -104,6 +104,7 @@ function hideResults() {
 }
 // Nouveau match avec la même composition.
 function playAgain() {
+  if (state?.pve) return pveRestart(); // aventure PVE (src/pve/pve.js)
   hideResults();
   state = {
     pcls: state.pcls,
@@ -127,6 +128,7 @@ function leaveMatch() {
   hideResults();
   $('leaveConfirm').style.display = 'none';
   chooseClass(); // relit la race et la classe de la partie pour les présélectionner
+  if (state?.pve) pveLeave(); // la carte d'arène reprend sa place
   state = null;
 }
 // « Return to Lobby » pendant un match : on demande d'abord si l'on veut vraiment le quitter.

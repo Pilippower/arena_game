@@ -273,8 +273,17 @@ function addFloat(u, text, color, big = false) {
     off: (Math.random() - 0.5) * 0.5
   });
 }
+// Relief (monde PVE seulement) : les effets posés au sol ou à hauteur fixe (anneaux, impacts à 1,15 m…) sont écrits
+// pour un sol plat en y = 0 ; on les remonte sur le terrain. Ceux qui partent d'une unité ((u.y || 0) + 0,6 m ou plus)
+// sont déjà à la bonne hauteur. En arène, terrainY = 0 : rien ne change.
+const FX_GROUND_ABOVE = 0.55;
+function fxOnTerrain(x, y, z) {
+  const g = terrainY(x, z);
+  return y - g < FX_GROUND_ABOVE ? y + g : y;
+}
 function fx(type, x, y, z, color, life = 0.55, size = 0.4, to = null, extra = null) {
   if (!state) return;
+  if (arena.heightAt) y = fxOnTerrain(x, y, z);
   if (state.fx.length > 180) state.fx.splice(0, state.fx.length - 180);
   const f = { type, x, y, z, color, life, max: life, size, to, from: [x, y, z], extra };
   try {

@@ -88,6 +88,10 @@ function hostileTarget(u, fallback = true) {
   if (u.lastEnemy?.alive) return u.lastEnemy;
   return fallback ? nearestEnemy(u) : null;
 }
+// Cibles de TAB : en arène tous les ennemis visibles (camouflés exclus) ; en PVE les monstres proches (src/pve/pve.js).
+function tabTargets(p) {
+  return state.pve ? pveTabTargets(p) : enemies(p).filter(e => !e.stealth);
+}
 // Sanctuaires de soin de la carte (state.shrines) : PV au maximum, réapparition 45 s.
 function updateHealthShrines(dt) {
   if (!state?.shrines) return;

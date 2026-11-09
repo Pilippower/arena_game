@@ -347,6 +347,7 @@ function aiMoveDir(u, d, desired, caster) {
 }
 // Stratégie des formes (druide) et du camouflage (voleur) avant la logique générale.
 function aiSpecial(u, P) {
+  if (u.monster) return false; // monstre PVE : forme de bête fixe, pas de camouflage (src/pve/pve.js)
   const ready = k => {
     const bar = skillsOf(u),
       i = bar.findIndex(s => s.k === k);

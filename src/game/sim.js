@@ -34,7 +34,7 @@ function update(dt) {
   } else {
     state.t = Math.max(0, state.t - dt);
     state.elapsed = (state.elapsed || 0) + dt;
-    state.dampening = dampeningAt(state.elapsed);
+    state.dampening = state.pve ? 0 : dampeningAt(state.elapsed); // pas de dampening en PVE (src/pve/pve.js)
   }
   playerMove(dt);
   if (window.NET?.role === 'host') netHostUpdate(dt);
@@ -170,13 +170,15 @@ function update(dt) {
         useSkill(u, q.i);
       }
     }
-    if (u.ai && gatesOpen()) ai(u, dt); // l'IA attend l'ouverture des portes
+    if (u.ai && gatesOpen()) (u.brain || ai)(u, dt); // l'IA attend l'ouverture des portes ; monstres PVE : u.brain
   }
   updateHealthShrines(dt);
   updateVisualState(dt);
   const aliveA = state.units.some(u => u.team === 0 && u.alive),
     aliveB = state.units.some(u => u.team === 1 && u.alive);
-  if (!aliveA || !aliveB || state.t <= 0) {
+  if (state.pve)
+    pveUpdate(dt); // aventure : pas de manche, mort → dernier feu de camp, victoire au château
+  else if (!aliveA || !aliveB || state.t <= 0) {
     const ah = state.units.filter(u => u.team === 0).reduce((s, u) => s + u.hp / u.maxHp, 0),
       bh = state.units.filter(u => u.team === 1).reduce((s, u) => s + u.hp / u.maxHp, 0),
       win = (aliveA && !aliveB) || (state.t <= 0 && ah > bh);

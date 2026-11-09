@@ -57,7 +57,7 @@ window.addEventListener('keydown', e => {
   if (!state || $('overlay').style.display !== 'none') return;
   if (e.code === 'Tab') {
     e.preventDefault();
-    const es = enemies(state.player).filter(e => !e.stealth);
+    const es = tabTargets(state.player);
     if (es.length) {
       const i = Math.max(-1, es.indexOf(state.player.target));
       setTarget(state.player, es[(i + 1) % es.length]);

@@ -576,7 +576,7 @@ assert.ok(
 // Portée 30 m, ressource prise à la fin de l'incantation, sorts de zone sans cible : tests/combat.test.js
 assert.ok(
   read('src/core/loading.js').includes('const LOADING_MIN_MS = 3000;') &&
-    read('src/core/loading.js').includes("if (first) loadingShow('Entering the arena');"),
+    read('src/core/loading.js').includes("if (first) loadingShow(S.pve ? 'Entering the Mistvale' : 'Entering the arena');"),
   'chargement immédiat, 3 s minimum'
 );
 assert.ok(!/stunSwirl[\s\S]{0,400}'cone'/.test(code('src/render/')), 'étourdissement : cercles');

@@ -98,6 +98,8 @@ function applyMap(id) {
   arena.halfZ = M.halfZ;
   arena.pillars = [...M.pillars.map(p => ({ ...p })), ...rampPosts(M.bridge)];
   arena.bridge = M.bridge || null;
+  arena.heightAt = null; // relief : seulement le monde PVE (src/pve/pve.js, pveApplyWorld)
+  arena.world = null;
   arena.rooms = M.rooms
     ? [-1, 1].map((side, i) => ({
         side,
@@ -143,10 +145,12 @@ const STEP = 0.75; // hauteur franchissable d'un pas
 // Hauteur libre à garder au-dessus de soi sous une rampe (tête + épaisseur de la rampe) : on passe sous le haut des
 // rampes, entre leurs poteaux (05/11/2026, plus de mur invisible sous la pente), on bute là où elle est trop basse.
 const HEADROOM = 2.45;
-// Sol sous une unité : la surface si l'unité est dessus (ou presque), sinon le sable (0).
+// Hauteur du terrain : 0 dans les arènes (sol plat), relief du monde PVE (arena.heightAt, src/pve/world.js).
+const terrainY = (x, z) => (arena.heightAt ? arena.heightAt(x, z) : 0);
+// Sol sous une unité : la surface si l'unité est dessus (ou presque), sinon le terrain (sable plat en arène).
 function groundAt(u) {
   const s = surfaceAt(u.x, u.z);
-  return s && s.h <= (u.y || 0) + STEP ? s.h : 0;
+  return s && s.h <= (u.y || 0) + STEP ? s.h : terrainY(u.x, u.z);
 }
 // Flanc d'une rampe : on n'y entre pas par le côté s'il est plus haut qu'un pas, sauf en passant dessous (assez haut).
 function blockedBySurface(u) {

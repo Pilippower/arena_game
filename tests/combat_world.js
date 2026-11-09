@@ -70,7 +70,7 @@ function combatWorld() {
     S.ctx.state.units.push(u);
     return u;
   };
-  return { ctx: S.ctx, unit, sounds, views };
+  return { ctx: S.ctx, unit, sounds, views, load: S.load }; // load : fichier de plus (ex. le mode PVE)
 }
 // emplacement d'un sort sur la barre de base d'une classe
 const spell = (ctx, cls, n) => ctx.CLASS[cls].skills.findIndex(s => s.n === n);

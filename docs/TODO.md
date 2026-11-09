@@ -55,3 +55,17 @@ Obliterate), druide (survie), mage (1v1 contre la mêlée sans le renforcer en 3
 **À remesurer** : depuis Backstab (ralentit de 60 % pendant 6 s) et le nouveau Shadowstep (dans le dos, 20 m,
 utilisable camouflé), le voleur gagne 9 duels sur 10 contre un prêtre (`node tools/duel.js shade oracle 10`, 16 sur 20
 avant) : probablement renforcé, à intégrer au plan. Corruption vole désormais la vie : démoniste à remesurer aussi.
+
+## Mode PVE : première proposition du 09/11/2026, détails à valider par l'utilisateur
+
+Livré : onglets PvP / PvE, monde « The Mistvale Road », 7 camps + gardien, château sur la colline (docs/SPEC.md).
+Choix faits sans validation (à confirmer ou changer) :
+1. Mort : retour au dernier **feu de camp** atteint au bout de 4 s, en pleine forme, sans pénalité ; pas de défaite.
+2. Hors combat (5 s sans coup), **régénération rapide** : 5 % des PV et de la ressource par seconde.
+3. Victoire = le gardien de la porte (Morvain the Hollow) vaincu : la herse se lève, écran « Victory » (temps, chutes,
+   dégâts, soins, éliminations), « Play again » / « Back to lobby ».
+4. Monstres = modèles de héros existants (morts-vivants, elfe, orc) et formes du druide (félin, ours) ; un vrai
+   bestiaire (loups, squelettes, araignées…) demanderait de nouveaux modèles libres de droits.
+5. Difficulté du lobby appliquée aux monstres ; dégâts des monstres réduits (28 à 50 % d'un héros), PV 30 à 40 % (gardien 120 %) : mesuré, chaque classe jouée par l'IA bat chaque camp.
+6. Pistes suivantes : quêtes / dialogues, butin et progression, intérieur du château, autres zones, coopération en
+   ligne, carte du monde (mini-carte).
