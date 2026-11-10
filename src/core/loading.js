@@ -8,6 +8,9 @@
 // - warmPreview() : à l'ouverture, chaque classe passe une fois dans la prévisualisation du lobby.
 const LOADING = { el: null, shown: false, token: 0 };
 const LOADING_MIN_MS = 3000; // durée minimale de l'écran au début d'un match (sinon il clignote)
+// ms : l'hôte attend au plus ce temps que ses amis aient chargé (10/11/2026 : 30 s ne suffisaient pas toujours à
+// charger l'aventure PVE sur un PC plus lent, qui commençait alors en retard)
+const NET_READY_WAIT = 90000;
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 function loadingShow(title) {
@@ -160,12 +163,15 @@ async function prepareMatch() {
     await nextFrame();
   await waitStableFrames();
   if (stale()) return;
-  // en ligne : l'hôte attend que son ami soit prêt ; l'invité le signale
+  // en ligne : l'hôte attend que ses amis soient prêts (NET_READY_WAIT au plus) ; l'invité le signale
   if (window.NET?.role === 'guest') netSend({ t: 'ready', round: S.round });
   if (window.NET?.role === 'host' && S.online) {
     loadingProgress(0.97, 'Waiting for your friends…');
     const t2 = performance.now();
-    while ([...NET.guests.values()].some(g => g.ready !== S.round && g.conn?.open) && performance.now() - t2 < 30000) {
+    while (
+      [...NET.guests.values()].some(g => g.ready !== S.round && g.conn?.open) &&
+      performance.now() - t2 < NET_READY_WAIT
+    ) {
       await sleep(80);
       if (stale()) return;
     }

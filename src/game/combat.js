@@ -337,6 +337,7 @@ function damage(src, t, v, crit = false, school = src.curSchool || 'physical') {
   }
   v = Math.round(v * (crit ? 1.5 : 1));
   recordDamage(src, t, Math.min(v, t.hp));
+  if (t.monster) pveThreat(t, src, v); // monde PVE : la menace suit les dégâts (src/pve/pve.js)
   t.hp = Math.max(0, t.hp - v);
   t.flash = 0.14;
   src.res = clamp(src.res + 6, 0, 100);
@@ -373,6 +374,7 @@ function heal(src, t, v) {
   v = Math.round(v * (1 - clamp(t.antiheal, 0, 0.6)) * (1 - damp));
   if (v <= 0) return;
   recordHeal(src, Math.min(v, t.maxHp - t.hp));
+  if (state?.pve && !src.monster) pveHealThreat(src, Math.min(v, t.maxHp - t.hp)); // soigner attire aussi les monstres
   t.hp = Math.min(t.maxHp, t.hp + v);
   addFloat(t, `+${v}`, '#6ff395');
   fx('burst', t.x, 1.2, t.z, [0.15, 1, 0.5], 0.52, 0.42);

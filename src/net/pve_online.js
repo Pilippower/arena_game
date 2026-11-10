@@ -34,8 +34,8 @@ function pveRosterUnit(u) {
   if (u.monster) Object.assign(r, { mob: u.monster.type, camp: u.monster.camp, sc: u.scale, form: u.form || null });
   return r;
 }
-// État envoyé à l'ami joué par `hero` : unités proches (héros toujours, pour les cadres du groupe), 0 pour les autres
-// (l'ami garde leur dernier état connu).
+// Unités pour l'ami joué par `hero` : proches (héros toujours, pour les cadres du groupe), 0 pour les autres (l'ami
+// garde leur dernier état connu) ; list : états de toutes les unités (net/online.js, netDelta).
 function pveSnapFor(hero, list) {
   return list.map((s, i) => {
     const u = state.units[i];
@@ -87,6 +87,7 @@ function pveGuestBuild(m) {
   });
   state.player = state.units[m.me];
   NET.snap = null;
+  NET.lastU = [];
   NET.lastEnded = false;
   hideResults();
   $('overlay').style.display = 'none';

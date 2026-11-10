@@ -39,6 +39,7 @@ function pveNet({ role = 'host', friends = [] } = {}) {
   for (const f of [
     'src/pve/castle.js',
     'src/pve/world.js',
+    'src/pve/nav.js',
     'src/pve/pve.js',
     'src/net/online.js',
     'src/net/pve_online.js'
@@ -56,6 +57,7 @@ function pveNet({ role = 'host', friends = [] } = {}) {
   const hero = i => ctx.state.units.find(u => u.remoteId === i);
   return { ...w, conns, errors, hero, W: ctx.PVE_WORLD };
 }
+const near = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg} (${a} ≠ ${b})`);
 const campSize = (ctx, id) => ctx.state.units.filter(u => u.monster?.camp === id).length;
 const FOUR = [
   ['oracle', 'elf'],
@@ -198,7 +200,7 @@ const FOUR = [
   const { ctx, conns, hero, W } = pveNet({ friends: FOUR.slice(0, 2) });
   const c = W.camps.at(-1);
   ctx.pvePlace(hero(2), c.x, c.z - 30, 0); // l'ami 2 au château, l'ami 1 au départ
-  run(ctx, 0.1);
+  run(ctx, 0.04); // un seul envoi (le premier contient toutes les unités de l'ami)
   const s1 = conns[0].last('s'),
     s2 = conns[1].last('s'),
     sent = (s, u) => !!s.u[ctx.state.units.indexOf(u)];
@@ -275,5 +277,116 @@ const FOUR = [
     'herse ouverte pour sa collision aussi'
   );
   ctx.netOnData({ t: 'say', text: 'The castle gate is open!', fanfare: true });
+}
+// ---------- Débit : seulement ce qui change (« mes amis lag ») ; l'ami reconstruit exactement l'état de l'hôte ----------
+{
+  const host = pveNet({ friends: FOUR.slice(0, 2) }),
+    { ctx, conns, W } = host,
+    C = W.camps[4];
+  ctx.state.units
+    .filter(u => u.team === 0)
+    .forEach((h, i) => {
+      h.ai = true;
+      h.aiP = ctx.AI_PROFILES.medium;
+      ctx.pvePlace(h, C.x + i, C.z - 7, 0);
+    });
+  run(ctx, 1);
+  conns[0].sent.length = 0;
+  run(ctx, 5); // combat du groupe contre un camp
+  const snaps = conns[0].sent.filter(m => m.t === 's'),
+    perSec = snaps.reduce((a, m) => a + JSON.stringify(m).length, 0) / 5;
+  assert.ok(
+    perSec < 60000,
+    `moins de 60 Ko/s par ami en plein combat (avant : 226 Ko/s) — ${Math.round(perSec / 1024)} Ko/s`
+  );
+  const idle = ctx.state.units.find(
+      u => u.monster && u.monster.mode === 'idle' && Math.hypot(u.x - C.x, u.z - C.z) < 60
+    ),
+    i = ctx.state.units.indexOf(idle);
+  assert.ok(
+    snaps.every(m => !m.u[i]),
+    'un monstre au repos n’est pas renvoyé'
+  );
+  // l'ami : tous les envois depuis la composition, puis son état = celui de l'hôte
+  const g2 = pveNet({ friends: FOUR.slice(0, 1) }),
+    gs = pveNet({ role: 'guest' });
+  gs.ctx.netOnData(g2.conns[0].last('roster'));
+  g2.ctx.state.player.cd[1] = 0.5; // une recharge qui revient à 0 : l'ami doit la voir finie
+  run(g2.ctx, 2);
+  for (const m of g2.conns[0].sent.filter(m => m.t === 's')) {
+    gs.ctx.netOnData(m);
+    gs.ctx.netGuestUpdate(0); // chaque envoi appliqué, comme dans le jeu
+  }
+  const fields = u => [Math.round(u.hp), u.alive, u.maxHp, u.cd.map(v => Math.round(v * 100))];
+  g2.ctx.state.units.forEach((u, k) => {
+    if (!gs.ctx.NET.snap.u[k]) return; // jamais envoyée : trop loin de l'ami
+    gs.ctx.netGuestUpdate(0);
+    assert.equal(
+      JSON.stringify(fields(gs.ctx.state.units[k])),
+      JSON.stringify(fields(u)),
+      `unité ${k} identique chez l’ami`
+    );
+  });
+}
+// ---------- Menace : celui qui fait le plus de dégâts prend l'aggro ; guerrier, DK et druide ours ×3 ; soins aussi ----------
+{
+  const { ctx, hero } = pveNet({
+    friends: [
+      ['arcanist', 'elf'],
+      ['oracle', 'human']
+    ]
+  });
+  const war = ctx.state.player,
+    mage = hero(1),
+    priest = hero(2),
+    camp = ctx.state.units.filter(u => u.monster?.camp === 0),
+    m = camp[0],
+    hit = (src, v) => ctx.damage(src, m, v, false, 'magic'),
+    top = () => ctx.pveThreatTarget(m);
+  for (const h of [war, mage, priest]) ctx.pvePlace(h, m.x + 4, m.z - 4, 0);
+  m.maxHp = m.hp = 1e7;
+  ctx.pveEngage(0, mage);
+  assert.equal(top(), mage, 'le camp attaque d’abord celui qui l’a alerté');
+  hit(mage, 1000);
+  m.target = mage;
+  hit(war, 350); // 1050 de menace pour un tank : plus que le mage, mais pas 110 %
+  assert.equal(top(), mage, 'la cible garde l’aggro tant qu’on ne la dépasse pas de 10 %');
+  hit(war, 100);
+  assert.equal(top(), war, 'le guerrier (×3) reprend l’aggro avec moins de dégâts');
+  m.target = war;
+  hit(mage, 2000);
+  assert.equal(top(), mage, 'un mage qui frappe beaucoup plus la reprend');
+  m.target = mage;
+  ctx.heal(priest, mage, 0); // rien à soigner : pas de menace
+  mage.hp = mage.maxHp - 2000;
+  const before = m.monster.threat.get(priest) || 0;
+  ctx.heal(priest, mage, 2000);
+  const fighting = ctx.state.units.filter(u => u.monster?.mode === 'fight' && u.alive).length;
+  near(
+    m.monster.threat.get(priest) - before,
+    (2000 * 0.5) / fighting,
+    1,
+    'soins : moitié, partagée entre les monstres en combat'
+  );
+  assert.equal(ctx.pveThreatMult(Object.assign({}, war)), 3, 'guerrier ×3');
+  assert.equal(ctx.pveThreatMult({ cls: 'reaver' }), 3, 'DK ×3');
+  assert.equal(ctx.pveThreatMult({ cls: 'warden', form: 'bear' }), 3, 'druide ours ×3');
+  assert.equal(ctx.pveThreatMult({ cls: 'warden', form: 'cat' }), 1, 'druide félin ×1');
+  ctx.damage(m, mage, 1e7);
+  run(ctx, 0.1);
+  assert.ok(!m.monster.threat.has(mage), 'héros tombé : sa menace est effacée (il revient à zéro)');
+  priest.hp = priest.maxHp * 0.1; // proie favorite de l'IA d'arène (soigneur blessé) : ignorée, la menace décide
+  ctx.state.aiFocus = {};
+  const targets = new Set();
+  for (let k = 0; k < 15; k++) {
+    run(ctx, 0.1);
+    targets.add(m.target);
+  }
+  assert.ok(
+    targets.size === 1 && targets.has(war),
+    'l’IA du monstre suit la menace (pas la cible commune de son équipe)'
+  );
+  ctx.pveReset(0);
+  assert.equal(m.monster.threat.size, 0, 'retour au camp : table vidée');
 }
 console.log('pve_online.test.js OK');

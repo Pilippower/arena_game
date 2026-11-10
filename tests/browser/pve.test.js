@@ -78,6 +78,32 @@ const isNoise = t => /Failed to load resource|net::ERR_|Failed to fetch|CORS/i.t
     assert.ok(pve.walls, 'murs du château');
     assert.ok(onHill < 0.05, 'héros posé sur le relief');
     assert.notEqual(pve.hud, 'Round 1 / 3', 'cadre du bas : objectif de l’aventure');
+    // écran de fin : tableau des héros triable comme en arène (clic sur Healing, puis second clic = ordre inverse)
+    const sorted = await page.evaluate(() => {
+      const hero = (slot, name, damage, healing, kills) => ({ slot, name, damage, healing, kills });
+      pveShowEnd({
+        time: 75,
+        deaths: 1,
+        heroes: [hero(0, 'Host', 900, 100, 3), hero(1, 'Ann', 300, 2500, 0), hero(2, 'Bob', 1500, 0, 5)]
+      });
+      const names = () => [...document.querySelectorAll('#resultsTeams tbody .rName')].map(td => td.textContent);
+      const order = [names()];
+      document.querySelector('#resultsTeams [data-sort="healing"]').click();
+      order.push(names());
+      document.querySelector('#resultsTeams [data-sort="healing"]').click();
+      order.push(names());
+      hideResults();
+      return order;
+    });
+    assert.deepEqual(
+      sorted,
+      [
+        ['Bob', 'You', 'Ann'],
+        ['Ann', 'You', 'Bob'],
+        ['Bob', 'You', 'Ann']
+      ],
+      'fin d’aventure : tri par dégâts, puis soins, puis soins inversés'
+    );
     // retour au lobby puis arène : tout redevient comme avant
     const back = await page.evaluate(() => {
       leaveMatch();

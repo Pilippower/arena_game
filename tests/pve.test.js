@@ -22,6 +22,7 @@ function pveWorld(cls = 'sentinel') {
   });
   w.load('src/pve/castle.js');
   w.load('src/pve/world.js');
+  w.load('src/pve/nav.js');
   w.load('src/pve/pve.js');
   ctx.Math.random = () => 0.5;
   ctx.pveStart(cls, 'human');
@@ -30,6 +31,7 @@ function pveWorld(cls = 'sentinel') {
     camp = id => ctx.state.units.filter(u => u.monster?.camp === id);
   return { ...w, p, W, camp };
 }
+const AI_MELEE = (ctx, u) => !!ctx.AI_ROLE[u.cls]?.melee;
 const near = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg} (${a} ≠ ${b})`);
 
 // ---------- Monde : route dégagée, colline du château, obstacles posés sur le relief ----------
@@ -314,14 +316,14 @@ const near = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg} (${a}
   assert.ok(p.grounded, 'au sol');
 }
 
-// ---------- Monstre qui ne voit plus le joueur (derrière un mur) : le camp rentre ----------
+// ---------- Joueur hors de vue et hors d'atteinte (de l'autre côté de la herse fermée) : le camp rentre ----------
+// (derrière un mur qui a une porte, le camp fait le tour : test « Murs » plus bas)
 {
   const { ctx, p, camp, W } = pveWorld();
   const id = W.camps.findIndex(c => c.indoor),
     foes = camp(id);
-  ctx.pvePlace(p, 15, 205, 0); // dans la grande salle, derrière le mur de la cour
+  ctx.pvePlace(p, 0, W.gate.z - 6, 0); // dehors, herse fermée
   ctx.pveEngage(id);
-  for (const m of foes) m.root = 99; // ils ne peuvent pas venir
   run(ctx, 3);
   assert.ok(
     foes.every(m => m.monster.mode === 'fight'),
@@ -330,7 +332,7 @@ const near = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg} (${a}
   run(ctx, 4);
   assert.ok(
     foes.every(m => m.monster.mode !== 'fight'),
-    'joueur hors de vue : le camp rentre'
+    'joueur hors de vue et hors d’atteinte : le camp rentre'
   );
 }
 
@@ -398,5 +400,66 @@ const near = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg} (${a}
   assert.ok(w.ctx.state.dampening > 0, 'arène : dampening actif');
   assert.equal(w.ctx.groundAt(a), 0, 'arène : sol plat');
   void p;
+}
+// ---------- Murs : les monstres en font le tour (poursuite et retour au camp passent par la porte) ----------
+{
+  const { ctx, p, W } = pveWorld();
+  const id = W.camps.findIndex(c => c.indoor && c.z < 190 && c.x > 0), // camp de la cour, côté est
+    C = W.camps[id],
+    door = W.castle.walls.find(w => w.az === 191.5 && w.ax === 3), // mur cour → grande salle, porte de 6 m au centre
+    camp = ctx.state.units.filter(u => u.monster?.camp === id);
+  for (const u of ctx.state.units) if (u.monster && u.monster.camp !== id && !u.monster.boss) u.alive = false;
+  ctx.pveSetGate(true);
+  const m = camp.find(u => AI_MELEE(ctx, u)); // mêlée : il doit venir au contact (un lanceur tire dès qu'il voit)
+  ctx.pvePlace(m, 15, 188, 0); // contre le mur, côté cour
+  ctx.pvePlace(p, 15, 197, Math.PI); // de l'autre côté du mur, dans la grande salle
+  p.maxHp = p.hp = 1e8;
+  ctx.pveEngage(id, p);
+  let viaDoor = false,
+    t = 0;
+  for (; t < 14 && Math.hypot(m.x - p.x, m.z - p.z) > 3; t += 0.1) {
+    run(ctx, 0.1);
+    if (Math.abs(m.z - door.az) < 2 && Math.abs(m.x) < door.ax) viaDoor = true;
+  }
+  assert.ok(Math.hypot(m.x - p.x, m.z - p.z) <= 3, `le monstre rejoint le héros derrière le mur (${t.toFixed(1)} s)`);
+  assert.ok(viaDoor, 'en passant par la porte');
+  // retour au camp depuis la grande salle
+  ctx.pveReset(id);
+  ctx.pvePlace(p, 0, W.start.z, 0); // le héros loin (plus d'alerte)
+  viaDoor = false;
+  for (t = 0; t < 20 && m.monster.mode !== 'idle'; t += 0.1) {
+    run(ctx, 0.1);
+    if (Math.abs(m.z - door.az) < 2 && Math.abs(m.x) < door.ax) viaDoor = true;
+    assert.ok(!m.visualSnap || m.monster.mode === 'idle', 'jamais replacé d’un coup chez lui (il était coincé)');
+  }
+  assert.equal(m.monster.mode, 'idle', `rentré au camp (${t.toFixed(1)} s)`);
+  assert.ok(viaDoor, 'retour par la porte');
+  void C;
+  // chemin de la cour à la grande salle : jamais en diagonale à travers un angle de mur
+  const G = ctx.pveNavGrid(),
+    path = ctx.pveNavPath(G, ctx.navCell(G, 15, 188), ctx.navCell(G, 15, 197));
+  assert.ok(path?.length > 10, 'un chemin par la porte');
+  for (let k = 1; k < path.length; k++) {
+    const a = path[k - 1],
+      b = path[k],
+      dx = (b % G.nx) - (a % G.nx),
+      dz = Math.floor(b / G.nx) - Math.floor(a / G.nx);
+    if (dx && dz) assert.ok(ctx.navOpen(G, a + dx) && ctx.navOpen(G, a + dz * G.nx), 'diagonale sans couper un coin');
+  }
+}
+
+// ---------- Héros derrière un mur mais joignable par une porte : le camp ne rentre pas, il fait le tour ----------
+{
+  const { ctx, p, camp, W } = pveWorld();
+  const id = W.camps.findIndex(c => c.indoor),
+    foes = camp(id);
+  ctx.pvePlace(p, 15, 205, 0); // grande salle, derrière le mur de la cour (porte au centre)
+  ctx.pveEngage(id);
+  for (const m of foes) m.root = 99; // immobiles : ils ne le verront pas de 8 s
+  run(ctx, 8);
+  assert.ok(
+    foes.every(m => m.monster.mode === 'fight'),
+    'chemin jusqu’au héros : toujours en combat après 8 s'
+  );
 }
 console.log('pve.test.js OK');

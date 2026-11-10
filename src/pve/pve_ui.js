@@ -98,25 +98,28 @@ function pveOutOfSight(u) {
   return !!u.monster && Math.hypot(u.x - state.player.x, u.z - state.player.z) > PVE.drawRange;
 }
 const pveClock = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+// Tableau des héros de l'écran de fin (tri au clic : resultsTableHTML / bindResultsSort, game/match.js).
+function pveEndTable(sum) {
+  const rows = sum.heroes.map(h => ({
+    u: state.units[h.slot],
+    s: h,
+    name: h.slot === state.player.slotIndex ? 'You' : partyEsc(h.name)
+  }));
+  $('resultsTeams').innerHTML =
+    `<h3 class="ally">Your journey · ${pveClock(sum.time)} · ${sum.deaths} fall${sum.deaths === 1 ? '' : 's'}</h3>` +
+    resultsTableHTML(rows, resultsMax(sum.heroes));
+  bindResultsSort(() => pveEndTable(sum));
+}
 // Écran de victoire : panneau de fin de match (ui/results.css), une ligne par héros du groupe (sum : pveSummary de
-// l'hôte, reçu aussi par les amis en ligne). L'ami attend que l'hôte relance.
+// l'hôte, reçu aussi par les amis en ligne), triable par dégâts, soins ou éliminations comme en arène (game/match.js).
+// L'ami attend que l'hôte relance.
 function pveShowEnd(sum) {
-  const top = k => Math.max(1, ...sum.heroes.map(h => h[k])),
-    cell = (h, k) =>
-      `<td class="rNum"><span>${Math.round(h[k])}</span><i style="width:${(100 * h[k]) / top(k)}%"></i></td>`,
-    row = h => {
-      const u = state.units[h.slot],
-        name = h.slot === state.player.slotIndex ? 'You' : partyEsc(h.name);
-      return `<tr><td class="rName">${resultsPortrait(u)}${name}</td><td>${RACE[u.race]?.name || ''} ${CLASS[u.cls].name}</td>${cell(h, 'damage')}${cell(h, 'healing')}${cell(h, 'kills')}</tr>`;
-    };
   $('resultsAgain').style.display = window.NET?.role === 'guest' ? 'none' : '';
   $('results').className = 'win';
   $('resultsTitle').textContent = 'Victory';
   $('resultsTitle').className = 'win';
   $('resultsScore').textContent = 'The Ashen King is vanquished';
-  $('resultsTeams').innerHTML =
-    `<h3 class="ally">Your journey · ${pveClock(sum.time)} · ${sum.deaths} fall${sum.deaths === 1 ? '' : 's'}</h3>` +
-    `<table class="resTable"><thead><tr><th>Hero</th><th>Class</th><th>Damage</th><th>Healing</th><th>Kills</th></tr></thead><tbody>${sum.heroes.map(row).join('')}</tbody></table>`;
+  pveEndTable(sum);
   $('results').style.setProperty('--rows', sum.heroes.length);
   $('results').style.display = 'flex';
   resultsFxStart(true);

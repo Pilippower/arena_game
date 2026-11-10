@@ -237,6 +237,7 @@ function aiDoorWaypoint(u, goal) {
 // sur le tablier = dans la zone du garde-corps (bridgeRail va 0,6 m au-delà du bord)
 const onDeck = v => !!arena.bridge && (v.y || 0) > arena.bridge.y - 0.6 && Math.abs(v.z) <= arena.bridge.halfW + 0.6;
 function aiWaypoint(u, goal) {
+  if (arena.walls) return pveNavWaypoint(u, goal); // monde PVE : chemin autour des murs (src/pve/nav.js)
   const door = aiDoorWaypoint(u, goal);
   if (door) return door;
   const B = arena.bridge,
@@ -437,7 +438,12 @@ function ai(u, dt) {
     if (onIt && Math.random() < P.peel) u.aiPeel = { t: onIt, until: now() + 3 };
   }
   if (u.aiPeel && (!u.aiPeel.t.alive || u.aiPeel.t.stealth || now() > u.aiPeel.until)) u.aiPeel = null;
-  let t = healer ? foes.filter(e => !(e.poly > 0)).sort((a, b) => d2(a, u) - d2(b, u))[0] : u.aiPeel?.t || teamFocus(u);
+  // monstre PVE : le héros en tête de sa table de menace (src/pve/pve.js), pas la cible commune de l'équipe
+  let t = u.monster
+    ? pveThreatTarget(u)
+    : healer
+      ? foes.filter(e => !(e.poly > 0)).sort((a, b) => d2(a, u) - d2(b, u))[0]
+      : u.aiPeel?.t || teamFocus(u);
   if (!t) {
     u.moving = false;
     return;

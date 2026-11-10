@@ -25,6 +25,7 @@ var NET = {
   sendT: 0,
   inT: 0,
   snap: null,
+  lastU: [], // invité : dernier état connu de chaque unité (l'hôte n'envoie que ce qui change, netDelta)
   lastEnded: false
 };
 const NET_PREFIX = 'arena-ascendant-',
@@ -346,8 +347,10 @@ function netOnData(m, g) {
   } else if (m.t === 'lobby')
     state?.units && leaveMatch(); // l'hôte est revenu au lobby : tout le groupe aussi
   else if (m.t === 'kicked') netLost('You were removed from the party.');
-  else if (m.t === 's') NET.snap = m;
-  else if (m.t === 'err') showError(m.text);
+  else if (m.t === 's') {
+    m.u = m.u.map((p, i) => (p ? (NET.lastU[i] = netUnpack(p)) : NET.lastU[i] || 0)); // 0 : inchangée depuis
+    NET.snap = m;
+  } else if (m.t === 'err') showError(m.text);
   else if (PVE_NET_MSG[m.t])
     PVE_NET_MSG[m.t](m); // annonces et fin de l'aventure PVE (net/pve_online.js)
   else if (m.t === 'results' && state?.units) {
@@ -376,6 +379,7 @@ function netSendRoster() {
   if (NET.role !== 'host' || !state?.units) return;
   for (const g of NET.guests.values()) {
     g.ready = 0;
+    g.sent = []; // nouvelles unités chez l'ami : tout est renvoyé (netDelta)
     netSendTo(g, {
       t: 'roster',
       pve: !!state.pve,
@@ -473,7 +477,6 @@ function netHostUpdate(dt) {
   NET.sendT = 0.05;
   const snap = {
     t: 's',
-    u: state.units.map(netUnitState),
     T: r2(state.t),
     pr: r2(state.prep || 0), // préparation : compte à rebours et portes (game/combat.js)
     el: r2(state.elapsed || 0),
@@ -485,12 +488,46 @@ function netHostUpdate(dt) {
     shr: state.shrines?.map(s => s.active),
     ev: NET.events.splice(0)
   };
-  if (!state.pve) return netSend(snap);
-  // PVE : à chaque ami les unités proches de son héros et sa progression (net/pve_online.js)
+  const packs = state.units.map(u => {
+    const p = netPack(netUnitState(u));
+    return { p, j: JSON.stringify(p) };
+  });
   for (const g of NET.guests.values()) {
+    if (!state.pve) {
+      netSendTo(g, { ...snap, u: netDelta(g, packs) });
+      continue;
+    }
+    // PVE : à chaque ami les unités proches de son héros et sa progression (net/pve_online.js)
     const hero = state.units.find(u => u.remoteId === g.id);
-    netSendTo(g, { ...snap, u: pveSnapFor(hero, snap.u), pv: pveNetState(hero) });
+    netSendTo(g, { ...snap, u: netDelta(g, pveSnapFor(hero, packs)), pv: pveNetState(hero) });
   }
+}
+// ---------- état compact : seulement ce qui change ----------
+// 10/11/2026, « mes amis lag, c'est injouable » : l'hôte envoyait 20 fois/s ~400 octets par unité, tous les champs
+// et toutes les unités (PVE, 3 héros en combat : 226 Ko/s par ami, ~7 Mbit/s à envoyer à 5 ; la liaison fiable empile
+// alors les paquets et le retard grandit). Désormais : un champ à sa valeur par défaut n'est pas envoyé (netPack /
+// netUnpack) et une unité inchangée depuis le dernier envoi à cet ami vaut 0 (il garde son dernier état, NET.lastU).
+const NET_UNIT_DEFAULT = {
+  x: 0, y: 0, z: 0, yaw: 0, hp: 0, mh: 0, res: 0, sh: 0, sn: null, al: false, mv: false, mp: 0, gr: false,
+  cast: null, stun: 0, root: 0, fear: 0, poly: 0, pk: null, sil: 0, slow: 0, sp: 0, burst: 0, sb: 0, si: 0,
+  st: false, form: null, act: 0, at: null, mob: null, tg: -1, tp: 0, au: [], ds: null, cct: null, lo: 0, ah: 0,
+  tr: 0, gcd: 0, gm: 1, cd: []
+}; // prettier-ignore
+const netIsDefault = (k, v) => v === undefined || v === NET_UNIT_DEFAULT[k] || (Array.isArray(v) && v.every(x => !x));
+function netPack(s) {
+  const p = {};
+  for (const k in s) if (!netIsDefault(k, s[k])) p[k] = s[k];
+  return p;
+}
+const netUnpack = p => ({ ...NET_UNIT_DEFAULT, ...p });
+// Unités pour un ami : 0 si absente (PVE, trop loin) ou inchangée depuis le dernier envoi à cet ami (g.sent).
+function netDelta(g, packs) {
+  g.sent ||= [];
+  return packs.map((q, i) => {
+    if (!q || g.sent[i] === q.j) return 0;
+    g.sent[i] = q.j;
+    return q.p;
+  });
 }
 // ---------- invité ----------
 function netGuestBuild(m) {
@@ -526,6 +563,7 @@ function netGuestBuild(m) {
   });
   state.player = state.units[m.me];
   NET.snap = null;
+  NET.lastU = [];
   NET.lastEnded = false;
   hideResults();
   $('overlay').style.display = 'none';
@@ -572,7 +610,7 @@ const NET_COPY = u => s => {
   u.trinket = s.tr;
   u.gcd = s.gcd;
   u.gcdMax = s.gm;
-  for (let i = 0; i < s.cd.length; i++) u.cd[i] = s.cd[i];
+  for (let i = 0; i < u.cd.length; i++) u.cd[i] = s.cd[i] || 0; // recharges à 0 : non envoyées (netPack)
 };
 function netGuestUpdate(dt) {
   if (!state?.units) return;

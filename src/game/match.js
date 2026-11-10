@@ -47,27 +47,48 @@ function endRound(win) {
 // Tri du récapitulatif : clic sur une colonne (Damage / Healing / Kills), second clic = ordre inverse.
 const RESULTS_SORT = { key: 'damage', dir: -1 };
 function renderResultsTables() {
-  const K = RESULTS_SORT.key,
-    all = state.units.map(u => ({ u, s: statOf(u) || { damage: 0, healing: 0, kills: 0 } })),
-    max = { damage: 1, healing: 1, kills: 1 };
-  for (const { s } of all) for (const k in max) max[k] = Math.max(max[k], s[k]);
-  const cell = (s, k) =>
-    `<td class="rNum${k === K ? ' sorted' : ''}${s[k] > 0 && s[k] === max[k] ? ' best' : ''}"><span>${Math.round(s[k])}</span><i style="width:${((100 * s[k]) / max[k]).toFixed(0)}%"></i></td>`;
-  const head = (k, label) =>
-    `<th class="sortable${k === K ? ' sorted' : ''}" data-sort="${k}">${label}${k === K ? (RESULTS_SORT.dir < 0 ? ' ▼' : ' ▲') : ''}</th>`;
+  const all = state.units.map(u => ({
+      u,
+      s: statOf(u) || { damage: 0, healing: 0, kills: 0 },
+      name: u === state.player ? 'You' : u.name
+    })),
+    max = resultsMax(all.map(r => r.s)),
+    mine = state.player.team; // en ligne, l'invité est dans l'équipe 1
   const table = team =>
-    `<table class="resTable"><thead><tr><th>Hero</th><th>Class</th>${head('damage', 'Damage')}${head('healing', 'Healing')}${head('kills', 'Kills')}</tr></thead><tbody>${all
-      .filter(x => x.u.team === team)
-      .sort((x, y) => (x.s[K] - y.s[K]) * RESULTS_SORT.dir)
-      .map(
-        ({ u, s }) =>
-          `<tr><td class="rName">${resultsPortrait(u)}${u === state.player ? 'You' : u.name}</td><td>${RACE[u.race]?.name || ''} ${CLASS[u.cls].name}</td>${cell(s, 'damage')}${cell(s, 'healing')}${cell(s, 'kills')}</tr>`
-      )
-      .join('')}</tbody></table>`;
-  const mine = state.player.team; // en ligne, l'invité est dans l'équipe 1
+    resultsTableHTML(
+      all.filter(x => x.u.team === team),
+      max
+    );
   $('resultsTeams').innerHTML =
     `<h3 class="ally">Your team</h3>${table(mine)}<h3 class="enemy">Enemy team</h3>${table(1 - mine)}`;
   $('results').style.setProperty('--rows', $('resultsTeams').querySelectorAll('tbody tr').length); // taille mobile
+  bindResultsSort(renderResultsTables);
+}
+// Plus grande valeur de chaque colonne (longueur des barres, meilleur score en évidence), au moins 1.
+function resultsMax(stats) {
+  const max = { damage: 1, healing: 1, kills: 1 };
+  for (const s of stats) for (const k in max) max[k] = Math.max(max[k], s[k]);
+  return max;
+}
+// Tableau du récapitulatif (arène, et fin d'aventure PVE : src/pve/pve_ui.js) : rows = [{ u, s, name }], triées
+// selon RESULTS_SORT ; name déjà sûr (échappé par l'appelant s'il vient d'un autre navigateur).
+function resultsTableHTML(rows, max) {
+  const K = RESULTS_SORT.key,
+    cell = (s, k) =>
+      `<td class="rNum${k === K ? ' sorted' : ''}${s[k] > 0 && s[k] === max[k] ? ' best' : ''}"><span>${Math.round(s[k])}</span><i style="width:${((100 * s[k]) / max[k]).toFixed(0)}%"></i></td>`,
+    head = (k, label) =>
+      `<th class="sortable${k === K ? ' sorted' : ''}" data-sort="${k}">${label}${k === K ? (RESULTS_SORT.dir < 0 ? ' ▼' : ' ▲') : ''}</th>`;
+  return `<table class="resTable"><thead><tr><th>Hero</th><th>Class</th>${head('damage', 'Damage')}${head('healing', 'Healing')}${head('kills', 'Kills')}</tr></thead><tbody>${rows
+    .slice()
+    .sort((x, y) => (x.s[K] - y.s[K]) * RESULTS_SORT.dir)
+    .map(
+      ({ u, s, name }) =>
+        `<tr><td class="rName">${resultsPortrait(u)}${name}</td><td>${RACE[u.race]?.name || ''} ${CLASS[u.cls].name}</td>${cell(s, 'damage')}${cell(s, 'healing')}${cell(s, 'kills')}</tr>`
+    )
+    .join('')}</tbody></table>`;
+}
+// Clic sur une colonne : tri par elle (second clic : ordre inverse), puis render() redessine le récapitulatif.
+function bindResultsSort(render) {
   $('resultsTeams')
     .querySelectorAll('[data-sort]')
     .forEach(
@@ -75,7 +96,7 @@ function renderResultsTables() {
         (th.onclick = () => {
           RESULTS_SORT.dir = RESULTS_SORT.key === th.dataset.sort ? -RESULTS_SORT.dir : -1;
           RESULTS_SORT.key = th.dataset.sort;
-          renderResultsTables();
+          render();
         })
     );
 }

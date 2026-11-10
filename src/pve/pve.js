@@ -15,7 +15,7 @@ const PVE = {
   respawn: 4, // s avant de revenir au dernier feu de camp
   leash: 38, // m : un monstre entraîné plus loin de son camp y retourne
   homeSpeed: 1.6, // vitesse du retour au camp (× vitesse de course)
-  lostSight: 6, // s sans voir aucun héros (derrière un mur du château, hors d'atteinte) : le camp rentre
+  lostSight: 6, // s sans voir aucun héros ni avoir de chemin jusqu'à sa cible (hors d'atteinte) : le camp rentre
   checkpointR: 7, // m : rayon d'un feu de camp
   plateRange: 48, // m : barres de nom affichées en deçà (render/overlay.js)
   drawRange: 100, // m : monstres dessinés et animés en deçà (render/heroes3d.js), la brume cache le reste
@@ -31,7 +31,15 @@ const PVE = {
   campMax: 8,
   mobHp: 0.15,
   mobDmg: 0.15,
-  bossHp: 0.5
+  bossHp: 0.5,
+  // Menace (10/11/2026, « celui qui fait le plus de dégâts prend l'aggro ; guerrier, DK et druide ours plus ») : chaque
+  // monstre garde une table héros → menace (dégâts reçus × tankThreat pour un tank, soins effectifs × healThreat
+  // partagés entre les monstres en combat) et frappe le premier ; il ne change de cible que si un autre dépasse la
+  // sienne de switchThreat (110 %, comme dans les MMO).
+  tankThreat: 3,
+  tanks: ['sentinel', 'reaver'], // + druide en forme d'ours (u.form === 'bear')
+  healThreat: 0.5,
+  switchThreat: 1.1
 };
 // Le monde PVE prend la place de la carte d'arène dans `arena` (lue par la collision, la ligne de vue, la caméra et le
 // décor) ; applyMap (data/maps.js) remet la carte d'arène au retour au lobby.
@@ -66,7 +74,7 @@ function pveMonster(type, x, z, camp, i, heroes) {
   u.maxHp = u.hp = Math.round(u.maxHp * T.hp * hpScale);
   u.scale = T.scale || 1;
   const yaw = Math.random() * Math.PI * 2;
-  u.monster = { type, camp, mode: 'idle', boss: !!T.boss, aggro: T.aggro, home: { x, z, yaw } };
+  u.monster = { type, camp, mode: 'idle', boss: !!T.boss, aggro: T.aggro, home: { x, z, yaw }, threat: new Map() };
   u.brain = pveBrain;
   return pvePlace(u, x, z, yaw);
 }
@@ -185,19 +193,51 @@ function pveNoticed(u) {
     ) || null
   );
 }
-// Tout le camp attaque ensemble le héros qui l'a alerté.
+// Tout le camp attaque ensemble le héros qui l'a alerté (un peu de menace : il reste la cible tant que personne ne frappe).
 function pveEngage(campId, hero = state.player) {
   for (const m of pveCamp(campId))
     if (m.monster.mode === 'idle') {
       m.monster.mode = 'fight';
       m.monster.seenAt = now();
+      if (!m.monster.threat.size) m.monster.threat.set(hero, 1);
       setTarget(m, hero);
     }
+}
+// ---------- Menace ----------
+const pveThreatMult = u => (u.form === 'bear' || PVE.tanks.includes(u.cls) ? PVE.tankThreat : 1);
+// Dégâts d'un héros sur un monstre (damage, game/combat.js).
+function pveThreat(m, src, v) {
+  if (src.team !== 0 || !m.monster) return;
+  const T = m.monster.threat;
+  T.set(src, (T.get(src) || 0) + v * pveThreatMult(src));
+}
+// Soins d'un héros (heal, game/combat.js) : menace partagée entre les monstres qui combattent le groupe.
+function pveHealThreat(src, v) {
+  if (src.team !== 0 || v <= 0) return;
+  const foes = state.units.filter(m => m.monster?.mode === 'fight' && m.alive);
+  for (const m of foes) pveThreat(m, src, (v * PVE.healThreat) / foes.length / pveThreatMult(src));
+}
+// Cible d'un monstre (ai, game/ai.js) : la plus forte menace parmi les héros debout et visibles ; la cible actuelle
+// garde l'aggro tant qu'aucun autre ne la dépasse de switchThreat.
+function pveThreatTarget(u) {
+  const T = u.monster.threat,
+    ok = h => h.alive && !h.gone && !h.stealth && !(h.poly > 0),
+    cur = u.target && T.has(u.target) && ok(u.target) ? u.target : null;
+  let best = null,
+    top = 0;
+  for (const [h, v] of T)
+    if (ok(h) && v > top) {
+      top = v;
+      best = h;
+    }
+  if (!best) return pveNearestHero(u);
+  return cur && top <= T.get(cur) * PVE.switchThreat ? cur : best;
 }
 // Groupe entier mort ou monstre entraîné trop loin : le camp rentre et se soigne (l'IA de l'arène ne le guide plus).
 function pveReset(campId) {
   for (const m of pveCamp(campId)) {
     m.monster.mode = 'reset';
+    m.monster.threat.clear();
     endCast(m, 'stop');
     m.mobility = null;
     m.target = m.lastEnemy = null;
@@ -217,7 +257,8 @@ function pveWalkHome(u, dt) {
     u.yaw = H.yaw;
     return;
   }
-  const h = aiStep(u, Math.atan2(H.x - u.x, H.z - u.z), Math.min(d, moveSpeed(u) * PVE.homeSpeed * dt));
+  const wp = pveNavWaypoint(u, H), // autour des murs (src/pve/nav.js)
+    h = aiStep(u, Math.atan2(wp.x - u.x, wp.z - u.z), Math.min(d, moveSpeed(u) * PVE.homeSpeed * dt));
   if (h == null) {
     pvePlace(u, H.x, H.z, H.yaw); // coincé : il rentre directement
     u.visualSnap = true;
@@ -242,7 +283,8 @@ function pveBrain(u, dt) {
   }
   const alive = pveHeroes().filter(h => h.alive);
   if (!alive.length || flatDist(u, M.home) > PVE.leash) return pveReset(M.camp);
-  if (alive.some(h => los(u, h))) M.seenAt = now();
+  if (alive.some(h => los(u, h)) || u.nav?.path?.length)
+    M.seenAt = now(); // il voit, ou fait le tour d'un mur
   else if (now() - M.seenAt > PVE.lostSight) return pveReset(M.camp);
   ai(u, dt);
 }
@@ -264,6 +306,7 @@ function pveHeroUpdate(p, dt) {
     pveCheckpoints(p);
   } else if (p.pveDeadAt == null) {
     p.pveDeadAt = now();
+    for (const m of state.units) m.monster?.threat.delete(p); // un héros tombé n'a plus de menace
     R.deaths++;
     pveTell(p, 'You have fallen');
   } else if (now() - p.pveDeadAt > PVE.respawn) pveRespawn(p);
@@ -285,6 +328,7 @@ function pveUseLever(u = state.player) {
 function pveSetGate(open) {
   state.pve.gateOpen = open;
   for (const w of arena.walls) if (w.gate) w.open = open;
+  pveNavReset(); // les cases de la porte changent (src/pve/nav.js)
 }
 function pveOpenGate() {
   pveSetGate(true);

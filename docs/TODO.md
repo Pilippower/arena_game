@@ -59,6 +59,7 @@ avant) : probablement renforcé, à intégrer au plan. Corruption vole désormai
 ## Mode PVE : première proposition du 09/11/2026, détails à valider par l'utilisateur
 
 Livré : onglets PvP / PvE, monde « The Mistvale Road », 7 camps + gardien, château à traverser jusqu'au roi au sommet du donjon, aventure en groupe en ligne de 5 avec camps agrandis (docs/SPEC.md).
+Menace : les groupes sans soigneur perdent certains gros camps (le tank encaisse seul) ; à surveiller en vrai.
 Groupe, choix faits sans validation : un ami qui part quitte l'aventure (son héros reste à terre, pas d'IA) ; la progression (dernier feu, herse) est commune au groupe ; un ami qui rejoint le groupe en cours d'aventure attend la suivante.
 Choix faits sans validation (à confirmer ou changer) :
 1. Mort : retour au dernier **feu de camp** atteint au bout de 4 s, en pleine forme, sans pénalité ; pas de défaite.
