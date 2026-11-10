@@ -64,3 +64,31 @@ body.pve #round,
 body.pve #score {
   white-space: nowrap;
 }
+/* groupe en ligne de l'aventure (ui/party.js, partyPveTeamHTML) : une seule équipe, places sur deux colonnes (cinq places
+   sur une colonne poussaient Start hors du cadre) ; bandeau centré, à la largeur d'une colonne */
+#overlay #partyBox .pTeams.pvePartyTeam {
+  grid-template-columns: 1fr;
+}
+body.lobby:not(.mobile-mode) #overlay #partyBox .pTeams.pvePartyTeam .pTeam {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: start;
+  gap: 0.5em;
+}
+body.lobby:not(.mobile-mode) #overlay #partyBox .pTeams.pvePartyTeam .pRibbon {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: 50%;
+  padding-bottom: calc(50% * 48 / 410);
+}
+/* carte de l'aventure : l'illustration en fond couvre toujours toute la carte, quelles que soient ses proportions,
+   cadrée sur le château (en haut à droite de l'image) ; le bandeau doré (image transparente au-dessus) se pose dessus */
+#overlay .mapArt.pveArt {
+  background: #05081a url(../../assets/ui/lobby2/pve_art.webp) 72% 0 / cover no-repeat;
+}
+#overlay .mapCard:hover .mapArt.pveArt {
+  filter: brightness(1.15);
+}
+#overlay .mapCard:hover .mapArt.pveArt img {
+  filter: none; /* déjà éclairé par son conteneur */
+}

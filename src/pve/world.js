@@ -2,17 +2,20 @@
 // Monde PVE « The Mistvale Road » (données, aucune règle ni dessin) : relief (heightAt), route sinueuse (roadX), arbres
 // et rochers (obstacles = cercles comme les piliers de l'arène, data/maps.js), camps de monstres, feux de camp (points
 // de reprise) et porte du château en haut de la colline. Lu par la mécanique (src/pve/pve.js) et le décor
-// (src/render/map_pve.js, via arena.world). Le mode PvP n'utilise rien de ce fichier.
+// (src/render/map_pve.js, via arena.world). Le château (sols, murs, tours, camps intérieurs) : src/pve/castle.js,
+// chargé avant. Le mode PvP n'utilise rien de ce fichier.
 // Repère : on part au sud (z < 0) et l'on monte vers le château, au nord (z > 0).
 const PVE_WORLD = (() => {
   const smooth = (a, b, x) => {
     const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
     return t * t * (3 - 2 * t);
   };
-  const HALF_X = 60,
-    HALF_Z = 156,
-    HILL = { h: 16, from: 80, to: 138 }, // colline du château : montée de 16 m entre z = 80 et z = 138
-    GATE = { x: 0, z: 150 }; // porte du château (fin de la route)
+  const C = PVE_CASTLE,
+    HALF_X = 60,
+    HALF_Z = 156, // vallée (de la falaise du départ à la porte) ; le monde continue au nord dans le château
+    WORLD_Z = 312, // demi-longueur des limites du monde (jusqu'au fond du château ; au sud : mur invisible du château)
+    HILL = { h: C.base, from: 80, to: 138 }, // colline du château : montée de 16 m entre z = 80 et z = 138
+    GATE = C.gate; // porte du château (fin de la route)
   // Centre de la route : grandes courbes dans la vallée, lacets dans la montée, droite devant la porte.
   function roadX(z) {
     const sway = 16 * Math.sin(z * 0.019 + 0.4) + 7 * Math.sin(z * 0.043 + 1.7),
@@ -21,8 +24,10 @@ const PVE_WORLD = (() => {
   }
   const ROAD_HALF = 3.2; // demi-largeur de la route (m)
   // Hauteur du sol : colline au nord, bosses douces hors de la route (aplanie), crêtes boisées sur les bords (limites
-  // naturelles du monde), falaise derrière le départ, esplanade plate devant la porte.
+  // naturelles du monde), falaise derrière le départ, esplanade plate devant la porte ; dans le château, ses sols.
   function heightAt(x, z) {
+    const floor = z >= GATE.z ? C.floorAt(x, z) : null;
+    if (floor != null) return floor;
     const ax = Math.abs(x),
       hill = HILL.h * smooth(HILL.from, HILL.to, z) * (1 - 0.55 * smooth(28, 60, ax)),
       off = smooth(ROAD_HALF + 0.8, ROAD_HALF + 7, Math.abs(x - roadX(z))),
@@ -46,7 +51,10 @@ const PVE_WORLD = (() => {
     wraith: { name: 'Rune Wraith', cls: 'arcanist', race: 'elf', hp: 0.33, dmg: 0.28, aggro: 17 },
     bear: { name: 'Hollow Bear', cls: 'warden', race: 'dwarf', form: 'bear', hp: 0.36, dmg: 0.33, aggro: 13 },
     reaver: { name: 'Bone Reaver', cls: 'reaver', race: 'undead', hp: 0.4, dmg: 0.33, aggro: 14 },
-    boss: {
+    knight: { name: 'Ashen Knight', cls: 'sentinel', race: 'human', hp: 0.36, dmg: 0.3, aggro: 14 },
+    // gardien de la porte (gate) : il garde le levier de la herse. escort : monstre ajouté par héros en plus dans le
+    // groupe (src/pve/pve.js, pveCampMobs)
+    gatekeeper: {
       name: 'Morvain the Hollow',
       cls: 'reaver',
       race: 'orc',
@@ -54,10 +62,25 @@ const PVE_WORLD = (() => {
       dmg: 0.5,
       aggro: 20,
       scale: 1.3,
-      boss: true
+      gate: true,
+      escort: 'thrall'
+    },
+    // roi du château, au sommet du donjon : sa mort termine l'aventure (boss)
+    king: {
+      name: 'Varkhul the Ashen King',
+      cls: 'warlock',
+      race: 'undead',
+      hp: 1.6,
+      dmg: 0.45,
+      aggro: 22,
+      scale: 1.5,
+      boss: true,
+      escort: 'knight'
     }
   };
-  // Camps le long de la route : z, côté (décalage depuis le centre de la route, m), monstres.
+  // Camps le long de la route (z, côté = décalage depuis le centre de la route, m, monstres), puis ceux du château.
+  // guardian : camp d'un gardien (porte ou roi) ; indoor : dans le château (décor sans pieux ni ossements).
+  const guardian = mobs => mobs.some(t => MOBS[t].gate || MOBS[t].boss);
   const CAMPS = [
     { z: -112, side: 6, mobs: ['prowler', 'prowler'] },
     { z: -74, side: -7, mobs: ['thrall', 'cultist'] },
@@ -66,17 +89,22 @@ const PVE_WORLD = (() => {
     { z: 42, side: 7, mobs: ['reaver', 'cultist', 'prowler'] },
     { z: 86, side: -6, mobs: ['thrall', 'thrall', 'wraith'] },
     { z: 118, side: 6, mobs: ['cultist', 'reaver'] },
-    { z: 142, side: 0, mobs: ['boss'] }
-  ].map((c, i) => ({ id: i, x: roadX(c.z) + c.side, z: c.z, mobs: c.mobs, boss: c.mobs.includes('boss') }));
+    { z: 142, side: 0, mobs: ['gatekeeper'] }
+  ]
+    .map(c => ({ x: roadX(c.z) + c.side, z: c.z, mobs: c.mobs }))
+    .concat(C.camps.map(c => ({ ...c, indoor: true })))
+    .map((c, i) => ({ ...c, id: i, boss: guardian(c.mobs) }));
   // Feux de camp : points de reprise, au bord de la route (on revient au milieu de la route, à côté du feu, après une
   // mort), le premier au départ.
-  const CHECKPOINTS = [-148, -52, 22, 66, 104].map((z, i) => ({
-    id: i,
-    x: roadX(z) + ROAD_HALF + 2.2,
-    z,
-    spawn: { x: roadX(z), z },
-    name: ['Wayfarer’s Camp', 'Old Mill Fire', 'Hollow Oak', 'Foot of the Hill', 'Watchman’s Rest'][i]
-  }));
+  const CHECKPOINTS = [-148, -52, 22, 66, 104]
+    .map((z, i) => ({
+      x: roadX(z) + ROAD_HALF + 2.2,
+      z,
+      spawn: { x: roadX(z), z },
+      name: ['Wayfarer’s Camp', 'Old Mill Fire', 'Hollow Oak', 'Foot of the Hill', 'Watchman’s Rest'][i]
+    }))
+    .concat(C.checkpoints.map(c => ({ ...c, indoor: true })))
+    .map((c, i) => ({ ...c, id: i }));
   const START = { x: roadX(-146), z: -146, yaw: 0 };
   // Obstacles : arbres, rochers, pierres levées, tirés au hasard (graine fixe) hors de la route, des camps et des feux.
   function obstacles() {
@@ -101,21 +129,32 @@ const PVE_WORLD = (() => {
     }
     return out;
   }
+  // Tours et colonnes du château : obstacles ronds comme les arbres (collision, ligne de vue).
+  const structures = () => [
+    ...C.towers.map(t => ({ ...t, base: C.base, kind: 'tower', pad: 0.5 })),
+    ...C.columns.map(c => ({ ...c, base: C.base, kind: 'column', pad: 0.5 }))
+  ];
   return {
     id: 'mistvale',
     name: 'The Mistvale Road',
     desc: 'Follow the misty road to the castle on the hill.',
     halfX: HALF_X,
-    halfZ: HALF_Z,
+    halfZ: WORLD_Z,
+    valleyZ: HALF_Z,
     roadHalf: ROAD_HALF,
     hill: HILL,
     gate: GATE,
+    lever: C.lever,
+    top: C.top,
+    castle: C,
     start: START,
     roadX,
     heightAt,
     mobs: MOBS,
     camps: CAMPS,
     checkpoints: CHECKPOINTS,
-    obstacles: obstacles()
+    obstacles: obstacles(),
+    structures: structures(),
+    walls: C.walls
   };
 })();

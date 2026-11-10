@@ -108,6 +108,7 @@ canvas.addEventListener('mousemove', e => {
   if (document.pointerLockElement) return;
   const r = canvas.getBoundingClientRect(),
     u = unitAtScreen(e.clientX - r.left, e.clientY - r.top);
+  if (pveLeverAtScreen(e.clientX - r.left, e.clientY - r.top)) return setGameCursor('ally'); // levier : main
   setGameCursor(!u || u === state?.player ? 'gauntlet' : u.team !== state.player.team ? 'sword' : 'ally');
 });
 canvas.addEventListener('mouseleave', () => setGameCursor('gauntlet'));

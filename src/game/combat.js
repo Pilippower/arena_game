@@ -218,10 +218,12 @@ function los(a, b) {
   // salles de départ : on ne voit l'arène (ou l'autre salle) que par la porte, et seulement ouverte
   if (!seesThroughDoors(a, b, gatesOpen())) return false;
   const low = Math.min(a.y || 0, b.y || 0) + 1.2;
+  if (arena.walls && wallCuts(a, b, low)) return false; // murs du château (monde PVE)
   return !arena.pillars.some(
     p => p.los !== false && p.h > low && segmentCircle(a.x, a.z, b.x, b.z, p.x, p.z, p.r + 0.18)
   );
 }
+const WALL_PAD = 0.6; // m : distance du corps à un mur du château (monde PVE)
 // Murs : on reste dans sa zone (arène ou salle de départ, d'après la position au début du pas) et, porte ouverte, dans
 // son passage ; contre un mur on glisse le long.
 function resolveWalls(u) {
@@ -248,6 +250,7 @@ function resolveWalls(u) {
       u.z = p.z + (dz / d) * m;
     }
   }
+  if (arena.walls) pushOutOfWalls(u, WALL_PAD); // murs du château (monde PVE)
 }
 // Couleur des dégâts selon l'école (coups d'arme : rouge) ; un coup critique s'affiche en plus gros (big).
 const SCHOOL_COLOR = {
@@ -590,6 +593,7 @@ function stepBehind(u, t, gap = 1.2) {
 }
 function pointWalkable(x, z, margin = 0.68, y = 0) {
   if (!zoneRects(zoneOf(x, z), margin, gatesOpen()).some(R => inRect(R, x, z))) return false;
+  if (wallAt(x, z, margin, y)) return false; // murs du château (monde PVE)
   // un obstacle plus bas que soi (sous le pont) ne gêne pas
   return !arena.pillars.some(p => p.h > y && Math.hypot(x - p.x, z - p.z) < pillarReach(p, margin - PILLAR_PAD));
 }

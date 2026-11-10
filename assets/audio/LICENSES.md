@@ -5,7 +5,7 @@ regroupés dans `sfx_pack.js` par `node tools/build_sfx_pack.js` (sources dans `
 
 | Fichier | Contenu | Source | Auteur | Licence |
 |---|---|---|---|---|
-| `lobby.mp3`, `game.mp3`, `click.wav` | musiques et clic d'interface | fournis par l'utilisateur | — | — |
+| `lobby.mp3`, `game.mp3`, `pve.mp3`, `click.wav` | musiques et clic d'interface | fournis par l'utilisateur | — | — |
 | `sfx_pack.js` › `effort_m` | cris d'effort masculins | [male grunt/yelling sounds](https://opengameart.org/content/male-gruntyelling-sounds) | HaelDB | CC0 (double licence CC0 / OGA-BY 3.0, utilisé sous CC0) |
 | `sfx_pack.js` › `effort_f` | cris d'effort féminins | [Female Warrior Grunts](https://opengameart.org/content/female-warrior-grunts) | SkyRae | **CC-BY 3.0** (attribution : « Female Warrior Grunts » by SkyRae, opengameart.org) |
 | `sfx_pack.js` › `whoosh` | lame qui fend l'air | [20 sword sound effects (attacks and clashes)](https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes) | StarNinjas | CC0 |

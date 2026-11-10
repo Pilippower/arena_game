@@ -41,8 +41,8 @@ const isNoise = t => /Failed to load resource|net::ERR_|Failed to fetch|CORS/i.t
     });
     assert.deepEqual(
       { ...lobby, chips: undefined },
-      { pve: true, sizes: false, maps: false, card: true, multi: false, chips: undefined },
-      'onglet PvE : carte de l’aventure, sans format ni arènes ni multijoueur'
+      { pve: true, sizes: false, maps: false, card: true, multi: true, chips: undefined },
+      'onglet PvE : carte de l’aventure, sans format ni arènes, avec le multijoueur (groupe de 5)'
     );
     assert.match(lobby.chips, /PvE[\s\S]*The Mistvale Road/, 'récapitulatif de l’aventure');
     await page.waitForFunction(
@@ -62,6 +62,7 @@ const isNoise = t => /Failed to load resource|net::ERR_|Failed to fetch|CORS/i.t
         monsters: state.units.filter(u => u.monster).length,
         cls: p.cls,
         relief: arena.heightAt === W.heightAt,
+        walls: arena.walls.length === W.walls.length,
         bodyPve: document.body.classList.contains('pve'),
         hud: $('round').textContent
       };
@@ -74,6 +75,7 @@ const isNoise = t => /Failed to load resource|net::ERR_|Failed to fetch|CORS/i.t
     assert.ok(pve.monsters >= 15, 'camps de monstres');
     assert.equal(pve.cls, 'oracle', 'héros choisi au lobby');
     assert.ok(pve.relief && pve.bodyPve, 'relief et interface PVE');
+    assert.ok(pve.walls, 'murs du château');
     assert.ok(onHill < 0.05, 'héros posé sur le relief');
     assert.notEqual(pve.hud, 'Round 1 / 3', 'cadre du bas : objectif de l’aventure');
     // retour au lobby puis arène : tout redevient comme avant
@@ -83,6 +85,7 @@ const isNoise = t => /Failed to load resource|net::ERR_|Failed to fetch|CORS/i.t
       const r = {
         heightAt: arena.heightAt,
         world: arena.world,
+        walls: arena.walls,
         bodyPve: document.body.classList.contains('pve'),
         pillars: arena.pillars.filter(p => p.kind !== 'rampPost').length === MAPS[MAP_ID].pillars.length,
         maps: getComputedStyle($('mapChoices')).display !== 'none'
@@ -92,7 +95,7 @@ const isNoise = t => /Failed to load resource|net::ERR_|Failed to fetch|CORS/i.t
     });
     assert.deepEqual(
       back,
-      { heightAt: null, world: null, bodyPve: false, pillars: true, maps: true },
+      { heightAt: null, world: null, walls: null, bodyPve: false, pillars: true, maps: true },
       'lobby : carte d’arène et interface PvP rétablies'
     );
     await page.waitForFunction(() => state?.units?.length === 6 && !state.loading, null, { timeout: 120000 });

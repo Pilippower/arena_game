@@ -10,6 +10,7 @@
 // mouton) ou en cas d'écart > 3 m, l'invité reprend la position de l'hôte.
 // Points d'accroche : update() (sim.js), resetRound / tryPlayerSkill / useTrinket (combat.js), setTarget (rules.js),
 // showResults / leaveMatch (match.js), bouton Play et choix de classe du lobby (settings.js), onglet Multiplayer (ui/party.js).
+// Aventure PVE en groupe : net/pve_online.js (appelé ici seulement quand state.pve existe).
 var NET = {
   // var : visible comme window.NET par les points d'accroche
   role: null, // 'host' | 'guest' | null
@@ -134,6 +135,7 @@ function netPartySync() {
     for (const g of NET.guests.values())
       netSendTo(g, {
         t: 'party',
+        pve: lobbyIsPve(),
         code: NET.code,
         size: TEAM_SIZE,
         map: MAP_ID,
@@ -195,11 +197,17 @@ function netGuestJoined(c) {
   c.on('close', () => netGuestLeft(g));
   netPartySync();
 }
-// personnage d'un ami parti (du groupe ou seulement du match) : l'IA le joue, la partie continue
+// personnage d'un ami parti (du groupe ou seulement du match) : l'IA le joue, la partie continue ; en PVE, son héros
+// quitte l'aventure (pveHeroGone, src/pve/pve.js : pas d'IA qui partirait seule vers les camps)
 function netUnitToAI(g, why) {
   if (state?.units)
     for (const u of state.units)
       if (u.remoteId === g.id) {
+        if (state.pve) {
+          pveHeroGone(u);
+          showError?.(`${g.name} left the adventure`);
+          continue;
+        }
         u.remote = false;
         u.remoteId = null;
         u.ai = true;
@@ -326,16 +334,22 @@ function netOnData(m, g) {
       }
     } else if (m.t === 'trinket') useTrinket(u);
     else if (m.t === 'target') setTarget(u, state.units[m.i] || null);
+    else if (m.t === 'lever') pveUseLever(u); // PVE : levier de la porte (src/pve/pve.js)
     return;
   }
   // invité
   if (m.t === 'roster') netGuestBuild(m);
-  else if (m.t === 'party') ((NET.party = m), partyRender());
-  else if (m.t === 'lobby')
+  else if (m.t === 'party') {
+    NET.party = m;
+    if (!!m.pve !== lobbyIsPve()) lobbyMode(m.pve ? 'pve' : 'pvp'); // l'ami suit l'onglet PvP / PvE de l'hôte
+    partyRender();
+  } else if (m.t === 'lobby')
     state?.units && leaveMatch(); // l'hôte est revenu au lobby : tout le groupe aussi
   else if (m.t === 'kicked') netLost('You were removed from the party.');
   else if (m.t === 's') NET.snap = m;
   else if (m.t === 'err') showError(m.text);
+  else if (PVE_NET_MSG[m.t])
+    PVE_NET_MSG[m.t](m); // annonces et fin de l'aventure PVE (net/pve_online.js)
   else if (m.t === 'results' && state?.units) {
     state.stats = m.stats;
     const me = state.player.team;
@@ -364,6 +378,7 @@ function netSendRoster() {
     g.ready = 0;
     netSendTo(g, {
       t: 'roster',
+      pve: !!state.pve,
       map: MAP_ID,
       round: state.round,
       size: state.size,
@@ -374,7 +389,8 @@ function netSendRoster() {
         cls: u.cls,
         race: u.race,
         team: u.team,
-        name: u.remoteId === g.id ? 'You' : u === state.player ? state.online.host : u.name
+        name: u.remoteId === g.id ? 'You' : u === state.player ? state.online.host : u.name,
+        ...(state.pve ? pveRosterUnit(u) : {})
       }))
     });
   }
@@ -455,7 +471,7 @@ function netHostUpdate(dt) {
   NET.sendT -= dt;
   if (NET.sendT > 0) return;
   NET.sendT = 0.05;
-  netSend({
+  const snap = {
     t: 's',
     u: state.units.map(netUnitState),
     T: r2(state.t),
@@ -468,10 +484,17 @@ function netHostUpdate(dt) {
     sb: state.scoreB,
     shr: state.shrines?.map(s => s.active),
     ev: NET.events.splice(0)
-  });
+  };
+  if (!state.pve) return netSend(snap);
+  // PVE : à chaque ami les unités proches de son héros et sa progression (net/pve_online.js)
+  for (const g of NET.guests.values()) {
+    const hero = state.units.find(u => u.remoteId === g.id);
+    netSendTo(g, { ...snap, u: pveSnapFor(hero, snap.u), pv: pveNetState(hero) });
+  }
 }
 // ---------- invité ----------
 function netGuestBuild(m) {
+  if (m.pve) return pveGuestBuild(m); // aventure PVE en groupe (net/pve_online.js)
   if (MAP_ID !== m.map) applyMap(m.map);
   const me = m.units[m.me];
   state = {
@@ -570,7 +593,8 @@ function netGuestUpdate(dt) {
     state.scoreA = P.team ? S.sb : S.sa;
     state.scoreB = P.team ? S.sa : S.sb;
     S.shr?.forEach((a, i) => state.shrines[i] && (state.shrines[i].active = a));
-    if (S.ended && !NET.lastEnded) {
+    if (S.pv) pveGuestSync(S.pv); // PVE : herse, dernier feu, chutes (net/pve_online.js)
+    if (S.ended && !NET.lastEnded && !state.pve) {
       const win = S.wt === P.team;
       showSplash(win ? 'Round won!' : 'Round lost');
       if (win) SFX.victory(false);

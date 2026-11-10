@@ -58,14 +58,17 @@ avant) : probablement renforcé, à intégrer au plan. Corruption vole désormai
 
 ## Mode PVE : première proposition du 09/11/2026, détails à valider par l'utilisateur
 
-Livré : onglets PvP / PvE, monde « The Mistvale Road », 7 camps + gardien, château sur la colline (docs/SPEC.md).
+Livré : onglets PvP / PvE, monde « The Mistvale Road », 7 camps + gardien, château à traverser jusqu'au roi au sommet du donjon, aventure en groupe en ligne de 5 avec camps agrandis (docs/SPEC.md).
+Groupe, choix faits sans validation : un ami qui part quitte l'aventure (son héros reste à terre, pas d'IA) ; la progression (dernier feu, herse) est commune au groupe ; un ami qui rejoint le groupe en cours d'aventure attend la suivante.
 Choix faits sans validation (à confirmer ou changer) :
 1. Mort : retour au dernier **feu de camp** atteint au bout de 4 s, en pleine forme, sans pénalité ; pas de défaite.
 2. Hors combat (5 s sans coup), **régénération rapide** : 5 % des PV et de la ressource par seconde.
-3. Victoire = le gardien de la porte (Morvain the Hollow) vaincu : la herse se lève, écran « Victory » (temps, chutes,
-   dégâts, soins, éliminations), « Play again » / « Back to lobby ».
+3. Victoire = le roi (Varkhul the Ashen King, démoniste mort-vivant) vaincu au sommet du donjon : écran « Victory »
+   (temps, chutes, dégâts, soins, éliminations), « Play again » / « Back to lobby ». Le gardien de la porte (Morvain
+   the Hollow) garde le levier de la herse (la herse ne se lève qu'au levier, même gardien vivant). Château à ciel ouvert (ruine), plan en enfilade : cour → grande salle →
+   grand escalier → galerie → escalier du donjon → sommet.
 4. Monstres = modèles de héros existants (morts-vivants, elfe, orc) et formes du druide (félin, ours) ; un vrai
    bestiaire (loups, squelettes, araignées…) demanderait de nouveaux modèles libres de droits.
-5. Difficulté du lobby appliquée aux monstres ; dégâts des monstres réduits (28 à 50 % d'un héros), PV 30 à 40 % (gardien 120 %) : mesuré, chaque classe jouée par l'IA bat chaque camp.
-6. Pistes suivantes : quêtes / dialogues, butin et progression, intérieur du château, autres zones, coopération en
-   ligne, carte du monde (mini-carte).
+5. Difficulté du lobby appliquée aux monstres ; dégâts des monstres réduits (28 à 50 % d'un héros), PV 30 à 40 % (gardien 120 %, roi 160 %) : mesuré, chaque classe jouée par l'IA bat chaque camp de la route et le roi ; dans le château, la grande salle (3 monstres de mêlée) est le combat le plus dur (17 à 30 % de PV restants), le prêtre est lent partout (peu de dégâts). Pas de monstre soigneur : un prêtre mort-vivant rendait son camp imbattable pour les classes de mêlée.
+6. Pistes suivantes : quêtes / dialogues, butin et progression, autres zones, coopération en ligne, carte du monde
+   (mini-carte), salles couvertes (plafonds : caméra à revoir), boss avec des phases.

@@ -61,7 +61,8 @@ function netWorld({ stored = {}, role = 'host' } = {}) {
     SFX: {},
     showError: t => calls.errors.push(t),
     leaveMatch: () => calls.leaveMatch++,
-    partyRender() {}
+    partyRender() {},
+    lobbyIsPve: () => false
   });
   // compositions : le vrai code (IA des places libres)
   S.fn('src/data/classes.js', 'raceForClass');

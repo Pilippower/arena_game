@@ -1,7 +1,8 @@
 'use strict';
 // Tests unitaires du mode PVE (src/pve/world.js, src/pve/pve.js) : le vrai code du jeu (combat, IA, sim) + le monde
 // PVE, sans DOM ni rendu. On vérifie le résultat : relief suivi, monstres au repos puis en alerte par camp, retour au
-// camp, mort et retour au feu de camp, régénération, victoire ; et que l'arène PvP ne change pas (terrain plat).
+// camp, mort et retour au feu de camp, régénération, château (herse, murs, montée jusqu'au sommet), victoire sur le
+// roi ; et que l'arène PvP ne change pas (terrain plat, pas de murs).
 const assert = require('node:assert/strict');
 const { combatWorld, run } = require('./combat_world.js');
 
@@ -19,6 +20,7 @@ function pveWorld(cls = 'sentinel') {
     playGameMusic() {},
     pveShowEnd: () => (ctx.endShown = true)
   });
+  w.load('src/pve/castle.js');
   w.load('src/pve/world.js');
   w.load('src/pve/pve.js');
   ctx.Math.random = () => 0.5;
@@ -35,7 +37,7 @@ const near = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg} (${a}
   const { ctx, W } = pveWorld();
   near(W.heightAt(W.start.x, W.start.z), 0, 0.5, 'départ dans la vallée');
   assert.ok(W.heightAt(W.gate.x, W.gate.z) > 12, 'porte du château en haut de la colline');
-  for (let z = W.start.z; z < W.gate.z; z += 1) {
+  for (let z = W.start.z; z < W.gate.z - 2; z += 1) {
     const x = W.roadX(z);
     assert.ok(ctx.pointWalkable(x, z), `route praticable en z = ${z}`);
   }
@@ -46,7 +48,11 @@ const near = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg} (${a}
   );
   for (const c of [...W.camps, ...W.checkpoints])
     assert.ok(ctx.pointWalkable(c.x, c.z, 0.3), `camp / feu libre d'obstacle (${c.x.toFixed(1)}, ${c.z})`);
-  assert.equal(W.camps.filter(c => c.boss).length, 1, 'un gardien à la porte');
+  assert.equal(
+    JSON.stringify(W.camps.filter(c => c.boss).map(c => c.mobs)),
+    JSON.stringify([['gatekeeper'], ['king']]),
+    'un gardien à la porte, le roi au sommet'
+  );
   assert.equal(ctx.arena.heightAt, W.heightAt, 'le monde PVE remplace la carte d’arène');
 }
 
@@ -60,7 +66,7 @@ const near = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg} (${a}
     p.z += 7 * dt;
     p.x = W.roadX(p.z);
   };
-  for (const u of ctx.state.units) if (u.monster && !u.monster.boss) u.alive = false; // route libre
+  for (const u of ctx.state.units) if (u.monster && u.monster.camp < 7) u.alive = false; // route libre
   run(ctx, 2);
   near(p.y, W.heightAt(p.x, p.z), 0.06, 'pieds sur le relief en montée');
   assert.ok(p.grounded, 'toujours au sol en montant');
@@ -169,13 +175,172 @@ const near = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg} (${a}
   assert.ok(p.hp > p.maxHp * 0.5, 'hors combat : les PV remontent vite');
 }
 
-// ---------- Victoire : le gardien de la porte vaincu ----------
+// ---------- Levier de la porte : tiré à portée, la herse se lève (le gardien ne l'ouvre plus en mourant) ----------
+{
+  const { ctx, p, W } = pveWorld();
+  const keeper = ctx.state.units.find(u => u.monster?.type === 'gatekeeper'),
+    L = W.lever,
+    errors = [];
+  ctx.showError = t => errors.push(t);
+  assert.ok(keeper.maxHp > ctx.CLASS[keeper.cls].hp, 'gardien plus résistant qu’un héros');
+  assert.ok(keeper.scale > 1, 'gardien plus grand');
+  assert.ok(L.z < W.gate.z && Math.abs(L.x - W.gate.x) < 6, 'levier dehors, à côté de la porte');
+  const walkNorth = () => {
+    for (let k = 0; k < 60; k++) {
+      p.z += 0.1;
+      ctx.resolveWalls(p);
+    }
+  };
+  ctx.pvePlace(p, 0, W.gate.z - 3, 0);
+  walkNorth();
+  assert.ok(p.z < W.gate.z, 'herse fermée : on ne passe pas');
+  ctx.damage(p, keeper, 1e7);
+  run(ctx, 0.1);
+  assert.equal(ctx.state.pve.gateOpen, false, 'gardien vaincu : la herse reste fermée');
+  ctx.pvePlace(p, L.x, L.z - L.reach - 3, 0);
+  assert.equal(ctx.pveUseLever(p), false, 'trop loin du levier : rien');
+  assert.deepEqual(errors, ['Too far away']);
+  assert.equal(ctx.state.pve.gateOpen, false);
+  ctx.pvePlace(p, L.x, L.z - L.reach + 1, 0);
+  assert.equal(ctx.pveUseLever(p), true, 'à portée : le levier est tiré');
+  assert.equal(ctx.state.pve.gateOpen, true, 'herse levée');
+  assert.equal(ctx.pveUseLever(p), false, 'déjà levée : plus rien');
+  assert.equal(ctx.state.pve.won, false, 'pas encore la victoire');
+  assert.equal(ctx.state.ended, false, 'l’aventure continue');
+  ctx.pvePlace(p, 0, W.gate.z - 3, 0);
+  walkNorth();
+  assert.ok(p.z > W.gate.z + 2, 'herse levée : on entre dans la cour');
+}
+
+// ---------- Régression : le décor lisait window.state (toujours vide : state est un let de core/webgl.js), la herse ne
+// se levait jamais à l'écran et l'ombre de la lune ne suivait pas le joueur ----------
+{
+  const { code } = require('./sources.js');
+  assert.ok(!/window\.state\b/.test(code('src/')), 'lire state directement, jamais window.state');
+}
+
+// ---------- Musique : celle du monde PVE dans le monde PVE, celle de l'arène ailleurs (src/audio/tracks.js) ----------
+{
+  const { sandbox } = require('./sources.js');
+  const played = [];
+  class FakeAudio {
+    constructor(src) {
+      Object.assign(this, { src, paused: true, volume: 0, readyState: 1, duration: 600, currentTime: 0 });
+    }
+    addEventListener() {}
+    play() {
+      this.paused = false;
+      played.push(this.src.split('?')[0]);
+      return Promise.resolve();
+    }
+    pause() {
+      this.paused = true;
+    }
+  }
+  const S = sandbox({
+    Audio: FakeAudio,
+    document: { readyState: 'complete', addEventListener() {} },
+    window: { addEventListener() {} },
+    performance: { now: () => 0 },
+    setInterval: () => 0,
+    clearInterval() {},
+    clamp: (v, a, b) => Math.max(a, Math.min(b, v)),
+    PREFS: { volume: 1, musicOn: true },
+    musicStopProcedural() {},
+    musicStartProcedural() {}
+  });
+  S.load('src/audio/tracks.js');
+  S.ctx.state = { pve: {} };
+  S.ctx.playGameMusic();
+  S.ctx.state = { pve: null };
+  S.ctx.playGameMusic();
+  assert.deepEqual(played.slice(-2), ['assets/audio/pve.mp3', 'assets/audio/game.mp3'], 'musique selon le mode');
+}
+
+// ---------- Château : murs pleins, portes à leur largeur, ligne de vue coupée, parapets plus hauts qu'un saut ----------
+{
+  const { ctx, W } = pveWorld();
+  const C = W.castle,
+    u = { x: 12, z: 191.2, y: C.base };
+  ctx.resolveWalls(u);
+  assert.ok(u.z < 190 - 0.5, 'poussé hors du mur de la grande salle, côté cour');
+  assert.ok(ctx.pointWalkable(2.3, 191.5, 0.6, C.base), 'porte de la salle : toute sa largeur');
+  assert.ok(!ctx.pointWalkable(3.5, 191.5, 0.6, C.base), 'montant de la porte : plein');
+  const yard = { x: 10, z: 185, y: C.base },
+    hall = { x: 10, z: 197, y: C.base },
+    door = { x: 0, z: 197, y: C.base };
+  assert.equal(ctx.los(yard, hall), false, 'le mur coupe la vue entre la cour et la salle');
+  assert.equal(ctx.los({ ...yard, x: 0 }, door), true, 'vue par la porte ouverte');
+  const jump = C.gallery + 1.5; // au plus haut d'un saut sur la galerie
+  assert.ok(ctx.wallAt(-24.5, 255, 0.6, jump), 'parapet de la galerie : on ne saute pas par-dessus');
+  assert.ok(ctx.wallAt(0, 304, 0.6, C.summit + 1.5), 'parapet du sommet : on ne saute pas par-dessus');
+}
+
+// ---------- Montée : de la porte au sommet du donjon, par la cour, la salle et les deux escaliers ----------
+{
+  const { ctx, p, W } = pveWorld();
+  const C = W.castle,
+    path = [
+      [0, 160],
+      [0, 205],
+      [0, 220],
+      [0, 249],
+      [0, 263.5],
+      [0, 286],
+      [0, 292]
+    ];
+  ctx.state.pve.gateOpen = true;
+  for (const w of ctx.arena.walls) if (w.gate) w.open = true;
+  for (const u of ctx.state.units) if (u.monster && !W.mobs[u.monster.type].boss) u.alive = false;
+  for (let i = 1; i < path.length; i++)
+    for (let t = 0; t <= 1; t += 0.02) {
+      const x = path[i - 1][0] + (path[i][0] - path[i - 1][0]) * t,
+        z = path[i - 1][1] + (path[i][1] - path[i - 1][1]) * t;
+      assert.ok(ctx.pointWalkable(x, z, 0.68, W.heightAt(x, z)), `chemin praticable en (${x}, ${z.toFixed(1)})`);
+    }
+  ctx.pvePlace(p, 0, 160, 0);
+  let k = 1;
+  ctx.playerMove = dt => {
+    const [tx, tz] = path[Math.min(k, path.length - 1)],
+      d = Math.hypot(tx - p.x, tz - p.z);
+    if (d < 0.3) return void k++;
+    p.x += ((tx - p.x) / d) * Math.min(d, 7 * dt);
+    p.z += ((tz - p.z) / d) * Math.min(d, 7 * dt);
+    ctx.resolveWalls(p);
+  };
+  run(ctx, 30);
+  near(p.z, 292, 0.5, 'arrivé au sommet du donjon');
+  near(p.y, C.summit, 0.06, 'monté jusqu’en haut');
+  assert.ok(p.grounded, 'au sol');
+}
+
+// ---------- Monstre qui ne voit plus le joueur (derrière un mur) : le camp rentre ----------
+{
+  const { ctx, p, camp, W } = pveWorld();
+  const id = W.camps.findIndex(c => c.indoor),
+    foes = camp(id);
+  ctx.pvePlace(p, 15, 205, 0); // dans la grande salle, derrière le mur de la cour
+  ctx.pveEngage(id);
+  for (const m of foes) m.root = 99; // ils ne peuvent pas venir
+  run(ctx, 3);
+  assert.ok(
+    foes.every(m => m.monster.mode === 'fight'),
+    'encore en combat'
+  );
+  run(ctx, 4);
+  assert.ok(
+    foes.every(m => m.monster.mode !== 'fight'),
+    'joueur hors de vue : le camp rentre'
+  );
+}
+
+// ---------- Victoire : le roi vaincu au sommet ----------
 {
   const { ctx, p } = pveWorld();
-  const boss = ctx.state.units.find(u => u.monster?.boss);
-  assert.ok(boss.maxHp > ctx.CLASS[boss.cls].hp, 'gardien plus résistant qu’un héros');
-  assert.ok(boss.scale > 1, 'gardien plus grand');
-  ctx.damage(p, boss, 1e7);
+  const king = ctx.state.units.find(u => u.monster?.type === 'king');
+  assert.ok(king.maxHp > ctx.CLASS[king.cls].hp, 'roi plus résistant qu’un héros');
+  assert.ok(king.scale > 1, 'roi plus grand');
+  ctx.damage(p, king, 1e7);
   run(ctx, 0.1);
   assert.equal(ctx.state.pve.won, true, 'victoire');
   assert.equal(ctx.state.ended, true, 'aventure terminée');
@@ -217,6 +382,7 @@ const near = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg} (${a}
   ctx.applyMap('castle'); // retour au lobby (pveLeave)
   assert.equal(ctx.arena.heightAt, null, 'carte d’arène : plus de relief');
   assert.equal(ctx.arena.world, null, 'carte d’arène : plus de monde PVE');
+  assert.equal(ctx.arena.walls, null, 'carte d’arène : pas de murs du château');
   assert.equal(ctx.terrainY(10, 10), 0, 'arène : sol à 0');
   ctx.state.fx = [];
   ctx.fx('ring', 3, 0.04, 3, [1, 1, 1]);

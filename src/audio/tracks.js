@@ -1,9 +1,12 @@
 'use strict';
 // Musiques enregistrées (fichiers audio) par-dessus le moteur procédural (music.js) :
 //  - lobby : assets/audio/lobby.mp3 en boucle tant que l'écran de sélection est ouvert ;
-//  - musique de jeu par défaut : assets/audio/game.mp3 (fournie par l'utilisateur, publiée), chargée seulement
-//    au lancement d'une partie (fichier lourd).
-const TRACKS = { lobby: null, local: undefined, want: 'none' };
+//  - musique de jeu : assets/audio/game.mp3 en arène, assets/audio/pve.mp3 dans le monde PVE (fournies par
+//    l'utilisateur, publiées ; pve.mp3 ré-encodé à 160 kb/s sous la limite de 100 Mo de GitHub), chargées seulement
+//    au lancement d'une partie (fichiers lourds).
+const TRACKS = { lobby: null, files: {}, local: null, want: 'none' }; // local : musique de jeu en cours
+const GAME_TRACK = { game: 'assets/audio/game.mp3', pve: 'assets/audio/pve.mp3' };
+const gameTrackKind = () => (typeof state !== 'undefined' && state?.pve ? 'pve' : 'game');
 const TRACK_VOL = { lobby: 0.32, game: 0.16 }; // la musique ne doit pas couvrir les bruitages
 function trackVolume(kind) {
   return clamp(TRACK_VOL[kind] * PREFS.volume, 0, 1);
@@ -51,19 +54,19 @@ function playLobbyMusic() {
   playSafe(a);
   fadeTo(a, trackVolume('lobby'), 1.5);
 }
-// Fichier local par défaut : chargé une fois ; s'il est absent (erreur), on garde la musique procédurale.
-function localGameTrack() {
-  if (TRACKS.local === undefined) {
-    const a = new Audio('assets/audio/game.mp3');
+// Musique de jeu du mode (arène ou PVE) : chaque fichier chargé une fois ; absent (erreur) : musique procédurale.
+function localGameTrack(kind) {
+  if (TRACKS.files[kind] === undefined) {
+    const a = new Audio(GAME_TRACK[kind]);
     a.loop = true;
     a.preload = 'metadata';
-    TRACKS.local = a;
+    TRACKS.files[kind] = a;
     a.addEventListener('error', () => {
-      TRACKS.local = null;
-      if (TRACKS.want === 'game') musicStartProcedural();
+      TRACKS.files[kind] = null;
+      if (TRACKS.want === 'game' && gameTrackKind() === kind) musicStartProcedural();
     });
   }
-  return TRACKS.local;
+  return TRACKS.files[kind];
 }
 function playGameMusic() {
   // le fichier de jeu est lourd : on attend la fin du chargement de la page avant de le demander
@@ -75,7 +78,9 @@ function playGameMusic() {
   TRACKS.want = 'game';
   if (TRACKS.lobby) fadeTo(TRACKS.lobby, 0, 1);
   if (!PREFS.musicOn) return;
-  const g = localGameTrack();
+  const g = localGameTrack(gameTrackKind());
+  if (TRACKS.local && TRACKS.local !== g) fadeTo(TRACKS.local, 0, 1); // changement de mode : l'autre musique s'efface
+  TRACKS.local = g;
   if (!g) return musicStartProcedural();
   musicStopProcedural();
   const start = () => {

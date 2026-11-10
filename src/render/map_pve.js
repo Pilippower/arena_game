@@ -1,15 +1,18 @@
 'use strict';
 // Décor du monde PVE « The Mistvale Road » (three.js, procédural) : vallée brumeuse au clair de lune, relief et route
 // pavée suivant PVE_WORLD (src/pve/world.js, reçu par arena.world), forêts de pins sombres, arbres morts, rochers,
-// pierres runiques, lanternes d'esprits, feux de camp (points de reprise), camps de monstres, et le château sur la
-// colline au bout de la route (sa herse se lève à la victoire). Les obstacles de jeu viennent de arena.pillars ; ce
-// fichier ne fait que les habiller. Carte enregistrée sous l'id 'pve' (ArenaEnv.registerMap) ; jamais utilisée en PvP.
+// pierres runiques, lanternes d'esprits, feux de camp (points de reprise), camps de monstres ; le château au bout de
+// la route : render/map_pve_castle.js (PveDecor.castle, chargé après ce fichier, avec les outils PveDecor). Les
+// obstacles de jeu viennent de arena.pillars ; ce fichier ne fait que les habiller. Carte enregistrée sous l'id 'pve'
+// (ArenaEnv.registerMap) ; jamais utilisée en PvP.
 (function () {
   if (!window.ArenaEnv?.registerMap) return;
-  const { rng, noise, canvas, tex, glowTexture, flameTexture, stoneCanvas, grassCanvas, ambientMotes, boxUV, smooth } =
+  const { rng, noise, tex, glowTexture, flameTexture, stoneCanvas, grassCanvas, ambientMotes, smooth } =
     ArenaEnv.helpers;
   // couleur choisie à l'œil (sRGB) → valeur linéaire du moteur : sans cela, les teintes sombres ressortaient très claires
   const lin = (THREE, hex) => new THREE.Color(hex).convertSRGBToLinear();
+  // outils partagés avec le décor du château (render/map_pve_castle.js) ; complétés plus bas
+  const PveDecor = (window.PveDecor = { lin });
   const SHADOW_SPAN = 46, // m : demi-côté de la zone d'ombres portées, recentrée sur le joueur
     SHADOW_MOVE = 14; // m parcourus avant de recalculer la carte d'ombres
   const MOON_DIR = [-0.45, 0.62, 0.64]; // direction de la lune (vers le nord-ouest, haute)
@@ -63,7 +66,7 @@
     let cx = null,
       cz = null;
     const follow = () => {
-      const p = window.state?.player;
+      const p = state?.player;
       if (!p) return;
       if (cx != null && Math.hypot(p.x - cx, p.z - cz) < SHADOW_MOVE) return;
       cx = p.x;
@@ -112,13 +115,19 @@
     };
     return m;
   }
+  // Dans l'emprise du château, le terrain passe juste sous ses dalles (render/map_pve_castle.js) ; pas de terrain plus
+  // grand qu'une épaisseur de mur (3 m) : la pente entre deux sommets reste cachée dans les murs.
+  const CASTLE_SINK = 0.08;
   function buildTerrain(THREE, S, W, E) {
-    const w = (W.halfX + 150) * 2,
-      d = (W.halfZ + 190) * 2,
-      step = E.mobile ? 4 : 2.4,
+    const south = -W.valleyZ - 190,
+      north = W.halfZ + 100,
+      w = (W.halfX + 150) * 2,
+      d = north - south,
+      step = E.mobile ? 3 : 2.4,
+      C = W.castle,
       geo = new THREE.PlaneGeometry(w, d, Math.round(w / step), Math.round(d / step));
     geo.rotateX(-Math.PI / 2);
-    geo.translate(0, 0, 30); // plus de terrain au nord (le château et la colline)
+    geo.translate(0, 0, (south + north) / 2);
     const P = geo.attributes.position,
       uv = geo.attributes.uv,
       col = new Float32Array(P.count * 3),
@@ -126,7 +135,8 @@
     for (let i = 0; i < P.count; i++) {
       const x = P.getX(i),
         z = P.getZ(i),
-        h = W.heightAt(x, z),
+        inCastle = C.inFootprint(x, z),
+        h = inCastle ? C.base - CASTLE_SINK : W.heightAt(x, z),
         rd = Math.abs(x - W.roadX(z)),
         onRoad = z < W.gate.z + 6 ? smooth(W.roadHalf + 0.9, W.roadHalf - 0.6, rd) : 0,
         plaza = smooth(130, 140, z) * smooth(26, 18, Math.abs(x)) * (z < 160 ? 1 : 0);
@@ -176,6 +186,7 @@
     );
   const local = (THREE, x, y, z, rx = 0, rz = 0, s = 1) =>
     at(THREE, x, y, z, s, 0, s, 0).multiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(rx, 0, rz)));
+  Object.assign(PveDecor, { at, instanced });
   // branches irrégulières : sommets décalés au hasard (graine fixe), pointe et base gardées
   function rugged(geo, amp, seed = 3) {
     const P = geo.attributes.position,
@@ -229,14 +240,14 @@
     for (let k = 0; k < n; k++) {
       const side = r() < 0.5 ? -1 : 1,
         x = side * (W.halfX + 2 + r() * 120),
-        z = -W.halfZ - 40 + r() * (W.halfZ * 2 + 60),
+        z = -W.valleyZ - 40 + r() * (W.valleyZ * 2 + 60),
         s = 1 + r() * 0.9;
       if (z > 120 && Math.abs(x) < 95) continue; // la colline du château reste dégagée
       farPines.push(at(THREE, x, W.heightAt(x, z) - 0.3, z, s, r() * 6.28));
     }
     for (let k = 0; k < (E.mobile ? 160 : 380); k++) {
       const x = (r() * 2 - 1) * (W.halfX + 30),
-        z = -W.halfZ - 20 - r() * 70;
+        z = -W.valleyZ - 20 - r() * 70;
       farPines.push(at(THREE, x, W.heightAt(x, z) - 0.3, z, 1 + r() * 0.8, r() * 6.28));
     }
     instanced(THREE, S, pineParts(THREE), pines);
@@ -460,6 +471,7 @@
         h.scale.setScalar(4);
         S.add(h);
       }
+      if (c.indoor) continue; // dans le château : ni ossements ni pieux (dalles, murs proches)
       for (let k = 0; k < 6; k++) {
         const a = r() * 6.28,
           d = 3 + r() * 3,
@@ -487,140 +499,6 @@
     );
   }
 
-  // ---- Château sur la colline, au bout de la route : enceinte, châtelet et herse, donjon, flèches, fenêtres ----
-  function buildCastle(THREE, S, W, E) {
-    const base = W.heightAt(0, W.gate.z + 4),
-      g = new THREE.Group(),
-      masonry = tex(
-        THREE,
-        stoneCanvas({
-          size: 512,
-          rows: 9,
-          minW: 0.14,
-          maxW: 0.28,
-          base: [0.5, 0.5, 0.56],
-          moss: 0.25,
-          seed: 33,
-          warp: 2
-        })
-      ),
-      wall = new THREE.MeshStandardMaterial({ map: masonry, color: lin(THREE, 0xb8b8cc), roughness: 0.92 }),
-      roof = new THREE.MeshStandardMaterial({ color: 0x2c2448, roughness: 0.6, metalness: 0.2 }),
-      win = new THREE.MeshBasicMaterial({ color: 0xffb860 }),
-      iron = new THREE.MeshStandardMaterial({ color: 0x1d1d24, metalness: 0.7, roughness: 0.45 });
-    const front = W.gate.z + 7; // face sud de l'enceinte (la porte est dans l'axe de la route)
-    const box = (x, y, z, w, h, d, mat = wall) => {
-      const geo = new THREE.BoxGeometry(w, h, d);
-      if (mat === wall) boxUV(geo, w, h, d, 5);
-      const m = new THREE.Mesh(geo, mat);
-      m.position.set(x, y, z);
-      m.castShadow = m.receiveShadow = true;
-      g.add(m);
-      return m;
-    };
-    const merlons = (x, z, w, d, y) => {
-      const along = w > d;
-      for (let t = -(along ? w : d) / 2 + 0.8; t < (along ? w : d) / 2; t += 2.2)
-        box(along ? x + t : x, y, along ? z : z + t, along ? 1.1 : d + 0.2, 1.2, along ? d + 0.2 : 1.1);
-    };
-    const tower = (x, z, r, h, roofH) => {
-      const t = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.12, h + 12, 12), wall);
-      t.position.set(x, base + h / 2 - 6, z);
-      t.castShadow = true;
-      g.add(t);
-      const rf = new THREE.Mesh(new THREE.ConeGeometry(r * 1.3, roofH, 12), roof);
-      rf.position.set(x, base + h + roofH / 2, z);
-      g.add(rf);
-      for (let k = 0; k < Math.floor(h / 6); k++) {
-        const a = Math.PI + (k % 2 ? 0.5 : -0.4),
-          w = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.4), win);
-        w.position.set(x + Math.sin(a) * (r + 0.05), base + 5 + k * 5.5, z + Math.cos(a) * (r + 0.05));
-        w.rotation.y = a;
-        g.add(w);
-      }
-    };
-    // enceinte (les murs descendent sous le relief : pas de vide sous les pierres)
-    const wallH = 11;
-    box(-17, base + wallH / 2 - 4, front, 26, wallH + 8, 3);
-    box(17, base + wallH / 2 - 4, front, 26, wallH + 8, 3);
-    merlons(-17, front, 26, 3, base + wallH + 0.6);
-    merlons(17, front, 26, 3, base + wallH + 0.6);
-    for (const sx of [-1, 1]) {
-      box(sx * 31, base + wallH / 2 - 6, front + 22, 3, wallH + 12, 44);
-      tower(sx * 31, front, 4.2, 18, 9);
-      tower(sx * 31, front + 44, 4.2, 18, 9);
-    }
-    box(0, base + wallH / 2 - 4, front + 44, 62, wallH + 8, 3);
-    // châtelet : deux tours, linteau au-dessus de la porte, herse (se lève à la victoire)
-    tower(-6.2, front - 0.5, 3.4, 20, 8);
-    tower(6.2, front - 0.5, 3.4, 20, 8);
-    box(0, base + 11, front, 9, 6, 4);
-    merlons(0, front, 9, 4, base + 14.6);
-    const gate = new THREE.Group();
-    for (let k = -3; k <= 3; k++) {
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.16, 8, 0.16), iron);
-      bar.position.set(k * 0.62, 4, 0);
-      gate.add(bar);
-    }
-    for (let k = 0; k < 5; k++) {
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.16, 0.16), iron);
-      bar.position.set(0, 0.8 + k * 1.7, 0);
-      gate.add(bar);
-    }
-    gate.position.set(0, base, front - 1.2);
-    gate.userData.dynamic = true;
-    gate.traverse(o => (o.userData.dynamic = true));
-    g.add(gate);
-    let lift = 0;
-    E.anim.push(() => {
-      const open = window.state?.pve?.won ? 1 : 0;
-      lift += (open - lift) * 0.02;
-      gate.position.y = base + lift * 7.5;
-    });
-    // lueur dorée derrière la herse : la cour intérieure
-    const inner = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-        map: glowTexture(THREE),
-        color: 0xffb35a,
-        blending: THREE.AdditiveBlending,
-        transparent: true,
-        depthWrite: false,
-        opacity: 0.7
-      })
-    );
-    inner.position.set(0, base + 3.5, front + 2);
-    inner.scale.set(9, 9, 1);
-    g.add(inner);
-    // donjon et flèches
-    box(0, base + 12, front + 26, 24, 32, 18);
-    merlons(0, front + 17, 24, 1, base + 28.6);
-    tower(-11, front + 18, 3.6, 34, 11);
-    tower(11, front + 18, 3.6, 34, 11);
-    tower(0, front + 33, 5, 46, 16);
-    for (let k = 0; k < 7; k++) {
-      const w = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 2.4), win);
-      w.position.set(-9 + k * 3, base + 14 + (k % 2) * 7, front + 16.95);
-      w.rotation.y = Math.PI;
-      g.add(w);
-    }
-    // faisceau violet au-dessus de la plus haute flèche : visible de toute la vallée (le but du voyage)
-    const beam = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.9, 2, 220, 14, 1, true),
-      new THREE.MeshBasicMaterial({
-        color: 0x9a7cff,
-        transparent: true,
-        opacity: 0.2,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-        fog: false
-      })
-    );
-    beam.position.set(0, base + 62 + 110, front + 33);
-    beam.userData.dynamic = true;
-    g.add(beam);
-    S.add(g);
-  }
   // ---- Brume basse : grands voiles pâles qui dérivent lentement au ras du sol de la vallée ----
   function buildMist(THREE, S, W, E) {
     const r = rng(19),
@@ -669,7 +547,7 @@
     buildLanterns(THREE, S, W, E);
     buildCampfires(THREE, S, W, E);
     buildCamps(THREE, S, W, E);
-    buildCastle(THREE, S, W, E);
+    PveDecor.castle(THREE, S, W, E);
     buildMountains(THREE, S, W, E);
     buildMist(THREE, S, W, E);
     // brume lumineuse et lucioles le long de la route

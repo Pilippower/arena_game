@@ -3,6 +3,7 @@
 // Créer un groupe (code gardé d'une fois sur l'autre) ou en rejoindre un ; réglages du match (mode, arène, difficulté
 // de l'IA : l'hôte les change, les amis les voient) ; deux équipes avec exactement autant de places que le mode (places
 // libres : IA) ; l'hôte change un ami de côté ou l'exclut et lance le match ; « Leave party » / « Disband party ».
+// Onglet PvE du lobby (v.pve) : l'aventure à la place des réglages d'arène, une seule équipe de PVE.maxHeroes places.
 // Le groupe reste formé entre les matchs. Réseau : net/online.js (NET, netHost, netJoin, netMoveGuest, netKick,
 // netAutoBalance, netSetAI, netClose, netPartyMembers, netSetName) ; mise en page : maquette de l'utilisateur
 // assets_src/ui/party_interface.png (pièces peintes : node tools/build_party_assets.js → assets/ui/party/) ; héros et
@@ -29,13 +30,15 @@ function partyView() {
       code: NET.code,
       ai: netAiSlots(),
       me: 0,
-      lead: true
+      lead: true,
+      pve: lobbyIsPve()
     };
   if (NET.role === 'guest' && NET.party) return { ...NET.party, lead: false };
   return null;
 }
 // réglages du match : boutons de l'hôte (actionnent ceux de l'onglet Solo), lecture seule chez les amis
 function partySettingsHTML(v) {
+  if (v.pve) return partyPveSettingsHTML(v);
   const opt = (kind, val, label, on, art = '') =>
     `<button class="pOpt${on ? ' selected' : ''}" data-${kind}="${val}"${v.lead ? '' : ' disabled'}>${art}<span>${label}</span></button>`;
   const maps = Object.entries(MAPS)
@@ -47,6 +50,16 @@ function partySettingsHTML(v) {
 <div class="pSet"><h4>Mode</h4><div class="pOpts diffs">${[1, 2, 3].map(s => opt('size', s, `${s}v${s}`, s === v.size)).join('')}</div></div>
 <div class="pSet pArena"><h4>Arena</h4><div class="pOpts diffs">${maps}</div></div>
 <div class="pSet"><h4>AI difficulty</h4><div class="pOpts diffs">${PARTY_DIFFS.map(d => opt('diff', d, d[0].toUpperCase() + d.slice(1), d === v.diff)).join('')}</div></div>
+</div>`;
+}
+// aventure PVE : la carte et la difficulté des monstres
+function partyPveSettingsHTML(v) {
+  const W = PVE_WORLD,
+    diff = d =>
+      `<button class="pOpt${d === v.diff ? ' selected' : ''}" data-diff="${d}"${v.lead ? '' : ' disabled'}><span>${d[0].toUpperCase() + d.slice(1)}</span></button>`;
+  return `<div class="pSettings">
+<div class="pSet pArena"><h4>Adventure</h4><div class="pOpts diffs"><button class="pOpt selected" disabled><img src="assets/ui/lobby2/pve_art.webp" alt=""><span>${W.name}</span></button></div></div>
+<div class="pSet"><h4>Monsters</h4><div class="pOpts diffs">${PARTY_DIFFS.map(diff).join('')}</div></div>
 </div>`;
 }
 // portrait de race et médaillon de classe d'une place
@@ -73,12 +86,23 @@ const PARTY_GEAR =
 function partySlotHTML(m, v, over) {
   const me = m.id === v.me,
     who = m.cls ? partyHeroName(m.race, m.cls) : 'Choosing a hero…',
+    move = v.pve ? '' : `<button data-move="${m.id}" title="Switch side">⇄</button>`,
     tools = me
       ? `<button data-hero title="Pick your race and class">${PARTY_GEAR}Change</button>`
       : v.lead
-        ? `<button data-move="${m.id}" title="Switch side">⇄</button><button data-kick="${m.id}" title="Remove from the party">Kick</button>`
-        : '';
-  return `<div class="pSlot${me ? ' me' : ''}${over ? ' over' : ''}"><span class="pCrown">${m.host ? '♛' : ''}</span>${partyFaceHTML(m.race, m.cls)}<span class="pInfo"><b>${partyEsc(m.name)}${me ? ' (you)' : ''}</b><small>${over ? `No slot in ${v.size}v${v.size}` : partyEsc(who)}</small></span><span class="pTools">${tools}</span></div>`;
+        ? `${move}<button data-kick="${m.id}" title="Remove from the party">Kick</button>`
+        : '',
+    full = v.pve ? `No slot (${PVE.maxHeroes} heroes max)` : `No slot in ${v.size}v${v.size}`;
+  return `<div class="pSlot${me ? ' me' : ''}${over ? ' over' : ''}"><span class="pCrown">${m.host ? '♛' : ''}</span>${partyFaceHTML(m.race, m.cls)}<span class="pInfo"><b>${partyEsc(m.name)}${me ? ' (you)' : ''}</b><small>${over ? full : partyEsc(who)}</small></span><span class="pTools">${tools}</span></div>`;
+}
+// aventure PVE : tout le groupe ensemble, PVE.maxHeroes places (les libres restent vides : pas d'IA alliée)
+function partyPveTeamHTML(v) {
+  const slots = Array.from({ length: Math.max(PVE.maxHeroes, v.members.length) }, (_, k) =>
+    k < v.members.length
+      ? partySlotHTML(v.members[k], v, k >= PVE.maxHeroes)
+      : '<div class="pSlot ai"><span class="pCrown"></span><span class="pFace"></span><span class="pInfo"><b>Open slot</b><small>Waiting for a friend</small></span></div>'
+  );
+  return `<div class="pTeams pvePartyTeam"><div class="pTeam mine"><h3 class="pRibbon"><span>Your party</span></h3>${slots.join('')}</div></div>`;
 }
 // deux équipes face à face, mon équipe à gauche ; autant de places que le mode, les libres jouées par l'IA
 function partyTeamsHTML(v) {
@@ -98,7 +122,10 @@ function partyTeamsHTML(v) {
 const PARTY_COPY =
   '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="6" y="5" width="10" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 14V3.5C4 2.7 4.7 2 5.5 2H13" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
 function partyJoinHTML() {
-  return `<p class="partyHint">Play with or against your friends, browser to browser. Empty slots are played by the AI.</p>
+  const hint = lobbyIsPve()
+    ? `Cross the adventure with up to ${PVE.maxHeroes - 1} friends, browser to browser: the more heroes, the bigger the monster camps.`
+    : 'Play with or against your friends, browser to browser. Empty slots are played by the AI.';
+  return `<p class="partyHint">${hint}</p>
 <div class="pRow"><input id="partyName" maxlength="16" placeholder="Your name" autocomplete="off" spellcheck="false"></div>
 <div class="pRow"><button id="partyCreate">Create a party</button></div>
 <div class="pRow"><input id="partyCode" maxlength="6" placeholder="CODE" autocomplete="off" spellcheck="false"><button id="partyJoin">Join</button></div>`;
@@ -120,10 +147,10 @@ function partyRender() {
   }
   box.innerHTML = `<div class="pRow partyCode">Party Code: <b>${partyEsc(v.code)}</b><button id="partyCopy">${PARTY_COPY}Copy</button></div>
 ${partySettingsHTML(v)}
-${partyTeamsHTML(v)}
+${v.pve ? partyPveTeamHTML(v) : partyTeamsHTML(v)}
 <div class="pRow pActions">${
     v.lead
-      ? '<button id="partyBalance" class="pArt balance" aria-label="Auto-Balance" title="Spread your friends evenly between the two teams"></button><button id="partyStart" class="pArt start" aria-label="Start match"></button><button id="partyLeave" class="pSmall">Disband party</button>'
+      ? `${v.pve ? '' : '<button id="partyBalance" class="pArt balance" aria-label="Auto-Balance" title="Spread your friends evenly between the two teams"></button>'}<button id="partyStart" class="pArt start" aria-label="Start match"></button><button id="partyLeave" class="pSmall">Disband party</button>`
       : '<button id="partyLeave">Leave party</button>'
   }</div>`;
   $('partyCopy').onclick = () => navigator.clipboard?.writeText(v.code).then(() => netStatus('Code copied.'));
@@ -132,7 +159,7 @@ ${partyTeamsHTML(v)}
   if (hero) hero.onclick = () => lobbyTab('solo');
   if (v.lead) {
     $('partyStart').onclick = () => $('playBtn').click();
-    $('partyBalance').onclick = () => netAutoBalance();
+    if (!v.pve) $('partyBalance').onclick = () => netAutoBalance();
     // réglages : on actionne les boutons de l'onglet Solo (même effet, même sauvegarde, groupe synchronisé)
     box
       .querySelectorAll('[data-size]')
@@ -161,4 +188,4 @@ ${partyTeamsHTML(v)}
 }
 $('tabSolo').onclick = () => lobbyTab('solo');
 $('tabMulti').onclick = () => lobbyTab('party');
-partyRender();
+// premier affichage : lobbyMode au chargement de pve/pve_ui.js (l'onglet PvP / PvE choisit le contenu du groupe)

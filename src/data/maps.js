@@ -100,6 +100,7 @@ function applyMap(id) {
   arena.bridge = M.bridge || null;
   arena.heightAt = null; // relief : seulement le monde PVE (src/pve/pve.js, pveApplyWorld)
   arena.world = null;
+  arena.walls = null; // murs : seulement le château du monde PVE
   arena.rooms = M.rooms
     ? [-1, 1].map((side, i) => ({
         side,
@@ -171,6 +172,74 @@ function bridgeRail(u) {
   const atRamp = Math.abs(Math.abs(u.x) - B.rampX) <= B.rampW / 2 - 0.3;
   if (!atRamp && Math.abs(u.z) > B.halfW - 0.35) u.z = Math.sign(u.z) * (B.halfW - 0.35);
 }
+
+// ---------- Murs (monde PVE : château, arena.walls ; aucun en arène) ----------
+// Mur = segment (ax, az) → (bx, bz), demi-épaisseur t, sommet h (hauteur absolue : on passe au-dessus si plus haut) ;
+// open : passage ouvert (herse levée). Collision en rectangle, sans arrondi aux extrémités : une porte entre deux pans
+// garde toute sa largeur.
+const wallStops = (w, y) => !w.open && y < w.h;
+// Repère d'un mur : s le long du segment (0 → L), n en travers (épaisseur : |n| < t).
+function wallFrame(w, x, z) {
+  const dx = w.bx - w.ax,
+    dz = w.bz - w.az,
+    L = Math.hypot(dx, dz) || 1,
+    ux = dx / L,
+    uz = dz / L;
+  return { L, ux, uz, s: (x - w.ax) * ux + (z - w.az) * uz, n: (z - w.az) * ux - (x - w.ax) * uz };
+}
+// Sortie la plus courte d'un mur (marge m), ou null si (x, z) n'y est pas : par le côté, ou par un bout.
+function wallExit(w, x, z, m) {
+  const { L, ux, uz, s, n } = wallFrame(w, x, z),
+    t = w.t + m;
+  if (s <= -m || s >= L + m || Math.abs(n) >= t) return null;
+  const side = t - Math.abs(n),
+    back = s + m,
+    fwd = L + m - s;
+  if (side <= back && side <= fwd) {
+    const k = (n < 0 ? -1 : 1) * side;
+    return { x: x - uz * k, z: z + ux * k };
+  }
+  return back < fwd ? { x: x - ux * back, z: z - uz * back } : { x: x + ux * fwd, z: z + uz * fwd };
+}
+// Une unité à la hauteur y, en (x, z), toucherait-elle un mur (à m près) ?
+const wallAt = (x, z, m, y = 0) => !!arena.walls?.some(w => wallStops(w, y) && wallExit(w, x, z, m));
+// Repousse une unité hors des murs (deux passes : coins où deux murs se rejoignent).
+function pushOutOfWalls(u, m) {
+  for (let pass = 0; pass < 2; pass++)
+    for (const w of arena.walls) {
+      if (!wallStops(w, u.y || 0)) continue;
+      const p = wallExit(w, u.x, u.z, m);
+      if (p) {
+        u.x = p.x;
+        u.z = p.z;
+      }
+    }
+}
+// Le segment a → b passe-t-il dans un mur plus haut que low (ligne de vue) ? Découpe du segment par le rectangle du
+// mur dans son repère (Liang-Barsky).
+function segmentInWall(w, a, b) {
+  const A = wallFrame(w, a.x, a.z),
+    B = wallFrame(w, b.x, b.z);
+  let t0 = 0,
+    t1 = 1;
+  for (const [p, q] of [
+    [A.s - B.s, A.s],
+    [B.s - A.s, A.L - A.s],
+    [A.n - B.n, A.n + w.t],
+    [B.n - A.n, w.t - A.n]
+  ]) {
+    if (p === 0) {
+      if (q < 0) return false;
+      continue;
+    }
+    const r = q / p;
+    if (p < 0) t0 = Math.max(t0, r);
+    else t1 = Math.min(t1, r);
+    if (t0 > t1) return false;
+  }
+  return true;
+}
+const wallCuts = (a, b, low) => arena.walls.some(w => !w.open && w.h > low && segmentInWall(w, a, b));
 
 // ---------- Salles de départ (géométrie) ----------
 // Repère d'une salle : a = le long de son axe (vers la salle : side × a > 0), b = le long de son rempart. Toute la

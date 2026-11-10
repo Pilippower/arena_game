@@ -145,6 +145,7 @@ window.addEventListener('blur', () => {
 });
 function pickTargetAt(sx, sy) {
   if (!state?.player?.alive) return false;
+  if (pveLeverAtScreen(sx, sy)) return pveUseLever(state.player); // objet du monde PVE (sans effet en arène)
   const best = unitAtScreen(sx, sy);
   if (!best) return false;
   setTarget(state.player, best);

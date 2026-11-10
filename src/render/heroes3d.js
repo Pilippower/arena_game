@@ -453,6 +453,15 @@ function hfRebuildOccluders() {
   };
   for (const pp of arena.pillars)
     add(new THREE.CylinderGeometry(pp.r + 0.02, pp.r + 0.02, pp.h, 24), pp.x, pp.h / 2, pp.z);
+  // murs du château (monde PVE) ; pas la herse, à claire-voie
+  for (const w of arena.walls || []) {
+    if (w.ghost || w.gate) continue;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(w.bx - w.ax, w.bz - w.az), w.h, w.t * 2), occMat);
+    m.position.set((w.ax + w.bx) / 2, w.h / 2, (w.az + w.bz) / 2);
+    m.rotation.y = -Math.atan2(w.bz - w.az, w.bx - w.ax);
+    m.renderOrder = -10;
+    g.add(m);
+  }
   // les 4 remparts, percés d'une porte s'il y a une salle de départ derrière (data/maps.js) ; murs des salles et linteau
   // de la porte. Repère de chaque rempart (roomFrame) : a = vers l'extérieur le long de axis, b = le long du rempart.
   for (const axis of ['x', 'z'])

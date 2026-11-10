@@ -1,11 +1,14 @@
 'use strict';
 // Lobby, onglet PvE (src/pve/pve_ui.js) : visuels dans le style des pièces de l'utilisateur.
-//   node tools/build_pve_assets.js  →  assets/ui/lobby2/tag_adventure.webp, assets/ui/lobby2/mapcard_pve.webp
+//   node tools/build_pve_assets.js  →  assets/ui/lobby2/tag_adventure.webp, mapcard_pve.webp, pve_art.webp
 // - étiquette « ADVENTURE » : l'étiquette peinte « DIFFICULTY » (lobby_assets.png, mêmes coordonnées que
 //   build_lobby2_assets.js), texte effacé (bande reconstituée rangée par rangée) puis réécrit ;
-// - carte « The Mistvale Road » : capture du jeu (assets_src/ui/pve_card_shot.png, prise sur ?pve=arcanist, sans
-//   interface) recadrée, sous le bandeau peint de la carte « The Castle » (blason, filets dorés), nom effacé puis
-//   réécrit. Comme pour les arènes, la description courte est écrite par le jeu.
+// - carte « The Mistvale Road » en deux couches (la carte change de proportions avec la fenêtre : une image composée
+//   laissait voir un ciel vide au-dessus de l'illustration) : illustration de l'utilisateur (assets_src/ui/
+//   pve_card_art.png, 10/11/2026 : route pavée, château illuminé, cascade) → pve_art.webp, fond de la carte qui la
+//   couvre toujours (src/pve/pve.css) ; par-dessus, mapcard_pve.webp = bandeau peint de la carte « The Castle »
+//   (blason, filets dorés), nom effacé puis réécrit, transparent au-dessus. Comme pour les arènes, la description
+//   courte est écrite par le jeu.
 const sharp = require('sharp');
 const path = require('path');
 const { clearBg } = require('./image_tools.js');
@@ -74,37 +77,22 @@ async function mapcardPve() {
       const o = (y * W + x) * 4;
       if (!keepBand(data, o, x, y)) data[o + 3] = 0;
     }
-  // illustration : la capture (bandes de l'interface retirées) à mi-taille, calée pour que le château et la colline
-  // tombent dans la tranche que le lobby montre au-dessus du bandeau (rangées SHOT_TOP… : object-position en bas) ;
-  // au-dessus, ciel de nuit
-  const SHOT_TOP = 252,
-    shotPart = await sharp(path.join(SRC, 'pve_card_shot.png'))
-      .extract({ left: 0, top: 62, width: 1440, height: (H - SHOT_TOP) * 2 })
-      .resize(W, H - SHOT_TOP)
-      .modulate({ brightness: 1.08, saturation: 1.1 })
-      .png()
-      .toBuffer(),
-    sky = Buffer.from(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><defs><linearGradient id="k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#05081a"/><stop offset="1" stop-color="#121a3c"/></linearGradient></defs><rect width="${W}" height="${H}" fill="url(#k)"/></svg>`
-    ),
-    shot = sharp(sky).composite([{ input: shotPart, top: SHOT_TOP, left: 0 }]);
-  const scene = await shot.png().toBuffer();
   const band = await fromRaw(card).png().toBuffer();
   // coins arrondis du cadre d'origine (les cartes peintes ont des coins transparents)
   const mask = Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}"><rect width="${W}" height="${H}" rx="26" ry="26"/></svg>`
   );
-  await sharp(scene)
-    .composite([
-      { input: band },
-      { input: goldText(W, H, 370, 513, 30, 'THE MISTVALE ROAD') },
-      { input: mask, blend: 'dest-in' }
-    ])
+  await sharp(band)
+    .composite([{ input: goldText(W, H, 370, 513, 30, 'THE MISTVALE ROAD') }, { input: mask, blend: 'dest-in' }])
     .webp({ quality: 86 })
     .toFile(path.join(OUT, 'mapcard_pve.webp'));
+  await sharp(path.join(SRC, 'pve_card_art.png'))
+    .resize(1200)
+    .webp({ quality: 84 })
+    .toFile(path.join(OUT, 'pve_art.webp'));
 }
 (async () => {
   await tagAdventure();
   await mapcardPve();
-  console.log('PvE : tag_adventure.webp, mapcard_pve.webp');
+  console.log('PvE : tag_adventure.webp, mapcard_pve.webp, pve_art.webp');
 })();
