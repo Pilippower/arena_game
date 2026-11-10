@@ -197,10 +197,12 @@ const h3 = code('src/render/');
 assert.match(h3, /function hfRenderGhosts[\s\S]*GreaterDepth/, 'silhouette des personnages sous le pont');
 assert.ok(h3.includes('(rec.opacity ?? 1) >= 1'), 'pas de silhouette pour les unités camouflées');
 // Fluidité : qualité adaptative, ombres interpolées, passe des silhouettes seulement si besoin
+// qualité adaptative : règles testées par tests/perf.test.js ; ici le seuil validé et le retour à 100 % à chaque partie
+assert.match(read('src/core/perf.js'), /PERF_RULES = \{ low: 50,/, 'qualité adaptative : sous 50 images/s');
 assert.match(
-  read('src/core/perf.js'),
-  /PERF\.fps < 50[\s\S]*PERF\.locked = true|PERF\.locked = true[\s\S]*PERF\.fps < 50/,
-  'qualité adaptative'
+  read('src/core/loading.js'),
+  /async function prepareMatch\(\) \{[^]*?if \(first\) perfReset\(\);/,
+  'qualité adaptative : pleine résolution au début de chaque partie'
 );
 assert.ok(code('src/render/').includes('b.position.set(u.rx ?? u.x'), 'ombre au sol interpolée');
 assert.match(h3, /if \(!groups\.size\) return;/, 'silhouettes : pas de passe inutile');

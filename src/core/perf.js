@@ -1,10 +1,19 @@
 'use strict';
 // Mesure des performances et qualité adaptative (docs/SPEC.md).
 // ?fps=1 affiche un compteur : images/s, temps CPU de chaque couche de rendu, pas de simulation par image.
-// PERF.scale réduit la résolution des trois canevas (décor, effets, personnages) si le jeu passe sous 50 images/s ;
-// si la baisse n'aide pas (limite CPU, pas carte graphique), la résolution d'avant est rendue et ne bouge plus.
+// PERF.scale réduit la résolution des canevas si le jeu passe sous PERF_RULES.low images/s ; si la baisse n'aide pas
+// (limite CPU, pas carte graphique), la résolution d'avant est rendue et ne bouge plus. 10/11/2026 (« les graphismes
+// ont chuté ») : la résolution ne remontait jamais et survivait d'une partie à l'autre ; or juste après le chargement
+// du monde PVE le jeu passe quelques secondes à ~50 images/s, et l'aventure laissait l'image floue jusqu'à F5, arène
+// comprise. Désormais : 100 % au début de chaque partie (perfReset, appelé par prepareMatch), rien de mesuré pendant
+// le chargement ni les PERF_RULES.warmup s qui suivent, et un palier regagné au-dessus de PERF_RULES.high images/s
+// (jamais au-dessus d'une résolution qui a déjà fait tomber sous low : pas de va-et-vient).
+const PERF_RULES = { low: 50, high: 70, step: 0.15, min: 0.55, warmup: 4, settle: 4 };
 const PERF = {
   scale: 1,
+  cap: 1, // résolution la plus haute permise (abaissée quand une remontée a fait ramer)
+  raised: false, // dernier changement = une remontée
+  warmUntil: 0,
   locked: false,
   show: new URLSearchParams(location.search).get('fps') === '1',
   t: {},
@@ -22,11 +31,17 @@ function perfTime(label, fn) {
     PERF.acc.t[label] = (PERF.acc.t[label] || 0) + performance.now() - t0;
   }
 }
+// Début d'une partie (prepareMatch, core/loading.js) : pleine résolution, mesures reprises après le chargement.
+function perfReset() {
+  Object.assign(PERF, { scale: 1, cap: 1, raised: false, locked: false, tried: null, lastChange: now() });
+  PERF.acc = { n: 0, time: 0, steps: 0, t: {} };
+}
 function perfFrame(dt, steps) {
   const A = PERF.acc,
     playing = !!state?.units && !state.ended && $('overlay').style.display === 'none';
-  // onglet en arrière-plan ou lobby : on ne mesure pas
-  if (dt > 0.25 || !playing) {
+  if (state?.loading) PERF.warmUntil = now() + PERF_RULES.warmup; // shaders, textures : images lentes sans signification
+  // onglet en arrière-plan, lobby, chargement : on ne mesure pas
+  if (dt > 0.25 || !playing || now() < PERF.warmUntil) {
     PERF.acc = { n: 0, time: 0, steps: 0, t: {} };
     return;
   }
@@ -42,8 +57,9 @@ function perfFrame(dt, steps) {
   if (PERF.show) perfShow();
 }
 function perfAdapt() {
-  const t = now();
-  if (PERF.locked || t - PERF.lastChange < 4) return;
+  const t = now(),
+    R = PERF_RULES;
+  if (PERF.locked || t - PERF.lastChange < R.settle) return;
   if (PERF.tried) {
     // la baisse précédente n'a pas fait gagner au moins 8 % : on revient en arrière et on arrête
     if (PERF.fps < PERF.tried.fps * 1.08) {
@@ -54,9 +70,15 @@ function perfAdapt() {
     PERF.lastChange = t;
     return;
   }
-  if (PERF.fps < 50 && PERF.scale > 0.56) {
+  if (PERF.fps < R.low && PERF.scale > R.min + 0.01) {
     PERF.tried = { scale: PERF.scale, fps: PERF.fps };
-    PERF.scale = Math.max(0.55, PERF.scale - 0.15);
+    PERF.scale = Math.max(R.min, PERF.scale - R.step);
+    if (PERF.raised) PERF.cap = PERF.scale; // la remontée faisait ramer : on n'y retourne plus
+    PERF.raised = false;
+    PERF.lastChange = t;
+  } else if (PERF.fps > R.high && PERF.scale < PERF.cap - 0.01) {
+    PERF.scale = Math.min(PERF.cap, PERF.scale + R.step);
+    PERF.raised = true;
     PERF.lastChange = t;
   }
 }
