@@ -52,29 +52,7 @@ function pveNetState(hero) {
 function pveGuestBuild(m) {
   pveApplyWorld();
   const me = m.units[m.me];
-  state = {
-    pve: { t0: now(), deaths: 0, checkpoint: 0, gateOpen: false, won: false, endT: null, party: [] },
-    pcls: me.cls,
-    prace: me.race,
-    scoreA: 0,
-    scoreB: 0,
-    round: 1,
-    stats: [],
-    map: 'pve',
-    size: 1,
-    t: 1e9,
-    prep: 0,
-    elapsed: 0,
-    dampening: 0,
-    ended: false,
-    keys: {},
-    fx: [],
-    floaters: [],
-    shrines: [],
-    splash: 1.8,
-    uiTick: 0,
-    online: true
-  };
+  state = pveMatchState(me.cls, me.race, [], true);
   state.units = m.units.map((r, i) => {
     const u = makeUnit(r.cls, 0, 0, r.team, r.name, false, r.race, i);
     u.slotIndex = i;
@@ -91,14 +69,8 @@ function pveGuestBuild(m) {
   NET.lastEnded = false;
   hideResults();
   $('overlay').style.display = 'none';
-  camera.yaw = state.player.yaw;
-  camera.pitch = 0.2;
-  pveUiStart();
-  showSplash(PVE_WORLD.name);
-  if (HF.enabled) hfSyncUnits();
   if (typeof musicStart === 'function') musicStart();
-  updateUI();
-  prepareMatch();
+  pveEnter(state.player.yaw);
 }
 // État de l'hôte reçu : la herse s'ouvre aussi pour la collision de l'ami (il se déplace en local).
 function pveGuestSync(pv) {

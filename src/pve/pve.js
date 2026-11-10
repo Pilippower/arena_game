@@ -113,12 +113,9 @@ function pveTuneMonsters(heroes = 1) {
 const pveHeroes = () => state.units.filter(u => u.team === 0 && !u.gone);
 // Places de départ côte à côte, à la largeur de la route (soi au centre).
 const pveRow = (i, n) => (i - (n - 1) / 2) * 1.6;
-// party : amis en ligne [{ cls, race, name, gid }] (net/pve_online.js) ; seul : [].
-function pveStart(cls, race, party = []) {
-  pveApplyWorld();
-  const W = PVE_WORLD,
-    n = 1 + party.length;
-  state = {
+// État d'une aventure, le même chez l'hôte (pveStart) et chez l'ami en ligne (pveGuestBuild, net/pve_online.js).
+function pveMatchState(cls, race, party, online) {
+  return {
     pve: { t0: now(), deaths: 0, checkpoint: 0, gateOpen: false, won: false, endT: null, party },
     pcls: cls,
     prace: race,
@@ -127,7 +124,7 @@ function pveStart(cls, race, party = []) {
     round: 1,
     stats: [],
     map: 'pve',
-    online: party.length ? { host: NET_NAME || 'Host' } : null,
+    online,
     size: 1,
     t: 1e9, // pas de chrono de manche
     prep: 0,
@@ -141,6 +138,23 @@ function pveStart(cls, race, party = []) {
     splash: 1.8,
     uiTick: 0
   };
+}
+// Unités posées : caméra derrière soi, interface, modèles, puis écran de chargement (commun à l'hôte et à l'ami).
+function pveEnter(yaw) {
+  camera.yaw = yaw;
+  camera.pitch = 0.2;
+  pveUiStart();
+  showSplash(PVE_WORLD.name);
+  if (HF.enabled) hfSyncUnits();
+  updateUI();
+  prepareMatch();
+}
+// party : amis en ligne [{ cls, race, name, gid }] (net/pve_online.js) ; seul : [].
+function pveStart(cls, race, party = []) {
+  pveApplyWorld();
+  const W = PVE_WORLD,
+    n = 1 + party.length;
+  state = pveMatchState(cls, race, party, party.length ? { host: NET_NAME || 'Host' } : null);
   const hero = (c, r, name, i, gid) => {
     const u = makeUnit(c, 0, 0, 0, name, gid != null, r, i);
     if (gid != null) Object.assign(u, { remoteId: gid, remote: true, ai: false }); // l'ami pilote son héros
@@ -152,14 +166,8 @@ function pveStart(cls, race, party = []) {
   state.player = state.units[0];
   applyDifficulty();
   pveTuneMonsters(n);
-  camera.yaw = W.start.yaw;
-  camera.pitch = 0.2;
-  pveUiStart();
-  showSplash(W.name);
-  if (HF.enabled) hfSyncUnits();
-  updateUI();
   if (state.online) netSendRoster();
-  prepareMatch();
+  pveEnter(W.start.yaw);
 }
 // ---------- Messages aux joueurs (soi à l'écran, un ami en ligne par le réseau) ----------
 function pveTell(u, text) {
@@ -292,8 +300,7 @@ function pveBrain(u, dt) {
 // Appelé à chaque pas par update (game/sim.js) à la place de la fin de manche de l'arène.
 function pveUpdate(dt) {
   for (const p of pveHeroes()) pveHeroUpdate(p, dt);
-  for (const u of state.units)
-    if (u.monster && !u.alive && PVE_WORLD.mobs[u.monster.type].boss && !state.pve.won) pveVictory();
+  if (!state.pve.won && state.units.some(u => u.monster?.boss && !u.alive)) pveVictory();
 }
 // Un héros : régénération hors combat, feux de camp ; mort, puis retour au dernier feu atteint par le groupe.
 function pveHeroUpdate(p, dt) {
@@ -351,7 +358,8 @@ function pveRespawn(p) {
   const c = PVE_WORLD.checkpoints[state.pve.checkpoint],
     next = PVE_WORLD.checkpoints[state.pve.checkpoint + 1] || PVE_WORLD.top,
     yaw = Math.atan2(next.x - c.spawn.x, next.z - c.spawn.z),
-    off = pveRow(p.slotIndex, pveHeroes().length);
+    heroes = pveHeroes(),
+    off = pveRow(heroes.indexOf(p), heroes.length); // rang dans le groupe restant (un ami parti laisse un trou)
   Object.assign(p, {
     alive: true,
     hp: p.maxHp,
@@ -402,7 +410,7 @@ function pveVictory() {
   R.endT = now();
   state.ended = true;
   state.winTeam = state.player.team;
-  pveTellAll('The Ashen King has fallen!', true);
+  pveTellAll(`${PVE_WORLD.mobs.king.name} has fallen!`, true);
   setTimeout(() => {
     if (state !== match) return;
     const sum = pveSummary();

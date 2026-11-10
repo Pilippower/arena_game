@@ -7,7 +7,7 @@
 (function () {
   if (!window.PveDecor) return;
   const { tex, glowTexture, flameTexture, stoneCanvas, boxUV, rng } = ArenaEnv.helpers;
-  const { lin, at, instanced } = PveDecor;
+  const { lin, at, instanced, glowSprite } = PveDecor;
   const STEP_RISE = 0.32, // m : hauteur d'une marche des escaliers (la pente du jeu passe au milieu de chaque marche)
     CRENEL_H = 1.3, // m : hauteur des merlons (le haut du mur de collision passe à mi-merlon)
     SLAB = 1.5, // m : épaisseur des dalles sous les sols
@@ -197,15 +197,7 @@
       rod = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, LEVER_LEN, 8), M.wood),
       knob = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 8), M.gold),
       axle = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.7, 10), M.iron),
-      glow = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-          map: glowTexture(THREE),
-          color: 0xffc860,
-          blending: THREE.AdditiveBlending,
-          transparent: true,
-          depthWrite: false
-        })
-      );
+      glow = glowSprite(THREE, glowTexture(THREE), 0xffc860);
     rod.position.y = LEVER_LEN / 2;
     knob.position.y = glow.position.y = LEVER_LEN;
     axle.rotation.z = Math.PI / 2; // axe le long du rempart (x) : le manche bascule du sud vers le nord
@@ -235,7 +227,7 @@
       box(c.x, c.h - 0.3, c.z, c.r * 2.4, 0.6, c.r * 2.4);
     }
     const hall = C.floors.find(f => f.id === 'hall'),
-      inner = C.walls.find(w => w.ax === 21.5 && w.az === 190);
+      inner = C.walls.find(w => w.id === 'hallSide');
     for (const sx of [-1, 1])
       for (const z of [200, 212]) {
         const x = sx * (inner.ax - inner.t - 0.06),
@@ -276,27 +268,10 @@
         ])
       ];
     for (const [x, y, z] of spots) {
-      const f = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-          map: flame,
-          color: 0xffb070,
-          blending: THREE.AdditiveBlending,
-          transparent: true,
-          depthWrite: false
-        })
-      );
+      const f = glowSprite(THREE, flame, 0xffb070);
       f.position.set(x, y + 3.2, z);
       f.scale.setScalar(0.8);
-      const h = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-          map: glow,
-          color: 0xff9a4a,
-          blending: THREE.AdditiveBlending,
-          transparent: true,
-          depthWrite: false,
-          opacity: 0.35
-        })
-      );
+      const h = glowSprite(THREE, glow, 0xff9a4a, 0.35);
       h.position.set(x, y + 3.2, z);
       h.scale.setScalar(3.4);
       S.add(f, h);

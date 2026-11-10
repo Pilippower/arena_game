@@ -21,8 +21,8 @@ const PVE_CASTLE = (() => {
     { id: 'summit', r: [-15.5, 15.5, 285, 304.5], y: SUMMIT, tile: 'hall' }
   ];
   // Murs : segment (ax, az) → (bx, bz), demi-épaisseur t, sommet h (absolu). crenel : créneaux ; gate : herse (ouverte
-  // quand le levier LEVER est tiré) ; fill : massif de maçonnerie plein (toit plat) qui comble un vide hors des sols ; ghost :
-  // limite invisible (sans dessin).
+  // quand le levier LEVER est tiré) ; fill : massif de maçonnerie plein (toit plat) qui comble un vide hors des sols ;
+  // ghost : limite invisible (sans dessin) ; id : nom lu par le décor.
   const wall = (ax, az, bx, bz, h, o = {}) => ({ ax, az, bx, bz, t: 1.5, h, ...o });
   const pair = (ax, az, bx, bz, h, o) => [wall(ax, az, bx, bz, h, o), wall(-bx, bz, -ax, az, h, o)]; // symétrique en x
   const WALLS = [
@@ -33,7 +33,7 @@ const PVE_CASTLE = (() => {
     ...pair(30, 157, 30, 193, BASE + 10, { crenel: true }),
     ...pair(3, 191.5, 30, 191.5, BASE + 9, { crenel: true }),
     // grande salle et son mur nord
-    ...pair(21.5, 190, 21.5, 222, BASE + 9, { crenel: true }),
+    ...pair(21.5, 190, 21.5, 222, BASE + 9, { crenel: true, id: 'hallSide' }), // bannières (décor)
     ...pair(3, 220.5, 21.5, 220.5, BASE + 9, { crenel: true }),
     // grand escalier entre deux massifs (au niveau de la galerie)
     ...pair(7.5, 219, 7.5, 249, GALLERY + PARAPET),

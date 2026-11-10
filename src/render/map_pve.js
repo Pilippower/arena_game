@@ -13,6 +13,19 @@
   const lin = (THREE, hex) => new THREE.Color(hex).convertSRGBToLinear();
   // outils partagés avec le décor du château (render/map_pve_castle.js) ; complétés plus bas
   const PveDecor = (window.PveDecor = { lin });
+  // flamme, halo, lueur : sprite additif (même recette dans tout le décor PVE, château compris)
+  const glowSprite = (THREE, map, color = 0xffffff, opacity = 1) =>
+    new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map,
+        color,
+        opacity,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        depthWrite: false
+      })
+    );
+  PveDecor.glowSprite = glowSprite;
   const SHADOW_SPAN = 46, // m : demi-côté de la zone d'ombres portées, recentrée sur le joueur
     SHADOW_MOVE = 14; // m parcourus avant de recalculer la carte d'ombres
   const MOON_DIR = [-0.45, 0.62, 0.64]; // direction de la lune (vers le nord-ouest, haute)
@@ -287,16 +300,7 @@
     );
     const glow = glowTexture(THREE);
     for (const { p } of stones) {
-      const g = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-          map: glow,
-          color: 0x3cf0dc,
-          blending: THREE.AdditiveBlending,
-          transparent: true,
-          depthWrite: false,
-          opacity: 0.55
-        })
-      );
+      const g = glowSprite(THREE, glow, 0x3cf0dc, 0.55);
       g.position.set(p.x, p.base + 1.8, p.z);
       g.scale.setScalar(2.4);
       S.add(g);
@@ -339,15 +343,7 @@
         x = W.roadX(z) + side * (W.roadHalf + 1.2),
         y = W.heightAt(x, z);
       posts.push(at(THREE, x, y, z));
-      const orb = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-          map: glow,
-          color: 0x8fd8ff,
-          blending: THREE.AdditiveBlending,
-          transparent: true,
-          depthWrite: false
-        })
-      );
+      const orb = glowSprite(THREE, glow, 0x8fd8ff);
       orb.position.set(x, y + 2.6, z);
       orb.scale.setScalar(1.6);
       S.add(orb);
@@ -392,28 +388,12 @@
       }
       S.add(g);
       for (let k = 0; k < 3; k++) {
-        const f = new THREE.Sprite(
-          new THREE.SpriteMaterial({
-            map: flame,
-            blending: THREE.AdditiveBlending,
-            transparent: true,
-            depthWrite: false
-          })
-        );
+        const f = glowSprite(THREE, flame);
         f.position.set(c.x + (k - 1) * 0.16, y + 0.62, c.z);
         S.add(f);
         E.flames.push({ s: f, k: k + c.z });
       }
-      const halo = new THREE.Sprite(
-        new THREE.SpriteMaterial({
-          map: glow,
-          color: 0xff9440,
-          blending: THREE.AdditiveBlending,
-          transparent: true,
-          depthWrite: false,
-          opacity: 0.4
-        })
-      );
+      const halo = glowSprite(THREE, glow, 0xff9440, 0.4);
       halo.position.set(c.x, y + 0.9, c.z);
       halo.scale.setScalar(4);
       S.add(halo);
@@ -445,28 +425,11 @@
         bowl.position.set(bx, y + 1.3, bz);
         leg.position.set(bx, y + 0.55, bz);
         S.add(bowl, leg);
-        const f = new THREE.Sprite(
-          new THREE.SpriteMaterial({
-            map: flame,
-            color: 0x7dffb0,
-            blending: THREE.AdditiveBlending,
-            transparent: true,
-            depthWrite: false
-          })
-        );
+        const f = glowSprite(THREE, flame, 0x7dffb0);
         f.position.set(bx, y + 1.85, bz);
         S.add(f);
         E.flames.push({ s: f, k: bx });
-        const h = new THREE.Sprite(
-          new THREE.SpriteMaterial({
-            map: glow,
-            color: 0x46ff9a,
-            blending: THREE.AdditiveBlending,
-            transparent: true,
-            depthWrite: false,
-            opacity: 0.45
-          })
-        );
+        const h = glowSprite(THREE, glow, 0x46ff9a, 0.45);
         h.position.set(bx, y + 1.9, bz);
         h.scale.setScalar(4);
         S.add(h);

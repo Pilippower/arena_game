@@ -81,4 +81,25 @@ function run(ctx, sec, dt = 1 / 120) {
     ctx.update(dt);
   }
 }
-module.exports = { combatWorld, spell, run };
+// Monde PVE (src/pve/*.js, + files) chargé dans le monde de combat, interface et chargement neutralisés, hasard fixé ;
+// partie pas encore lancée. stubs(ctx) : fonctions de l'interface ou du réseau remplacées (avant le chargement).
+const PVE_FILES = ['src/pve/castle.js', 'src/pve/world.js', 'src/pve/nav.js', 'src/pve/pve.js'];
+function pveCombatWorld(stubs = () => ({}), files = []) {
+  const w = combatWorld(),
+    { ctx } = w;
+  Object.assign(ctx, {
+    camera: { yaw: 0, pitch: 0 },
+    HF: { enabled: false },
+    prepareMatch() {},
+    pveUiStart() {},
+    pveUiStop() {},
+    hideResults() {},
+    playGameMusic() {},
+    pveShowEnd: () => (ctx.endShown = true),
+    ...stubs(ctx)
+  });
+  for (const f of [...PVE_FILES, ...files]) w.load(f);
+  ctx.Math.random = () => 0.5;
+  return w;
+}
+module.exports = { combatWorld, pveCombatWorld, spell, run };

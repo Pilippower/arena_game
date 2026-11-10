@@ -4,7 +4,7 @@
 // résultat : camps agrandis selon le groupe, héros des amis, réapparition de chacun, levier tiré par un ami, état
 // limité aux unités proches, départ d'un ami, fin d'aventure envoyée à tous, partie reconstruite chez l'ami.
 const assert = require('node:assert/strict');
-const { combatWorld, run } = require('./combat_world.js');
+const { pveCombatWorld, run } = require('./combat_world.js');
 
 const fakeConn = () => {
   const sent = [];
@@ -17,37 +17,22 @@ const fakeConn = () => {
 };
 // monde PVE + réseau ; role 'host' : `friends` amis connectés ([classe, race]…), partie lancée avec eux
 function pveNet({ role = 'host', friends = [] } = {}) {
-  const w = combatWorld(),
-    { ctx } = w,
-    errors = [];
-  Object.assign(ctx, {
-    camera: { yaw: 0, pitch: 0 },
-    HF: { enabled: false },
-    prepareMatch() {},
-    pveUiStart() {},
-    pveUiStop() {},
-    hideResults() {},
-    playGameMusic() {},
-    musicStart() {},
-    partyRender() {},
-    lobbyTab() {},
-    $: () => ({ style: {}, classList: { add() {}, remove() {}, toggle() {} } }),
-    lobbyIsPve: () => true,
-    showError: t => errors.push(t),
-    pveShowEnd: sum => (ctx.endShown = sum)
-  });
-  for (const f of [
-    'src/pve/castle.js',
-    'src/pve/world.js',
-    'src/pve/nav.js',
-    'src/pve/pve.js',
-    'src/net/online.js',
-    'src/net/pve_online.js'
-  ])
-    w.load(f);
+  const errors = [],
+    w = pveCombatWorld(
+      ctx => ({
+        musicStart() {},
+        partyRender() {},
+        lobbyTab() {},
+        $: () => ({ style: {}, classList: { add() {}, remove() {}, toggle() {} } }),
+        lobbyIsPve: () => true,
+        showError: t => errors.push(t),
+        pveShowEnd: sum => (ctx.endShown = sum)
+      }),
+      ['src/net/online.js', 'src/net/pve_online.js']
+    ),
+    { ctx } = w;
   ctx.window.NET = ctx.NET;
   ctx.NET.role = role;
-  ctx.Math.random = () => 0.5;
   const conns = friends.map(([cls, race], i) => {
     const conn = fakeConn();
     ctx.NET.guests.set(i + 1, { id: i + 1, conn, name: 'Friend ' + (i + 1), cls, race, team: 'ally' });
@@ -226,6 +211,17 @@ const FOUR = [
   run(ctx, 5);
   assert.ok(!friend.alive, 'jamais réapparu');
   assert.equal(ctx.state.pve.deaths, 0, 'pas compté comme une chute');
+}
+// Ami parti puis chute d'un autre : il revient à sa place dans le groupe restant (pas décalé par la place vide).
+{
+  const { ctx, hero } = pveNet({ friends: FOUR.slice(0, 2) });
+  ctx.netGuestLeft(ctx.NET.guests.get(1));
+  const friend = hero(2),
+    c = ctx.PVE_WORLD.checkpoints[0].spawn;
+  ctx.damage(ctx.state.player, friend, 1e7);
+  run(ctx, 4.5);
+  assert.ok(friend.alive, 'revenu au feu');
+  near(Math.hypot(friend.x - c.x, friend.z - c.z), 0.8, 0.01, '2 héros restants : à 0,8 m du centre, sur la route');
 }
 
 // ---------- Groupe trop grand ou ami sans héros : l'hôte ne lance pas ----------

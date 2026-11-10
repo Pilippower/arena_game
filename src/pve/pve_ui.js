@@ -118,7 +118,7 @@ function pveShowEnd(sum) {
   $('results').className = 'win';
   $('resultsTitle').textContent = 'Victory';
   $('resultsTitle').className = 'win';
-  $('resultsScore').textContent = 'The Ashen King is vanquished';
+  $('resultsScore').textContent = `${PVE_WORLD.mobs.king.name} is vanquished`;
   pveEndTable(sum);
   $('results').style.setProperty('--rows', sum.heroes.length);
   $('results').style.display = 'flex';

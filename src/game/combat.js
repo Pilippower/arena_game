@@ -374,7 +374,7 @@ function heal(src, t, v) {
   v = Math.round(v * (1 - clamp(t.antiheal, 0, 0.6)) * (1 - damp));
   if (v <= 0) return;
   recordHeal(src, Math.min(v, t.maxHp - t.hp));
-  if (state?.pve && !src.monster) pveHealThreat(src, Math.min(v, t.maxHp - t.hp)); // soigner attire aussi les monstres
+  if (state?.pve) pveHealThreat(src, Math.min(v, t.maxHp - t.hp)); // soigner attire aussi les monstres
   t.hp = Math.min(t.maxHp, t.hp + v);
   addFloat(t, `+${v}`, '#6ff395');
   fx('burst', t.x, 1.2, t.z, [0.15, 1, 0.5], 0.52, 0.42);

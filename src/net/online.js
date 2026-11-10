@@ -206,7 +206,7 @@ function netUnitToAI(g, why) {
       if (u.remoteId === g.id) {
         if (state.pve) {
           pveHeroGone(u);
-          showError?.(`${g.name} left the adventure`);
+          showError(`${g.name} left the adventure`);
           continue;
         }
         u.remote = false;

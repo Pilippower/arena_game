@@ -4,27 +4,12 @@
 // camp, mort et retour au feu de camp, régénération, château (herse, murs, montée jusqu'au sommet), victoire sur le
 // roi ; et que l'arène PvP ne change pas (terrain plat, pas de murs).
 const assert = require('node:assert/strict');
-const { combatWorld, run } = require('./combat_world.js');
+const { combatWorld, pveCombatWorld, run } = require('./combat_world.js');
 
 // Monde PVE chargé dans le monde de combat, partie lancée avec un héros de la classe donnée.
 function pveWorld(cls = 'sentinel') {
-  const w = combatWorld();
-  const { ctx } = w;
-  Object.assign(ctx, {
-    camera: { yaw: 0, pitch: 0 },
-    HF: { enabled: false },
-    prepareMatch() {},
-    pveUiStart() {},
-    pveUiStop() {},
-    hideResults() {},
-    playGameMusic() {},
-    pveShowEnd: () => (ctx.endShown = true)
-  });
-  w.load('src/pve/castle.js');
-  w.load('src/pve/world.js');
-  w.load('src/pve/nav.js');
-  w.load('src/pve/pve.js');
-  ctx.Math.random = () => 0.5;
+  const w = pveCombatWorld(),
+    { ctx } = w;
   ctx.pveStart(cls, 'human');
   const p = ctx.state.player,
     W = ctx.PVE_WORLD,
@@ -380,7 +365,7 @@ const near = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg} (${a}
 
 // ---------- Arène PvP inchangée : sol plat, pas de relief, TAB sur tous les ennemis, dampening ----------
 {
-  const { ctx, p } = pveWorld();
+  const { ctx } = pveWorld();
   ctx.applyMap('castle'); // retour au lobby (pveLeave)
   assert.equal(ctx.arena.heightAt, null, 'carte d’arène : plus de relief');
   assert.equal(ctx.arena.world, null, 'carte d’arène : plus de monde PVE');
@@ -399,13 +384,11 @@ const near = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg} (${a}
   run(w.ctx, 0.1);
   assert.ok(w.ctx.state.dampening > 0, 'arène : dampening actif');
   assert.equal(w.ctx.groundAt(a), 0, 'arène : sol plat');
-  void p;
 }
 // ---------- Murs : les monstres en font le tour (poursuite et retour au camp passent par la porte) ----------
 {
   const { ctx, p, W } = pveWorld();
   const id = W.camps.findIndex(c => c.indoor && c.z < 190 && c.x > 0), // camp de la cour, côté est
-    C = W.camps[id],
     door = W.castle.walls.find(w => w.az === 191.5 && w.ax === 3), // mur cour → grande salle, porte de 6 m au centre
     camp = ctx.state.units.filter(u => u.monster?.camp === id);
   for (const u of ctx.state.units) if (u.monster && u.monster.camp !== id && !u.monster.boss) u.alive = false;
@@ -434,7 +417,6 @@ const near = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg} (${a}
   }
   assert.equal(m.monster.mode, 'idle', `rentré au camp (${t.toFixed(1)} s)`);
   assert.ok(viaDoor, 'retour par la porte');
-  void C;
   // chemin de la cour à la grande salle : jamais en diagonale à travers un angle de mur
   const G = ctx.pveNavGrid(),
     path = ctx.pveNavPath(G, ctx.navCell(G, 15, 188), ctx.navCell(G, 15, 197));
