@@ -167,7 +167,7 @@ assert.match(read('src/game/ai.js'), /u\.aiRegroup \? 7 : 13/, 'IA : rejoint un 
   };
   ctx2.globalThis = ctx2;
   vm.createContext(ctx2);
-  vm.runInContext(read('src/game/combat.js').replace(/^(const|let) /gm, 'var '), ctx2, { filename: 'combat.js' });
+  vm.runInContext(read('src/game/teams.js').replace(/^(const|let) /gm, 'var '), ctx2, { filename: 'teams.js' });
   for (const n of [1, 2, 3]) {
     const T = ctx2.teamsFor('arcanist', n);
     assert.equal(T.allies.length + 1, n, n + 'v' + n + ' : alliés');
@@ -541,7 +541,7 @@ assert.ok(
   'cartes : illustration collée en haut (pas de bande vide)'
 );
 {
-  assert.match(read('src/game/combat.js'), /prepareMatch\(\);/, 'chargement à chaque manche');
+  assert.match(read('src/game/teams.js'), /prepareMatch\(\);/, 'chargement à chaque manche');
   assert.match(
     code('src/render/'),
     /function render\(\) \{\s*if \(!gl\) return;[^]*?style\.display !== 'none'\) return;/,
@@ -604,7 +604,7 @@ assert.ok(
   'glaives du voleur, frappe fluide du chevalier'
 );
 {
-  assert.ok(read('src/game/combat.js').includes('function netTeamsFor'), 'en ligne : IA pour les places libres');
+  assert.ok(read('src/game/teams.js').includes('function netTeamsFor'), 'en ligne : IA pour les places libres');
   assert.ok(!read('src/ui/settings.js').includes('size: online ? 1'), 'en ligne : mode du lobby respecté');
 }
 console.log('OK - spécifications validées (docs/SPEC.md)');

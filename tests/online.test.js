@@ -66,7 +66,7 @@ function netWorld({ stored = {}, role = 'host' } = {}) {
   });
   // compositions : le vrai code (IA des places libres)
   S.fn('src/data/classes.js', 'raceForClass');
-  for (const f of ['compForPlayer', 'teamsFor', 'netAiFill', 'netTeamsFor']) S.fn('src/game/combat.js', f);
+  for (const f of ['compForPlayer', 'teamsFor', 'netAiFill', 'netTeamsFor']) S.fn('src/game/teams.js', f);
   S.load('src/net/online.js');
   S.ctx.NET.role = role;
   return { ...S, storage, calls, els: el };

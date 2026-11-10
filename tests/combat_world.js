@@ -7,6 +7,7 @@ const { sandbox } = require('./sources.js');
 const GAME_FILES = [
   'src/data/maps.js',
   'src/game/forms.js',
+  'src/game/teams.js',
   'src/game/combat.js',
   'src/game/spells.js',
   'src/game/ai.js',
