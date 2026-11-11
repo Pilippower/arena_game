@@ -42,9 +42,7 @@ function hfAssetCandidatesFor(u) {
   return [primary, ...fallbacks.filter(x => x !== primary)];
 }
 function hfPixelRatio() {
-  return (
-    Math.min(document.body.classList.contains('mobile-mode') ? 1.5 : 2.0, window.devicePixelRatio || 1) * PERF.scale
-  );
+  return renderRatio(document.body.classList.contains('mobile-mode') ? 1.5 : 2.0);
 }
 function hfInit() {
   if (!window.THREE || !THREE.GLTFLoader || !characterCanvas) return false;

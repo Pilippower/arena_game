@@ -23,7 +23,10 @@ const isNoise = t => /Failed to load resource|net::ERR_|Failed to fetch|CORS/i.t
     await page.addInitScript(() => localStorage.setItem('arenaMap', 'bridge'));
     await page.goto(pathToFileURL(path.join(ROOT, 'index.html')).href + '?autoplay=warden&race=orc');
     await page.waitForFunction(() => state?.units?.every(u => HF.records.get(u.id)?.loaded), null, { timeout: 90000 });
-    await page.waitForTimeout(1000);
+    // la simulation avance (fin de l'écran de chargement : sa durée dépend de la charge de la machine)
+    await page
+      .waitForFunction(() => state.prep < GATE_TIME || state.elapsed > 0.5, null, { timeout: 30000 })
+      .catch(() => {});
     const r = await page.evaluate(() => ({
       env: ENV.ok,
       post: ArenaEnv.postFx, // bloom + étalonnage du décor (PC)
@@ -42,6 +45,30 @@ const isNoise = t => /Failed to load resource|net::ERR_|Failed to fetch|CORS/i.t
     assert.equal(r.kits, 6, '6 personnages assemblés');
     assert.ok(r.advanced, 'la simulation avance');
     assert.ok(r.countdown && r.inRooms, 'préparation : équipes dans leurs salles, compte à rebours affiché');
+    // réglage Graphics quality (core/perf.js, QUALITY) : High par défaut = rendu validé ; Ultra / Low appliqués au décor
+    // en pleine partie (carte d'ombres recréée, halo coupé), boutons de Settings
+    const q = await page.evaluate(async () => {
+      const shot = () => ({
+        name: quality().name,
+        shadow: ArenaEnv.shadowSize,
+        post: ArenaEnv.postFx,
+        ratio: ArenaEnv.renderer.getPixelRatio()
+      });
+      const out = { start: shot() };
+      for (const k of ['ultra', 'low', 'high']) {
+        document.querySelector(`#qualityOpts [data-quality="${k}"]`).click();
+        await new Promise(r => setTimeout(r, 300));
+        out[k] = { ...shot(), selected: document.querySelector('#qualityOpts .selected')?.dataset.quality };
+      }
+      out.saved = JSON.parse(localStorage.getItem(PREF_KEY)).quality;
+      return out;
+    });
+    assert.deepEqual(q.start, { name: 'High', shadow: 2048, post: true, ratio: 1 }, 'High par défaut : rendu validé');
+    assert.equal(q.ultra.shadow, 4096, 'Ultra : ombres plus fines');
+    assert.equal(q.ultra.ratio, 1.5, 'Ultra : image plus fine que l’écran');
+    assert.equal(q.ultra.selected, 'ultra', 'bouton Ultra sélectionné');
+    assert.deepEqual([q.low.shadow, q.low.post, q.low.ratio], [1024, false, 0.75], 'Low : ombres, halo, résolution');
+    assert.equal(q.saved, 'high', 'choix gardé');
     assert.deepEqual(errors, [], 'erreurs JS');
     console.log('OK - partie lancée, décor + 6 personnages, aucune erreur');
   } finally {

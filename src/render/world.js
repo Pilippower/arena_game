@@ -5,7 +5,7 @@
 function resize() {
   if (!gl) return;
   const r = canvas.getBoundingClientRect(),
-    d = Math.min(1.8, devicePixelRatio || 1) * PERF.scale,
+    d = renderRatio(1.8),
     w = Math.max(1, Math.floor(r.width * d)),
     h = Math.max(1, Math.floor(r.height * d));
   if (canvas.width !== w || canvas.height !== h) {

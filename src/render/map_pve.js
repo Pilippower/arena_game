@@ -59,8 +59,6 @@
     S.add(new THREE.HemisphereLight(0x7d96c8, 0x161a2a, 0.5));
     const moon = new THREE.DirectionalLight(0xb8ceff, 0.62);
     moon.castShadow = true;
-    const sm = E.mobile ? 1024 : 2048;
-    moon.shadow.mapSize.set(sm, sm);
     Object.assign(moon.shadow.camera, {
       left: -SHADOW_SPAN,
       right: SHADOW_SPAN,

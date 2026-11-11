@@ -23,6 +23,27 @@ const PERF = {
   tried: null,
   el: null
 };
+// Réglage « Graphics quality » (Settings, PREFS.quality ; 10/11/2026). High = rendu validé jusqu'ici (défaut).
+// res : pixels calculés × densité de l'écran (Ultra : image plus fine que l'écran puis réduite, contours plus nets) ;
+// shadow : côté de la carte d'ombres du décor (px, 1024 au plus sur mobile) ; post : halo lumineux et étalonnage du
+// décor (PC seulement, render/env_post.js).
+const QUALITY = {
+  low: { name: 'Low', res: 0.75, shadow: 1024, post: false },
+  medium: { name: 'Medium', res: 1, shadow: 1024, post: true },
+  high: { name: 'High', res: 1, shadow: 2048, post: true },
+  ultra: { name: 'Ultra', res: 1.5, shadow: 4096, post: true }
+};
+const RATIO_MAX = 3; // pixels calculés par point d'écran, au plus (Ultra sur un écran très dense)
+const quality = () => QUALITY[PREFS.quality] || QUALITY.high;
+// Pixels calculés par point d'écran d'un canevas : densité de l'écran (plafonnée à cap) × réglage Qualité × qualité
+// adaptative (adaptive = false : le décor, peu coûteux, ~1,7 ms par image, reste net).
+function renderRatio(cap, adaptive = true) {
+  return Math.min(RATIO_MAX, Math.min(cap, devicePixelRatio || 1) * quality().res * (adaptive ? PERF.scale : 1));
+}
+// Réglage choisi appliqué au décor (ombres, halo : ArenaEnv.setQuality) ; les canevas suivent renderRatio à chaque image.
+function applyQuality() {
+  window.ArenaEnv?.setQuality?.(quality());
+}
 function perfTime(label, fn) {
   const t0 = performance.now();
   try {

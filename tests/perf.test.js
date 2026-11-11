@@ -10,7 +10,9 @@ function perfWorld() {
     location: { search: '' },
     URLSearchParams,
     $: () => ({ style: { display: 'none' } }), // lobby fermé : on joue
-    now: () => S.ctx.clock
+    now: () => S.ctx.clock,
+    PREFS: { quality: 'high' },
+    devicePixelRatio: 1
   });
   S.ctx.clock = 100;
   S.ctx.state = { units: [], ended: false, loading: false };
@@ -78,6 +80,27 @@ function perfWorld() {
   c.play(30, 10);
   assert.equal(c.PERF.scale, 1, 'plus de baisse');
 }
+// Réglage Graphics quality : pixels calculés par point d'écran (renderRatio), High = rendu validé jusqu'ici.
+{
+  const c = perfWorld(),
+    at = (q, dpr, cap, adaptive) => ((c.PREFS.quality = q), (c.devicePixelRatio = dpr), c.renderRatio(cap, adaptive));
+  for (const dpr of [1, 1.25, 2, 3])
+    for (const cap of [1.5, 1.8, 2])
+      assert.equal(at('high', dpr, cap), Math.min(cap, dpr), `High = rendu d'avant (écran ×${dpr}, plafond ${cap})`);
+  assert.equal(at('ultra', 1, 1.8), 1.5, 'Ultra : image 1,5 fois plus fine que l’écran');
+  assert.equal(at('ultra', 3, 2), 3, 'Ultra : 3 pixels par point au plus');
+  assert.equal(at('low', 1, 1.8), 0.75, 'Low : image plus légère');
+  assert.equal(at('medium', 2, 1.8), 1.8, 'Medium : pleine résolution');
+  assert.equal(at('inconnu', 1, 1.8), 1, 'niveau inconnu (réglage abîmé) : High');
+  c.PERF.scale = 0.7;
+  assert.equal(at('high', 1, 1.8), 0.7, 'qualité adaptative appliquée');
+  assert.equal(at('high', 1, 1.5, false), 1, 'décor : pas de qualité adaptative');
+  assert.deepEqual(
+    Object.keys(c.QUALITY),
+    ['low', 'medium', 'high', 'ultra'],
+    'quatre niveaux, du plus léger au plus beau'
+  );
+}
 console.log(
-  'OK - qualité adaptative (tests unitaires : chargement ignoré, baisse, remontée, pas de va-et-vient, nouvelle partie)'
+  'OK - qualité adaptative (tests unitaires : chargement ignoré, baisse, remontée, pas de va-et-vient, nouvelle partie, réglage Qualité)'
 );

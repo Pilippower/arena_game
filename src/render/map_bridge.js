@@ -198,8 +198,6 @@
     const sun = new THREE.DirectionalLight(0xffb27a, 2.3);
     sun.position.set(34, 26, -30);
     sun.castShadow = true;
-    const sm = mobile ? 1024 : 2048;
-    sun.shadow.mapSize.set(sm, sm);
     Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 140 });
     sun.shadow.bias = -0.0006;
     sun.shadow.normalBias = 0.03;

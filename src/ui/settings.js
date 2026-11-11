@@ -436,5 +436,23 @@ $('camReturnToggle').onchange = e => {
   PREFS.cameraReturn = e.target.checked;
   savePrefs();
 };
+// Graphics quality (core/perf.js, QUALITY) : un bouton par niveau, appliqué tout de suite et gardé.
+function renderQualityOpts() {
+  const box = $('qualityOpts');
+  box.innerHTML = Object.entries(QUALITY)
+    .map(([k, q]) => `<button data-quality="${k}" class="${q === quality() ? 'selected' : ''}">${q.name}</button>`)
+    .join('');
+  box.querySelectorAll('[data-quality]').forEach(
+    b =>
+      (b.onclick = () => {
+        PREFS.quality = b.dataset.quality;
+        savePrefs();
+        applyQuality();
+        renderQualityOpts();
+      })
+  );
+}
+renderQualityOpts();
+applyQuality();
 setMusicVolume(PREFS.volume);
 requestAnimationFrame(applyFramePositions);

@@ -96,7 +96,6 @@
     return mat;
   }
   function buildCastleMap(THREE, S, arena) {
-    const mobile = E.mobile;
     S.fog = new THREE.Fog(0x1c2448, 55, 470);
 
     // Ciel : dégradé crépuscule, soleil bas, étoiles naissantes
@@ -134,8 +133,6 @@
     sun.position.copy(sunDir).multiplyScalar(-1).setY(0.8).normalize().multiplyScalar(60);
     sun.position.set(28, 34, 30);
     sun.castShadow = true;
-    const sm = mobile ? 1024 : 2048;
-    sun.shadow.mapSize.set(sm, sm);
     Object.assign(sun.shadow.camera, { left: -42, right: 42, top: 42, bottom: -42, near: 1, far: 140 });
     sun.shadow.bias = -0.0006;
     sun.shadow.normalBias = 0.03;

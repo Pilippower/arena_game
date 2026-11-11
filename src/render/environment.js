@@ -358,7 +358,7 @@
     });
   }
 
-  const E = { ok: false, THREE: null };
+  const E = { ok: false, THREE: null, q: { res: 1, shadow: 2048, post: true } }; // q : réglage Qualité (setQuality)
 
   function init(THREE, canvasEl, arena, { mobile = false, map = 'castle' } = {}) {
     E.mapId = E.mapId || map;
@@ -370,7 +370,7 @@
       antialias: !mobile,
       powerPreference: 'high-performance'
     }));
-    R.setPixelRatio(Math.min(mobile ? 1 : 1.5, devicePixelRatio || 1));
+    R.setPixelRatio(envRatio());
     R.outputEncoding = THREE.sRGBEncoding;
     R.toneMapping = THREE.ACESFilmicToneMapping;
     R.toneMappingExposure = 1.15;
@@ -425,12 +425,33 @@
     (MAP_BUILDERS[id] || MAP_BUILDERS.castle)(E.THREE, S, arena, E);
     for (const fn of AFTER_BUILD) fn(E.THREE, S, arena, E);
     buildShadows(E.THREE, S);
+    applyShadowSize(S);
     mergeStatic(E.THREE, S);
     paintScene(E.THREE, S);
     // décor immobile : la carte d'ombres est calculée une fois, pas à chaque image
     E.renderer.shadowMap.autoUpdate = false;
     E.renderer.shadowMap.needsUpdate = true;
     return true;
+  }
+
+  // ---- Réglage Qualité (core/perf.js, QUALITY ; reçu par setQuality) : résolution, carte d'ombres, halo ----
+  // Le décor ne suit pas la qualité adaptative (PERF.scale) : il coûte peu et reste net.
+  const envRatio = () => Math.min(E.mobile ? 1 : 1.5, devicePixelRatio || 1) * E.q.res;
+  // Côté de la carte d'ombres de chaque lumière qui en projette (le nombre de lumières ne change pas : pas de
+  // recompilation ; la carte est recréée par three.js à la taille voulue, puis recalculée une fois).
+  function applyShadowSize(S) {
+    const size = E.mobile ? Math.min(1024, E.q.shadow) : E.q.shadow;
+    S.traverse(o => {
+      if (!o.isLight || !o.castShadow || o.shadow.mapSize.x === size) return;
+      o.shadow.mapSize.set(size, size);
+      o.shadow.map?.dispose();
+      o.shadow.map = null;
+    });
+    if (E.renderer) E.renderer.shadowMap.needsUpdate = true;
+  }
+  function setQuality(q) {
+    E.q = { res: q.res, shadow: q.shadow, post: q.post };
+    if (E.scene) applyShadowSize(E.scene);
   }
 
   // ---- Ombres de contact sous les personnages (dessinés sur un autre canevas) ----
@@ -468,7 +489,7 @@
     E.time.value = t;
     const cw = Math.max(1, Math.floor(w)),
       ch = Math.max(1, Math.floor(h)),
-      pr = Math.min(E.mobile ? 1 : 1.5, devicePixelRatio || 1) * (window.PERF ? PERF.scale : 1);
+      pr = envRatio();
     if (R.getPixelRatio() !== pr) {
       R.setPixelRatio(pr);
       E.w = 0;
@@ -508,7 +529,8 @@
       b.scale.setScalar(k);
     });
     for (let i = (units || []).length; i < E.blobs.length; i++) E.blobs[i].visible = false;
-    if (E.post) E.post.render(E.scene, E.camera);
+    E.postOn = !!E.post && E.q.post; // halo et étalonnage (réglage Qualité) ; lu par postFx
+    if (E.postOn) E.post.render(E.scene, E.camera);
     else R.render(E.scene, E.camera);
   }
 
@@ -532,6 +554,7 @@
     setMap,
     registerMap,
     afterBuild,
+    setQuality,
     helpers: {
       clamp,
       smooth,
@@ -558,8 +581,15 @@
     get mapId() {
       return E.mapId;
     },
+    // halo et étalonnage utilisés par la dernière image dessinée
     get postFx() {
-      return !!E.post;
+      return !!E.postOn;
+    },
+    // côté de la carte d'ombres du décor (réglage Qualité, applyShadowSize)
+    get shadowSize() {
+      let size = 0;
+      E.scene?.traverse(o => o.isLight && o.castShadow && (size = o.shadow.mapSize.x));
+      return size;
     },
     // diagnostic (programmes compilés, limites du GPU)
     get renderer() {
